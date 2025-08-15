@@ -215,8 +215,10 @@ void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
+void handleM3UUpload();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
+void savePlaylistToFile();
 
 /**
  * @brief Arduino setup function
@@ -307,6 +309,7 @@ void setup() {
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
+  server.on("/api/m3u", HTTP_POST, handleM3UUpload);
   
   server.serveStatic("/", SPIFFS, "/")
     .setDefaultFile("index.html")
@@ -821,6 +824,35 @@ void savePlaylist() {
 }
 
 /**
+ * @brief Save playlist to SPIFFS storage
+ * Serializes the current playlist array to playlist.json
+ */
+void savePlaylistToFile() {
+  // Create JSON document
+  DynamicJsonDocument doc(2048);
+  JsonArray arr = doc.to<JsonArray>();
+  
+  // Populate JSON array with playlist entries
+  for (int i = 0; i < playlistCount; i++) {
+    JsonObject obj = arr.createNestedObject();
+    obj["name"] = playlist[i].name;
+    obj["url"] = playlist[i].url;
+  }
+  
+  // Save to file
+  File file = SPIFFS.open("/playlist.json", "w");
+  if (!file) {
+    Serial.println("Error: Failed to open playlist file for writing");
+    return;
+  }
+  
+  serializeJson(doc, file);
+  file.close();
+  
+  Serial.println("Saved playlist to file");
+}
+
+/**
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder
  */
@@ -985,6 +1017,97 @@ void handlePostStreams() {
   file.close();
   loadPlaylist(); // Reload playlist
   server.send(200, "text/plain", "OK");
+}
+
+/**
+ * @brief Handle M3U file upload
+ * Parses M3U file and adds entries to the existing playlist
+ */
+void handleM3UUpload() {
+  HTTPUpload& upload = server.upload();
+  
+  if (upload.status == UPLOAD_FILE_START) {
+    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    // Process uploaded data in chunks
+  } else if (upload.status == UPLOAD_FILE_END) {
+    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
+    
+    // Parse the uploaded M3U content
+    String m3uContent = String((char*)upload.buf, upload.currentSize);
+    
+    // Load existing playlist
+    loadPlaylist();
+    
+    // Parse M3U content
+    int newEntries = 0;
+    int startPos = 0;
+    bool foundFirstEntry = false;
+    
+    for (unsigned int i = 0; i < m3uContent.length(); i++) {
+      if (m3uContent[i] == '\n' || m3uContent[i] == '\r' || i == m3uContent.length() - 1) {
+        // Handle the last line if it doesn't end with a newline
+        unsigned int endPos = (i == m3uContent.length() - 1) ? i + 1 : i;
+        String line = m3uContent.substring(startPos, endPos);
+        line.trim();
+        
+        if (line.length() > 0 && !line.startsWith("#") && line.startsWith("http")) {
+          // This is a URL line
+          if (playlistCount < 20) {
+            // Extract stream name from URL if not found
+            String name = "Stream " + String(playlistCount + 1);
+            
+            // Try to find associated name in previous lines
+            int nameStart = m3uContent.lastIndexOf("#EXTINF:", startPos);
+            if (nameStart != -1) {
+              int nameEnd = m3uContent.indexOf("\n", nameStart);
+              if (nameEnd == -1) nameEnd = m3uContent.indexOf("\r", nameStart);
+              if (nameEnd == -1) nameEnd = m3uContent.length();
+              if (nameEnd != -1) {
+                String extinfLine = m3uContent.substring(nameStart, nameEnd);
+                extinfLine.trim();
+                int commaPos = extinfLine.indexOf(",");
+                if (commaPos != -1) {
+                  name = extinfLine.substring(commaPos + 1);
+                  name.trim();
+                  if (name.length() == 0) {
+                    name = "Stream " + String(playlistCount + 1);
+                  }
+                }
+              }
+            }
+            
+            // Add to playlist
+            strncpy(playlist[playlistCount].name, name.c_str(), sizeof(playlist[playlistCount].name) - 1);
+            playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+            strncpy(playlist[playlistCount].url, line.c_str(), sizeof(playlist[playlistCount].url) - 1);
+            playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+            playlistCount++;
+            newEntries++;
+          } else {
+            Serial.println("Warning: Playlist limit reached (20 entries)");
+            break;
+          }
+        }
+        
+        // Skip line endings
+        while (i < m3uContent.length() && (m3uContent[i] == '\n' || m3uContent[i] == '\r')) {
+          i++;
+        }
+        startPos = i;
+        i--; // Adjust for loop increment
+      }
+    }
+    
+    // Save updated playlist
+    savePlaylistToFile();
+    
+    String response = "Added " + String(newEntries) + " entries to playlist";
+    server.send(200, "text/plain", response);
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    Serial.println("Upload Aborted");
+    server.send(500, "text/plain", "Upload Aborted");
+  }
 }
 
 /**

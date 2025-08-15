@@ -105,6 +105,12 @@
         <div class="form-group">
             <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
         </div>
+        
+        <h2>Upload M3U Playlist</h2>
+        <div class="form-group">
+            <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="margin-bottom: 10px;">
+            <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
+        </div>
     </div>
 
     <script>
@@ -179,6 +185,39 @@
             } catch (error) {
                 console.error('Error saving playlist:', error);
                 alert('Error saving playlist');
+            }
+        }
+        
+        async function uploadM3U() {
+            const fileInput = document.getElementById('m3uFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select an M3U file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/m3u', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const message = await response.text();
+                alert(message);
+                
+                if (response.ok) {
+                    // Reload streams after successful upload
+                    loadStreams();
+                    // Clear file input
+                    fileInput.value = '';
+                }
+            } catch (error) {
+                console.error('Error uploading M3U:', error);
+                alert('Error uploading M3U file');
             }
         }
         
