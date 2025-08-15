@@ -119,7 +119,29 @@
         async function loadStreams() {
             try {
                 const response = await fetch('/api/streams');
-                streams = await response.json();
+                const m3uContent = await response.text();
+                
+                // Parse M3U content
+                streams = [];
+                const lines = m3uContent.split('\n');
+                let currentName = '';
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (line.startsWith('#EXTINF:')) {
+                        const commaPos = line.indexOf(',');
+                        if (commaPos !== -1) {
+                            currentName = line.substring(commaPos + 1).trim();
+                        }
+                    } else if (!line.startsWith('#') && line.startsWith('http')) {
+                        streams.push({
+                            name: currentName || 'Stream ' + (streams.length + 1),
+                            url: line
+                        });
+                        currentName = '';
+                    }
+                }
+                
                 renderPlaylist();
             } catch (error) {
                 console.error('Error loading streams:', error);
@@ -175,13 +197,26 @@
         }
         
         async function savePlaylist() {
+            // Generate M3U content
+            let m3uContent = "#EXTM3U\n";
+            streams.forEach(stream => {
+                m3uContent += "#EXTINF:-1," + stream.name + "\n";
+                m3uContent += stream.url + "\n";
+            });
+            
             try {
-                await fetch('/api/streams', {
+                const response = await fetch('/api/streams', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(streams)
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: m3uContent
                 });
-                alert('Playlist saved successfully!');
+                
+                if (response.ok) {
+                    alert('Playlist saved successfully!');
+                } else {
+                    const error = await response.text();
+                    alert('Error saving playlist: ' + error);
+                }
             } catch (error) {
                 console.error('Error saving playlist:', error);
                 alert('Error saving playlist');
@@ -197,28 +232,33 @@
                 return;
             }
             
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/api/m3u', {
-                    method: 'POST',
-                    body: formData
-                });
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const m3uContent = e.target.result;
                 
-                const message = await response.text();
-                alert(message);
-                
-                if (response.ok) {
-                    // Reload streams after successful upload
-                    loadStreams();
-                    // Clear file input
-                    fileInput.value = '';
+                try {
+                    const response = await fetch('/api/streams', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain' },
+                        body: m3uContent
+                    });
+                    
+                    const message = await response.text();
+                    alert(message);
+                    
+                    if (response.ok) {
+                        // Reload streams after successful upload
+                        loadStreams();
+                        // Clear file input
+                        fileInput.value = '';
+                    }
+                } catch (error) {
+                    console.error('Error uploading M3U:', error);
+                    alert('Error uploading M3U file');
                 }
-            } catch (error) {
-                console.error('Error uploading M3U:', error);
-                alert('Error uploading M3U file');
-            }
+            };
+            reader.readAsText(file);
         }
         
         // Initialize
