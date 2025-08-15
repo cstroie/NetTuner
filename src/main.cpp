@@ -88,8 +88,6 @@ SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
  * Track position, direction, timing, and button state for the rotary encoder
  */
 volatile int rotaryPosition = 0;          ///< Current rotary encoder position
-volatile int lastRotaryPosition = 0;      ///< Last recorded rotary encoder position
-volatile bool rotaryCW = false;           ///< Rotation direction flag (true = clockwise)
 volatile unsigned long lastRotaryTime = 0;///< Timestamp of last rotary encoder event
 bool buttonPressed = false;               ///< Rotary encoder button press flag
 
@@ -529,6 +527,7 @@ void setupRotaryEncoder() {
  * @brief Rotary encoder interrupt service routine
  * Called when the rotary encoder position changes
  * This function runs in interrupt context and must be in IRAM
+ * Kept minimal to reduce interrupt execution time
  */
 void IRAM_ATTR rotaryISR() {
   static int lastCLK = 0;
@@ -547,10 +546,8 @@ void IRAM_ATTR rotaryISR() {
     // Determine rotation direction based on CLK and DT relationship
     if (DT != CLK) {
       rotaryPosition++;      // Clockwise rotation
-      rotaryCW = true;
     } else {
       rotaryPosition--;      // Counter-clockwise rotation
-      rotaryCW = false;
     }
     lastRotaryTime = currentTime;  // Update last event time
   }
@@ -562,6 +559,8 @@ void IRAM_ATTR rotaryISR() {
  * Processes rotation and button press events from the rotary encoder
  */
 void handleRotary() {
+  static int lastRotaryPosition = 0;
+  
   // Check if rotary encoder position has changed
   if (rotaryPosition != lastRotaryPosition) {
     int diff = rotaryPosition - lastRotaryPosition;
@@ -579,7 +578,7 @@ void handleRotary() {
         // If not playing, select next item in playlist
         currentSelection = (currentSelection + 1) % max(1, playlistCount);
       }
-    } else {
+    } else if (diff < 0) {
       // Process counter-clockwise rotation
       // Rotate counter-clockwise - volume down or previous item
       if (isPlaying) {
