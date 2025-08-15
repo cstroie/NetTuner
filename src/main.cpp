@@ -49,7 +49,6 @@ WebServer server(80);
 AudioGeneratorMP3 *mp3 = nullptr;           ///< MP3 decoder instance
 AudioFileSourceHTTPStream *file = nullptr;  ///< HTTP stream source
 AudioOutputI2S *out = nullptr;              ///< I2S audio output
-AudioFileSourceBuffer *buff = nullptr;      ///< Buffer for audio data
 
 /**
  * @brief Player state variables
@@ -90,7 +89,6 @@ SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
 volatile int rotaryPosition = 0;          ///< Current rotary encoder position
 volatile int lastRotaryPosition = 0;      ///< Last recorded rotary encoder position
 volatile bool rotaryCW = false;           ///< Rotation direction flag (true = clockwise)
-volatile unsigned long lastRotaryTime = 0;///< Timestamp of last rotary encoder event
 bool buttonPressed = false;               ///< Rotary encoder button press flag
 
 /**
