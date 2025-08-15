@@ -269,6 +269,17 @@ void setupI2S() {
 void startStream(const char* url, const char* name) {
   stopStream();  // Stop any currently playing stream
   
+  // Validate inputs
+  if (!url || !name) {
+    Serial.println("Error: NULL pointer passed to startStream");
+    return;
+  }
+  
+  if (strlen(url) == 0 || strlen(name) == 0) {
+    Serial.println("Error: Empty URL or name passed to startStream");
+    return;
+  }
+  
   strncpy(currentStream, url, sizeof(currentStream) - 1);
   currentStream[sizeof(currentStream) - 1] = '\0';
   strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
@@ -277,15 +288,67 @@ void startStream(const char* url, const char* name) {
   
   // Create new audio components for the stream
   file = new AudioFileSourceHTTPStream(url);  // HTTP stream source
+  if (!file || !file->isOpen()) {
+    Serial.println("Error: Failed to create HTTP stream source");
+    isPlaying = false;
+    updateDisplay();
+    return;
+  }
+  
   buff = new AudioFileSourceBuffer(file, 2048); // Buffer with 2KB buffer size
+  if (!buff) {
+    Serial.println("Error: Failed to create buffer");
+    delete file;
+    file = nullptr;
+    isPlaying = false;
+    updateDisplay();
+    return;
+  }
+  
   out = new AudioOutputI2S();                 // I2S output
+  if (!out) {
+    Serial.println("Error: Failed to create I2S output");
+    delete buff;
+    buff = nullptr;
+    delete file;
+    file = nullptr;
+    isPlaying = false;
+    updateDisplay();
+    return;
+  }
+  
   mp3 = new AudioGeneratorMP3();              // MP3 decoder
+  if (!mp3) {
+    Serial.println("Error: Failed to create MP3 decoder");
+    delete out;
+    out = nullptr;
+    delete buff;
+    buff = nullptr;
+    delete file;
+    file = nullptr;
+    isPlaying = false;
+    updateDisplay();
+    return;
+  }
   
   // Set volume (0.0 to 1.0)
   out->SetGain(volume / 100.0);
   
   // Start the decoding process
-  mp3->begin(buff, out);
+  if (!mp3->begin(buff, out)) {
+    Serial.println("Error: Failed to start MP3 decoder");
+    delete mp3;
+    mp3 = nullptr;
+    delete out;
+    out = nullptr;
+    delete buff;
+    buff = nullptr;
+    delete file;
+    file = nullptr;
+    isPlaying = false;
+    updateDisplay();
+    return;
+  }
   
   updateDisplay();  // Refresh the display with new playback info
 }
@@ -343,18 +406,42 @@ void loadPlaylist() {
     if (file) {
       file.print("[]");  // Empty JSON array
       file.close();
+      Serial.println("Created default playlist file");
+    } else {
+      Serial.println("Error: Failed to create default playlist file");
     }
     return;
   }
   
   // Open the playlist file for reading
   File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) return;  // Return if file couldn't be opened
+  if (!file) {
+    Serial.println("Error: Failed to open playlist file for reading");
+    return;  // Return if file couldn't be opened
+  }
+  
+  // Check file size
+  size_t size = file.size();
+  if (size == 0) {
+    Serial.println("Warning: Playlist file is empty");
+    file.close();
+    return;
+  }
+  
+  if (size > 4096) {
+    Serial.println("Error: Playlist file too large");
+    file.close();
+    return;
+  }
   
   // Read the entire file into a buffer
-  size_t size = file.size();
   std::unique_ptr<char[]> buf(new char[size + 1]);
-  file.readBytes(buf.get(), size);
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.println("Error: Failed to read playlist file completely");
+    file.close();
+    return;
+  }
+  buf[size] = '\0'; // Null terminate
   file.close();
   
   // Parse the JSON data
@@ -372,14 +459,35 @@ void loadPlaylist() {
   
   // Populate the playlist array with stream information
   for (JsonVariant value : arr) {
-    if (playlistCount >= 20) break;  // Limit to 20 entries
-      
-    strncpy(playlist[playlistCount].name, value["name"].as<String>().c_str(), sizeof(playlist[playlistCount].name) - 1);
+    if (playlistCount >= 20) {
+      Serial.println("Warning: Playlist limit reached (20 entries)");
+      break;  // Limit to 20 entries
+    }
+    
+    // Validate required fields
+    if (!value.containsKey("name") || !value.containsKey("url")) {
+      Serial.println("Warning: Skipping playlist entry with missing fields");
+      continue;
+    }
+    
+    String name = value["name"].as<String>();
+    String url = value["url"].as<String>();
+    
+    if (name.length() == 0 || url.length() == 0) {
+      Serial.println("Warning: Skipping playlist entry with empty fields");
+      continue;
+    }
+    
+    strncpy(playlist[playlistCount].name, name.c_str(), sizeof(playlist[playlistCount].name) - 1);
     playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-    strncpy(playlist[playlistCount].url, value["url"].as<String>().c_str(), sizeof(playlist[playlistCount].url) - 1);
+    strncpy(playlist[playlistCount].url, url.c_str(), sizeof(playlist[playlistCount].url) - 1);
     playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
     playlistCount++;
   }
+  
+  Serial.print("Loaded ");
+  Serial.print(playlistCount);
+  Serial.println(" streams from playlist");
 }
 
 /**
@@ -546,7 +654,27 @@ void handleGetStreams() {
  * Updates the playlist with new JSON data
  */
 void handlePostStreams() {
+  if (!server.hasArg("plain")) {
+    server.send(400, "text/plain", "Missing JSON data");
+    return;
+  }
+  
   String json = server.arg("plain");
+  
+  // Basic JSON validation
+  if (json.length() == 0) {
+    server.send(400, "text/plain", "Empty JSON data");
+    return;
+  }
+  
+  // Check if it looks like valid JSON
+  json.trim();
+  if (!(json.startsWith("[") && json.endsWith("]")) && 
+      !(json.startsWith("{") && json.endsWith("}"))) {
+    server.send(400, "text/plain", "Invalid JSON format");
+    return;
+  }
+  
   File file = SPIFFS.open("/playlist.json", "w");
   if (!file) {
     server.send(500, "text/plain", "Failed to save playlist");
@@ -563,8 +691,25 @@ void handlePostStreams() {
  * Starts playing a stream with the given URL and name
  */
 void handlePlay() {
+  if (!server.hasArg("url") || !server.hasArg("name")) {
+    server.send(400, "text/plain", "Missing required parameters: url and name");
+    return;
+  }
+  
   String url = server.arg("url");
   String name = server.arg("name");
+  
+  if (url.length() == 0 || name.length() == 0) {
+    server.send(400, "text/plain", "URL and name cannot be empty");
+    return;
+  }
+  
+  // Validate URL format
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
+    return;
+  }
+  
   startStream(url.c_str(), name.c_str());
   server.send(200, "text/plain", "OK");
 }
@@ -583,8 +728,20 @@ void handleStop() {
  * Sets the volume level
  */
 void handleVolume() {
+  if (!server.hasArg("volume")) {
+    server.send(400, "text/plain", "Missing required parameter: volume");
+    return;
+  }
+  
   String vol = server.arg("volume");
-  volume = vol.toInt();
+  int newVolume = vol.toInt();
+  
+  if (newVolume < 0 || newVolume > 100) {
+    server.send(400, "text/plain", "Volume must be between 0 and 100");
+    return;
+  }
+  
+  volume = newVolume;
   if (out) {
     out->SetGain(volume / 100.0);
   }
