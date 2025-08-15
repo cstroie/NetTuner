@@ -54,10 +54,10 @@ AudioOutputI2S *out = nullptr;              ///< I2S audio output
  * @brief Player state variables
  * Track current playback status, stream information, and volume level
  */
-String currentStream = "";      ///< URL of currently playing stream
-String currentStreamName = "";  ///< Name of currently playing stream
-bool isPlaying = false;         ///< Playback status flag
-int volume = 50;                ///< Volume level (0-100)
+char currentStream[256] = "";      ///< URL of currently playing stream
+char currentStreamName[128] = "";  ///< Name of currently playing stream
+bool isPlaying = false;            ///< Playback status flag
+int volume = 50;                   ///< Volume level (0-100)
 
 /**
  * @brief I2S pin configuration for audio output
@@ -237,7 +237,7 @@ void setup() {
   server.on("/api/play", HTTP_POST, []() {
     String url = server.arg("url");
     String name = server.arg("name");
-    startStream(url, name);
+    startStream(url.c_str(), name.c_str());
     server.send(200, "text/plain", "OK");
   });
   
@@ -258,8 +258,8 @@ void setup() {
   server.on("/api/status", HTTP_GET, []() {
     String status = "{";
     status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-    status += "\"currentStream\":\"" + currentStream + "\",";
-    status += "\"currentStreamName\":\"" + currentStreamName + "\",";
+    status += "\"currentStream\":\"" + String(currentStream) + "\",";
+    status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
     status += "\"volume\":" + String(volume);
     status += "}";
     server.send(200, "application/json", status);
@@ -418,9 +418,11 @@ void loadPlaylist() {
   // Populate the playlist array with stream information
   for (JsonVariant value : arr) {
     if (playlistCount >= 20) break;  // Limit to 20 entries
-    
-    playlist[playlistCount].name = value["name"].as<String>();
-    playlist[playlistCount].url = value["url"].as<String>();
+      
+    strncpy(playlist[playlistCount].name, value["name"].as<String>().c_str(), sizeof(playlist[playlistCount].name) - 1);
+    playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+    strncpy(playlist[playlistCount].url, value["url"].as<String>().c_str(), sizeof(playlist[playlistCount].url) - 1);
+    playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
     playlistCount++;
   }
 }
