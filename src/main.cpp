@@ -540,6 +540,7 @@ void saveWiFiCredentials() {
 /**
  * @brief Audio processing task function
  * Runs on core 0 to handle continuous audio decoding and playback
+ * (ESP32 has 2 main cores + 1 ultra-low-power core)
  * @param parameter Unused parameter required by FreeRTOS task function signature
  */
 void audioTask(void *parameter) {
