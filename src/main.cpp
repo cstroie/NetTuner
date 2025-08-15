@@ -96,8 +96,8 @@ bool buttonPressed = false;               ///< Rotary encoder button press flag
  * Stores information about available audio streams
  */
 struct StreamInfo {
-  String name;  ///< Human-readable name of the stream
-  String url;   ///< URL of the audio stream
+  char name[128];  ///< Human-readable name of the stream
+  char url[256];   ///< URL of the audio stream
 };
 
 /**
