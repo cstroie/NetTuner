@@ -111,13 +111,17 @@ public:
     int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
     int DT = digitalRead(ROTARY_DT);    // Read data signal
     
-    // Only process when CLK transitions to high
-    if (CLK != lastCLK && CLK == 1) {
+    // Only process when CLK transitions
+    if (CLK != lastCLK) {
       // Determine rotation direction based on CLK and DT relationship
-      if (DT != CLK) {
+      if (CLK == 1 && DT == 0) {
         position++;      // Clockwise rotation
-      } else {
+      } else if (CLK == 0 && DT == 1) {
+        position++;      // Clockwise rotation (alternative pattern)
+      } else if (CLK == 1 && DT == 1) {
         position--;      // Counter-clockwise rotation
+      } else if (CLK == 0 && DT == 0) {
+        position--;      // Counter-clockwise rotation (alternative pattern)
       }
       lastRotaryTime = currentTime;  // Update last event time
     }
@@ -243,7 +247,8 @@ void setup() {
   if (strlen(ssid) > 0) {
     WiFi.begin(ssid, password);
     int wifiAttempts = 0;
-    while (WiFi.status() != WL_CONNECTED && wifiAttempts < 20) {
+    const int maxAttempts = 20;
+    while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
       delay(500);
       Serial.print(".");
       wifiAttempts++;
@@ -759,6 +764,14 @@ void loadPlaylist() {
   if (error) {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.c_str());
+    Serial.println("Creating empty playlist");
+    // Create default empty playlist
+    File file = SPIFFS.open("/playlist.json", "w");
+    if (file) {
+      file.print("[]");  // Empty JSON array
+      file.close();
+      Serial.println("Created default playlist file");
+    }
     return;
   }
   
