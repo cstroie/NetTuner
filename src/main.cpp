@@ -48,6 +48,7 @@ WebServer server(80);
  */
 AudioGeneratorMP3 *mp3 = nullptr;           ///< MP3 decoder instance
 AudioFileSourceHTTPStream *file = nullptr;  ///< HTTP stream source
+AudioFileSourceBuffer *buff = nullptr;      ///< Buffer for audio data
 AudioOutputI2S *out = nullptr;              ///< I2S audio output
 
 /**
@@ -331,6 +332,7 @@ void startStream(const char* url, const char* name) {
   
   // Create new audio components for the stream
   file = new AudioFileSourceHTTPStream(url);  // HTTP stream source
+  buff = new AudioFileSourceBuffer(file, 2048); // Buffer with 2KB buffer size
   out = new AudioOutputI2S();                 // I2S output
   mp3 = new AudioGeneratorMP3();              // MP3 decoder
   
@@ -338,7 +340,7 @@ void startStream(const char* url, const char* name) {
   out->SetGain(volume / 100.0);
   
   // Start the decoding process
-  mp3->begin(file, out);
+  mp3->begin(buff, out);
   
   updateDisplay();  // Refresh the display with new playback info
 }
@@ -357,6 +359,12 @@ void stopStream() {
     mp3 = nullptr;
   }
   
+  // Delete the buffer if it exists
+  if (buff) {
+    delete buff;
+    buff = nullptr;
+  }
+  
   // Delete the I2S output if it exists
   if (out) {
     delete out;
@@ -370,8 +378,8 @@ void stopStream() {
   }
   
   isPlaying = false;        // Set playback status to stopped
-  currentStream = "";       // Clear current stream URL
-  currentStreamName = "";   // Clear current stream name
+  currentStream[0] = '\0';       // Clear current stream URL
+  currentStreamName[0] = '\0';   // Clear current stream name
   
   updateDisplay();  // Refresh the display
 }
