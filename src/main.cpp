@@ -829,10 +829,9 @@ void setupRotaryEncoder() {
 /**
  * @brief Rotary encoder interrupt service routine
  * Called when the rotary encoder position changes
- * This function runs in interrupt context and must be in IRAM
  * Kept minimal to reduce interrupt execution time
  */
-void IRAM_ATTR rotaryISR() {
+void rotaryISR() {
   rotaryEncoder.handleRotation();
 }
 
