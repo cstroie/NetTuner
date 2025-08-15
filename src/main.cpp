@@ -405,7 +405,7 @@ void loadPlaylist() {
   file.close();
   
   // Parse the JSON data
-  DynamicJsonDocument doc(4096);
+  DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
     Serial.print("deserializeJson() failed: ");
