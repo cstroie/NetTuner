@@ -320,17 +320,19 @@ void setupI2S() {
  * @param url URL of the audio stream to play
  * @param name Human-readable name of the stream
  */
-void startStream(const String& url, const String& name) {
+void startStream(const char* url, const char* name) {
   stopStream();  // Stop any currently playing stream
   
-  currentStream = url;      // Store the stream URL
-  currentStreamName = name; // Store the stream name
+  strncpy(currentStream, url, sizeof(currentStream) - 1);
+  currentStream[sizeof(currentStream) - 1] = '\0';
+  strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
+  currentStreamName[sizeof(currentStreamName) - 1] = '\0';
   isPlaying = true;         // Set playback status to playing
   
   // Create new audio components for the stream
-  file = new AudioFileSourceHTTPStream(url.c_str());  // HTTP stream source
-  out = new AudioOutputI2S();                         // I2S output
-  mp3 = new AudioGeneratorMP3();                      // MP3 decoder
+  file = new AudioFileSourceHTTPStream(url);  // HTTP stream source
+  out = new AudioOutputI2S();                 // I2S output
+  mp3 = new AudioGeneratorMP3();              // MP3 decoder
   
   // Set volume (0.0 to 1.0)
   out->SetGain(volume / 100.0);
