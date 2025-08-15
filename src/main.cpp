@@ -210,7 +210,9 @@ void setup() {
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/status", HTTP_GET, handleStatus);
   
-  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
+  server.serveStatic("/", SPIFFS, "/")
+    .setDefaultFile("index.html")
+    .setCacheControl("max-age=3600"); // Cache for 1 hour
   
   server.begin();
   
