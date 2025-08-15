@@ -127,6 +127,16 @@ void IRAM_ATTR rotaryISR();
 void updateDisplay();
 void handleRotary();
 
+// Web server handlers
+void handleRoot();
+void handlePlaylistPage();
+void handleGetStreams();
+void handlePostStreams();
+void handlePlay();
+void handleStop();
+void handleVolume();
+void handleStatus();
+
 /**
  * @brief Arduino setup function
  * Initializes all system components and starts the web server
@@ -192,79 +202,14 @@ void setup() {
   );
   
   // Setup web server routes
-  server.on("/", HTTP_GET, []() {
-    File file = SPIFFS.open("/index.html", "r");
-    if (!file) {
-      server.send(404, "text/plain", "File not found");
-      return;
-    }
-    server.streamFile(file, "text/html");
-    file.close();
-  });
-  
-  server.on("/playlist.html", HTTP_GET, []() {
-    File file = SPIFFS.open("/playlist.html", "r");
-    if (!file) {
-      server.send(404, "text/plain", "File not found");
-      return;
-    }
-    server.streamFile(file, "text/html");
-    file.close();
-  });
-  
-  server.on("/api/streams", HTTP_GET, []() {
-    File file = SPIFFS.open("/playlist.json", "r");
-    if (!file) {
-      server.send(200, "application/json", "[]");
-      return;
-    }
-    server.streamFile(file, "application/json");
-    file.close();
-  });
-  
-  server.on("/api/streams", HTTP_POST, []() {
-    String json = server.arg("plain");
-    File file = SPIFFS.open("/playlist.json", "w");
-    if (!file) {
-      server.send(500, "text/plain", "Failed to save playlist");
-      return;
-    }
-    file.print(json);
-    file.close();
-    loadPlaylist(); // Reload playlist
-    server.send(200, "text/plain", "OK");
-  });
-  
-  server.on("/api/play", HTTP_POST, []() {
-    String url = server.arg("url");
-    String name = server.arg("name");
-    startStream(url.c_str(), name.c_str());
-    server.send(200, "text/plain", "OK");
-  });
-  
-  server.on("/api/stop", HTTP_POST, []() {
-    stopStream();
-    server.send(200, "text/plain", "OK");
-  });
-  
-  server.on("/api/volume", HTTP_POST, []() {
-    String vol = server.arg("volume");
-    volume = vol.toInt();
-    if (out) {
-      out->SetGain(volume / 100.0);
-    }
-    server.send(200, "text/plain", "OK");
-  });
-  
-  server.on("/api/status", HTTP_GET, []() {
-    String status = "{";
-    status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-    status += "\"currentStream\":\"" + String(currentStream) + "\",";
-    status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
-    status += "\"volume\":" + String(volume);
-    status += "}";
-    server.send(200, "application/json", status);
-  });
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/playlist.html", HTTP_GET, handlePlaylistPage);
+  server.on("/api/streams", HTTP_GET, handleGetStreams);
+  server.on("/api/streams", HTTP_POST, handlePostStreams);
+  server.on("/api/play", HTTP_POST, handlePlay);
+  server.on("/api/stop", HTTP_POST, handleStop);
+  server.on("/api/volume", HTTP_POST, handleVolume);
+  server.on("/api/status", HTTP_GET, handleStatus);
   
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
   
@@ -552,6 +497,112 @@ void handleRotary() {
     }
     updateDisplay();  // Refresh display
   }
+}
+
+/**
+ * @brief Handle root page request
+ * Serves the main index.html file
+ */
+void handleRoot() {
+  File file = SPIFFS.open("/index.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+/**
+ * @brief Handle playlist page request
+ * Serves the playlist.html file
+ */
+void handlePlaylistPage() {
+  File file = SPIFFS.open("/playlist.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+/**
+ * @brief Handle GET request for streams
+ * Returns the current playlist as JSON
+ */
+void handleGetStreams() {
+  File file = SPIFFS.open("/playlist.json", "r");
+  if (!file) {
+    server.send(200, "application/json", "[]");
+    return;
+  }
+  server.streamFile(file, "application/json");
+  file.close();
+}
+
+/**
+ * @brief Handle POST request for streams
+ * Updates the playlist with new JSON data
+ */
+void handlePostStreams() {
+  String json = server.arg("plain");
+  File file = SPIFFS.open("/playlist.json", "w");
+  if (!file) {
+    server.send(500, "text/plain", "Failed to save playlist");
+    return;
+  }
+  file.print(json);
+  file.close();
+  loadPlaylist(); // Reload playlist
+  server.send(200, "text/plain", "OK");
+}
+
+/**
+ * @brief Handle play request
+ * Starts playing a stream with the given URL and name
+ */
+void handlePlay() {
+  String url = server.arg("url");
+  String name = server.arg("name");
+  startStream(url.c_str(), name.c_str());
+  server.send(200, "text/plain", "OK");
+}
+
+/**
+ * @brief Handle stop request
+ * Stops the currently playing stream
+ */
+void handleStop() {
+  stopStream();
+  server.send(200, "text/plain", "OK");
+}
+
+/**
+ * @brief Handle volume request
+ * Sets the volume level
+ */
+void handleVolume() {
+  String vol = server.arg("volume");
+  volume = vol.toInt();
+  if (out) {
+    out->SetGain(volume / 100.0);
+  }
+  server.send(200, "text/plain", "OK");
+}
+
+/**
+ * @brief Handle status request
+ * Returns the current player status as JSON
+ */
+void handleStatus() {
+  String status = "{";
+  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
+  status += "\"currentStream\":\"" + String(currentStream) + "\",";
+  status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+  status += "\"volume\":" + String(volume);
+  status += "}";
+  server.send(200, "application/json", status);
 }
 
 /**
