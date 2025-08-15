@@ -12,57 +12,91 @@
 #include <SSD1306Wire.h>
 #include <ESPAsyncWebServer.h>
 
-// WiFi credentials
+/**
+ * @brief WiFi network credentials
+ * These should be updated with your actual network credentials
+ */
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
-// Web server
+/**
+ * @brief Web server instance running on port 80
+ */
 WebServer server(80);
 
-// Audio components
-AudioGeneratorMP3 *mp3 = nullptr;
-AudioFileSourceHTTPStream *file = nullptr;
-AudioOutputI2S *out = nullptr;
-AudioFileSourceBuffer *buff = nullptr;
+/**
+ * @brief Audio processing components
+ * These pointers manage the audio streaming pipeline
+ */
+AudioGeneratorMP3 *mp3 = nullptr;           ///< MP3 decoder instance
+AudioFileSourceHTTPStream *file = nullptr;  ///< HTTP stream source
+AudioOutputI2S *out = nullptr;              ///< I2S audio output
+AudioFileSourceBuffer *buff = nullptr;      ///< Buffer for audio data
 
-// Player state
-String currentStream = "";
-String currentStreamName = "";
-bool isPlaying = false;
-int volume = 50; // 0-100
+/**
+ * @brief Player state variables
+ * Track current playback status, stream information, and volume level
+ */
+String currentStream = "";      ///< URL of currently playing stream
+String currentStreamName = "";  ///< Name of currently playing stream
+bool isPlaying = false;         ///< Playback status flag
+int volume = 50;                ///< Volume level (0-100)
 
-// I2S configuration
-#define I2S_DOUT      22
-#define I2S_BCLK      25
-#define I2S_LRC       26
-#define I2S_SD        21
+/**
+ * @brief I2S pin configuration for audio output
+ * Defines the pin mapping for I2S audio interface
+ */
+#define I2S_DOUT      22  ///< I2S Data Out pin
+#define I2S_BCLK      25  ///< I2S Bit Clock pin
+#define I2S_LRC       26  ///< I2S Left/Right Clock pin
+#define I2S_SD        21  ///< I2S Slave Data pin (amplifier control)
 
-// OLED display
+/**
+ * @brief OLED display instance
+ * SSD1306 OLED display connected via I2C (address 0x3c, SDA=5, SCL=4)
+ */
 SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
 
-// Rotary encoder
-#define ROTARY_CLK 18
-#define ROTARY_DT 19
-#define ROTARY_SW 23
+/**
+ * @brief Rotary encoder pin configuration
+ * Defines the pin mapping for the rotary encoder with push button
+ */
+#define ROTARY_CLK 18  ///< Rotary encoder clock pin (quadrature signal A)
+#define ROTARY_DT 19   ///< Rotary encoder data pin (quadrature signal B)
+#define ROTARY_SW 23   ///< Rotary encoder switch pin (push button)
 
-volatile int rotaryPosition = 0;
-volatile int lastRotaryPosition = 0;
-volatile bool rotaryCW = false;
-volatile unsigned long lastRotaryTime = 0;
-bool buttonPressed = false;
+/**
+ * @brief Rotary encoder state variables
+ * Track position, direction, timing, and button state for the rotary encoder
+ */
+volatile int rotaryPosition = 0;          ///< Current rotary encoder position
+volatile int lastRotaryPosition = 0;      ///< Last recorded rotary encoder position
+volatile bool rotaryCW = false;           ///< Rotation direction flag (true = clockwise)
+volatile unsigned long lastRotaryTime = 0;///< Timestamp of last rotary encoder event
+bool buttonPressed = false;               ///< Rotary encoder button press flag
 
-// Playlist
+/**
+ * @brief Playlist data structure
+ * Stores information about available audio streams
+ */
 struct StreamInfo {
-  String name;
-  String url;
+  String name;  ///< Human-readable name of the stream
+  String url;   ///< URL of the audio stream
 };
 
-StreamInfo playlist[20];
-int playlistCount = 0;
-int currentSelection = 0;
+/**
+ * @brief Playlist storage and management variables
+ * Array to store playlist entries and tracking variables
+ */
+StreamInfo playlist[20];    ///< Array of stream information (max 20 entries)
+int playlistCount = 0;      ///< Number of valid entries in the playlist
+int currentSelection = 0;   ///< Currently selected item in the playlist
 
-// Task handles
-TaskHandle_t audioTaskHandle = NULL;
+/**
+ * @brief Task management handles
+ * Used to manage and reference created FreeRTOS tasks
+ */
+TaskHandle_t audioTaskHandle = NULL;  ///< Handle for the audio processing task
 
 // Function declarations
 void audioTask(void *parameter);
@@ -76,6 +110,10 @@ void IRAM_ATTR rotaryISR();
 void updateDisplay();
 void handleRotary();
 
+/**
+ * @brief Arduino setup function
+ * Initializes all system components and starts the web server
+ */
 void setup() {
   Serial.begin(115200);
   
@@ -219,97 +257,136 @@ void setup() {
   updateDisplay();
 }
 
+/**
+ * @brief Arduino main loop function
+ * Handles web server requests and rotary encoder input
+ */
 void loop() {
-  server.handleClient();
-  handleRotary();
-  delay(10);
+  server.handleClient();  // Process incoming web requests
+  handleRotary();         // Process rotary encoder input
+  delay(10);              // Small delay to prevent busy waiting
 }
 
+/**
+ * @brief Audio processing task function
+ * Runs on core 0 to handle continuous audio decoding and playback
+ * @param parameter Unused parameter required by FreeRTOS task function signature
+ */
 void audioTask(void *parameter) {
   while (true) {
+    // If MP3 decoder is running, process the next audio frame
     if (mp3 && mp3->isRunning()) {
+      // Process one frame of audio data
       if (!mp3->loop()) {
-        mp3->stop();
-        isPlaying = false;
-        updateDisplay();
+        // If loop() returns false, the stream has ended
+        mp3->stop();        // Stop the decoder
+        isPlaying = false;  // Update playback status
+        updateDisplay();    // Refresh the display
       }
     }
-    delay(1);
+    delay(1);  // Small delay to prevent monopolizing CPU
   }
 }
 
+/**
+ * @brief Initialize I2S audio interface
+ * Configures I2S pins and enables the audio amplifier
+ */
 void setupI2S() {
   // Configure I2S pins
   pinMode(I2S_SD, OUTPUT);
   digitalWrite(I2S_SD, HIGH); // Enable amplifier
 }
 
+/**
+ * @brief Start streaming an audio stream
+ * Stops any currently playing stream and begins playing a new one
+ * @param url URL of the audio stream to play
+ * @param name Human-readable name of the stream
+ */
 void startStream(const String& url, const String& name) {
-  stopStream();
+  stopStream();  // Stop any currently playing stream
   
-  currentStream = url;
-  currentStreamName = name;
-  isPlaying = true;
+  currentStream = url;      // Store the stream URL
+  currentStreamName = name; // Store the stream name
+  isPlaying = true;         // Set playback status to playing
   
-  file = new AudioFileSourceHTTPStream(url.c_str());
-  out = new AudioOutputI2S();
-  mp3 = new AudioGeneratorMP3();
+  // Create new audio components for the stream
+  file = new AudioFileSourceHTTPStream(url.c_str());  // HTTP stream source
+  out = new AudioOutputI2S();                         // I2S output
+  mp3 = new AudioGeneratorMP3();                      // MP3 decoder
   
   // Set volume (0.0 to 1.0)
   out->SetGain(volume / 100.0);
   
+  // Start the decoding process
   mp3->begin(file, out);
   
-  updateDisplay();
+  updateDisplay();  // Refresh the display with new playback info
 }
 
+/**
+ * @brief Stop the currently playing stream
+ * Cleans up audio components and resets playback state
+ */
 void stopStream() {
+  // Stop and delete the MP3 decoder if it exists
   if (mp3) {
     if (mp3->isRunning()) {
-      mp3->stop();
+      mp3->stop();  // Stop decoding
     }
     delete mp3;
     mp3 = nullptr;
   }
   
+  // Delete the I2S output if it exists
   if (out) {
     delete out;
     out = nullptr;
   }
   
+  // Delete the HTTP stream source if it exists
   if (file) {
     delete file;
     file = nullptr;
   }
   
-  isPlaying = false;
-  currentStream = "";
-  currentStreamName = "";
+  isPlaying = false;        // Set playback status to stopped
+  currentStream = "";       // Clear current stream URL
+  currentStreamName = "";   // Clear current stream name
   
-  updateDisplay();
+  updateDisplay();  // Refresh the display
 }
 
+/**
+ * @brief Load playlist from SPIFFS storage
+ * Reads playlist.json from SPIFFS and populates the playlist array
+ */
 void loadPlaylist() {
-  playlistCount = 0;
+  playlistCount = 0;  // Reset playlist count
   
+  // If playlist file doesn't exist, create a default empty one
   if (!SPIFFS.exists("/playlist.json")) {
     // Create default playlist
     File file = SPIFFS.open("/playlist.json", "w");
     if (file) {
-      file.print("[]");
+      file.print("[]");  // Empty JSON array
       file.close();
     }
     return;
   }
   
+  // Open the playlist file for reading
   File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) return;
+  if (!file) return;  // Return if file couldn't be opened
   
+  // Read the entire file into a buffer
   size_t size = file.size();
   std::unique_ptr<char[]> buf(new char[size + 1]);
   file.readBytes(buf.get(), size);
   file.close();
   
+  // Parse the JSON data
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
@@ -318,11 +395,13 @@ void loadPlaylist() {
     return;
   }
   
+  // Extract the array of streams
   JsonArray arr = doc.as<JsonArray>();
   playlistCount = 0;
   
+  // Populate the playlist array with stream information
   for (JsonVariant value : arr) {
-    if (playlistCount >= 20) break;
+    if (playlistCount >= 20) break;  // Limit to 20 entries
     
     playlist[playlistCount].name = value["name"].as<String>();
     playlist[playlistCount].url = value["url"].as<String>();
@@ -330,20 +409,33 @@ void loadPlaylist() {
   }
 }
 
+/**
+ * @brief Save playlist to SPIFFS storage
+ * Note: Playlist saving is handled by the web API, so this function is a placeholder
+ */
 void savePlaylist() {
   // Playlist saving is handled by the web API
 }
 
+/**
+ * @brief Initialize rotary encoder hardware
+ * Configures pins and attaches interrupt handlers for the rotary encoder
+ */
 void setupRotaryEncoder() {
+  // Configure rotary encoder pins
   pinMode(ROTARY_CLK, INPUT);
   pinMode(ROTARY_DT, INPUT);
-  pinMode(ROTARY_SW, INPUT_PULLUP);
+  pinMode(ROTARY_SW, INPUT_PULLUP);  // Enable internal pull-up resistor
   
+  // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(ROTARY_CLK), rotaryISR, CHANGE);
+  
+  // Attach interrupt handler for rotary encoder button press
   attachInterrupt(digitalPinToInterrupt(ROTARY_SW), []() {
     static unsigned long lastInterruptTime = 0;
     unsigned long interruptTime = millis();
     
+    // Debounce the button press (ignore if less than 200ms since last press)
     if (interruptTime - lastInterruptTime > 200) {
       buttonPressed = true;
     }
@@ -351,84 +443,114 @@ void setupRotaryEncoder() {
   }, FALLING);
 }
 
+/**
+ * @brief Rotary encoder interrupt service routine
+ * Called when the rotary encoder position changes
+ * This function runs in interrupt context and must be in IRAM
+ */
 void IRAM_ATTR rotaryISR() {
   static int lastCLK = 0;
-  int CLK = digitalRead(ROTARY_CLK);
-  int DT = digitalRead(ROTARY_DT);
+  int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
+  int DT = digitalRead(ROTARY_DT);    // Read data signal
   
+  // Only process when CLK transitions to high
   if (CLK != lastCLK && CLK == 1) {
+    // Determine rotation direction based on CLK and DT relationship
     if (DT != CLK) {
-      rotaryPosition++;
+      rotaryPosition++;      // Clockwise rotation
       rotaryCW = true;
     } else {
-      rotaryPosition--;
+      rotaryPosition--;      // Counter-clockwise rotation
       rotaryCW = false;
     }
   }
   lastCLK = CLK;
 }
 
+/**
+ * @brief Handle rotary encoder input
+ * Processes rotation and button press events from the rotary encoder
+ */
 void handleRotary() {
+  // Check if rotary encoder position has changed
   if (rotaryPosition != lastRotaryPosition) {
     int diff = rotaryPosition - lastRotaryPosition;
     
+    // Process clockwise rotation
     if (diff > 0) {
       // Rotate clockwise - volume up or next item
       if (isPlaying) {
+        // If playing, increase volume by 5% (capped at 100%)
         volume = min(100, volume + 5);
         if (out) {
-          out->SetGain(volume / 100.0);
+          out->SetGain(volume / 100.0);  // Update audio output gain
         }
       } else {
+        // If not playing, select next item in playlist
         currentSelection = (currentSelection + 1) % max(1, playlistCount);
       }
     } else {
+      // Process counter-clockwise rotation
       // Rotate counter-clockwise - volume down or previous item
       if (isPlaying) {
+        // If playing, decrease volume by 5% (capped at 0%)
         volume = max(0, volume - 5);
         if (out) {
-          out->SetGain(volume / 100.0);
+          out->SetGain(volume / 100.0);  // Update audio output gain
         }
       } else {
+        // If not playing, select previous item in playlist
         currentSelection = (currentSelection - 1 + max(1, playlistCount)) % max(1, playlistCount);
       }
     }
     
-    lastRotaryPosition = rotaryPosition;
-    updateDisplay();
+    lastRotaryPosition = rotaryPosition;  // Update last position
+    updateDisplay();                      // Refresh display with new values
   }
   
+  // Process button press if detected
   if (buttonPressed) {
-    buttonPressed = false;
+    buttonPressed = false;  // Reset button press flag
     
+    // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
+        // If currently playing, stop playback
         stopStream();
       } else {
+        // If not playing, start playback of selected stream
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
       }
     }
-    updateDisplay();
+    updateDisplay();  // Refresh display
   }
 }
 
+/**
+ * @brief Update the OLED display with current status
+ * Shows playback status, current stream, volume level, and playlist selection
+ */
 void updateDisplay() {
-  display.clear();
+  display.clear();  // Clear the display
   
   if (isPlaying) {
+    // Display when playing
     display.drawString(0, 0, "PLAYING");
     display.drawString(0, 15, currentStreamName);
     display.drawString(0, 30, "Volume: " + String(volume) + "%");
   } else {
+    // Display when stopped
     display.drawString(0, 0, "STOPPED");
     if (playlistCount > 0 && currentSelection < playlistCount) {
+      // Show selected playlist item
       display.drawString(0, 15, playlist[currentSelection].name);
       display.drawString(0, 30, "Press to play");
     } else {
+      // Show message when no streams available
       display.drawString(0, 15, "No streams");
     }
     display.drawString(0, 45, "Vol: " + String(volume) + "%");
   }
   
-  display.display();
+  display.display();  // Send buffer to display
 }
