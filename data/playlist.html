@@ -4,23 +4,69 @@
     <title>Manage Playlist - NetTuner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; text-align: center; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; font-size: 1.5em; margin-top: 10px; }
         .form-group { margin: 15px 0; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, textarea { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button { padding: 12px 15px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin: 5px 0; width: 100%; }
         .btn-primary { background: #4CAF50; color: white; }
         .btn-secondary { background: #2196F3; color: white; }
         .btn-danger { background: #f44336; color: white; }
         .btn-back { background: #9E9E9E; color: white; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #f2f2f2; }
         tr:hover { background-color: #f5f5f5; }
-        .actions { display: flex; gap: 5px; }
+        .actions { display: flex; flex-direction: column; gap: 5px; }
         .drag-handle { cursor: move; padding: 0 10px; }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            body { padding: 5px; }
+            .container { padding: 10px; }
+            h1 { font-size: 1.3em; }
+            table { font-size: 0.8em; }
+            th, td { padding: 6px 4px; }
+            button { padding: 10px 8px; font-size: 14px; margin: 3px 0; }
+            .form-group { margin: 10px 0; }
+        }
+        
+        /* Small screen table optimization */
+        @media (max-width: 480px) {
+            table, thead, tbody, th, td, tr { 
+                display: block; 
+            }
+            
+            thead tr { 
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            
+            tr { 
+                border: 1px solid #ccc; 
+                margin-bottom: 10px;
+                padding: 5px;
+            }
+            
+            td { 
+                border: none;
+                position: relative;
+                padding-left: 50%; 
+            }
+            
+            td:before { 
+                content: attr(data-label) ": ";
+                position: absolute;
+                left: 6px;
+                width: 45%; 
+                padding-right: 10px; 
+                white-space: nowrap;
+                font-weight: bold;
+            }
+        }
     </style>
 </head>
 <body>
@@ -81,10 +127,10 @@
             streams.forEach((stream, index) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></td>
-                    <td><input type="text" value="${stream.url}" onchange="updateStream(${index}, 'url', this.value)"></td>
-                    <td class="actions">
+                    <td data-label="Order">${index + 1}</td>
+                    <td data-label="Name"><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></td>
+                    <td data-label="URL"><input type="text" value="${stream.url}" onchange="updateStream(${index}, 'url', this.value)"></td>
+                    <td data-label="Actions" class="actions">
                         <button class="btn-danger" onclick="deleteStream(${index})">Delete</button>
                     </td>
                 `;
