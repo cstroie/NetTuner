@@ -90,6 +90,7 @@ SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
 volatile int rotaryPosition = 0;          ///< Current rotary encoder position
 volatile int lastRotaryPosition = 0;      ///< Last recorded rotary encoder position
 volatile bool rotaryCW = false;           ///< Rotation direction flag (true = clockwise)
+volatile unsigned long lastRotaryTime = 0;///< Timestamp of last rotary encoder event
 bool buttonPressed = false;               ///< Rotary encoder button press flag
 
 /**
@@ -516,8 +517,8 @@ void setupRotaryEncoder() {
     static unsigned long lastInterruptTime = 0;
     unsigned long interruptTime = millis();
     
-    // Debounce the button press (ignore if less than 200ms since last press)
-    if (interruptTime - lastInterruptTime > 200) {
+    // Debounce the button press (ignore if less than 50ms since last press)
+    if (interruptTime - lastInterruptTime > 50) {
       buttonPressed = true;
     }
     lastInterruptTime = interruptTime;
@@ -531,6 +532,13 @@ void setupRotaryEncoder() {
  */
 void IRAM_ATTR rotaryISR() {
   static int lastCLK = 0;
+  unsigned long currentTime = millis();
+  
+  // Debounce rotary encoder (ignore if less than 2ms since last event)
+  if (currentTime - lastRotaryTime < 2) {
+    return;
+  }
+  
   int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
   int DT = digitalRead(ROTARY_DT);    // Read data signal
   
@@ -544,6 +552,7 @@ void IRAM_ATTR rotaryISR() {
       rotaryPosition--;      // Counter-clockwise rotation
       rotaryCW = false;
     }
+    lastRotaryTime = currentTime;  // Update last event time
   }
   lastCLK = CLK;
 }
