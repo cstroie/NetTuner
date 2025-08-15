@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Web Radio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .controls { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
+        button { padding: 12px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
+        .play-btn { background: #4CAF50; color: white; }
+        .stop-btn { background: #f44336; color: white; }
+        .playlist-btn { background: #2196F3; color: white; }
+        select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; }
+        .volume-control { display: flex; align-items: center; gap: 10px; }
+        .stream-info { margin: 15px 0; padding: 10px; background: #e9e9e9; border-radius: 5px; }
+        .status { text-align: center; font-weight: bold; }
+        .playing { color: #4CAF50; }
+        .stopped { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ESP32 Web Radio</h1>
+        
+        <div class="stream-info">
+            <div id="status" class="status stopped">Stopped</div>
+            <div id="currentStream">No stream selected</div>
+        </div>
+        
+        <div class="controls">
+            <select id="streamSelect">
+                <option value="">Select a stream...</option>
+            </select>
+            
+            <button class="play-btn" onclick="playStream()">Play</button>
+            <button class="stop-btn" onclick="stopStream()">Stop</button>
+            <button class="playlist-btn" onclick="window.location='/playlist.html'">Manage Playlist</button>
+            
+            <div class="volume-control">
+                <label for="volume">Volume:</label>
+                <input type="range" id="volume" min="0" max="100" value="50" oninput="setVolume(this.value)">
+                <span id="volumeValue">50%</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let streams = [];
+        
+        // Load playlist and status
+        async function loadStreams() {
+            try {
+                const response = await fetch('/api/streams');
+                streams = await response.json();
+                const select = document.getElementById('streamSelect');
+                select.innerHTML = '<option value="">Select a stream...</option>';
+                streams.forEach(stream => {
+                    const option = document.createElement('option');
+                    option.value = stream.url;
+                    option.textContent = stream.name;
+                    option.dataset.name = stream.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading streams:', error);
+            }
+        }
+        
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const status = await response.json();
+                const statusElement = document.getElementById('status');
+                const currentElement = document.getElementById('currentStream');
+                
+                statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
+                statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                currentElement.textContent = status.currentStreamName || 'No stream selected';
+                
+                document.getElementById('volume').value = status.volume;
+                document.getElementById('volumeValue').textContent = status.volume + '%';
+            } catch (error) {
+                console.error('Error loading status:', error);
+            }
+        }
+        
+        async function playStream() {
+            const select = document.getElementById('streamSelect');
+            const option = select.options[select.selectedIndex];
+            const url = select.value;
+            const name = option ? option.dataset.name : '';
+            
+            if (!url) {
+                alert('Please select a stream');
+                return;
+            }
+            
+            try {
+                await fetch('/api/play', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
+                });
+                loadStatus();
+            } catch (error) {
+                console.error('Error playing stream:', error);
+            }
+        }
+        
+        async function stopStream() {
+            try {
+                await fetch('/api/stop', { method: 'POST' });
+                loadStatus();
+            } catch (error) {
+                console.error('Error stopping stream:', error);
+            }
+        }
+        
+        async function setVolume(volume) {
+            try {
+                await fetch('/api/volume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'volume=' + volume
+                });
+                document.getElementById('volumeValue').textContent = volume + '%';
+            } catch (error) {
+                console.error('Error setting volume:', error);
+            }
+        }
+        
+        // Initialize
+        setInterval(loadStatus, 2000);
+        window.onload = function() {
+            loadStreams();
+            loadStatus();
+        };
+    </script>
+</body>
+</html>

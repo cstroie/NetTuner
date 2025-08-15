@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manage Playlist - ESP32 Web Radio</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, textarea { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-secondary { background: #2196F3; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-back { background: #9E9E9E; color: white; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f2f2f2; }
+        tr:hover { background-color: #f5f5f5; }
+        .actions { display: flex; gap: 5px; }
+        .drag-handle { cursor: move; padding: 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manage Playlist</h1>
+        
+        <div class="form-group">
+            <label for="name">Station Name:</label>
+            <input type="text" id="name" placeholder="Enter station name">
+        </div>
+        
+        <div class="form-group">
+            <label for="url">Stream URL:</label>
+            <input type="url" id="url" placeholder="Enter stream URL (http://...)">
+        </div>
+        
+        <div class="form-group">
+            <button class="btn-primary" onclick="addStream()">Add Stream</button>
+            <button class="btn-back" onclick="window.location='/'">Back to Player</button>
+        </div>
+        
+        <h2>Current Playlist</h2>
+        <table id="playlistTable">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="playlistBody">
+            </tbody>
+        </table>
+        
+        <div class="form-group">
+            <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
+        </div>
+    </div>
+
+    <script>
+        let streams = [];
+        
+        async function loadStreams() {
+            try {
+                const response = await fetch('/api/streams');
+                streams = await response.json();
+                renderPlaylist();
+            } catch (error) {
+                console.error('Error loading streams:', error);
+            }
+        }
+        
+        function renderPlaylist() {
+            const tbody = document.getElementById('playlistBody');
+            tbody.innerHTML = '';
+            
+            streams.forEach((stream, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></td>
+                    <td><input type="text" value="${stream.url}" onchange="updateStream(${index}, 'url', this.value)"></td>
+                    <td class="actions">
+                        <button class="btn-danger" onclick="deleteStream(${index})">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function addStream() {
+            const name = document.getElementById('name').value;
+            const url = document.getElementById('url').value;
+            
+            if (!name || !url) {
+                alert('Please enter both name and URL');
+                return;
+            }
+            
+            streams.push({ name: name, url: url });
+            renderPlaylist();
+            
+            // Clear form
+            document.getElementById('name').value = '';
+            document.getElementById('url').value = '';
+        }
+        
+        function updateStream(index, field, value) {
+            if (streams[index]) {
+                streams[index][field] = value;
+            }
+        }
+        
+        function deleteStream(index) {
+            if (confirm('Are you sure you want to delete this stream?')) {
+                streams.splice(index, 1);
+                renderPlaylist();
+            }
+        }
+        
+        async function savePlaylist() {
+            try {
+                await fetch('/api/streams', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(streams)
+                });
+                alert('Playlist saved successfully!');
+            } catch (error) {
+                console.error('Error saving playlist:', error);
+                alert('Error saving playlist');
+            }
+        }
+        
+        // Initialize
+        window.onload = function() {
+            loadStreams();
+        };
+    </script>
+</body>
+</html>
