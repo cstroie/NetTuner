@@ -88,9 +88,81 @@ SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
  * @brief Rotary encoder state variables
  * Track position, direction, timing, and button state for the rotary encoder
  */
-volatile int rotaryPosition = 0;          ///< Current rotary encoder position
-volatile unsigned long lastRotaryTime = 0;///< Timestamp of last rotary encoder event
-bool buttonPressed = false;               ///< Rotary encoder button press flag
+class RotaryEncoder {
+private:
+  volatile int position = 0;
+  volatile int lastCLK = 0;
+  volatile unsigned long lastRotaryTime = 0;
+  bool buttonPressedFlag = false;
+
+public:
+  /**
+   * @brief Handle rotary encoder rotation
+   * This replaces the previous ISR with a cleaner approach
+   */
+  void handleRotation() {
+    unsigned long currentTime = millis();
+    
+    // Debounce rotary encoder (ignore if less than 2ms since last event)
+    if (currentTime - lastRotaryTime < 2) {
+      return;
+    }
+    
+    int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
+    int DT = digitalRead(ROTARY_DT);    // Read data signal
+    
+    // Only process when CLK transitions to high
+    if (CLK != lastCLK && CLK == 1) {
+      // Determine rotation direction based on CLK and DT relationship
+      if (DT != CLK) {
+        position++;      // Clockwise rotation
+      } else {
+        position--;      // Counter-clockwise rotation
+      }
+      lastRotaryTime = currentTime;  // Update last event time
+    }
+    lastCLK = CLK;
+  }
+  
+  /**
+   * @brief Handle button press
+   */
+  void handleButtonPress() {
+    static unsigned long lastInterruptTime = 0;
+    unsigned long interruptTime = millis();
+    
+    // Debounce the button press (ignore if less than 50ms since last press)
+    if (interruptTime - lastInterruptTime > 50) {
+      buttonPressedFlag = true;
+    }
+    lastInterruptTime = interruptTime;
+  }
+  
+  /**
+   * @brief Get current position
+   */
+  int getPosition() const {
+    return position;
+  }
+  
+  /**
+   * @brief Set position
+   */
+  void setPosition(int pos) {
+    position = pos;
+  }
+  
+  /**
+   * @brief Check if button was pressed
+   */
+  bool wasButtonPressed() {
+    bool result = buttonPressedFlag;
+    buttonPressedFlag = false;
+    return result;
+  }
+};
+
+RotaryEncoder rotaryEncoder;  ///< Global rotary encoder instance
 
 /**
  * @brief Playlist data structure
@@ -749,14 +821,7 @@ void setupRotaryEncoder() {
   
   // Attach interrupt handler for rotary encoder button press
   attachInterrupt(digitalPinToInterrupt(ROTARY_SW), []() {
-    static unsigned long lastInterruptTime = 0;
-    unsigned long interruptTime = millis();
-    
-    // Debounce the button press (ignore if less than 50ms since last press)
-    if (interruptTime - lastInterruptTime > 50) {
-      buttonPressed = true;
-    }
-    lastInterruptTime = interruptTime;
+    rotaryEncoder.handleButtonPress();
   }, FALLING);
 }
 
@@ -767,28 +832,7 @@ void setupRotaryEncoder() {
  * Kept minimal to reduce interrupt execution time
  */
 void IRAM_ATTR rotaryISR() {
-  static int lastCLK = 0;
-  unsigned long currentTime = millis();
-  
-  // Debounce rotary encoder (ignore if less than 2ms since last event)
-  if (currentTime - lastRotaryTime < 2) {
-    return;
-  }
-  
-  int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
-  int DT = digitalRead(ROTARY_DT);    // Read data signal
-  
-  // Only process when CLK transitions to high
-  if (CLK != lastCLK && CLK == 1) {
-    // Determine rotation direction based on CLK and DT relationship
-    if (DT != CLK) {
-      rotaryPosition++;      // Clockwise rotation
-    } else {
-      rotaryPosition--;      // Counter-clockwise rotation
-    }
-    lastRotaryTime = currentTime;  // Update last event time
-  }
-  lastCLK = CLK;
+  rotaryEncoder.handleRotation();
 }
 
 /**
@@ -799,8 +843,9 @@ void handleRotary() {
   static int lastRotaryPosition = 0;
   
   // Check if rotary encoder position has changed
-  if (rotaryPosition != lastRotaryPosition) {
-    int diff = rotaryPosition - lastRotaryPosition;
+  int currentPosition = rotaryEncoder.getPosition();
+  if (currentPosition != lastRotaryPosition) {
+    int diff = currentPosition - lastRotaryPosition;
     
     // Process clockwise rotation
     if (diff > 0) {
@@ -830,14 +875,12 @@ void handleRotary() {
       }
     }
     
-    lastRotaryPosition = rotaryPosition;  // Update last position
+    lastRotaryPosition = currentPosition;  // Update last position
     updateDisplay();                      // Refresh display with new values
   }
   
   // Process button press if detected
-  if (buttonPressed) {
-    buttonPressed = false;  // Reset button press flag
-    
+  if (rotaryEncoder.wasButtonPressed()) {
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
