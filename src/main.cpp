@@ -1,6 +1,6 @@
 /*
  * NetTuner - An ESP32-based internet radio player
- * Copyright (C) 2025 Your Name
+ * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
