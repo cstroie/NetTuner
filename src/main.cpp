@@ -117,12 +117,12 @@ TaskHandle_t audioTaskHandle = NULL;  ///< Handle for the audio processing task
 // Function declarations
 void audioTask(void *parameter);
 void setupI2S();
-void startStream(const String& url, const String& name);
+void startStream(const char* url, const char* name);
 void stopStream();
 void loadPlaylist();
 void savePlaylist();
 void setupRotaryEncoder();
-void rotaryISR();
+void IRAM_ATTR rotaryISR();
 void updateDisplay();
 void handleRotary();
 
