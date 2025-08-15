@@ -106,7 +106,7 @@ void stopStream();
 void loadPlaylist();
 void savePlaylist();
 void setupRotaryEncoder();
-void IRAM_ATTR rotaryISR();
+void rotaryISR();
 void updateDisplay();
 void handleRotary();
 
