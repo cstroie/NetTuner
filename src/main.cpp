@@ -34,8 +34,9 @@
  * @brief WiFi network credentials
  * These should be updated with your actual network credentials
  */
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+// WiFi credentials will be stored in SPIFFS
+char ssid[64] = "";
+char password[64] = "";
 
 /**
  * @brief Web server instance running on port 80
@@ -135,6 +136,11 @@ void handlePlay();
 void handleStop();
 void handleVolume();
 void handleStatus();
+void handleWiFiConfig();
+void handleWiFiScan();
+void handleWiFiSave();
+void loadWiFiCredentials();
+void saveWiFiCredentials();
 
 /**
  * @brief Arduino setup function
@@ -158,25 +164,37 @@ void setup() {
   display.drawString(0, 0, "Connecting WiFi...");
   display.display();
   
-  // Connect to WiFi
-  WiFi.begin(ssid, password);
-  int wifiAttempts = 0;
-  while (WiFi.status() != WL_CONNECTED && wifiAttempts < 20) {
-    delay(500);
-    Serial.print(".");
-    wifiAttempts++;
-  }
+  // Load WiFi credentials
+  loadWiFiCredentials();
   
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("Connected to WiFi");
-    display.clear();
-    display.drawString(0, 0, "WiFi Connected");
-    display.drawString(0, 15, WiFi.localIP().toString());
-    display.display();
+  // Connect to WiFi
+  if (strlen(ssid) > 0) {
+    WiFi.begin(ssid, password);
+    int wifiAttempts = 0;
+    while (WiFi.status() != WL_CONNECTED && wifiAttempts < 20) {
+      delay(500);
+      Serial.print(".");
+      wifiAttempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("Connected to WiFi");
+      display.clear();
+      display.drawString(0, 0, "WiFi Connected");
+      display.drawString(0, 15, WiFi.localIP().toString());
+      display.display();
+    } else {
+      Serial.println("Failed to connect to WiFi");
+      display.clear();
+      display.drawString(0, 0, "WiFi Failed");
+      display.drawString(0, 15, "Configure WiFi");
+      display.display();
+    }
   } else {
-    Serial.println("Failed to connect to WiFi");
+    Serial.println("No WiFi configured");
     display.clear();
-    display.drawString(0, 0, "WiFi Failed");
+    display.drawString(0, 0, "No WiFi Config");
+    display.drawString(0, 15, "Configure WiFi");
     display.display();
   }
   
@@ -209,6 +227,9 @@ void setup() {
   server.on("/api/stop", HTTP_POST, handleStop);
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/status", HTTP_GET, handleStatus);
+  server.on("/wifi", HTTP_GET, handleWiFiConfig);
+  server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
+  server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
   
   server.serveStatic("/", SPIFFS, "/")
     .setDefaultFile("index.html")
@@ -228,6 +249,220 @@ void loop() {
   server.handleClient();  // Process incoming web requests
   handleRotary();         // Process rotary encoder input
   delay(10);              // Small delay to prevent busy waiting
+}
+
+/**
+ * @brief Handle WiFi configuration page
+ * Serves the WiFi configuration page
+ */
+void handleWiFiConfig() {
+  String html = R"=====(
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NetTuner - WiFi Configuration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, select, button { width: 100%; padding: 10px; margin: 5px 0; }
+    button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    .network { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; }
+    .network:hover { background-color: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>NetTuner - WiFi Configuration</h1>
+  <div id="networks">Scanning for networks...</div>
+  <form id="wifiForm">
+    <input type="text" id="ssid" placeholder="Enter SSID" required>
+    <input type="password" id="password" placeholder="Enter Password">
+    <button type="submit">Save Configuration</button>
+  </form>
+  <button onclick="scanNetworks()">Refresh Networks</button>
+  <button onclick="window.location.href='/'">Back to Main</button>
+
+  <script>
+    function scanNetworks() {
+      document.getElementById('networks').innerHTML = 'Scanning for networks...';
+      fetch('/api/wifiscan')
+        .then(response => response.json())
+        .then(data => {
+          let html = '<h2>Available Networks:</h2>';
+          data.forEach(network => {
+            html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
+          });
+          document.getElementById('networks').innerHTML = html;
+        })
+        .catch(error => {
+          document.getElementById('networks').innerHTML = 'Error scanning networks';
+          console.error('Error:', error);
+        });
+    }
+
+    function selectNetwork(ssid) {
+      document.getElementById('ssid').value = ssid;
+    }
+
+    document.getElementById('wifiForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const ssid = document.getElementById('ssid').value;
+      const password = document.getElementById('password').value;
+      
+      fetch('/api/wifisave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssid: ssid, password: password })
+      })
+      .then(response => response.text())
+      .then(data => {
+        alert(data);
+        if (data === 'WiFi configuration saved') {
+          window.location.href = '/';
+        }
+      })
+      .catch(error => {
+        alert('Error saving configuration');
+        console.error('Error:', error);
+      });
+    });
+
+    // Scan networks on page load
+    scanNetworks();
+  </script>
+</body>
+</html>
+)=====";
+  server.send(200, "text/html", html);
+}
+
+/**
+ * @brief Handle WiFi network scan
+ * Returns a list of available WiFi networks as JSON
+ */
+void handleWiFiScan() {
+  int n = WiFi.scanNetworks();
+  String json = "[";
+  
+  for (int i = 0; i < n; ++i) {
+    if (i > 0) json += ",";
+    json += "{";
+    json += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
+    json += "\"rssi\":" + String(WiFi.RSSI(i));
+    json += "}";
+  }
+  json += "]";
+  
+  server.send(200, "application/json", json);
+}
+
+/**
+ * @brief Handle WiFi configuration save
+ * Saves WiFi credentials to SPIFFS
+ */
+void handleWiFiSave() {
+  if (!server.hasArg("plain")) {
+    server.send(400, "text/plain", "Missing JSON data");
+    return;
+  }
+  
+  String json = server.arg("plain");
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, json);
+  
+  if (error) {
+    server.send(400, "text/plain", "Invalid JSON");
+    return;
+  }
+  
+  if (!doc.containsKey("ssid")) {
+    server.send(400, "text/plain", "Missing SSID");
+    return;
+  }
+  
+  strncpy(ssid, doc["ssid"], sizeof(ssid) - 1);
+  ssid[sizeof(ssid) - 1] = '\0';
+  
+  if (doc.containsKey("password")) {
+    strncpy(password, doc["password"], sizeof(password) - 1);
+    password[sizeof(password) - 1] = '\0';
+  } else {
+    password[0] = '\0';
+  }
+  
+  saveWiFiCredentials();
+  server.send(200, "text/plain", "WiFi configuration saved");
+}
+
+/**
+ * @brief Load WiFi credentials from SPIFFS
+ */
+void loadWiFiCredentials() {
+  if (!SPIFFS.exists("/wifi.json")) {
+    Serial.println("WiFi config file not found");
+    return;
+  }
+  
+  File file = SPIFFS.open("/wifi.json", "r");
+  if (!file) {
+    Serial.println("Failed to open WiFi config file");
+    return;
+  }
+  
+  size_t size = file.size();
+  if (size > 512) {
+    Serial.println("WiFi config file too large");
+    file.close();
+    return;
+  }
+  
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.println("Failed to read WiFi config file");
+    file.close();
+    return;
+  }
+  buf[size] = '\0';
+  file.close();
+  
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.println("Failed to parse WiFi config JSON");
+    return;
+  }
+  
+  if (doc.containsKey("ssid")) {
+    strncpy(ssid, doc["ssid"], sizeof(ssid) - 1);
+    ssid[sizeof(ssid) - 1] = '\0';
+  }
+  
+  if (doc.containsKey("password")) {
+    strncpy(password, doc["password"], sizeof(password) - 1);
+    password[sizeof(password) - 1] = '\0';
+  }
+  
+  Serial.println("Loaded WiFi credentials from SPIFFS");
+}
+
+/**
+ * @brief Save WiFi credentials to SPIFFS
+ */
+void saveWiFiCredentials() {
+  DynamicJsonDocument doc(512);
+  doc["ssid"] = ssid;
+  doc["password"] = password;
+  
+  File file = SPIFFS.open("/wifi.json", "w");
+  if (!file) {
+    Serial.println("Failed to open WiFi config file for writing");
+    return;
+  }
+  
+  serializeJson(doc, file);
+  file.close();
+  
+  Serial.println("Saved WiFi credentials to SPIFFS");
 }
 
 /**
