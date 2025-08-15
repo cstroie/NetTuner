@@ -91,7 +91,7 @@ SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
 class RotaryEncoder {
 private:
   volatile int position = 0;
-  volatile int lastCLK = 0;
+  int lastCLK = 0;
   volatile unsigned long lastRotaryTime = 0;
   bool buttonPressedFlag = false;
 
