@@ -304,6 +304,7 @@ void setup() {
   server.on("/", HTTP_GET, handleRoot);
   server.on("/playlist.html", HTTP_GET, handlePlaylistPage);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
+  server.on("/api/streams.json", HTTP_GET, handleGetStreamsJSON);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/play", HTTP_POST, handlePlay);
   server.on("/api/stop", HTTP_POST, handleStop);
@@ -984,6 +985,25 @@ void handleGetStreams() {
   }
   server.streamFile(file, "audio/x-mpegurl");
   file.close();
+}
+
+/**
+ * @brief Handle GET request for streams as JSON
+ * Returns the current playlist as JSON array
+ */
+void handleGetStreamsJSON() {
+  String json = "[";
+  
+  for (int i = 0; i < playlistCount; i++) {
+    if (i > 0) json += ",";
+    json += "{";
+    json += "\"name\":\"" + String(playlist[i].name) + "\",";
+    json += "\"url\":\"" + String(playlist[i].url) + "\"";
+    json += "}";
+  }
+  json += "]";
+  
+  server.send(200, "application/json", json);
 }
 
 /**
