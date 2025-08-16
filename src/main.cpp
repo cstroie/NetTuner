@@ -209,7 +209,7 @@ TaskHandle_t audioTaskHandle = NULL;  ///< Handle for the audio processing task
 
 // Function declarations
 void audioTask(void *parameter);
-void setupI2S();
+void setupAudioOutput();
 void startStream(const char* url, const char* name);
 void stopStream();
 void loadPlaylist();
