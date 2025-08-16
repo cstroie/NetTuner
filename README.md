@@ -73,7 +73,6 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 | `/wifi`          | GET    | WiFi configuration           |
 | `/api/streams`   | GET    | Get all streams in playlist  |
 | `/api/streams`   | POST   | Update playlist              |
-| `/api/streams.m3u`| GET   | Download playlist as M3U     |
 | `/api/play`      | POST   | Start playing a stream       |
 | `/api/stop`      | POST   | Stop playback                |
 | `/api/volume`    | POST   | Set volume level             |

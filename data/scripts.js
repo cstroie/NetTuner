@@ -674,7 +674,8 @@ async function uploadM3U() {
         
         // Convert M3U to JSON
         const jsonData = convertM3UToJSON(fileContent);
-        
+        console.log('JSON content:', jsonData);
+    
         try {
             const response = await fetch('/api/streams', {
                 method: 'POST',
