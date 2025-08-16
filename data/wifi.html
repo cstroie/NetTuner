@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NetTuner - WiFi Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>NetTuner - WiFi Configuration</h1>
+        <div id="networks">Scanning for networks...</div>
+        <form id="wifiForm">
+            <div class="form-group">
+                <label for="ssid">SSID:</label>
+                <input type="text" id="ssid" name="ssid" placeholder="Enter SSID" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter Password">
+            </div>
+            <button type="submit" class="save-btn">Save Configuration</button>
+        </form>
+        <div class="form-actions">
+            <button onclick="scanNetworks()">Refresh Networks</button>
+            <button onclick="window.location.href='/'">Back to Main</button>
+        </div>
+    </div>
+
+    <script>
+        // Setup form submit handler
+        document.getElementById('wifiForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ssidInput = document.getElementById('ssid');
+            const passwordInput = document.getElementById('password');
+            
+            if (!ssidInput || !passwordInput) return;
+            
+            const ssid = ssidInput.value;
+            const password = passwordInput.value;
+            
+            fetch('/api/wifisave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid: ssid, password: password })
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+                if (data === 'WiFi configuration saved') {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                alert('Error saving configuration');
+                console.error('Error:', error);
+            });
+        });
+        
+        // Scan networks on page load
+        scanNetworks();
+        
+        function scanNetworks() {
+            const networksDiv = document.getElementById('networks');
+            if (!networksDiv) return;
+            
+            // Show loading state
+            networksDiv.innerHTML = 'Scanning for networks...';
+            
+            // Disable scan button during scan
+            const scanButton = document.querySelector('button[onclick="scanNetworks()"]');
+            const originalText = scanButton ? scanButton.textContent : null;
+            if (scanButton) {
+                scanButton.textContent = 'Scanning...';
+                scanButton.disabled = true;
+            }
+            
+            fetch('/api/wifiscan')
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<h2>Available Networks:</h2>';
+                    data.forEach(network => {
+                        html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
+                    });
+                    networksDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    networksDiv.innerHTML = 'Error scanning networks';
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    // Restore scan button
+                    if (scanButton) {
+                        scanButton.textContent = originalText || 'Refresh Networks';
+                        scanButton.disabled = false;
+                    }
+                });
+        }
+        
+        function selectNetwork(ssid) {
+            const ssidInput = document.getElementById('ssid');
+            if (ssidInput) {
+                ssidInput.value = ssid;
+            }
+        }
+    </script>
+</body>
+</html>
