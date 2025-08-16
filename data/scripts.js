@@ -168,6 +168,9 @@ let heartbeatInterval = null;
 let connectionStartTime = 0;
 const connectionTimeout = 10000; // 10 seconds timeout for connection
 
+// Add a connection lock to prevent race conditions
+let connectionLock = false;
+
 function connectWebSocket() {
     // Clear any existing reconnection timeout
     if (reconnectTimeout) {
@@ -182,7 +185,7 @@ function connectWebSocket() {
     }
     
     // Prevent multiple connection attempts with atomic check
-    if (isConnecting) {
+    if (connectionLock || isConnecting) {
         return;
     }
     
@@ -198,6 +201,8 @@ function connectWebSocket() {
         return;
     }
     
+    // Acquire connection lock
+    connectionLock = true;
     isConnecting = true;
     connectionStartTime = Date.now();
     
@@ -228,6 +233,7 @@ function connectWebSocket() {
                 if (ws && ws.readyState === WebSocket.CONNECTING) {
                     console.log('WebSocket connection timeout');
                     isConnecting = false;
+                    connectionLock = false;
                     // Force close to trigger onclose handler
                     if (ws) {
                         ws.onclose = null; // Prevent reconnection trigger
@@ -244,6 +250,12 @@ function connectWebSocket() {
                         console.log('Max reconnect attempts reached. Stopping reconnection.');
                         showToast('Connection failed. Please refresh the page.', 'error');
                     }
+                } else {
+                    // Clear timer if connection is no longer in CONNECTING state
+                    if (connectionTimer) {
+                        clearTimeout(connectionTimer);
+                        connectionTimer = null;
+                    }
                 }
             }, connectionTimeout);
         };
@@ -256,6 +268,7 @@ function connectWebSocket() {
                 connectionTimer = null;
             }
             isConnecting = false;
+            connectionLock = false;
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
@@ -271,6 +284,10 @@ function connectWebSocket() {
                     } catch (e) {
                         console.error('Error sending ping:', e);
                     }
+                } else if (heartbeatInterval) {
+                    // Clear heartbeat if connection is no longer open
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
                 }
             }, 25000); // Send ping every 25 seconds
         };
@@ -331,6 +348,7 @@ function connectWebSocket() {
                 connectionTimer = null;
             }
             isConnecting = false;
+            connectionLock = false;
             
             // Clear heartbeat interval on close
             if (heartbeatInterval) {
@@ -374,6 +392,7 @@ function connectWebSocket() {
             clearTimeout(connectionTimer);
         }
         isConnecting = false;
+        connectionLock = false;
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
