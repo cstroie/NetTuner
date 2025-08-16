@@ -409,7 +409,7 @@ async function playStream() {
     console.log('Playing stream:', { url, name });
     
     if (!url) {
-        alert('Please select a stream');
+        showToast('Please select a stream', 'warning');
         return;
     }
     
@@ -469,6 +469,8 @@ async function stopStream() {
         console.log('Stop response status:', response.status);
         if (response.ok) {
             showToast('Stream stopped', 'info');
+        } else {
+            throw new Error('Failed to stop stream');
         }
     } catch (error) {
         console.error('Error stopping stream:', error);
@@ -485,6 +487,9 @@ async function stopStream() {
 async function setVolume(volume) {
     // Show loading state
     const volumeControl = document.getElementById('volume');
+    const volumeValue = document.getElementById('volumeValue');
+    const originalVolume = volumeControl ? volumeControl.value : null;
+    
     if (volumeControl) {
         volumeControl.disabled = true;
     }
@@ -501,15 +506,23 @@ async function setVolume(volume) {
         });
         console.log('Volume response status:', response.status);
         if (response.ok) {
-            const volumeValue = document.getElementById('volumeValue');
             if (volumeValue) {
                 volumeValue.textContent = volume + '%';
             }
             showToast('Volume set to ' + volume + '%', 'info');
+        } else {
+            throw new Error('Failed to set volume');
         }
     } catch (error) {
         console.error('Error setting volume:', error);
         showToast('Error setting volume: ' + error.message, 'error');
+        // Restore original volume value on error
+        if (volumeControl && originalVolume) {
+            volumeControl.value = originalVolume;
+        }
+        if (volumeValue && originalVolume) {
+            volumeValue.textContent = originalVolume + '%';
+        }
     } finally {
         // Restore control state
         if (volumeControl) {
