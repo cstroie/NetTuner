@@ -651,14 +651,16 @@ async function uploadJSON() {
     console.log('Uploading JSON playlist file:', file);
     
     if (!file) {
-        alert('Please select a playlist file');
+        showToast('Please select a playlist file', 'warning');
         return;
     }
     
     // Check file extension
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.json')) {
-        alert('Please select a JSON file');
+        showToast('Please select a JSON file', 'warning');
+        // Clear file input on error
+        fileInput.value = '';
         return;
     }
     
@@ -694,18 +696,27 @@ async function uploadJSON() {
             if (response.ok) {
                 // Reload streams after successful upload
                 loadStreams();
-                // Clear file input
-                fileInput.value = '';
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
             showToast('Error uploading playlist file: ' + error.message, 'error');
         } finally {
+            // Clear file input in all cases
+            fileInput.value = '';
             // Restore button state
             if (uploadButton) {
                 uploadButton.textContent = originalText || 'Upload JSON';
                 uploadButton.disabled = false;
             }
+        }
+    };
+    reader.onerror = function() {
+        showToast('Error reading file', 'error');
+        fileInput.value = '';
+        // Restore button state
+        if (uploadButton) {
+            uploadButton.textContent = originalText || 'Upload JSON';
+            uploadButton.disabled = false;
         }
     };
     reader.readAsText(file);
@@ -718,14 +729,16 @@ async function uploadM3U() {
     console.log('Uploading M3U playlist file:', file);
     
     if (!file) {
-        alert('Please select a playlist file');
+        showToast('Please select a playlist file', 'warning');
         return;
     }
     
     // Check file extension
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
-        alert('Please select an M3U file');
+        showToast('Please select an M3U file', 'warning');
+        // Clear file input on error
+        fileInput.value = '';
         return;
     }
     
@@ -743,11 +756,11 @@ async function uploadM3U() {
         const fileContent = e.target.result;
         console.log('File content:', fileContent);
         
-        // Convert M3U to JSON
-        const jsonData = convertM3UToJSON(fileContent);
-        console.log('JSON content:', jsonData);
-    
         try {
+            // Convert M3U to JSON
+            const jsonData = convertM3UToJSON(fileContent);
+            console.log('JSON content:', jsonData);
+        
             const response = await fetch('/api/streams', {
                 method: 'POST',
                 headers: { 
@@ -765,18 +778,27 @@ async function uploadM3U() {
             if (response.ok) {
                 // Reload streams after successful upload
                 loadStreams();
-                // Clear file input
-                fileInput.value = '';
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
             showToast('Error uploading playlist file: ' + error.message, 'error');
         } finally {
+            // Clear file input in all cases
+            fileInput.value = '';
             // Restore button state
             if (uploadButton) {
                 uploadButton.textContent = originalText || 'Upload M3U';
                 uploadButton.disabled = false;
             }
+        }
+    };
+    reader.onerror = function() {
+        showToast('Error reading file', 'error');
+        fileInput.value = '';
+        // Restore button state
+        if (uploadButton) {
+            uploadButton.textContent = originalText || 'Upload M3U';
+            uploadButton.disabled = false;
         }
     };
     reader.readAsText(file);
