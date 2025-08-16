@@ -969,6 +969,10 @@ document.addEventListener('DOMContentLoaded', function() {
         initMainPage();
     } else if (document.getElementById('playlistBody')) {
         initPlaylistPage();
+    } else if (document.getElementById('output')) {
+        initConfigPage();
+    } else if (document.getElementById('ssid')) {
+        initWiFiPage();
     }
 });
 
