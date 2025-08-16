@@ -175,9 +175,13 @@ function connectWebSocket() {
         heartbeatInterval = null;
     }
     
-    // Prevent multiple connection attempts
-    if (isConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) || 
-        (ws && ws.readyState === WebSocket.CLOSING)) {
+    // Prevent multiple connection attempts with atomic check
+    if (isConnecting) {
+        return;
+    }
+    
+    // More comprehensive state check
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return;
     }
     
@@ -197,24 +201,63 @@ function connectWebSocket() {
     const wsUrl = `${protocol}//${host}:81/`;
     
     try {
+        // Ensure we don't have an existing connection
+        if (ws) {
+            ws.onopen = null;
+            ws.onmessage = null;
+            ws.onclose = null;
+            ws.onerror = null;
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
+            ws = null;
+        }
+        
         ws = new WebSocket(wsUrl);
         
-        // Set up connection timeout
-        const connectionTimer = setTimeout(() => {
-            if (ws && ws.readyState === WebSocket.CONNECTING) {
-                console.log('WebSocket connection timeout');
-                ws.close(); // Force close to trigger onclose handler
-            }
-        }, connectionTimeout);
+        // Set up connection timeout with proper cleanup
+        let connectionTimer = null;
+        const setupConnectionTimeout = () => {
+            connectionTimer = setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.CONNECTING) {
+                    console.log('WebSocket connection timeout');
+                    isConnecting = false;
+                    // Force close to trigger onclose handler
+                    if (ws) {
+                        ws.onclose = null; // Prevent reconnection trigger
+                        ws.close();
+                        ws = null;
+                    }
+                    // Schedule reconnection
+                    reconnectAttempts++;
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                        console.log(`Reconnecting in ${timeout}ms`);
+                        reconnectTimeout = setTimeout(connectWebSocket, timeout);
+                    } else {
+                        console.log('Max reconnect attempts reached. Stopping reconnection.');
+                        showToast('Connection failed. Please refresh the page.', 'error');
+                    }
+                }
+            }, connectionTimeout);
+        };
+        
+        setupConnectionTimeout();
         
         ws.onopen = function() {
-            clearTimeout(connectionTimer);
+            if (connectionTimer) {
+                clearTimeout(connectionTimer);
+                connectionTimer = null;
+            }
             isConnecting = false;
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
             
-            // Start heartbeat to detect disconnections
+            // Start heartbeat to detect disconnections with proper cleanup
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+            }
             heartbeatInterval = setInterval(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     try {
@@ -277,7 +320,10 @@ function connectWebSocket() {
         };
         
         ws.onclose = function(event) {
-            clearTimeout(connectionTimer);
+            if (connectionTimer) {
+                clearTimeout(connectionTimer);
+                connectionTimer = null;
+            }
             isConnecting = false;
             
             // Clear heartbeat interval on close
@@ -309,12 +355,18 @@ function connectWebSocket() {
         };
         
         ws.onerror = function(error) {
-            clearTimeout(connectionTimer);
+            if (connectionTimer) {
+                clearTimeout(connectionTimer);
+                connectionTimer = null;
+            }
             console.error('WebSocket error:', error);
             // Don't set isConnecting to false here, let onclose handle it
             // This ensures we don't try to reconnect while still connecting
         };
     } catch (error) {
+        if (connectionTimer) {
+            clearTimeout(connectionTimer);
+        }
         isConnecting = false;
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
