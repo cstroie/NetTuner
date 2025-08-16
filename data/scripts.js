@@ -805,6 +805,14 @@ async function uploadM3U() {
 }
 
 async function downloadJSON() {
+    // Show loading state
+    const downloadButton = document.querySelector('button[onclick="downloadJSON()"]');
+    const originalText = downloadButton ? downloadButton.textContent : null;
+    if (downloadButton) {
+        downloadButton.textContent = 'Downloading...';
+        downloadButton.disabled = true;
+    }
+    
     try {
         const response = await fetch('/api/streams', {
             headers: {
@@ -825,18 +833,33 @@ async function downloadJSON() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            showToast('JSON playlist downloaded', 'success');
         } else {
             const error = await response.text();
             console.error('Error downloading JSON:', error);
-            alert('Error downloading JSON: ' + error);
+            showToast('Error downloading JSON: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error downloading JSON:', error);
-        alert('Error downloading JSON: ' + error.message);
+        showToast('Error downloading JSON: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        if (downloadButton) {
+            downloadButton.textContent = originalText || 'Download JSON';
+            downloadButton.disabled = false;
+        }
     }
 }
 
 async function downloadM3U() {
+    // Show loading state
+    const downloadButton = document.querySelector('button[onclick="downloadM3U()"]');
+    const originalText = downloadButton ? downloadButton.textContent : null;
+    if (downloadButton) {
+        downloadButton.textContent = 'Downloading...';
+        downloadButton.disabled = true;
+    }
+    
     try {
         const response = await fetch('/api/streams', {
             headers: {
@@ -858,14 +881,21 @@ async function downloadM3U() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
+            showToast('M3U playlist downloaded', 'success');
         } else {
             const error = await response.text();
             console.error('Error downloading JSON:', error);
-            alert('Error downloading playlist: ' + error);
+            showToast('Error downloading playlist: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error downloading playlist:', error);
-        alert('Error downloading playlist: ' + error.message);
+        showToast('Error downloading playlist: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        if (downloadButton) {
+            downloadButton.textContent = originalText || 'Download M3U';
+            downloadButton.disabled = false;
+        }
     }
 }
 
@@ -944,7 +974,12 @@ function scanNetworks() {
     }
     
     fetch('/api/wifiscan')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             let html = '<h2>Available Networks:</h2>';
             data.forEach(network => {
