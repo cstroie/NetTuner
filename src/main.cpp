@@ -214,7 +214,6 @@ void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
-void handleM3UUpload();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
 void savePlaylistToFile();
@@ -1016,45 +1015,6 @@ void handlePostStreams() {
   server.send(200, "text/plain", "OK");
 }
 
-/**
- * @brief Handle playlist upload (JSON only)
- * Parses uploaded JSON file and replaces the existing playlist
- */
-void handleM3UUpload() {
-  HTTPUpload& upload = server.upload();
-  
-  if (upload.status == UPLOAD_FILE_START) {
-    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // Process uploaded data in chunks
-  } else if (upload.status == UPLOAD_FILE_END) {
-    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
-    
-    // Handle JSON upload (default)
-    String jsonContent = String((char*)upload.buf, upload.currentSize);
-    
-    // Validate JSON format
-    jsonContent.trim();
-    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-      server.send(400, "text/plain", "Invalid JSON format");
-      return;
-    }
-    
-    File file = SPIFFS.open("/playlist.json", "w");
-    if (!file) {
-      server.send(500, "text/plain", "Failed to save playlist");
-      return;
-    }
-    file.print(jsonContent);
-    file.close();
-    
-    loadPlaylist(); // Reload playlist
-    server.send(200, "text/plain", "JSON playlist updated successfully");
-  } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    Serial.println("Upload Aborted");
-    server.send(500, "text/plain", "Upload Aborted");
-  }
-}
 
 /**
  * @brief Handle play request
