@@ -398,7 +398,13 @@ void handleWiFiConfig() {
  * Serves the audio configuration page
  */
 void handleConfigPage() {
-  server.send(SPIFFS, "/config.html");
+  File file = SPIFFS.open("/config.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
 }
 
 /**
