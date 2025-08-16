@@ -26,82 +26,12 @@
         </div>
     </div>
 
+    <script src="/scripts.js"></script>
     <script>
-        // Setup form submit handler
-        document.getElementById('wifiForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const ssidInput = document.getElementById('ssid');
-            const passwordInput = document.getElementById('password');
-            
-            if (!ssidInput || !passwordInput) return;
-            
-            const ssid = ssidInput.value;
-            const password = passwordInput.value;
-            
-            fetch('/api/wifisave', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid: ssid, password: password })
-            })
-            .then(response => response.text())
-            .then(data => {
-                alert(data);
-                if (data === 'WiFi configuration saved') {
-                    window.location.href = '/';
-                }
-            })
-            .catch(error => {
-                alert('Error saving configuration');
-                console.error('Error:', error);
-            });
+        // Initialize WiFi page
+        document.addEventListener('DOMContentLoaded', function() {
+            initWiFiPage();
         });
-        
-        // Scan networks on page load
-        scanNetworks();
-        
-        function scanNetworks() {
-            const networksDiv = document.getElementById('networks');
-            if (!networksDiv) return;
-            
-            // Show loading state
-            networksDiv.innerHTML = 'Scanning for networks...';
-            
-            // Disable scan button during scan
-            const scanButton = document.querySelector('button[onclick="scanNetworks()"]');
-            const originalText = scanButton ? scanButton.textContent : null;
-            if (scanButton) {
-                scanButton.textContent = 'Scanning...';
-                scanButton.disabled = true;
-            }
-            
-            fetch('/api/wifiscan')
-                .then(response => response.json())
-                .then(data => {
-                    let html = '<h2>Available Networks:</h2>';
-                    data.forEach(network => {
-                        html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
-                    });
-                    networksDiv.innerHTML = html;
-                })
-                .catch(error => {
-                    networksDiv.innerHTML = 'Error scanning networks';
-                    console.error('Error:', error);
-                })
-                .finally(() => {
-                    // Restore scan button
-                    if (scanButton) {
-                        scanButton.textContent = originalText || 'Refresh Networks';
-                        scanButton.disabled = false;
-                    }
-                });
-        }
-        
-        function selectNetwork(ssid) {
-            const ssidInput = document.getElementById('ssid');
-            if (ssidInput) {
-                ssidInput.value = ssid;
-            }
-        }
     </script>
 </body>
 </html>
