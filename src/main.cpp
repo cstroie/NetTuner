@@ -74,7 +74,7 @@ int volume = 50;                   ///< Volume level (0-100)
  * @brief OLED display instance
  * SSD1306 OLED display connected via I2C (address 0x3c, SDA=5, SCL=4)
  */
-SSD1306Wire display(0x3c, 5, 4); // ADDRESS, SDA, SCL
+Adafruit_SSD1306 display(128, 64, &Wire, -1); // 128x64 display, using Wire, no reset pin
 
 /**
  * @brief Rotary encoder pin configuration
@@ -234,12 +234,12 @@ void setup() {
   }
   
   // Initialize OLED display
-  display.init();
-  display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.clear();
-  display.drawString(0, 0, "Connecting WiFi...");
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 0);
+  display.println("Connecting WiFi...");
   display.display();
   
   // Load WiFi credentials
@@ -258,22 +258,25 @@ void setup() {
     
     if (WiFi.status() == WL_CONNECTED) {
       Serial.println("Connected to WiFi");
-      display.clear();
-      display.drawString(0, 0, "WiFi Connected");
-      display.drawString(0, 15, WiFi.localIP().toString());
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("WiFi Connected");
+      display.println(WiFi.localIP().toString());
       display.display();
     } else {
       Serial.println("Failed to connect to WiFi");
-      display.clear();
-      display.drawString(0, 0, "WiFi Failed");
-      display.drawString(0, 15, "Configure WiFi");
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.println("WiFi Failed");
+      display.println("Configure WiFi");
       display.display();
     }
   } else {
     Serial.println("No WiFi configured");
-    display.clear();
-    display.drawString(0, 0, "No WiFi Config");
-    display.drawString(0, 15, "Configure WiFi");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("No WiFi Config");
+    display.println("Configure WiFi");
     display.display();
   }
   
@@ -1193,25 +1196,28 @@ void handleStatus() {
  * Shows playback status, current stream, volume level, and playlist selection
  */
 void updateDisplay() {
-  display.clear();  // Clear the display
+  display.clearDisplay();  // Clear the display
   
   if (isPlaying) {
     // Display when playing
-    display.drawString(0, 0, "PLAYING");
-    display.drawString(0, 15, currentStreamName);
-    display.drawString(0, 30, "Volume: " + String(volume) + "%");
+    display.setCursor(0, 0);
+    display.println("PLAYING");
+    display.println(currentStreamName);
+    display.println("Volume: " + String(volume) + "%");
   } else {
     // Display when stopped
-    display.drawString(0, 0, "STOPPED");
+    display.setCursor(0, 0);
+    display.println("STOPPED");
     if (playlistCount > 0 && currentSelection < playlistCount) {
       // Show selected playlist item
-      display.drawString(0, 15, playlist[currentSelection].name);
-      display.drawString(0, 30, "Press to play");
+      display.println(playlist[currentSelection].name);
+      display.println("Press to play");
     } else {
       // Show message when no streams available
-      display.drawString(0, 15, "No streams");
+      display.println("No streams");
     }
-    display.drawString(0, 45, "Vol: " + String(volume) + "%");
+    display.setCursor(0, 50);
+    display.println("Vol: " + String(volume) + "%");
   }
   
   display.display();  // Send buffer to display
