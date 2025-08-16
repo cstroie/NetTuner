@@ -123,8 +123,8 @@ public:
   void handleRotation() {
     unsigned long currentTime = millis();
     
-    // Debounce rotary encoder (ignore if less than 2ms since last event)
-    if (currentTime - lastRotaryTime < 2) {
+    // Debounce rotary encoder (ignore if less than 5ms since last event)
+    if (currentTime - lastRotaryTime < 5) {
       return;
     }
     
