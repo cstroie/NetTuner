@@ -402,6 +402,11 @@ function forceReconnect() {
 
 async function playStream() {
     const select = document.getElementById('streamSelect');
+    if (!select) {
+        showToast('Stream selection not available', 'error');
+        return;
+    }
+    
     const option = select.options[select.selectedIndex];
     const url = select.value;
     const name = option ? option.dataset.name : '';
@@ -455,6 +460,9 @@ async function stopStream() {
     if (stopButton) {
         stopButton.textContent = 'Stopping...';
         stopButton.disabled = true;
+    } else {
+        // If no button found, show toast immediately
+        showToast('Stopping stream...', 'info');
     }
     
     try {
@@ -492,6 +500,9 @@ async function setVolume(volume) {
     
     if (volumeControl) {
         volumeControl.disabled = true;
+    } else {
+        console.warn('Volume control not found');
+        return;
     }
     
     try {
@@ -534,7 +545,10 @@ async function setVolume(volume) {
 // Playlist functions
 function renderPlaylist() {
     const tbody = document.getElementById('playlistBody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.warn('Playlist body not found');
+        return;
+    }
     
     tbody.innerHTML = '';
     
@@ -556,7 +570,10 @@ function addStream() {
     const name = document.getElementById('name');
     const url = document.getElementById('url');
     
-    if (!name || !url) return;
+    if (!name || !url) {
+        showToast('Form elements not found', 'error');
+        return;
+    }
     
     console.log('Adding stream:', { name: name.value, url: url.value });
     
@@ -1005,6 +1022,8 @@ function selectNetwork(ssid) {
     const ssidInput = document.getElementById('ssid');
     if (ssidInput) {
         ssidInput.value = ssid;
+    } else {
+        console.warn('SSID input not found');
     }
 }
 
