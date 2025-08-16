@@ -1,0 +1,6 @@
+body { font-family: Arial, sans-serif; margin: 20px; }
+input, select, button { width: 100%; padding: 10px; margin: 5px 0; }
+button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+button:hover { background-color: #45a049; }
+.network { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; }
+.network:hover { background-color: #f0f0f0; }

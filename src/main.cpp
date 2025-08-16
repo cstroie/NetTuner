@@ -328,6 +328,9 @@ void setup() {
   server.on("/api/m3u", HTTP_POST, handleM3UUpload);
   
   server.serveStatic("/", SPIFFS, "/index.html");
+  server.serveStatic("/style.css", SPIFFS, "/style.css");
+  server.serveStatic("/playlist-style.css", SPIFFS, "/playlist-style.css");
+  server.serveStatic("/wifi-style.css", SPIFFS, "/wifi-style.css");
   
   server.begin();
   
@@ -361,14 +364,7 @@ void handleWiFiConfig() {
 <head>
   <title>NetTuner - WiFi Configuration</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, select, button { width: 100%; padding: 10px; margin: 5px 0; }
-    button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-    button:hover { background-color: #45a049; }
-    .network { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; }
-    .network:hover { background-color: #f0f0f0; }
-  </style>
+  <link rel="stylesheet" href="/wifi-style.css">
 </head>
 <body>
   <h1>NetTuner - WiFi Configuration</h1>
