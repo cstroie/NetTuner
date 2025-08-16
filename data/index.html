@@ -161,9 +161,7 @@
                     body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
                 });
                 console.log('Play response status:', response.status);
-                if (response.ok) {
-                    loadStatus();
-                } else {
+                if (!response.ok) {
                     throw new Error('Failed to play stream');
                 }
             } catch (error) {
@@ -177,7 +175,6 @@
                 console.log('Stopping current stream');
                 const response = await fetch('/api/stop', { method: 'POST' });
                 console.log('Stop response status:', response.status);
-                loadStatus();
             } catch (error) {
                 console.error('Error stopping stream:', error);
             }
@@ -192,7 +189,9 @@
                     body: 'volume=' + volume
                 });
                 console.log('Volume response status:', response.status);
-                document.getElementById('volumeValue').textContent = volume + '%';
+                if (response.ok) {
+                    document.getElementById('volumeValue').textContent = volume + '%';
+                }
             } catch (error) {
                 console.error('Error setting volume:', error);
             }
