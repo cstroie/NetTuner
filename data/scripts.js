@@ -897,8 +897,37 @@ function initWiFiPage() {
             
             if (!ssidInput || !passwordInput) return;
             
-            const ssid = ssidInput.value;
+            const ssid = ssidInput.value.trim();
             const password = passwordInput.value;
+            
+            // Validate SSID is not empty
+            if (!ssid) {
+                alert('Please enter an SSID');
+                ssidInput.focus();
+                return;
+            }
+            
+            // Validate SSID length (typically 1-32 characters)
+            if (ssid.length > 32) {
+                alert('SSID must be 32 characters or less');
+                ssidInput.focus();
+                return;
+            }
+            
+            // Validate password length if provided (typically 8-63 characters for WPA)
+            if (password && (password.length < 8 || password.length > 63)) {
+                alert('Password should be between 8 and 63 characters');
+                passwordInput.focus();
+                return;
+            }
+            
+            // Show loading state
+            const submitButton = document.querySelector('#wifiForm button[type="submit"]');
+            const originalText = submitButton ? submitButton.textContent : null;
+            if (submitButton) {
+                submitButton.textContent = 'Saving...';
+                submitButton.disabled = true;
+            }
             
             fetch('/api/wifisave', {
                 method: 'POST',
@@ -915,6 +944,13 @@ function initWiFiPage() {
             .catch(error => {
                 alert('Error saving configuration');
                 console.error('Error:', error);
+            })
+            .finally(() => {
+                // Restore button state
+                if (submitButton) {
+                    submitButton.textContent = originalText || 'Save Configuration';
+                    submitButton.disabled = false;
+                }
             });
         });
     }
