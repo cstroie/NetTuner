@@ -106,10 +106,14 @@
             <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
         </div>
         
-        <h2>Upload JSON Playlist</h2>
+        <h2>Upload Playlist</h2>
         <div class="form-group">
-            <input type="file" id="m3uFile" accept=".json" style="margin-bottom: 10px;">
-            <button class="btn-secondary" onclick="uploadM3U()">Upload JSON</button>
+            <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
+            <button class="btn-secondary" onclick="uploadPlaylist()">Upload Playlist</button>
+        </div>
+        
+        <div class="form-group">
+            <button class="btn-secondary" onclick="downloadM3U()">Download as M3U</button>
         </div>
     </div>
 
@@ -210,28 +214,32 @@
             }
         }
         
-        async function uploadM3U() {
-            const fileInput = document.getElementById('m3uFile');
+        async function uploadPlaylist() {
+            const fileInput = document.getElementById('playlistFile');
             const file = fileInput.files[0];
             
-            console.log('Uploading JSON playlist file:', file);
+            console.log('Uploading playlist file:', file);
             
             if (!file) {
-                alert('Please select a JSON file');
+                alert('Please select a playlist file');
                 return;
             }
             
             // Read file content
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const jsonContent = e.target.result;
-                console.log('File content:', jsonContent);
+                const fileContent = e.target.result;
+                console.log('File content:', fileContent);
                 
                 try {
-                    const response = await fetch('/api/streams', {
+                    const contentType = file.name.toLowerCase().endsWith('.m3u') || file.name.toLowerCase().endsWith('.m3u8') 
+                        ? 'text/plain' 
+                        : 'application/json';
+                    
+                    const response = await fetch('/api/m3u', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: jsonContent
+                        headers: { 'Content-Type': contentType },
+                        body: fileContent
                     });
                     
                     console.log('Upload response status:', response.status);
@@ -246,11 +254,38 @@
                         fileInput.value = '';
                     }
                 } catch (error) {
-                    console.error('Error uploading JSON:', error);
-                    alert('Error uploading JSON file');
+                    console.error('Error uploading playlist:', error);
+                    alert('Error uploading playlist file');
                 }
             };
             reader.readAsText(file);
+        }
+        
+        async function downloadM3U() {
+            try {
+                const response = await fetch('/api/streams.m3u');
+                console.log('Download M3U response status:', response.status);
+                
+                if (response.ok) {
+                    const m3uContent = await response.text();
+                    const blob = new Blob([m3uContent], { type: 'audio/x-mpegurl' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'playlist.m3u';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.text();
+                    console.error('Error downloading M3U:', error);
+                    alert('Error downloading M3U: ' + error);
+                }
+            } catch (error) {
+                console.error('Error downloading M3U:', error);
+                alert('Error downloading M3U');
+            }
         }
         
         // Initialize
