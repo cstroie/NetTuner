@@ -1275,6 +1275,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_TEXT:
       Serial.printf("WebSocket client #%u text: %s\n", num, payload);
+      // Handle ping messages from client
+      if (length == 4 && strncmp((char*)payload, "ping", 4) == 0) {
+        // Respond with pong
+        webSocket.sendTXT(num, "pong");
+      }
       break;
     default:
       break;
