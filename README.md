@@ -12,9 +12,10 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 - **Web Interface**: Control playback through a responsive web UI
 - **Physical Controls**: Rotary encoder for volume control and navigation
 - **OLED Display**: Real-time status information
-- **Playlist Management**: Store and manage multiple radio stations
+- **Playlist Management**: Store and manage multiple radio stations with JSON/M3U support
 - **Volume Control**: Adjustable volume through web interface or rotary encoder
-- **Battery Powered**: Designed to run on battery power
+- **WiFi Configuration**: Web-based WiFi setup with network scanning
+- **File Management**: Upload/download playlists in JSON or M3U formats
 
 ## Hardware Requirements
 
@@ -42,16 +43,12 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 
 1. Install PlatformIO
 2. Clone this repository
-3. Update WiFi credentials in `src/main.cpp`:
-   ```cpp
-   const char* ssid = "YOUR_WIFI_SSID";
-   const char* password = "YOUR_WIFI_PASSWORD";
-   ```
-4. Build and upload the firmware:
+3. Build and upload the firmware:
    ```bash
    pio run -t upload
    pio run -t uploadfs
    ```
+4. Access the web interface and configure WiFi through the "Configure WiFi" page
 
 ## Web Interface
 
@@ -62,16 +59,27 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 - **Volume Control**: Adjust volume through slider
 - **Playlist Management**: Add, remove, and organize radio stations
 
+### Playlist Management
+- Upload/download playlists in JSON or M3U formats
+- Convert between JSON and M3U formats on-the-fly
+- Manage individual streams through the web interface
+
 ### API Endpoints
 
 | Endpoint         | Method | Description                  |
 |------------------|--------|------------------------------|
+| `/`              | GET    | Main control interface       |
+| `/playlist.html` | GET    | Playlist management          |
+| `/wifi`          | GET    | WiFi configuration           |
 | `/api/streams`   | GET    | Get all streams in playlist  |
 | `/api/streams`   | POST   | Update playlist              |
+| `/api/streams.m3u`| GET   | Download playlist as M3U     |
 | `/api/play`      | POST   | Start playing a stream       |
 | `/api/stop`      | POST   | Stop playback                |
 | `/api/volume`    | POST   | Set volume level             |
 | `/api/status`    | GET    | Get current player status    |
+| `/api/wifiscan`  | GET    | Scan for WiFi networks       |
+| `/api/wifisave`  | POST   | Save WiFi configuration      |
 
 ## File Structure
 
@@ -97,4 +105,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - ESP32 Audio library by Earle F. Philhower
 - ArduinoJson library by Benoit Blanchon
-- SSD1306 library by ThingPulse
+- SSD1306 library by Adafruit
