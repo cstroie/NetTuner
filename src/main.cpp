@@ -678,7 +678,9 @@ void startStream(const char* url, const char* name) {
   }
   
   // Set volume (0.0 to 1.0)
-  out->SetGain(volume / 100.0);
+  if (out) {
+    out->SetGain(volume / 100.0);
+  }
   
   // Start the decoding process
   if (!mp3->begin(buff, out)) {
@@ -905,7 +907,7 @@ void handleRotary() {
         // If playing, increase volume by 5% (capped at 100%)
         volume = min(100, volume + 5);
         if (out) {
-          out->SetGain(volume / 100.0);  // Update audio output gain
+          out->SetGain((float)volume / 100.0);  // Update audio output gain
         }
       } else {
         // If not playing, select next item in playlist
@@ -918,7 +920,7 @@ void handleRotary() {
         // If playing, decrease volume by 5% (capped at 0%)
         volume = max(0, volume - 5);
         if (out) {
-          out->SetGain(volume / 100.0);  // Update audio output gain
+          out->SetGain((float)volume / 100.0);  // Update audio output gain
         }
       } else {
         // If not playing, select previous item in playlist

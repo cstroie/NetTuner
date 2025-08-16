@@ -195,7 +195,10 @@
             try {
                 const response = await fetch('/api/streams', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: jsonData
                 });
                 
@@ -210,7 +213,7 @@
                 }
             } catch (error) {
                 console.error('Error saving playlist:', error);
-                alert('Error saving playlist');
+                alert('Error saving playlist: ' + error.message);
             }
         }
         
@@ -238,7 +241,10 @@
                     
                     const response = await fetch('/api/streams', {
                         method: 'POST',
-                        headers: { 'Content-Type': contentType },
+                        headers: { 
+                            'Content-Type': contentType,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
                         body: fileContent
                     });
                     
@@ -255,7 +261,7 @@
                     }
                 } catch (error) {
                     console.error('Error uploading playlist:', error);
-                    alert('Error uploading playlist file');
+                    alert('Error uploading playlist file: ' + error.message);
                 }
             };
             reader.readAsText(file);
@@ -263,7 +269,11 @@
         
         async function downloadM3U() {
             try {
-                const response = await fetch('/api/streams.m3u');
+                const response = await fetch('/api/streams.m3u', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 console.log('Download M3U response status:', response.status);
                 
                 if (response.ok) {
@@ -284,7 +294,7 @@
                 }
             } catch (error) {
                 console.error('Error downloading M3U:', error);
-                alert('Error downloading M3U');
+                alert('Error downloading M3U: ' + error.message);
             }
         }
         

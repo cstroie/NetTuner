@@ -123,13 +123,21 @@
             try {
                 const response = await fetch('/api/play', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    headers: { 
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
                     body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
                 });
                 console.log('Play response status:', response.status);
-                loadStatus();
+                if (response.ok) {
+                    loadStatus();
+                } else {
+                    throw new Error('Failed to play stream');
+                }
             } catch (error) {
                 console.error('Error playing stream:', error);
+                alert('Error playing stream: ' + error.message);
             }
         }
         
