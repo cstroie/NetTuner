@@ -123,6 +123,8 @@ function addToastStyles() {
 let ws = null;
 let reconnectTimeout = null;
 let isConnecting = false;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 10;
 
 function connectWebSocket() {
     // Clear any existing reconnection timeout
@@ -133,6 +135,13 @@ function connectWebSocket() {
     
     // Prevent multiple connection attempts
     if (isConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) {
+        return;
+    }
+    
+    // Check if we've exceeded max reconnect attempts
+    if (reconnectAttempts >= maxReconnectAttempts) {
+        console.log('Max reconnect attempts reached. Stopping reconnection.');
+        showToast('Connection failed. Please refresh the page.', 'error');
         return;
     }
     
@@ -148,6 +157,7 @@ function connectWebSocket() {
         
         ws.onopen = function() {
             isConnecting = false;
+            reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
         };
@@ -196,23 +206,28 @@ function connectWebSocket() {
         
         ws.onclose = function() {
             isConnecting = false;
-            console.log('WebSocket disconnected');
+            reconnectAttempts++;
+            console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
             showToast('Disconnected from NetTuner', 'warning');
-            // Try to reconnect after 3 seconds
-            reconnectTimeout = setTimeout(connectWebSocket, 3000);
+            // Try to reconnect with exponential backoff
+            const timeout = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000);
+            reconnectTimeout = setTimeout(connectWebSocket, timeout);
         };
         
         ws.onerror = function(error) {
             isConnecting = false;
+            reconnectAttempts++;
             console.error('WebSocket error:', error);
             showToast('Connection error', 'error');
         };
     } catch (error) {
         isConnecting = false;
+        reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
-        // Fallback to polling if WebSocket fails
-        reconnectTimeout = setTimeout(connectWebSocket, 5000);
+        // Fallback to polling if WebSocket fails with exponential backoff
+        const timeout = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000);
+        reconnectTimeout = setTimeout(connectWebSocket, timeout);
     }
 }
 
