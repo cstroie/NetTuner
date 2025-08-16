@@ -923,6 +923,17 @@ function initWiFiPage() {
     scanNetworks();
 }
 
+// Initialize based on current page
+document.addEventListener('DOMContentLoaded', function() {
+    // Add toast styles to all pages
+    addToastStyles();
+    
+    if (document.getElementById('streamSelect')) {
+        initMainPage();
+    } else if (document.getElementById('playlistBody')) {
+        initPlaylistPage();
+    }
+});
 
 // Config functions
 function initConfigPage() {
