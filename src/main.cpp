@@ -1204,54 +1204,71 @@ void handleGetStreams() {
  * Supports both direct JSON POST and file upload mechanisms
  */
 void handlePostStreams() {
-  // Handle file upload through the standard upload mechanism
-  HTTPUpload& upload = server.upload();
-  if (upload.status == UPLOAD_FILE_START) {
-    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // Process uploaded data in chunks
-  } else if (upload.status == UPLOAD_FILE_END) {
-    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
+  // First check if this is a file upload
+  // We need to be careful accessing server.upload() - only do so when we know it's safe
+  bool isUpload = false;
+  
+  // Check if there's an upload by looking at the request arguments
+  // This is a safer way to determine if we're dealing with an upload
+  if (server.method() == HTTP_POST && server.hasHeader("Content-Type")) {
+    String contentType = server.header("Content-Type");
+    if (contentType.startsWith("multipart/form-data")) {
+      isUpload = true;
+    }
+  }
+  
+  if (isUpload) {
+    // Handle file upload through the standard upload mechanism
+    HTTPUpload& upload = server.upload();
     
-    // Check if we have data to process
-    if (!upload.buf || upload.currentSize == 0) {
-      server.send(400, "text/plain", "No data received");
-      return;
+    // Only process if we have a valid upload reference
+    if (&upload != nullptr) {
+      if (upload.status == UPLOAD_FILE_START) {
+        Serial.printf("UploadStart: %s\n", upload.filename.c_str());
+      } else if (upload.status == UPLOAD_FILE_WRITE) {
+        // Process uploaded data in chunks
+      } else if (upload.status == UPLOAD_FILE_END) {
+        Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
+        
+        // Check if we have data to process
+        if (upload.buf == nullptr || upload.currentSize == 0) {
+          server.send(400, "text/plain", "No data received");
+          return;
+        }
+        
+        // Handle JSON upload (default)
+        String jsonContent = String((char*)upload.buf, upload.currentSize);
+        
+        // Validate JSON format
+        jsonContent.trim();
+        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+          server.send(400, "text/plain", "Invalid JSON format");
+          return;
+        }
+        
+        File file = SPIFFS.open("/playlist.json", "w");
+        if (!file) {
+          server.send(500, "text/plain", "Failed to save playlist");
+          return;
+        }
+        file.print(jsonContent);
+        file.close();
+        
+        loadPlaylist(); // Reload playlist
+        server.send(200, "text/plain", "JSON playlist updated successfully");
+        return;
+      } else if (upload.status == UPLOAD_FILE_ABORTED) {
+        Serial.println("Upload Aborted");
+        server.send(500, "text/plain", "Upload Aborted");
+        return;
+      }
     }
     
-    // Handle JSON upload (default)
-    String jsonContent = String((char*)upload.buf, upload.currentSize);
-    
-    // Validate JSON format
-    jsonContent.trim();
-    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-      server.send(400, "text/plain", "Invalid JSON format");
-      return;
-    }
-    
-    File file = SPIFFS.open("/playlist.json", "w");
-    if (!file) {
-      server.send(500, "text/plain", "Failed to save playlist");
-      return;
-    }
-    file.print(jsonContent);
-    file.close();
-    
-    loadPlaylist(); // Reload playlist
-    server.send(200, "text/plain", "JSON playlist updated successfully");
-    return;
-  } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    Serial.println("Upload Aborted");
-    server.send(500, "text/plain", "Upload Aborted");
+    // If we're in upload processing, return early
     return;
   }
   
-  // Handle regular POST data (from web forms) - only when not in upload mode
-  if (upload.status == UPLOAD_FILE_START || upload.status == UPLOAD_FILE_WRITE || upload.status == UPLOAD_FILE_END) {
-    // We're in upload mode, so don't process as regular POST
-    return;
-  }
-  
+  // Handle regular POST data (from web forms or direct JSON POST)
   if (!server.hasArg("plain")) {
     server.send(400, "text/plain", "Missing JSON data");
     return;
