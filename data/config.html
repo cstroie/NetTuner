@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NetTuner - Audio Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>NetTuner - Audio Configuration</h1>
+        
+        <form id="configForm">
+            <div class="form-group">
+                <label for="outputType">Audio Output Method:</label>
+                <select id="outputType" name="outputType">
+                    <option value="0">I2S (External DAC)</option>
+                    <option value="1">PDM (Pulse Density Modulation)</option>
+                    <option value="2">DAC (Internal DAC)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="save-btn">Save Configuration</button>
+        </form>
+        
+        <div class="form-actions">
+            <button onclick="window.location.href='/'">Back to Main</button>
+        </div>
+    </div>
+
+    <script>
+        // Load current configuration
+        fetch('/api/config')
+            .then(response => response.json())
+            .then(config => {
+                document.getElementById('outputType').value = config.outputType || 0;
+            })
+            .catch(error => console.error('Error loading config:', error));
+        
+        // Handle form submission
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const outputType = document.getElementById('outputType').value;
+            
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ outputType: parseInt(outputType) })
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+                // Reload the page to reflect changes
+                location.reload();
+            })
+            .catch(error => {
+                alert('Error saving configuration');
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

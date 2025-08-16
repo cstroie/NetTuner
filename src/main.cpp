@@ -27,6 +27,8 @@
 #include "AudioFileSourceBuffer.h"
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
+#include "AudioOutputI2SNoDAC.h"
+#include "AudioOutputI2SPDM.h"
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
@@ -59,6 +61,18 @@ AudioGeneratorMP3 *mp3 = nullptr;           ///< MP3 decoder instance
 AudioFileSourceHTTPStream *file = nullptr;  ///< HTTP stream source
 AudioFileSourceBuffer *buff = nullptr;      ///< Buffer for audio data
 AudioOutputI2S *out = nullptr;              ///< I2S audio output
+
+/**
+ * @brief Audio output configuration
+ * Defines the available output methods and the currently selected one
+ */
+enum AudioOutputType {
+  OUTPUT_I2S = 0,
+  OUTPUT_PDM = 1,
+  OUTPUT_DAC = 2
+};
+
+AudioOutputType currentOutputType = OUTPUT_I2S;  ///< Currently selected output type
 
 /**
  * @brief Player state variables
@@ -226,8 +240,13 @@ void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
+void handleConfigPage();
+void handleGetConfig();
+void handleSaveConfig();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
+void loadConfig();
+void saveConfig();
 
 // WebSocket handlers
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
@@ -299,8 +318,11 @@ void setup() {
     display.display();
   }
   
-  // Setup I2S
-  setupI2S();
+  // Setup audio output
+  setupAudioOutput();
+  
+  // Load configuration
+  loadConfig();
   
   // Setup rotary encoder
   setupRotaryEncoder();
@@ -331,6 +353,9 @@ void setup() {
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
+  server.on("/config", HTTP_GET, handleConfigPage);
+  server.on("/api/config", HTTP_GET, handleGetConfig);
+  server.on("/api/config", HTTP_POST, handleSaveConfig);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
@@ -367,30 +392,58 @@ void loop() {
  * Serves the WiFi configuration page
  */
 void handleWiFiConfig() {
-  String html = R"=====(
-<!DOCTYPE html>
-<html>
-<head>
-  <title>NetTuner - WiFi Configuration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/styles.css">
-</head>
-<body>
-  <h1>NetTuner - WiFi Configuration</h1>
-  <div id="networks">Scanning for networks...</div>
-  <form id="wifiForm">
-    <input type="text" id="ssid" placeholder="Enter SSID" required>
-    <input type="password" id="password" placeholder="Enter Password">
-    <button type="submit">Save Configuration</button>
-  </form>
-  <button onclick="scanNetworks()">Refresh Networks</button>
-  <button onclick="window.location.href='/'">Back to Main</button>
+  server.send(SPIFFS, "/wifi.html");
+}
 
-  <script src="/scripts.js"></script>
-</body>
-</html>
-)=====";
-  server.send(200, "text/html", html);
+/**
+ * @brief Handle configuration page
+ * Serves the audio configuration page
+ */
+void handleConfigPage() {
+  server.send(SPIFFS, "/config.html");
+}
+
+/**
+ * @brief Handle GET request for configuration
+ * Returns the current configuration as JSON
+ */
+void handleGetConfig() {
+  String config = "{";
+  config += "\"outputType\":" + String(currentOutputType);
+  config += "}";
+  server.send(200, "application/json", config);
+}
+
+/**
+ * @brief Handle POST request for configuration
+ * Updates the configuration with new data
+ */
+void handleSaveConfig() {
+  if (!server.hasArg("plain")) {
+    server.send(400, "text/plain", "Missing JSON data");
+    return;
+  }
+  
+  String json = server.arg("plain");
+  DynamicJsonDocument doc(256);
+  DeserializationError error = deserializeJson(doc, json);
+  
+  if (error) {
+    server.send(400, "text/plain", "Invalid JSON");
+    return;
+  }
+  
+  if (doc.containsKey("outputType")) {
+    int type = doc["outputType"];
+    if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
+      currentOutputType = (AudioOutputType)type;
+      saveConfig();
+      server.send(200, "text/plain", "Configuration saved");
+      return;
+    }
+  }
+  
+  server.send(400, "text/plain", "Invalid output type");
 }
 
 /**
@@ -571,11 +624,11 @@ void audioTask(void *parameter) {
 }
 
 /**
- * @brief Initialize I2S audio interface
- * Configures I2S pins and enables the audio amplifier
+ * @brief Initialize audio output interface
+ * Configures the selected audio output method
  */
-void setupI2S() {
-  // Configure I2S pins
+void setupAudioOutput() {
+  // Configure amplifier control pin
   pinMode(I2S_SD, OUTPUT);
   digitalWrite(I2S_SD, HIGH); // Enable amplifier
 }
@@ -633,14 +686,46 @@ void startStream(const char* url, const char* name) {
     return;
   }
   
-  AudioOutputI2S* newOut = new AudioOutputI2S();                 // I2S output
+  AudioOutputI2S* newOut = nullptr;
+  
+  // Create the appropriate output based on currentOutputType
+  switch (currentOutputType) {
+    case OUTPUT_I2S:
+      newOut = new AudioOutputI2S();
+      break;
+    case OUTPUT_PDM:
+      newOut = new AudioOutputI2SPDM();
+      break;
+    case OUTPUT_DAC:
+      newOut = new AudioOutputI2SNoDAC();
+      break;
+    default:
+      newOut = new AudioOutputI2S(); // Fallback to I2S
+      break;
+  }
+  
   if (!newOut) {
-    Serial.println("Error: Failed to create I2S output");
+    Serial.println("Error: Failed to create audio output");
     delete newBuff;
     delete newFile;
     isPlaying = false;
     updateDisplay();
     return;
+  }
+  
+  // Configure output pins based on type
+  switch (currentOutputType) {
+    case OUTPUT_I2S:
+      newOut->SetPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+      break;
+    case OUTPUT_PDM:
+      // PDM uses different pin configuration
+      // The library handles this internally
+      break;
+    case OUTPUT_DAC:
+      // DAC output uses the same pins but in DAC mode
+      newOut->SetPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+      break;
   }
   
   AudioGeneratorMP3* newMp3 = new AudioGeneratorMP3();              // MP3 decoder
@@ -857,6 +942,87 @@ void savePlaylist() {
   file.close();
   
   Serial.println("Saved playlist to file");
+}
+
+/**
+ * @brief Load configuration from SPIFFS
+ */
+void loadConfig() {
+  if (!SPIFFS.exists("/config.json")) {
+    Serial.println("Config file not found, using defaults");
+    return;
+  }
+  
+  File file = SPIFFS.open("/config.json", "r");
+  if (!file) {
+    Serial.println("Failed to open config file");
+    return;
+  }
+  
+  size_t size = file.size();
+  if (size > 512) {
+    Serial.println("Config file too large");
+    file.close();
+    return;
+  }
+  
+  if (size == 0) {
+    Serial.println("Config file is empty");
+    file.close();
+    return;
+  }
+  
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.println("Failed to read config file");
+    file.close();
+    return;
+  }
+  buf[size] = '\0';
+  file.close();
+  
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.print("Failed to parse config JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
+  
+  if (doc.containsKey("outputType")) {
+    int type = doc["outputType"];
+    if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
+      currentOutputType = (AudioOutputType)type;
+    }
+  }
+  
+  Serial.println("Loaded configuration from SPIFFS");
+  Serial.print("Output Type: ");
+  Serial.println(currentOutputType);
+}
+
+/**
+ * @brief Save configuration to SPIFFS
+ */
+void saveConfig() {
+  DynamicJsonDocument doc(512);
+  doc["outputType"] = currentOutputType;
+  
+  File file = SPIFFS.open("/config.json", "w");
+  if (!file) {
+    Serial.println("Failed to open config file for writing");
+    return;
+  }
+  
+  size_t bytesWritten = serializeJson(doc, file);
+  if (bytesWritten == 0) {
+    Serial.println("Failed to write config to file");
+    file.close();
+    return;
+  }
+  file.close();
+  
+  Serial.println("Saved configuration to SPIFFS");
 }
 
 
