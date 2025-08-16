@@ -2,6 +2,18 @@
 let streams = [];
 
 async function loadStreams() {
+    // Show loading state
+    const select = document.getElementById('streamSelect');
+    if (select) {
+        select.innerHTML = '<option value="">Loading streams...</option>';
+        select.disabled = true;
+    }
+    
+    const playlistBody = document.getElementById('playlistBody');
+    if (playlistBody) {
+        playlistBody.innerHTML = '<tr><td colspan="4">Loading streams...</td></tr>';
+    }
+    
     try {
         console.log('Loading streams from /api/streams');
         const response = await fetch('/api/streams');
@@ -11,7 +23,7 @@ async function loadStreams() {
         }
         streams = await response.json();
         console.log('Loaded streams:', streams);
-        const select = document.getElementById('streamSelect');
+        
         if (select) {
             select.innerHTML = '<option value="">Select a stream...</option>';
             streams.forEach(stream => {
@@ -21,14 +33,22 @@ async function loadStreams() {
                 option.dataset.name = stream.name;
                 select.appendChild(option);
             });
+            select.disabled = false;
         }
         
         // Also update playlist if on playlist page
-        if (document.getElementById('playlistBody')) {
+        if (playlistBody) {
             renderPlaylist();
         }
     } catch (error) {
         console.error('Error loading streams:', error);
+        if (select) {
+            select.innerHTML = '<option value="">Error loading streams</option>';
+            select.disabled = false;
+        }
+        if (playlistBody) {
+            playlistBody.innerHTML = '<tr><td colspan="4">Error loading streams</td></tr>';
+        }
     }
 }
 
@@ -322,6 +342,14 @@ async function playStream() {
         return;
     }
     
+    // Show loading state
+    const playButton = document.querySelector('button[onclick="playStream()"]');
+    const originalText = playButton ? playButton.textContent : null;
+    if (playButton) {
+        playButton.textContent = 'Playing...';
+        playButton.disabled = true;
+    }
+    
     try {
         const response = await fetch('/api/play', {
             method: 'POST',
@@ -340,10 +368,24 @@ async function playStream() {
     } catch (error) {
         console.error('Error playing stream:', error);
         showToast('Error playing stream: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        if (playButton) {
+            playButton.textContent = originalText || 'Play';
+            playButton.disabled = false;
+        }
     }
 }
 
 async function stopStream() {
+    // Show loading state
+    const stopButton = document.querySelector('button[onclick="stopStream()"]');
+    const originalText = stopButton ? stopButton.textContent : null;
+    if (stopButton) {
+        stopButton.textContent = 'Stopping...';
+        stopButton.disabled = true;
+    }
+    
     try {
         console.log('Stopping current stream');
         const response = await fetch('/api/stop', { 
@@ -360,10 +402,22 @@ async function stopStream() {
     } catch (error) {
         console.error('Error stopping stream:', error);
         showToast('Error stopping stream: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        if (stopButton) {
+            stopButton.textContent = originalText || 'Stop';
+            stopButton.disabled = false;
+        }
     }
 }
 
 async function setVolume(volume) {
+    // Show loading state
+    const volumeControl = document.getElementById('volume');
+    if (volumeControl) {
+        volumeControl.disabled = true;
+    }
+    
     try {
         console.log('Setting volume to:', volume);
         const response = await fetch('/api/volume', {
@@ -385,6 +439,11 @@ async function setVolume(volume) {
     } catch (error) {
         console.error('Error setting volume:', error);
         showToast('Error setting volume: ' + error.message, 'error');
+    } finally {
+        // Restore control state
+        if (volumeControl) {
+            volumeControl.disabled = false;
+        }
     }
 }
 
@@ -457,6 +516,14 @@ function deleteStream(index) {
 }
 
 async function savePlaylist() {
+    // Show loading state
+    const saveButton = document.querySelector('button[onclick="savePlaylist()"]');
+    const originalText = saveButton ? saveButton.textContent : null;
+    if (saveButton) {
+        saveButton.textContent = 'Saving...';
+        saveButton.disabled = true;
+    }
+    
     // Convert streams to JSON
     const jsonData = JSON.stringify(streams);
     
@@ -475,15 +542,21 @@ async function savePlaylist() {
         console.log('Save playlist response status:', response.status);
         
         if (response.ok) {
-            alert('Playlist saved successfully!');
+            showToast('Playlist saved successfully!', 'success');
         } else {
             const error = await response.text();
             console.error('Error saving playlist:', error);
-            alert('Error saving playlist: ' + error);
+            showToast('Error saving playlist: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error saving playlist:', error);
-        alert('Error saving playlist: ' + error.message);
+        showToast('Error saving playlist: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        if (saveButton) {
+            saveButton.textContent = originalText || 'Save Playlist';
+            saveButton.disabled = false;
+        }
     }
 }
 
@@ -505,6 +578,14 @@ async function uploadJSON() {
         return;
     }
     
+    // Show loading state
+    const uploadButton = document.querySelector('button[onclick="uploadJSON()"]');
+    const originalText = uploadButton ? uploadButton.textContent : null;
+    if (uploadButton) {
+        uploadButton.textContent = 'Uploading...';
+        uploadButton.disabled = true;
+    }
+    
     // Read file content
     const reader = new FileReader();
     reader.onload = async function(e) {
@@ -524,7 +605,7 @@ async function uploadJSON() {
             console.log('Upload response status:', response.status);
             const message = await response.text();
             console.log('Upload response message:', message);
-            alert(message);
+            showToast(message, response.ok ? 'success' : 'error');
             
             if (response.ok) {
                 // Reload streams after successful upload
@@ -534,7 +615,13 @@ async function uploadJSON() {
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
-            alert('Error uploading playlist file: ' + error.message);
+            showToast('Error uploading playlist file: ' + error.message, 'error');
+        } finally {
+            // Restore button state
+            if (uploadButton) {
+                uploadButton.textContent = originalText || 'Upload JSON';
+                uploadButton.disabled = false;
+            }
         }
     };
     reader.readAsText(file);
@@ -556,6 +643,14 @@ async function uploadM3U() {
     if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
         alert('Please select an M3U file');
         return;
+    }
+    
+    // Show loading state
+    const uploadButton = document.querySelector('button[onclick="uploadM3U()"]');
+    const originalText = uploadButton ? uploadButton.textContent : null;
+    if (uploadButton) {
+        uploadButton.textContent = 'Uploading...';
+        uploadButton.disabled = true;
     }
     
     // Read file content
@@ -580,7 +675,7 @@ async function uploadM3U() {
             console.log('Upload response status:', response.status);
             const message = await response.text();
             console.log('Upload response message:', message);
-            alert(message);
+            showToast(message, response.ok ? 'success' : 'error');
             
             if (response.ok) {
                 // Reload streams after successful upload
@@ -590,7 +685,13 @@ async function uploadM3U() {
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
-            alert('Error uploading playlist file: ' + error.message);
+            showToast('Error uploading playlist file: ' + error.message, 'error');
+        } finally {
+            // Restore button state
+            if (uploadButton) {
+                uploadButton.textContent = originalText || 'Upload M3U';
+                uploadButton.disabled = false;
+            }
         }
     };
     reader.readAsText(file);
@@ -710,7 +811,17 @@ function scanNetworks() {
     const networksDiv = document.getElementById('networks');
     if (!networksDiv) return;
     
+    // Show loading state
     networksDiv.innerHTML = 'Scanning for networks...';
+    
+    // Disable scan button during scan
+    const scanButton = document.querySelector('button[onclick="scanNetworks()"]');
+    const originalText = scanButton ? scanButton.textContent : null;
+    if (scanButton) {
+        scanButton.textContent = 'Scanning...';
+        scanButton.disabled = true;
+    }
+    
     fetch('/api/wifiscan')
         .then(response => response.json())
         .then(data => {
@@ -723,6 +834,13 @@ function scanNetworks() {
         .catch(error => {
             networksDiv.innerHTML = 'Error scanning networks';
             console.error('Error:', error);
+        })
+        .finally(() => {
+            // Restore scan button
+            if (scanButton) {
+                scanButton.textContent = originalText || 'Refresh Networks';
+                scanButton.disabled = false;
+            }
         });
 }
 
