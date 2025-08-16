@@ -28,7 +28,6 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 #include "AudioOutputI2SNoDAC.h"
-#include "AudioOutputI2SPDM.h"
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
@@ -68,8 +67,7 @@ AudioOutputI2S *out = nullptr;              ///< I2S audio output
  */
 enum AudioOutputType {
   OUTPUT_I2S = 0,
-  OUTPUT_PDM = 1,
-  OUTPUT_DAC = 2
+  OUTPUT_DAC = 1
 };
 
 AudioOutputType currentOutputType = OUTPUT_I2S;  ///< Currently selected output type
@@ -693,9 +691,6 @@ void startStream(const char* url, const char* name) {
     case OUTPUT_I2S:
       newOut = new AudioOutputI2S();
       break;
-    case OUTPUT_PDM:
-      newOut = new AudioOutputI2SPDM();
-      break;
     case OUTPUT_DAC:
       newOut = new AudioOutputI2SNoDAC();
       break;
@@ -717,10 +712,6 @@ void startStream(const char* url, const char* name) {
   switch (currentOutputType) {
     case OUTPUT_I2S:
       newOut->SetPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-      break;
-    case OUTPUT_PDM:
-      // PDM uses different pin configuration
-      // The library handles this internally
       break;
     case OUTPUT_DAC:
       // DAC output uses the same pins but in DAC mode
