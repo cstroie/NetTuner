@@ -519,11 +519,24 @@ void handleWiFiSave() {
     return;
   }
   
-  strncpy(ssid, doc["ssid"], sizeof(ssid) - 1);
+  // Validate SSID length
+  String newSSID = doc["ssid"].as<String>();
+  if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid)) {
+    server.send(400, "text/plain", "Invalid SSID length");
+    return;
+  }
+  
+  strncpy(ssid, newSSID.c_str(), sizeof(ssid) - 1);
   ssid[sizeof(ssid) - 1] = '\0';
   
   if (doc.containsKey("password")) {
-    strncpy(password, doc["password"], sizeof(password) - 1);
+    String newPassword = doc["password"].as<String>();
+    // Validate password length
+    if (newPassword.length() >= sizeof(password)) {
+      server.send(400, "text/plain", "Password too long");
+      return;
+    }
+    strncpy(password, newPassword.c_str(), sizeof(password) - 1);
     password[sizeof(password) - 1] = '\0';
   } else {
     password[0] = '\0';
