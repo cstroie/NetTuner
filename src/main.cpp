@@ -471,11 +471,24 @@ void loadWiFiCredentials() {
   }
   
   if (doc.containsKey("password")) {
-    strncpy(password, doc["password"], sizeof(password) - 1);
-    password[sizeof(password) - 1] = '\0';
+    const char* pwd = doc["password"];
+    if (pwd) {
+      strncpy(password, pwd, sizeof(password) - 1);
+      password[sizeof(password) - 1] = '\0';
+    } else {
+      password[0] = '\0';
+    }
   }
   
   Serial.println("Loaded WiFi credentials from SPIFFS");
+  Serial.print("SSID: ");
+  Serial.println(ssid);
+  // Only print password if it exists and is not empty
+  if (strlen(password) > 0) {
+    Serial.println("Password: [REDACTED]");
+  } else {
+    Serial.println("Password: [NONE]");
+  }
 }
 
 /**
@@ -829,7 +842,9 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
-        currentSelection = (currentSelection + 1) % max(1, playlistCount);
+        if (playlistCount > 0) {
+          currentSelection = (currentSelection + 1) % playlistCount;
+        }
       }
     } else if (diff < 0) {
       // Process counter-clockwise rotation
@@ -843,7 +858,9 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
-        currentSelection = (currentSelection - 1 + max(1, playlistCount)) % max(1, playlistCount);
+        if (playlistCount > 0) {
+          currentSelection = (currentSelection - 1 + playlistCount) % playlistCount;
+        }
       }
     }
     
@@ -1013,28 +1030,62 @@ void handlePostStreams() {
  * Starts playing a stream with the given URL and name
  */
 void handlePlay() {
-  if (!server.hasArg("url") || !server.hasArg("name")) {
+  if (server.hasArg("plain")) {
+    // Handle JSON payload
+    String json = server.arg("plain");
+    DynamicJsonDocument doc(512);
+    DeserializationError error = deserializeJson(doc, json);
+    
+    if (error) {
+      server.send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    
+    if (!doc.containsKey("url") || !doc.containsKey("name")) {
+      server.send(400, "text/plain", "Missing required parameters: url and name");
+      return;
+    }
+    
+    String url = doc["url"].as<String>();
+    String name = doc["name"].as<String>();
+    
+    if (url.length() == 0 || name.length() == 0) {
+      server.send(400, "text/plain", "URL and name cannot be empty");
+      return;
+    }
+    
+    // Validate URL format
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
+      return;
+    }
+    
+    startStream(url.c_str(), name.c_str());
+    sendStatusToClients();  // Notify clients of status change
+    server.send(200, "text/plain", "OK");
+  } else if (server.hasArg("url") && server.hasArg("name")) {
+    // Handle form data
+    String url = server.arg("url");
+    String name = server.arg("name");
+    
+    if (url.length() == 0 || name.length() == 0) {
+      server.send(400, "text/plain", "URL and name cannot be empty");
+      return;
+    }
+    
+    // Validate URL format
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
+      return;
+    }
+    
+    startStream(url.c_str(), name.c_str());
+    sendStatusToClients();  // Notify clients of status change
+    server.send(200, "text/plain", "OK");
+  } else {
     server.send(400, "text/plain", "Missing required parameters: url and name");
     return;
   }
-  
-  String url = server.arg("url");
-  String name = server.arg("name");
-  
-  if (url.length() == 0 || name.length() == 0) {
-    server.send(400, "text/plain", "URL and name cannot be empty");
-    return;
-  }
-  
-  // Validate URL format
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
-    return;
-  }
-  
-  startStream(url.c_str(), name.c_str());
-  sendStatusToClients();  // Notify clients of status change
-  server.send(200, "text/plain", "OK");
 }
 
 /**
@@ -1052,25 +1103,55 @@ void handleStop() {
  * Sets the volume level
  */
 void handleVolume() {
-  if (!server.hasArg("volume")) {
+  if (server.hasArg("plain")) {
+    // Handle JSON payload
+    String json = server.arg("plain");
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, json);
+    
+    if (error) {
+      server.send(400, "text/plain", "Invalid JSON");
+      return;
+    }
+    
+    if (!doc.containsKey("volume")) {
+      server.send(400, "text/plain", "Missing required parameter: volume");
+      return;
+    }
+    
+    int newVolume = doc["volume"];
+    
+    if (newVolume < 0 || newVolume > 100) {
+      server.send(400, "text/plain", "Volume must be between 0 and 100");
+      return;
+    }
+    
+    volume = newVolume;
+    if (out) {
+      out->SetGain(volume / 100.0);
+    }
+    sendStatusToClients();  // Notify clients of status change
+    server.send(200, "text/plain", "OK");
+  } else if (server.hasArg("volume")) {
+    // Handle form data
+    String vol = server.arg("volume");
+    int newVolume = vol.toInt();
+    
+    if (newVolume < 0 || newVolume > 100) {
+      server.send(400, "text/plain", "Volume must be between 0 and 100");
+      return;
+    }
+    
+    volume = newVolume;
+    if (out) {
+      out->SetGain(volume / 100.0);
+    }
+    sendStatusToClients();  // Notify clients of status change
+    server.send(200, "text/plain", "OK");
+  } else {
     server.send(400, "text/plain", "Missing required parameter: volume");
     return;
   }
-  
-  String vol = server.arg("volume");
-  int newVolume = vol.toInt();
-  
-  if (newVolume < 0 || newVolume > 100) {
-    server.send(400, "text/plain", "Volume must be between 0 and 100");
-    return;
-  }
-  
-  volume = newVolume;
-  if (out) {
-    out->SetGain(volume / 100.0);
-  }
-  sendStatusToClients();  // Notify clients of status change
-  server.send(200, "text/plain", "OK");
 }
 
 /**

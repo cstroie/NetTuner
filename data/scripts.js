@@ -121,8 +121,15 @@ function addToastStyles() {
 
 // WebSocket connection
 let ws = null;
+let reconnectTimeout = null;
 
 function connectWebSocket() {
+    // Clear any existing reconnection timeout
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return;
     }
@@ -186,7 +193,7 @@ function connectWebSocket() {
             console.log('WebSocket disconnected');
             showToast('Disconnected from NetTuner', 'warning');
             // Try to reconnect after 3 seconds
-            setTimeout(connectWebSocket, 3000);
+            reconnectTimeout = setTimeout(connectWebSocket, 3000);
         };
         
         ws.onerror = function(error) {
@@ -197,7 +204,7 @@ function connectWebSocket() {
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
         // Fallback to polling if WebSocket fails
-        setTimeout(connectWebSocket, 5000);
+        reconnectTimeout = setTimeout(connectWebSocket, 5000);
     }
 }
 
@@ -218,28 +225,40 @@ async function playStream() {
         const response = await fetch('/api/play', {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
+            body: JSON.stringify({ url: url, name: name })
         });
         console.log('Play response status:', response.status);
         if (!response.ok) {
-            throw new Error('Failed to play stream');
+            const errorText = await response.text();
+            throw new Error('Failed to play stream: ' + errorText);
         }
+        showToast('Stream started', 'success');
     } catch (error) {
         console.error('Error playing stream:', error);
-        alert('Error playing stream: ' + error.message);
+        showToast('Error playing stream: ' + error.message, 'error');
     }
 }
 
 async function stopStream() {
     try {
         console.log('Stopping current stream');
-        const response = await fetch('/api/stop', { method: 'POST' });
+        const response = await fetch('/api/stop', { 
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
         console.log('Stop response status:', response.status);
+        if (response.ok) {
+            showToast('Stream stopped', 'info');
+        }
     } catch (error) {
         console.error('Error stopping stream:', error);
+        showToast('Error stopping stream: ' + error.message, 'error');
     }
 }
 
@@ -248,8 +267,11 @@ async function setVolume(volume) {
         console.log('Setting volume to:', volume);
         const response = await fetch('/api/volume', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'volume=' + volume
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ volume: volume })
         });
         console.log('Volume response status:', response.status);
         if (response.ok) {
@@ -257,9 +279,11 @@ async function setVolume(volume) {
             if (volumeValue) {
                 volumeValue.textContent = volume + '%';
             }
+            showToast('Volume set to ' + volume + '%', 'info');
         }
     } catch (error) {
         console.error('Error setting volume:', error);
+        showToast('Error setting volume: ' + error.message, 'error');
     }
 }
 
