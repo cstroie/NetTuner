@@ -1067,10 +1067,10 @@ void saveConfig() {
  * Configures pins and attaches interrupt handlers for the rotary encoder
  */
 void setupRotaryEncoder() {
-  // Configure rotary encoder pins
-  pinMode(ROTARY_CLK, INPUT);
-  pinMode(ROTARY_DT, INPUT);
-  pinMode(ROTARY_SW, INPUT_PULLUP);  // Enable internal pull-up resistor
+  // Configure rotary encoder pins with internal pull-up resistors
+  pinMode(ROTARY_CLK, INPUT_PULLUP);  // Enable internal pull-up resistor
+  pinMode(ROTARY_DT, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(ROTARY_SW, INPUT_PULLUP);   // Enable internal pull-up resistor
   
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(ROTARY_CLK), rotaryISR, CHANGE);
