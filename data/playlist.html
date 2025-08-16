@@ -106,10 +106,10 @@
             <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
         </div>
         
-        <h2>Upload M3U Playlist</h2>
+        <h2>Upload JSON Playlist</h2>
         <div class="form-group">
-            <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="margin-bottom: 10px;">
-            <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
+            <input type="file" id="m3uFile" accept=".json" style="margin-bottom: 10px;">
+            <button class="btn-secondary" onclick="uploadM3U()">Upload JSON</button>
         </div>
     </div>
 
@@ -121,31 +121,11 @@
                 console.log('Loading streams from /api/streams');
                 const response = await fetch('/api/streams');
                 console.log('Streams response status:', response.status);
-                const m3uContent = await response.text();
-                console.log('M3U content:', m3uContent);
-                
-                // Parse M3U content
-                streams = [];
-                const lines = m3uContent.split('\n');
-                let currentName = '';
-                
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.startsWith('#EXTINF:')) {
-                        const commaPos = line.indexOf(',');
-                        if (commaPos !== -1) {
-                            currentName = line.substring(commaPos + 1).trim();
-                        }
-                    } else if (!line.startsWith('#') && line.startsWith('http')) {
-                        streams.push({
-                            name: currentName || 'Stream ' + (streams.length + 1),
-                            url: line
-                        });
-                        currentName = '';
-                    }
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-                
-                console.log('Parsed streams:', streams);
+                streams = await response.json();
+                console.log('Loaded streams:', streams);
                 renderPlaylist();
             } catch (error) {
                 console.error('Error loading streams:', error);
@@ -203,20 +183,16 @@
         }
         
         async function savePlaylist() {
-            // Generate M3U content
-            let m3uContent = "#EXTM3U\n";
-            streams.forEach(stream => {
-                m3uContent += "#EXTINF:-1," + stream.name + "\n";
-                m3uContent += stream.url + "\n";
-            });
+            // Convert streams to JSON
+            const jsonData = JSON.stringify(streams);
             
-            console.log('Saving playlist:', m3uContent);
+            console.log('Saving playlist:', jsonData);
             
             try {
                 const response = await fetch('/api/streams', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain' },
-                    body: m3uContent
+                    headers: { 'Content-Type': 'application/json' },
+                    body: jsonData
                 });
                 
                 console.log('Save playlist response status:', response.status);
@@ -238,24 +214,24 @@
             const fileInput = document.getElementById('m3uFile');
             const file = fileInput.files[0];
             
-            console.log('Uploading M3U file:', file);
+            console.log('Uploading JSON playlist file:', file);
             
             if (!file) {
-                alert('Please select an M3U file');
+                alert('Please select a JSON file');
                 return;
             }
             
             // Read file content
             const reader = new FileReader();
             reader.onload = async function(e) {
-                const m3uContent = e.target.result;
-                console.log('File content:', m3uContent);
+                const jsonContent = e.target.result;
+                console.log('File content:', jsonContent);
                 
                 try {
                     const response = await fetch('/api/streams', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'text/plain' },
-                        body: m3uContent
+                        headers: { 'Content-Type': 'application/json' },
+                        body: jsonContent
                     });
                     
                     console.log('Upload response status:', response.status);
@@ -270,8 +246,8 @@
                         fileInput.value = '';
                     }
                 } catch (error) {
-                    console.error('Error uploading M3U:', error);
-                    alert('Error uploading M3U file');
+                    console.error('Error uploading JSON:', error);
+                    alert('Error uploading JSON file');
                 }
             };
             reader.readAsText(file);

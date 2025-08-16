@@ -67,6 +67,9 @@
                 console.log('Loading streams from /api/streams');
                 const response = await fetch('/api/streams');
                 console.log('Streams response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 streams = await response.json();
                 console.log('Loaded streams:', streams);
                 const select = document.getElementById('streamSelect');

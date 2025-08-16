@@ -712,17 +712,17 @@ void stopStream() {
 
 /**
  * @brief Load playlist from SPIFFS storage
- * Reads playlist.m3u from SPIFFS and populates the playlist array
+ * Reads playlist.json from SPIFFS and populates the playlist array
  */
 void loadPlaylist() {
   playlistCount = 0;  // Reset playlist count
   
   // If playlist file doesn't exist, create a default empty one
-  if (!SPIFFS.exists("/playlist.m3u")) {
+  if (!SPIFFS.exists("/playlist.json")) {
     // Create default playlist
-    File file = SPIFFS.open("/playlist.m3u", "w");
+    File file = SPIFFS.open("/playlist.json", "w");
     if (file) {
-      file.println("#EXTM3U");
+      file.println("[]");
       file.close();
       Serial.println("Created default playlist file");
     } else {
@@ -732,7 +732,7 @@ void loadPlaylist() {
   }
   
   // Open the playlist file for reading
-  File file = SPIFFS.open("/playlist.m3u", "r");
+  File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     Serial.println("Error: Failed to open playlist file for reading");
     return;  // Return if file couldn't be opened
@@ -756,55 +756,34 @@ void loadPlaylist() {
   String content = file.readString();
   file.close();
   
-  // Parse the M3U content
-  int startPos = 0;
-  String currentName = "";
+  // Parse the JSON content
+  DynamicJsonDocument doc(4096);
+  DeserializationError error = deserializeJson(doc, content);
+  if (error) {
+    Serial.println("Error: Failed to parse playlist JSON");
+    return;
+  }
   
-  for (unsigned int i = 0; i < content.length(); i++) {
-    if (content[i] == '\n' || content[i] == '\r' || i == content.length() - 1) {
-      // Handle the last line if it doesn't end with a newline
-      unsigned int endPos = (i == content.length() - 1) ? i + 1 : i;
-      String line = content.substring(startPos, endPos);
-      line.trim();
-      
-      if (line.length() > 0) {
-        if (line.startsWith("#EXTINF:")) {
-          // Extract name from EXTINF line
-          int commaPos = line.indexOf(",");
-          if (commaPos != -1) {
-            currentName = line.substring(commaPos + 1);
-            currentName.trim();
-          }
-        } else if (!line.startsWith("#") && line.startsWith("http")) {
-          // This is a URL line
-          if (playlistCount < 20) {
-            // Use extracted name or create default name
-            if (currentName.length() == 0) {
-              currentName = "Stream " + String(playlistCount + 1);
-            }
-            
-            // Add to playlist
-            strncpy(playlist[playlistCount].name, currentName.c_str(), sizeof(playlist[playlistCount].name) - 1);
-            playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-            strncpy(playlist[playlistCount].url, line.c_str(), sizeof(playlist[playlistCount].url) - 1);
-            playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-            playlistCount++;
-            
-            // Reset for next entry
-            currentName = "";
-          } else {
-            Serial.println("Warning: Playlist limit reached (20 entries)");
-            break;
-          }
-        }
-      }
-      
-      // Skip line endings
-      while (i < content.length() && (content[i] == '\n' || content[i] == '\r')) {
-        i++;
-      }
-      startPos = i;
-      i--; // Adjust for loop increment
+  if (!doc.is<JsonArray>()) {
+    Serial.println("Error: Playlist JSON is not an array");
+    return;
+  }
+  
+  JsonArray array = doc.as<JsonArray>();
+  playlistCount = 0;
+  
+  for (JsonObject item : array) {
+    if (playlistCount >= 20) {
+      Serial.println("Warning: Playlist limit reached (20 entries)");
+      break;
+    }
+    
+    if (item.containsKey("name") && item.containsKey("url")) {
+      strncpy(playlist[playlistCount].name, item["name"], sizeof(playlist[playlistCount].name) - 1);
+      playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+      strncpy(playlist[playlistCount].url, item["url"], sizeof(playlist[playlistCount].url) - 1);
+      playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+      playlistCount++;
     }
   }
   
@@ -815,25 +794,29 @@ void loadPlaylist() {
 
 /**
  * @brief Save playlist to SPIFFS storage
- * Serializes the current playlist array to playlist.m3u
+ * Serializes the current playlist array to playlist.json
  */
 void savePlaylist() {
   // Save to file
-  File file = SPIFFS.open("/playlist.m3u", "w");
+  File file = SPIFFS.open("/playlist.json", "w");
   if (!file) {
     Serial.println("Error: Failed to open playlist file for writing");
     return;
   }
   
-  // Write M3U header
-  file.println("#EXTM3U");
+  // Create JSON array
+  DynamicJsonDocument doc(4096);
+  JsonArray array = doc.to<JsonArray>();
   
-  // Write playlist entries
+  // Add playlist entries
   for (int i = 0; i < playlistCount; i++) {
-    file.println("#EXTINF:-1," + String(playlist[i].name));
-    file.println(String(playlist[i].url));
+    JsonObject item = array.createNestedObject();
+    item["name"] = playlist[i].name;
+    item["url"] = playlist[i].url;
   }
   
+  // Write JSON to file
+  serializeJson(array, file);
   file.close();
   
   Serial.println("Saved playlist to file");
@@ -965,67 +948,68 @@ void handlePlaylistPage() {
 
 /**
  * @brief Handle GET request for streams
- * Returns the current playlist as M3U
+ * Returns the current playlist as JSON
  */
 void handleGetStreams() {
-  File file = SPIFFS.open("/playlist.m3u", "r");
-  if (!file) {
-    // Create empty M3U file
-    File newFile = SPIFFS.open("/playlist.m3u", "w");
-    if (newFile) {
-      newFile.println("#EXTM3U");
-      newFile.close();
-    }
-    file = SPIFFS.open("/playlist.m3u", "r");
-    if (!file) {
-      server.send(200, "audio/x-mpegurl", "#EXTM3U\n");
-      return;
+  // If playlist file doesn't exist, create a default empty one
+  if (!SPIFFS.exists("/playlist.json")) {
+    File file = SPIFFS.open("/playlist.json", "w");
+    if (file) {
+      file.println("[]");
+      file.close();
     }
   }
-  server.streamFile(file, "audio/x-mpegurl");
+  
+  File file = SPIFFS.open("/playlist.json", "r");
+  if (!file) {
+    server.send(200, "application/json", "[]");
+    return;
+  }
+  
+  server.streamFile(file, "application/json");
   file.close();
 }
 
 
 /**
  * @brief Handle POST request for streams
- * Updates the playlist with new M3U data
+ * Updates the playlist with new JSON data
  */
 void handlePostStreams() {
   if (!server.hasArg("plain")) {
-    server.send(400, "text/plain", "Missing M3U data");
+    server.send(400, "text/plain", "Missing JSON data");
     return;
   }
   
-  String m3u = server.arg("plain");
+  String json = server.arg("plain");
   
-  // Basic M3U validation
-  if (m3u.length() == 0) {
-    server.send(400, "text/plain", "Empty M3U data");
+  // Basic JSON validation
+  if (json.length() == 0) {
+    server.send(400, "text/plain", "Empty JSON data");
     return;
   }
   
-  // Check if it looks like valid M3U
-  m3u.trim();
-  if (!m3u.startsWith("#EXTM3U")) {
-    server.send(400, "text/plain", "Invalid M3U format");
+  // Check if it looks like valid JSON array
+  json.trim();
+  if (!json.startsWith("[") || !json.endsWith("]")) {
+    server.send(400, "text/plain", "Invalid JSON format");
     return;
   }
   
-  File file = SPIFFS.open("/playlist.m3u", "w");
+  File file = SPIFFS.open("/playlist.json", "w");
   if (!file) {
     server.send(500, "text/plain", "Failed to save playlist");
     return;
   }
-  file.print(m3u);
+  file.print(json);
   file.close();
   loadPlaylist(); // Reload playlist
   server.send(200, "text/plain", "OK");
 }
 
 /**
- * @brief Handle M3U file upload
- * Parses M3U file and adds entries to the existing playlist
+ * @brief Handle JSON playlist upload
+ * Parses JSON file and replaces the existing playlist
  */
 void handleM3UUpload() {
   HTTPUpload& upload = server.upload();
@@ -1037,77 +1021,26 @@ void handleM3UUpload() {
   } else if (upload.status == UPLOAD_FILE_END) {
     Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
     
-    // Parse the uploaded M3U content
-    String m3uContent = String((char*)upload.buf, upload.currentSize);
+    // Parse the uploaded JSON content
+    String jsonContent = String((char*)upload.buf, upload.currentSize);
     
-    // Load existing playlist
-    loadPlaylist();
-    
-    // Parse M3U content
-    int newEntries = 0;
-    int startPos = 0;
-    bool foundFirstEntry = false;
-    
-    for (unsigned int i = 0; i < m3uContent.length(); i++) {
-      if (m3uContent[i] == '\n' || m3uContent[i] == '\r' || i == m3uContent.length() - 1) {
-        // Handle the last line if it doesn't end with a newline
-        unsigned int endPos = (i == m3uContent.length() - 1) ? i + 1 : i;
-        String line = m3uContent.substring(startPos, endPos);
-        line.trim();
-        
-        if (line.length() > 0 && !line.startsWith("#") && line.startsWith("http")) {
-          // This is a URL line
-          if (playlistCount < 20) {
-            // Extract stream name from URL if not found
-            String name = "Stream " + String(playlistCount + 1);
-            
-            // Try to find associated name in previous lines
-            int nameStart = m3uContent.lastIndexOf("#EXTINF:", startPos);
-            if (nameStart != -1) {
-              int nameEnd = m3uContent.indexOf("\n", nameStart);
-              if (nameEnd == -1) nameEnd = m3uContent.indexOf("\r", nameStart);
-              if (nameEnd == -1) nameEnd = m3uContent.length();
-              if (nameEnd != -1) {
-                String extinfLine = m3uContent.substring(nameStart, nameEnd);
-                extinfLine.trim();
-                int commaPos = extinfLine.indexOf(",");
-                if (commaPos != -1) {
-                  name = extinfLine.substring(commaPos + 1);
-                  name.trim();
-                  if (name.length() == 0) {
-                    name = "Stream " + String(playlistCount + 1);
-                  }
-                }
-              }
-            }
-            
-            // Add to playlist
-            strncpy(playlist[playlistCount].name, name.c_str(), sizeof(playlist[playlistCount].name) - 1);
-            playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-            strncpy(playlist[playlistCount].url, line.c_str(), sizeof(playlist[playlistCount].url) - 1);
-            playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-            playlistCount++;
-            newEntries++;
-          } else {
-            Serial.println("Warning: Playlist limit reached (20 entries)");
-            break;
-          }
-        }
-        
-        // Skip line endings
-        while (i < m3uContent.length() && (m3uContent[i] == '\n' || m3uContent[i] == '\r')) {
-          i++;
-        }
-        startPos = i;
-        i--; // Adjust for loop increment
-      }
+    // Validate JSON format
+    jsonContent.trim();
+    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
     }
     
-    // Save updated playlist
-    savePlaylistToFile();
+    File file = SPIFFS.open("/playlist.json", "w");
+    if (!file) {
+      server.send(500, "text/plain", "Failed to save playlist");
+      return;
+    }
+    file.print(jsonContent);
+    file.close();
     
-    String response = "Added " + String(newEntries) + " entries to playlist";
-    server.send(200, "text/plain", response);
+    loadPlaylist(); // Reload playlist
+    server.send(200, "text/plain", "Playlist updated successfully");
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     Serial.println("Upload Aborted");
     server.send(500, "text/plain", "Upload Aborted");
