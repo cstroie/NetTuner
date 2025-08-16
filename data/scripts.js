@@ -81,6 +81,12 @@ function showToast(message, type = 'info') {
         document.body.appendChild(toastContainer);
     }
     
+    // Limit the number of toasts to prevent memory leaks
+    const maxToasts = 5;
+    while (toastContainer.children.length >= maxToasts) {
+        toastContainer.removeChild(toastContainer.firstChild);
+    }
+    
     // Create toast element
     const toast = document.createElement('div');
     toast.style.cssText = `
