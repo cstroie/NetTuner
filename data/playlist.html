@@ -106,14 +106,13 @@
             <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
         </div>
         
-        <h2>Upload Playlist</h2>
+        <h2>Playlist Management</h2>
         <div class="form-group">
             <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
-            <button class="btn-secondary" onclick="uploadPlaylist()">Upload Playlist</button>
-        </div>
-        
-        <div class="form-group">
-            <button class="btn-secondary" onclick="downloadM3U()">Download as M3U</button>
+            <button class="btn-secondary" onclick="uploadJSON()">Upload JSON</button>
+            <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
+            <button class="btn-secondary" onclick="downloadJSON()">Download JSON</button>
+            <button class="btn-secondary" onclick="downloadM3U()">Download M3U</button>
         </div>
     </div>
 
@@ -217,14 +216,21 @@
             }
         }
         
-        async function uploadPlaylist() {
+        async function uploadJSON() {
             const fileInput = document.getElementById('playlistFile');
             const file = fileInput.files[0];
             
-            console.log('Uploading playlist file:', file);
+            console.log('Uploading JSON playlist file:', file);
             
             if (!file) {
                 alert('Please select a playlist file');
+                return;
+            }
+            
+            // Check file extension
+            const fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.json')) {
+                alert('Please select a JSON file');
                 return;
             }
             
@@ -235,14 +241,10 @@
                 console.log('File content:', fileContent);
                 
                 try {
-                    const contentType = file.name.toLowerCase().endsWith('.m3u') || file.name.toLowerCase().endsWith('.m3u8') 
-                        ? 'text/plain' 
-                        : 'application/json';
-                    
                     const response = await fetch('/api/streams', {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': contentType,
+                            'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: fileContent
@@ -265,6 +267,91 @@
                 }
             };
             reader.readAsText(file);
+        }
+        
+        async function uploadM3U() {
+            const fileInput = document.getElementById('playlistFile');
+            const file = fileInput.files[0];
+            
+            console.log('Uploading M3U playlist file:', file);
+            
+            if (!file) {
+                alert('Please select a playlist file');
+                return;
+            }
+            
+            // Check file extension
+            const fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
+                alert('Please select an M3U file');
+                return;
+            }
+            
+            // Read file content
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const fileContent = e.target.result;
+                console.log('File content:', fileContent);
+                
+                try {
+                    const response = await fetch('/api/streams', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'text/plain',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: fileContent
+                    });
+                    
+                    console.log('Upload response status:', response.status);
+                    const message = await response.text();
+                    console.log('Upload response message:', message);
+                    alert(message);
+                    
+                    if (response.ok) {
+                        // Reload streams after successful upload
+                        loadStreams();
+                        // Clear file input
+                        fileInput.value = '';
+                    }
+                } catch (error) {
+                    console.error('Error uploading playlist:', error);
+                    alert('Error uploading playlist file: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        async function downloadJSON() {
+            try {
+                const response = await fetch('/api/streams', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                console.log('Download JSON response status:', response.status);
+                
+                if (response.ok) {
+                    const jsonContent = await response.text();
+                    const blob = new Blob([jsonContent], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'playlist.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    const error = await response.text();
+                    console.error('Error downloading JSON:', error);
+                    alert('Error downloading JSON: ' + error);
+                }
+            } catch (error) {
+                console.error('Error downloading JSON:', error);
+                alert('Error downloading JSON: ' + error.message);
+            }
         }
         
         async function downloadM3U() {
