@@ -972,3 +972,36 @@ function initWiFiPage() {
     // Scan networks on page load
     scanNetworks();
 }
+
+// Config functions
+function initConfigPage() {
+    // Load current configuration
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(config => {
+            document.getElementById('output').value = config.output || 0;
+        })
+        .catch(error => console.error('Error loading config:', error));
+    
+    // Handle form submission
+    document.getElementById('configForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const output = document.getElementById('output').value;
+        
+        fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ output: parseInt(output) })
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert(data);
+            // Reload the page to reflect changes
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error saving configuration');
+            console.error('Error:', error);
+        });
+    });
+}
