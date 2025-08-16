@@ -988,6 +988,7 @@ void handleGetStreams() {
 /**
  * @brief Handle POST request for streams
  * Updates the playlist with new JSON data
+ * Supports both direct JSON POST and file upload mechanisms
  */
 void handlePostStreams() {
   // Handle file upload through the standard upload mechanism
@@ -1229,6 +1230,11 @@ void sendStatusToClients() {
 
 /**
  * @brief Handle WebSocket events
+ * Processes WebSocket connection, disconnection, and message events
+ * @param num Client number
+ * @param type Event type (connected, disconnected, text message, etc.)
+ * @param payload Message payload for text messages
+ * @param length Length of the payload
  */
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch(type) {

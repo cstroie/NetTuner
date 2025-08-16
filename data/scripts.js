@@ -1,6 +1,11 @@
 // Main functions
 let streams = [];
 
+/**
+ * @brief Load streams from the server
+ * Fetches the playlist from the server and updates the UI
+ * Shows loading states and handles errors appropriately
+ */
 async function loadStreams() {
     // Show loading state
     const select = document.getElementById('streamSelect');
@@ -52,7 +57,12 @@ async function loadStreams() {
     }
 }
 
-// Toast notification system
+/**
+ * @brief Show a toast notification
+ * Displays a temporary message notification in the top-right corner
+ * @param message The message to display
+ * @param type The type of message (success, error, warning, info)
+ */
 function showToast(message, type = 'info') {
     // Create toast container if it doesn't exist
     let toastContainer = document.getElementById('toast-container');
@@ -112,7 +122,10 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
-// Add CSS for toast animations
+/**
+ * @brief Add CSS styles for toast notifications
+ * Injects the required CSS animations for toast notifications into the document head
+ */
 function addToastStyles() {
     const style = document.createElement('style');
     style.textContent = `
