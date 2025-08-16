@@ -32,6 +32,93 @@ async function loadStreams() {
     }
 }
 
+// Toast notification system
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        padding: 12px 20px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        animation: slideIn 0.3s, fadeOut 0.5s 2.5s forwards;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+    
+    // Set toast style based on type
+    switch (type) {
+        case 'success':
+            toast.style.backgroundColor = '#4CAF50';
+            break;
+        case 'error':
+            toast.style.backgroundColor = '#f44336';
+            break;
+        case 'warning':
+            toast.style.backgroundColor = '#ff9800';
+            break;
+        default:
+            toast.style.backgroundColor = '#2196F3';
+    }
+    
+    toast.textContent = message;
+    
+    // Add toast to container
+    toastContainer.appendChild(toast);
+    
+    // Remove toast after animation completes
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// Add CSS for toast animations
+function addToastStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // WebSocket connection
 let ws = null;
 
@@ -50,6 +137,7 @@ function connectWebSocket() {
         
         ws.onopen = function() {
             console.log('WebSocket connected');
+            showToast('Connected to NetTuner', 'success');
         };
         
         ws.onmessage = function(event) {
@@ -58,6 +146,17 @@ function connectWebSocket() {
                 console.log('Received status update:', status);
                 const statusElement = document.getElementById('status');
                 const currentElement = document.getElementById('currentStream');
+                
+                // Show toast notifications for status changes
+                if (statusElement) {
+                    const wasPlaying = statusElement.classList.contains('playing');
+                    const isPlaying = status.playing;
+                    
+                    if (wasPlaying !== isPlaying) {
+                        showToast(isPlaying ? 'Playback started' : 'Playback stopped', 
+                                 isPlaying ? 'success' : 'info');
+                    }
+                }
                 
                 if (statusElement) {
                     statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
@@ -85,15 +184,18 @@ function connectWebSocket() {
         
         ws.onclose = function() {
             console.log('WebSocket disconnected');
+            showToast('Disconnected from NetTuner', 'warning');
             // Try to reconnect after 3 seconds
             setTimeout(connectWebSocket, 3000);
         };
         
         ws.onerror = function(error) {
             console.error('WebSocket error:', error);
+            showToast('Connection error', 'error');
         };
     } catch (error) {
         console.error('Error creating WebSocket:', error);
+        showToast('Failed to connect', 'error');
         // Fallback to polling if WebSocket fails
         setTimeout(connectWebSocket, 5000);
     }
@@ -542,6 +644,9 @@ function initWiFiPage() {
 
 // Initialize based on current page
 document.addEventListener('DOMContentLoaded', function() {
+    // Add toast styles to all pages
+    addToastStyles();
+    
     if (document.getElementById('streamSelect')) {
         initMainPage();
     } else if (document.getElementById('playlistBody')) {
