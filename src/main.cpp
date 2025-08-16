@@ -1793,12 +1793,36 @@ void handleMPDCommand(const String& command) {
   } else if (command.startsWith("outputs")) {
     // Outputs command
     mpdClient.println("outputid: 0");
-    mpdClient.println("outputname: NetTuner");
-    mpdClient.println("outputenabled: 1");
+    mpdClient.println("outputname: I2S (External DAC)");
+    mpdClient.println("outputenabled: " + String(currentOutputType == OUTPUT_I2S ? "1" : "0"));
+    mpdClient.println("outputid: 1");
+    mpdClient.println("outputname: DAC (Internal DAC)");
+    mpdClient.println("outputenabled: " + String(currentOutputType == OUTPUT_DAC ? "1" : "0"));
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("disableoutput") || command.startsWith("enableoutput")) {
-    // Output control commands
-    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("disableoutput")) {
+    // Disable output command
+    if (command.length() > 13) {
+      int outputId = command.substring(14).toInt();
+      // We don't actually disable outputs, just acknowledge the command
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("Missing output ID"));
+    }
+  } else if (command.startsWith("enableoutput")) {
+    // Enable output command
+    if (command.length() > 12) {
+      int outputId = command.substring(13).toInt();
+      if (outputId >= 0 && outputId <= 1) {
+        // Set the output type
+        currentOutputType = (AudioOutputType)outputId;
+        saveConfig();  // Save the configuration
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("Invalid output ID"));
+      }
+    } else {
+      mpdClient.print(mpdResponseError("Missing output ID"));
+    }
   } else if (command.startsWith("commands")) {
     // Commands command
     mpdClient.println("command: add");
