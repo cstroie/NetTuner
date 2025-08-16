@@ -536,7 +536,8 @@ void saveWiFiCredentials() {
     return;
   }
   
-  if (serializeJson(doc, file) == 0) {
+  size_t bytesWritten = serializeJson(doc, file);
+  if (bytesWritten == 0) {
     Serial.println("Failed to write WiFi config to file");
     file.close();
     return;
@@ -823,13 +824,6 @@ void loadPlaylist() {
  * Serializes the current playlist array to playlist.json
  */
 void savePlaylist() {
-  // Save to file
-  File file = SPIFFS.open("/playlist.json", "w");
-  if (!file) {
-    Serial.println("Error: Failed to open playlist file for writing");
-    return;
-  }
-  
   // Create JSON array
   DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
@@ -845,6 +839,13 @@ void savePlaylist() {
     JsonObject item = array.createNestedObject();
     item["name"] = playlist[i].name;
     item["url"] = playlist[i].url;
+  }
+  
+  // Save to file
+  File file = SPIFFS.open("/playlist.json", "w");
+  if (!file) {
+    Serial.println("Error: Failed to open playlist file for writing");
+    return;
   }
   
   // Write JSON to file
