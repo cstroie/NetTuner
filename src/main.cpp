@@ -294,6 +294,7 @@ void setup() {
   
   // Connect to WiFi
   if (strlen(ssid) > 0) {
+    WiFi.setHostname("NetTuner");
     WiFi.begin(ssid, password);
     int wifiAttempts = 0;
     const int maxAttempts = 20;
