@@ -122,6 +122,7 @@ function addToastStyles() {
 // WebSocket connection
 let ws = null;
 let reconnectTimeout = null;
+let isConnecting = false;
 
 function connectWebSocket() {
     // Clear any existing reconnection timeout
@@ -130,9 +131,12 @@ function connectWebSocket() {
         reconnectTimeout = null;
     }
     
-    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+    // Prevent multiple connection attempts
+    if (isConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) {
         return;
     }
+    
+    isConnecting = true;
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // WebSocket server runs on port 81, not the same port as HTTP server
@@ -143,6 +147,7 @@ function connectWebSocket() {
         ws = new WebSocket(wsUrl);
         
         ws.onopen = function() {
+            isConnecting = false;
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
         };
@@ -190,6 +195,7 @@ function connectWebSocket() {
         };
         
         ws.onclose = function() {
+            isConnecting = false;
             console.log('WebSocket disconnected');
             showToast('Disconnected from NetTuner', 'warning');
             // Try to reconnect after 3 seconds
@@ -197,10 +203,12 @@ function connectWebSocket() {
         };
         
         ws.onerror = function(error) {
+            isConnecting = false;
             console.error('WebSocket error:', error);
             showToast('Connection error', 'error');
         };
     } catch (error) {
+        isConnecting = false;
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
         // Fallback to polling if WebSocket fails

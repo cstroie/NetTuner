@@ -563,6 +563,12 @@ void startStream(const char* url, const char* name) {
     return;
   }
   
+  // Validate URL format
+  if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
+    Serial.println("Error: Invalid URL format");
+    return;
+  }
+  
   strncpy(currentStream, url, sizeof(currentStream) - 1);
   currentStream[sizeof(currentStream) - 1] = '\0';
   strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
@@ -573,6 +579,10 @@ void startStream(const char* url, const char* name) {
   file = new AudioFileSourceHTTPStream(url);  // HTTP stream source
   if (!file || !file->isOpen()) {
     Serial.println("Error: Failed to create HTTP stream source");
+    if (file) {
+      delete file;
+      file = nullptr;
+    }
     isPlaying = false;
     updateDisplay();
     return;
@@ -746,11 +756,24 @@ void loadPlaylist() {
     }
     
     if (item.containsKey("name") && item.containsKey("url")) {
-      strncpy(playlist[playlistCount].name, item["name"], sizeof(playlist[playlistCount].name) - 1);
-      playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-      strncpy(playlist[playlistCount].url, item["url"], sizeof(playlist[playlistCount].url) - 1);
-      playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-      playlistCount++;
+      const char* name = item["name"];
+      const char* url = item["url"];
+      
+      // Validate name and URL
+      if (name && url && strlen(name) > 0 && strlen(url) > 0) {
+        // Validate URL format
+        if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+          strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
+          playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+          strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
+          playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+          playlistCount++;
+        } else {
+          Serial.println("Warning: Skipping stream with invalid URL format");
+        }
+      } else {
+        Serial.println("Warning: Skipping stream with empty name or URL");
+      }
     }
   }
   
