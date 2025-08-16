@@ -278,6 +278,13 @@ void setup() {
     display.println("No WiFi Config");
     display.println("Configure WiFi");
     display.display();
+    
+    // Start WiFi access point mode
+    WiFi.softAP("NetTuner-Setup");
+    Serial.println("Access Point Started");
+    display.println("AP: NetTuner-Setup");
+    display.println("192.168.4.1");
+    display.display();
   }
   
   // Setup I2S
@@ -317,6 +324,7 @@ void setup() {
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   
+  // Start server on both AP and station interfaces if in AP mode
   server.begin();
   
   // Setup WebSocket server
