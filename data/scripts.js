@@ -1083,6 +1083,13 @@ function initWiFiPage() {
                 return;
             }
             
+            // For better security, warn if password is provided but too short
+            if (password && password.length < 8) {
+                showToast('Password should be at least 8 characters for security', 'warning');
+                passwordInput.focus();
+                return;
+            }
+            
             // Show loading state
             const submitButton = document.querySelector('#wifiForm button[type="submit"]');
             const originalText = submitButton ? submitButton.textContent : null;
