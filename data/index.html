@@ -64,8 +64,11 @@
         // Load playlist and status
         async function loadStreams() {
             try {
+                console.log('Loading streams from /api/streams');
                 const response = await fetch('/api/streams');
+                console.log('Streams response status:', response.status);
                 streams = await response.json();
+                console.log('Loaded streams:', streams);
                 const select = document.getElementById('streamSelect');
                 select.innerHTML = '<option value="">Select a stream...</option>';
                 streams.forEach(stream => {
@@ -82,8 +85,11 @@
         
         async function loadStatus() {
             try {
+                console.log('Loading status from /api/status');
                 const response = await fetch('/api/status');
+                console.log('Status response status:', response.status);
                 const status = await response.json();
+                console.log('Current status:', status);
                 const statusElement = document.getElementById('status');
                 const currentElement = document.getElementById('currentStream');
                 
@@ -104,17 +110,20 @@
             const url = select.value;
             const name = option ? option.dataset.name : '';
             
+            console.log('Playing stream:', { url, name });
+            
             if (!url) {
                 alert('Please select a stream');
                 return;
             }
             
             try {
-                await fetch('/api/play', {
+                const response = await fetch('/api/play', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
                 });
+                console.log('Play response status:', response.status);
                 loadStatus();
             } catch (error) {
                 console.error('Error playing stream:', error);
@@ -123,7 +132,9 @@
         
         async function stopStream() {
             try {
-                await fetch('/api/stop', { method: 'POST' });
+                console.log('Stopping current stream');
+                const response = await fetch('/api/stop', { method: 'POST' });
+                console.log('Stop response status:', response.status);
                 loadStatus();
             } catch (error) {
                 console.error('Error stopping stream:', error);
@@ -132,11 +143,13 @@
         
         async function setVolume(volume) {
             try {
-                await fetch('/api/volume', {
+                console.log('Setting volume to:', volume);
+                const response = await fetch('/api/volume', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: 'volume=' + volume
                 });
+                console.log('Volume response status:', response.status);
                 document.getElementById('volumeValue').textContent = volume + '%';
             } catch (error) {
                 console.error('Error setting volume:', error);

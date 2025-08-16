@@ -118,8 +118,11 @@
         
         async function loadStreams() {
             try {
+                console.log('Loading streams from /api/streams');
                 const response = await fetch('/api/streams');
+                console.log('Streams response status:', response.status);
                 const m3uContent = await response.text();
+                console.log('M3U content:', m3uContent);
                 
                 // Parse M3U content
                 streams = [];
@@ -142,6 +145,7 @@
                     }
                 }
                 
+                console.log('Parsed streams:', streams);
                 renderPlaylist();
             } catch (error) {
                 console.error('Error loading streams:', error);
@@ -169,6 +173,8 @@
         function addStream() {
             const name = document.getElementById('name').value;
             const url = document.getElementById('url').value;
+            
+            console.log('Adding stream:', { name, url });
             
             if (!name || !url) {
                 alert('Please enter both name and URL');
@@ -204,6 +210,8 @@
                 m3uContent += stream.url + "\n";
             });
             
+            console.log('Saving playlist:', m3uContent);
+            
             try {
                 const response = await fetch('/api/streams', {
                     method: 'POST',
@@ -211,10 +219,13 @@
                     body: m3uContent
                 });
                 
+                console.log('Save playlist response status:', response.status);
+                
                 if (response.ok) {
                     alert('Playlist saved successfully!');
                 } else {
                     const error = await response.text();
+                    console.error('Error saving playlist:', error);
                     alert('Error saving playlist: ' + error);
                 }
             } catch (error) {
@@ -227,6 +238,8 @@
             const fileInput = document.getElementById('m3uFile');
             const file = fileInput.files[0];
             
+            console.log('Uploading M3U file:', file);
+            
             if (!file) {
                 alert('Please select an M3U file');
                 return;
@@ -236,6 +249,7 @@
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const m3uContent = e.target.result;
+                console.log('File content:', m3uContent);
                 
                 try {
                     const response = await fetch('/api/streams', {
@@ -244,7 +258,9 @@
                         body: m3uContent
                     });
                     
+                    console.log('Upload response status:', response.status);
                     const message = await response.text();
+                    console.log('Upload response message:', message);
                     alert(message);
                     
                     if (response.ok) {
