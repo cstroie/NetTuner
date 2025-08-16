@@ -538,6 +538,7 @@ void audioTask(void *parameter) {
         mp3->stop();        // Stop the decoder
         isPlaying = false;  // Update playback status
         updateDisplay();    // Refresh the display
+        sendStatusToClients(); // Notify clients of status change
       }
     }
     delay(1);  // Small delay to prevent monopolizing CPU
@@ -587,74 +588,67 @@ void startStream(const char* url, const char* name) {
   isPlaying = true;         // Set playback status to playing
   
   // Create new audio components for the stream
-  file = new AudioFileSourceHTTPStream(url);  // HTTP stream source
-  if (!file || !file->isOpen()) {
+  AudioFileSourceHTTPStream* newFile = new AudioFileSourceHTTPStream(url);  // HTTP stream source
+  if (!newFile || !newFile->isOpen()) {
     Serial.println("Error: Failed to create HTTP stream source");
-    if (file) {
-      delete file;
-      file = nullptr;
+    if (newFile) {
+      delete newFile;
     }
     isPlaying = false;
     updateDisplay();
     return;
   }
   
-  buff = new AudioFileSourceBuffer(file, 2048); // Buffer with 2KB buffer size
-  if (!buff) {
+  AudioFileSourceBuffer* newBuff = new AudioFileSourceBuffer(newFile, 2048); // Buffer with 2KB buffer size
+  if (!newBuff) {
     Serial.println("Error: Failed to create buffer");
-    delete file;
-    file = nullptr;
+    delete newFile;
     isPlaying = false;
     updateDisplay();
     return;
   }
   
-  out = new AudioOutputI2S();                 // I2S output
-  if (!out) {
+  AudioOutputI2S* newOut = new AudioOutputI2S();                 // I2S output
+  if (!newOut) {
     Serial.println("Error: Failed to create I2S output");
-    delete buff;
-    buff = nullptr;
-    delete file;
-    file = nullptr;
+    delete newBuff;
+    delete newFile;
     isPlaying = false;
     updateDisplay();
     return;
   }
   
-  mp3 = new AudioGeneratorMP3();              // MP3 decoder
-  if (!mp3) {
+  AudioGeneratorMP3* newMp3 = new AudioGeneratorMP3();              // MP3 decoder
+  if (!newMp3) {
     Serial.println("Error: Failed to create MP3 decoder");
-    delete out;
-    out = nullptr;
-    delete buff;
-    buff = nullptr;
-    delete file;
-    file = nullptr;
+    delete newOut;
+    delete newBuff;
+    delete newFile;
     isPlaying = false;
     updateDisplay();
     return;
   }
   
   // Set volume (0.0 to 1.0)
-  if (out) {
-    out->SetGain(volume / 100.0);
-  }
+  newOut->SetGain(volume / 100.0);
   
   // Start the decoding process
-  if (!mp3->begin(buff, out)) {
+  if (!newMp3->begin(newBuff, newOut)) {
     Serial.println("Error: Failed to start MP3 decoder");
-    delete mp3;
-    mp3 = nullptr;
-    delete out;
-    out = nullptr;
-    delete buff;
-    buff = nullptr;
-    delete file;
-    file = nullptr;
+    delete newMp3;
+    delete newOut;
+    delete newBuff;
+    delete newFile;
     isPlaying = false;
     updateDisplay();
     return;
   }
+  
+  // Only assign to global pointers after everything is successfully initialized
+  file = newFile;
+  buff = newBuff;
+  out = newOut;
+  mp3 = newMp3;
   
   updateDisplay();  // Refresh the display with new playback info
 }
