@@ -86,24 +86,55 @@
             }
         }
         
-        async function loadStatus() {
+        // WebSocket connection
+        let ws = null;
+        
+        function connectWebSocket() {
+            if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+                return;
+            }
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            
             try {
-                console.log('Loading status from /api/status');
-                const response = await fetch('/api/status');
-                console.log('Status response status:', response.status);
-                const status = await response.json();
-                console.log('Current status:', status);
-                const statusElement = document.getElementById('status');
-                const currentElement = document.getElementById('currentStream');
+                ws = new WebSocket(wsUrl);
                 
-                statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
-                statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
-                currentElement.textContent = status.currentStreamName || 'No stream selected';
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                };
                 
-                document.getElementById('volume').value = status.volume;
-                document.getElementById('volumeValue').textContent = status.volume + '%';
+                ws.onmessage = function(event) {
+                    try {
+                        const status = JSON.parse(event.data);
+                        console.log('Received status update:', status);
+                        const statusElement = document.getElementById('status');
+                        const currentElement = document.getElementById('currentStream');
+                        
+                        statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
+                        statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                        currentElement.textContent = status.currentStreamName || 'No stream selected';
+                        
+                        document.getElementById('volume').value = status.volume;
+                        document.getElementById('volumeValue').textContent = status.volume + '%';
+                    } catch (error) {
+                        console.error('Error parsing WebSocket message:', error);
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket disconnected');
+                    // Try to reconnect after 3 seconds
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
             } catch (error) {
-                console.error('Error loading status:', error);
+                console.error('Error creating WebSocket:', error);
+                // Fallback to polling if WebSocket fails
+                setTimeout(connectWebSocket, 5000);
             }
         }
         
@@ -168,10 +199,9 @@
         }
         
         // Initialize
-        setInterval(loadStatus, 2000);
         window.onload = function() {
             loadStreams();
-            loadStatus();
+            connectWebSocket();
         };
     </script>
 </body>

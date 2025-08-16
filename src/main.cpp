@@ -29,6 +29,7 @@
 #include "AudioOutputI2S.h"
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
+#include <WebSocketsServer.h>
 
 /**
  * @brief WiFi network credentials
@@ -42,6 +43,7 @@ char password[64] = "";
  * @brief Web server instance running on port 80
  */
 WebServer server(80);
+WebSocketsServer webSocket(81);
 
 /**
  * @brief Audio processing components
@@ -198,6 +200,7 @@ void setupRotaryEncoder();
 void rotaryISR();
 void updateDisplay();
 void handleRotary();
+void sendStatusToClients();
 
 // Web server handlers
 void handleRoot();
@@ -215,6 +218,9 @@ void handleM3UUpload();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
 void savePlaylistToFile();
+
+// WebSocket handlers
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
 
 /**
  * @brief Arduino setup function
@@ -325,18 +331,23 @@ void setup() {
   
   server.begin();
   
+  // Setup WebSocket server
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  
   // Update display
   updateDisplay();
 }
 
 /**
  * @brief Arduino main loop function
- * Handles web server requests and rotary encoder input
+ * Handles web server requests, WebSocket events, and rotary encoder input
  */
 void loop() {
-  server.handleClient();  // Process incoming web requests
-  handleRotary();         // Process rotary encoder input
-  delay(10);              // Small delay to prevent busy waiting
+  server.handleClient();   // Process incoming web requests
+  webSocket.loop();        // Process WebSocket events
+  handleRotary();          // Process rotary encoder input
+  delay(10);               // Small delay to prevent busy waiting
 }
 
 /**
@@ -888,6 +899,7 @@ void handleRotary() {
         if (out) {
           out->SetGain((float)volume / 100.0);  // Update audio output gain
         }
+        sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
         currentSelection = (currentSelection + 1) % max(1, playlistCount);
@@ -901,6 +913,7 @@ void handleRotary() {
         if (out) {
           out->SetGain((float)volume / 100.0);  // Update audio output gain
         }
+        sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
         currentSelection = (currentSelection - 1 + max(1, playlistCount)) % max(1, playlistCount);
@@ -918,9 +931,11 @@ void handleRotary() {
       if (isPlaying) {
         // If currently playing, stop playback
         stopStream();
+        sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, start playback of selected stream
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        sendStatusToClients();  // Notify clients of status change
       }
     }
     updateDisplay();  // Refresh display
@@ -1130,6 +1145,7 @@ void handlePlay() {
   }
   
   startStream(url.c_str(), name.c_str());
+  sendStatusToClients();  // Notify clients of status change
   server.send(200, "text/plain", "OK");
 }
 
@@ -1139,6 +1155,7 @@ void handlePlay() {
  */
 void handleStop() {
   stopStream();
+  sendStatusToClients();  // Notify clients of status change
   server.send(200, "text/plain", "OK");
 }
 
@@ -1164,6 +1181,7 @@ void handleVolume() {
   if (out) {
     out->SetGain(volume / 100.0);
   }
+  sendStatusToClients();  // Notify clients of status change
   server.send(200, "text/plain", "OK");
 }
 
@@ -1179,6 +1197,43 @@ void handleStatus() {
   status += "\"volume\":" + String(volume);
   status += "}";
   server.send(200, "application/json", status);
+}
+
+/**
+ * @brief Send status to all connected WebSocket clients
+ */
+void sendStatusToClients() {
+  String status = "{";
+  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
+  status += "\"currentStream\":\"" + String(currentStream) + "\",";
+  status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+  status += "\"volume\":" + String(volume);
+  status += "}";
+  
+  webSocket.broadcastTXT(status);
+}
+
+/**
+ * @brief Handle WebSocket events
+ */
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_CONNECTED:
+      Serial.printf("WebSocket client #%u connected from %d.%d.%d.%d\n", num,
+                    webSocket.remoteIP(num)[0], webSocket.remoteIP(num)[1],
+                    webSocket.remoteIP(num)[2], webSocket.remoteIP(num)[3]);
+      // Send current status to newly connected client
+      sendStatusToClients();
+      break;
+    case WStype_DISCONNECTED:
+      Serial.printf("WebSocket client #%u disconnected\n", num);
+      break;
+    case WStype_TEXT:
+      Serial.printf("WebSocket client #%u text: %s\n", num, payload);
+      break;
+    default:
+      break;
+  }
 }
 
 /**
