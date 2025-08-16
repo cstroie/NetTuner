@@ -420,7 +420,7 @@ async function playStream() {
     
     // Show loading state
     const playButton = document.querySelector('button[onclick="playStream()"]');
-    const originalText = playButton ? playButton.textContent : null;
+    const originalText = playButton ? playButton.textContent : 'Play';
     if (playButton) {
         playButton.textContent = 'Playing...';
         playButton.disabled = true;
@@ -447,7 +447,7 @@ async function playStream() {
     } finally {
         // Restore button state
         if (playButton) {
-            playButton.textContent = originalText || 'Play';
+            playButton.textContent = originalText;
             playButton.disabled = false;
         }
     }
@@ -456,7 +456,7 @@ async function playStream() {
 async function stopStream() {
     // Show loading state
     const stopButton = document.querySelector('button[onclick="stopStream()"]');
-    const originalText = stopButton ? stopButton.textContent : null;
+    const originalText = stopButton ? stopButton.textContent : 'Stop';
     if (stopButton) {
         stopButton.textContent = 'Stopping...';
         stopButton.disabled = true;
@@ -486,7 +486,7 @@ async function stopStream() {
     } finally {
         // Restore button state
         if (stopButton) {
-            stopButton.textContent = originalText || 'Stop';
+            stopButton.textContent = originalText;
             stopButton.disabled = false;
         }
     }
@@ -496,7 +496,7 @@ async function setVolume(volume) {
     // Show loading state
     const volumeControl = document.getElementById('volume');
     const volumeValue = document.getElementById('volumeValue');
-    const originalVolume = volumeControl ? volumeControl.value : null;
+    const originalVolume = volumeControl ? volumeControl.value : '50';
     
     if (volumeControl) {
         volumeControl.disabled = true;
@@ -528,10 +528,10 @@ async function setVolume(volume) {
         console.error('Error setting volume:', error);
         showToast('Error setting volume: ' + error.message, 'error');
         // Restore original volume value on error
-        if (volumeControl && originalVolume) {
+        if (volumeControl) {
             volumeControl.value = originalVolume;
         }
-        if (volumeValue && originalVolume) {
+        if (volumeValue) {
             volumeValue.textContent = originalVolume + '%';
         }
     } finally {
