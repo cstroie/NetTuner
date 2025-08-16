@@ -207,6 +207,7 @@ void handleRotary();
 void handleRoot();
 void handlePlaylistPage();
 void handleGetStreams();
+void handleGetStreamsJSON();
 void handlePostStreams();
 void handlePlay();
 void handleStop();
