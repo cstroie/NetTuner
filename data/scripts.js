@@ -847,6 +847,7 @@ function scanNetworks() {
         })
         .catch(error => {
             networksDiv.innerHTML = 'Error scanning networks';
+            showToast('Error scanning networks: ' + error.message, 'error');
             console.error('Error:', error);
         })
         .finally(() => {
@@ -902,21 +903,21 @@ function initWiFiPage() {
             
             // Validate SSID is not empty
             if (!ssid) {
-                alert('Please enter an SSID');
+                showToast('Please enter an SSID', 'warning');
                 ssidInput.focus();
                 return;
             }
             
             // Validate SSID length (typically 1-32 characters)
             if (ssid.length > 32) {
-                alert('SSID must be 32 characters or less');
+                showToast('SSID must be 32 characters or less', 'warning');
                 ssidInput.focus();
                 return;
             }
             
             // Validate password length if provided (typically 8-63 characters for WPA)
             if (password && (password.length < 8 || password.length > 63)) {
-                alert('Password should be between 8 and 63 characters');
+                showToast('Password should be between 8 and 63 characters', 'warning');
                 passwordInput.focus();
                 return;
             }
@@ -936,13 +937,13 @@ function initWiFiPage() {
             })
             .then(response => response.text())
             .then(data => {
-                alert(data);
+                showToast(data, 'info');
                 if (data === 'WiFi configuration saved') {
                     window.location.href = '/';
                 }
             })
             .catch(error => {
-                alert('Error saving configuration');
+                showToast('Error saving configuration: ' + error.message, 'error');
                 console.error('Error:', error);
             })
             .finally(() => {
