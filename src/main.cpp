@@ -1588,8 +1588,19 @@ void updateDisplay() {
     display.setTextSize(1);  // Normal font for stream name
     display.setCursor(0, 18);
     display.println(currentStreamName);
-    display.setCursor(0, 30);
-    display.println("Volume: " + String(volume) + "%");
+    // Display volume on the last line
+    display.setCursor(0, 50);
+    display.print("[");
+    for (int i = 0; i < 20; i++) {
+      if (i < volume / 5) {
+        display.print("|");
+      } else {
+        display.print(" ");
+      }
+    }
+    display.print("] ");
+    display.print(volume);
+    display.println("%");
   } else {
     // Display when stopped
     display.setTextSize(2);  // Larger font for status
@@ -1607,8 +1618,19 @@ void updateDisplay() {
       display.setCursor(0, 18);
       display.println("No streams");
     }
+    // Display volume on the last line
     display.setCursor(0, 50);
-    display.println("Vol: " + String(volume) + "%");
+    display.print("[");
+    for (int i = 0; i < 20; i++) {
+      if (i < volume / 5) {
+        display.print("|");
+      } else {
+        display.print(" ");
+      }
+    }
+    display.print("] ");
+    display.print(volume);
+    display.println("%");
   }
   
   display.display();  // Send buffer to display
