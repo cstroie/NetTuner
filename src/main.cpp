@@ -896,11 +896,45 @@ void loadPlaylist() {
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
+    
+    // Try to recover by creating a backup and a new empty playlist
+    Serial.println("Attempting to recover by creating backup and new playlist");
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      SPIFFS.remove("/playlist.json.bak");
+    }
+    SPIFFS.rename("/playlist.json", "/playlist.json.bak");
+    
+    // Create a new empty playlist
+    File newFile = SPIFFS.open("/playlist.json", "w");
+    if (newFile) {
+      newFile.println("[]");
+      newFile.close();
+      Serial.println("Created new empty playlist file");
+    } else {
+      Serial.println("Error: Failed to create new playlist file during recovery");
+    }
     return;
   }
   
   if (!doc.is<JsonArray>()) {
     Serial.println("Error: Playlist JSON is not an array");
+    
+    // Try to recover by creating a backup and a new empty playlist
+    Serial.println("Attempting to recover by creating backup and new playlist");
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      SPIFFS.remove("/playlist.json.bak");
+    }
+    SPIFFS.rename("/playlist.json", "/playlist.json.bak");
+    
+    // Create a new empty playlist
+    File newFile = SPIFFS.open("/playlist.json", "w");
+    if (newFile) {
+      newFile.println("[]");
+      newFile.close();
+      Serial.println("Created new empty playlist file");
+    } else {
+      Serial.println("Error: Failed to create new playlist file during recovery");
+    }
     return;
   }
   
@@ -962,10 +996,29 @@ void savePlaylist() {
     item["url"] = playlist[i].url;
   }
   
+  // Create backup of existing playlist file
+  if (SPIFFS.exists("/playlist.json")) {
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      SPIFFS.remove("/playlist.json.bak");
+    }
+    if (!SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
+      Serial.println("Warning: Failed to create backup of playlist file");
+    }
+  }
+  
   // Save to file
   File file = SPIFFS.open("/playlist.json", "w");
   if (!file) {
     Serial.println("Error: Failed to open playlist file for writing");
+    
+    // Try to restore from backup
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      if (SPIFFS.rename("/playlist.json.bak", "/playlist.json")) {
+        Serial.println("Restored playlist from backup");
+      } else {
+        Serial.println("Error: Failed to restore playlist from backup");
+      }
+    }
     return;
   }
   
@@ -973,9 +1026,24 @@ void savePlaylist() {
   if (serializeJson(array, file) == 0) {
     Serial.println("Error: Failed to write playlist to file");
     file.close();
+    
+    // Try to restore from backup
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      SPIFFS.remove("/playlist.json"); // Remove the failed file
+      if (SPIFFS.rename("/playlist.json.bak", "/playlist.json")) {
+        Serial.println("Restored playlist from backup");
+      } else {
+        Serial.println("Error: Failed to restore playlist from backup");
+      }
+    }
     return;
   }
   file.close();
+  
+  // Remove backup file after successful save
+  if (SPIFFS.exists("/playlist.json.bak")) {
+    SPIFFS.remove("/playlist.json.bak");
+  }
   
   Serial.println("Saved playlist to file");
 }
