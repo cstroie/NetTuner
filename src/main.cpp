@@ -262,6 +262,24 @@ void setup() {
     return;
   }
   
+  // Test SPIFFS write capability
+  if (!SPIFFS.exists("/spiffs_test")) {
+    Serial.println("Testing SPIFFS write capability...");
+    File testFile = SPIFFS.open("/spiffs_test", "w");
+    if (!testFile) {
+      Serial.println("ERROR: Failed to create SPIFFS test file!");
+    } else {
+      if (testFile.println("SPIFFS write test - OK")) {
+        Serial.println("SPIFFS write test successful");
+      } else {
+        Serial.println("ERROR: Failed to write to SPIFFS test file!");
+      }
+      testFile.close();
+    }
+  } else {
+    Serial.println("SPIFFS write test file already exists - SPIFFS is working");
+  }
+  
   // Initialize OLED display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
