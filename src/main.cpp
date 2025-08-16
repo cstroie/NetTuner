@@ -330,6 +330,7 @@ void setup() {
       }
     }
     
+    server.sendHeader("Content-Disposition", "attachment; filename=\"playlist.m3u\"");
     server.send(200, "audio/x-mpegurl", m3uContent);
   });
   server.on("/api/play", HTTP_POST, handlePlay);
