@@ -1190,20 +1190,29 @@ void updateDisplay() {
   
   if (isPlaying) {
     // Display when playing
+    display.setTextSize(2);  // Larger font for status
     display.setCursor(0, 0);
     display.println("PLAYING");
+    display.setTextSize(1);  // Normal font for stream name
+    display.setCursor(0, 18);
     display.println(currentStreamName);
+    display.setCursor(0, 30);
     display.println("Volume: " + String(volume) + "%");
   } else {
     // Display when stopped
+    display.setTextSize(2);  // Larger font for status
     display.setCursor(0, 0);
     display.println("STOPPED");
+    display.setTextSize(1);  // Normal font for other text
     if (playlistCount > 0 && currentSelection < playlistCount) {
       // Show selected playlist item
+      display.setCursor(0, 18);
       display.println(playlist[currentSelection].name);
+      display.setCursor(0, 30);
       display.println("Press to play");
     } else {
       // Show message when no streams available
+      display.setCursor(0, 18);
       display.println("No streams");
     }
     display.setCursor(0, 50);
