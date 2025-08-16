@@ -511,6 +511,14 @@ async function stopStream() {
     }
 }
 
+// Wrapper function for volume change to handle errors in inline event handlers
+function handleVolumeChange(volume) {
+    setVolume(volume).catch(error => {
+        console.error('Error in volume change:', error);
+        showToast('Error setting volume: ' + error.message, 'error');
+    });
+}
+
 async function setVolume(volume) {
     // Show loading state
     const volumeControl = document.getElementById('volume');
@@ -553,6 +561,7 @@ async function setVolume(volume) {
         if (volumeValue) {
             volumeValue.textContent = originalVolume + '%';
         }
+        throw error; // Re-throw to allow caller to handle
     } finally {
         // Restore control state
         if (volumeControl) {
