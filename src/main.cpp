@@ -449,6 +449,12 @@ void loadWiFiCredentials() {
     return;
   }
   
+  if (size == 0) {
+    Serial.println("WiFi config file is empty");
+    file.close();
+    return;
+  }
+  
   std::unique_ptr<char[]> buf(new char[size + 1]);
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Failed to read WiFi config file");
@@ -461,7 +467,8 @@ void loadWiFiCredentials() {
   DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
-    Serial.println("Failed to parse WiFi config JSON");
+    Serial.print("Failed to parse WiFi config JSON: ");
+    Serial.println(error.c_str());
     return;
   }
   
@@ -505,7 +512,11 @@ void saveWiFiCredentials() {
     return;
   }
   
-  serializeJson(doc, file);
+  if (serializeJson(doc, file) == 0) {
+    Serial.println("Failed to write WiFi config to file");
+    file.close();
+    return;
+  }
   file.close();
   
   Serial.println("Saved WiFi credentials to SPIFFS");
@@ -729,15 +740,22 @@ void loadPlaylist() {
     return;
   }
   
-  // Read the entire file into a string
-  String content = file.readString();
+  // Allocate buffer for file content
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.println("Error: Failed to read playlist file");
+    file.close();
+    return;
+  }
+  buf[size] = '\0';
   file.close();
   
   // Parse the JSON content
   DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, content);
+  DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
-    Serial.println("Error: Failed to parse playlist JSON");
+    Serial.print("Error: Failed to parse playlist JSON: ");
+    Serial.println(error.c_str());
     return;
   }
   
@@ -806,7 +824,11 @@ void savePlaylist() {
   }
   
   // Write JSON to file
-  serializeJson(array, file);
+  if (serializeJson(array, file) == 0) {
+    Serial.println("Error: Failed to write playlist to file");
+    file.close();
+    return;
+  }
   file.close();
   
   Serial.println("Saved playlist to file");
