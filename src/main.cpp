@@ -216,7 +216,6 @@ void handleWiFiScan();
 void handleWiFiSave();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
-void savePlaylistToFile();
 
 // WebSocket handlers
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
@@ -777,13 +776,6 @@ void savePlaylist() {
   Serial.println("Saved playlist to file");
 }
 
-/**
- * @brief Save playlist to SPIFFS storage
- * Serializes the current playlist array to playlist.m3u
- */
-void savePlaylistToFile() {
-  savePlaylist();
-}
 
 /**
  * @brief Initialize rotary encoder hardware
