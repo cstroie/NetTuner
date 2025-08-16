@@ -236,7 +236,7 @@
                         ? 'text/plain' 
                         : 'application/json';
                     
-                    const response = await fetch('/api/m3u', {
+                    const response = await fetch('/api/streams', {
                         method: 'POST',
                         headers: { 'Content-Type': contentType },
                         body: fileContent
