@@ -373,6 +373,12 @@ function addStream() {
         return;
     }
     
+    // Validate URL format
+    if (!url.value.startsWith('http://') && !url.value.startsWith('https://')) {
+        alert('Please enter a valid URL starting with http:// or https://');
+        return;
+    }
+    
     streams.push({ name: name.value, url: url.value });
     renderPlaylist();
     
@@ -383,6 +389,13 @@ function addStream() {
 
 function updateStream(index, field, value) {
     if (streams[index]) {
+        // Validate URL format if updating URL field
+        if (field === 'url' && value) {
+            if (!value.startsWith('http://') && !value.startsWith('https://')) {
+                showToast('Invalid URL format. Must start with http:// or https://', 'error');
+                return;
+            }
+        }
         streams[index][field] = value;
     }
 }
