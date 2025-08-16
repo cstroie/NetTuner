@@ -437,7 +437,7 @@ void handleConfigPage() {
  */
 void handleGetConfig() {
   String config = "{";
-  config += "\"outputType\":" + String(currentOutputType);
+  config += "\"output\":" + String(currentOutputType);
   config += "}";
   server.send(200, "application/json", config);
 }
@@ -461,8 +461,8 @@ void handleSaveConfig() {
     return;
   }
   
-  if (doc.containsKey("outputType")) {
-    int type = doc["outputType"];
+  if (doc.containsKey("output")) {
+    int type = doc["output"];
     if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
       currentOutputType = (AudioOutputType)type;
       saveConfig();
@@ -1011,8 +1011,8 @@ void loadConfig() {
     return;
   }
   
-  if (doc.containsKey("outputType")) {
-    int type = doc["outputType"];
+  if (doc.containsKey("output")) {
+    int type = doc["output"];
     if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
       currentOutputType = (AudioOutputType)type;
     }
@@ -1028,7 +1028,7 @@ void loadConfig() {
  */
 void saveConfig() {
   DynamicJsonDocument doc(512);
-  doc["outputType"] = currentOutputType;
+  doc["output"] = currentOutputType;
   
   File file = SPIFFS.open("/config.json", "w");
   if (!file) {
