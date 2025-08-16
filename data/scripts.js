@@ -126,6 +126,8 @@ let isConnecting = false;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
 let heartbeatInterval = null;
+let connectionStartTime = 0;
+const connectionTimeout = 10000; // 10 seconds timeout for connection
 
 function connectWebSocket() {
     // Clear any existing reconnection timeout
@@ -141,7 +143,8 @@ function connectWebSocket() {
     }
     
     // Prevent multiple connection attempts
-    if (isConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING))) {
+    if (isConnecting || (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) || 
+        (ws && ws.readyState === WebSocket.CLOSING)) {
         return;
     }
     
@@ -153,6 +156,7 @@ function connectWebSocket() {
     }
     
     isConnecting = true;
+    connectionStartTime = Date.now();
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // WebSocket server runs on port 81, not the same port as HTTP server
@@ -162,7 +166,16 @@ function connectWebSocket() {
     try {
         ws = new WebSocket(wsUrl);
         
+        // Set up connection timeout
+        const connectionTimer = setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.CONNECTING) {
+                console.log('WebSocket connection timeout');
+                ws.close(); // Force close to trigger onclose handler
+            }
+        }, connectionTimeout);
+        
         ws.onopen = function() {
+            clearTimeout(connectionTimer);
             isConnecting = false;
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
@@ -171,9 +184,13 @@ function connectWebSocket() {
             // Start heartbeat to detect disconnections
             heartbeatInterval = setInterval(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({type: 'ping'}));
+                    try {
+                        ws.send(JSON.stringify({type: 'ping'}));
+                    } catch (e) {
+                        console.error('Error sending ping:', e);
+                    }
                 }
-            }, 30000); // Send ping every 30 seconds
+            }, 25000); // Send ping every 25 seconds
         };
         
         ws.onmessage = function(event) {
@@ -226,7 +243,8 @@ function connectWebSocket() {
             }
         };
         
-        ws.onclose = function() {
+        ws.onclose = function(event) {
+            clearTimeout(connectionTimer);
             isConnecting = false;
             
             // Clear heartbeat interval on close
@@ -235,29 +253,60 @@ function connectWebSocket() {
                 heartbeatInterval = null;
             }
             
-            reconnectAttempts++;
+            // Check if this was a clean close or an error
+            if (event.wasClean) {
+                console.log(`WebSocket closed cleanly, code=${event.code}, reason=${event.reason}`);
+            } else {
+                console.log('WebSocket connection died');
+                reconnectAttempts++;
+            }
+            
             console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
             showToast('Disconnected from NetTuner', 'warning');
-            // Try to reconnect with exponential backoff
-            const timeout = Math.min(3000 * Math.pow(2, reconnectAttempts), 30000);
-            reconnectTimeout = setTimeout(connectWebSocket, timeout);
+            
+            // Try to reconnect with exponential backoff, but reset counter on successful connection
+            if (reconnectAttempts < maxReconnectAttempts) {
+                const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                console.log(`Reconnecting in ${timeout}ms`);
+                reconnectTimeout = setTimeout(connectWebSocket, timeout);
+            } else {
+                console.log('Max reconnect attempts reached. Stopping reconnection.');
+                showToast('Connection failed. Please refresh the page.', 'error');
+            }
         };
         
         ws.onerror = function(error) {
-            isConnecting = false;
-            reconnectAttempts++;
+            clearTimeout(connectionTimer);
             console.error('WebSocket error:', error);
-            showToast('Connection error', 'error');
+            // Don't set isConnecting to false here, let onclose handle it
+            // This ensures we don't try to reconnect while still connecting
         };
     } catch (error) {
         isConnecting = false;
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
-        // Fallback to polling if WebSocket fails with exponential backoff
-        const timeout = Math.min(5000 * Math.pow(2, reconnectAttempts), 30000);
-        reconnectTimeout = setTimeout(connectWebSocket, timeout);
+        
+        // Try to reconnect with exponential backoff
+        if (reconnectAttempts < maxReconnectAttempts) {
+            const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+            console.log(`Reconnecting in ${timeout}ms`);
+            reconnectTimeout = setTimeout(connectWebSocket, timeout);
+        } else {
+            console.log('Max reconnect attempts reached. Stopping reconnection.');
+            showToast('Connection failed. Please refresh the page.', 'error');
+        }
     }
+}
+
+// Function to force reconnect
+function forceReconnect() {
+    if (ws) {
+        ws.close();
+    }
+    // Reset attempts for manual reconnection
+    reconnectAttempts = 0;
+    connectWebSocket();
 }
 
 async function playStream() {
@@ -688,6 +737,17 @@ function selectNetwork(ssid) {
 function initMainPage() {
     loadStreams();
     connectWebSocket();
+    
+    // Add visibility change listener to handle tab switching
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            // Page became visible, check if we need to reconnect
+            if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
+                console.log('Page became visible, checking WebSocket connection');
+                connectWebSocket();
+            }
+        }
+    });
 }
 
 function initPlaylistPage() {
