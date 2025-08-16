@@ -302,32 +302,15 @@ void setup() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/streams.m3u", HTTP_GET, []() {
-    // Force M3U format
-    String m3uContent = "#EXTM3U\n";
-    
-    // Load and parse JSON playlist
-    if (SPIFFS.exists("/playlist.json")) {
-      File jsonFile = SPIFFS.open("/playlist.json", "r");
-      if (jsonFile) {
-        String content = jsonFile.readString();
-        jsonFile.close();
-        
-        DynamicJsonDocument doc(4096);
-        DeserializationError error = deserializeJson(doc, content);
-        if (!error && doc.is<JsonArray>()) {
-          JsonArray array = doc.as<JsonArray>();
-          for (JsonObject item : array) {
-            if (item.containsKey("name") && item.containsKey("url")) {
-              m3uContent += "#EXTINF:-1," + String(item["name"].as<String>()) + "\n";
-              m3uContent += String(item["url"].as<String>()) + "\n";
-            }
-          }
-        }
-      }
+    // Return JSON format instead of M3U
+    File file = SPIFFS.open("/playlist.json", "r");
+    if (!file) {
+      server.send(200, "application/json", "[]");
+      return;
     }
     
-    server.sendHeader("Content-Disposition", "attachment; filename=\"playlist.m3u\"");
-    server.send(200, "audio/x-mpegurl", m3uContent);
+    server.streamFile(file, "application/json");
+    file.close();
   });
   server.on("/api/play", HTTP_POST, handlePlay);
   server.on("/api/stop", HTTP_POST, handleStop);
@@ -974,7 +957,7 @@ void handlePlaylistPage() {
 
 /**
  * @brief Handle GET request for streams
- * Returns the current playlist as JSON or M3U based on Accept header
+ * Returns the current playlist as JSON
  */
 void handleGetStreams() {
   // If playlist file doesn't exist, create a default empty one
@@ -986,56 +969,21 @@ void handleGetStreams() {
     }
   }
   
-  // Check if client wants M3U format
-  bool wantM3U = false;
-  if (server.hasHeader("Accept")) {
-    String accept = server.header("Accept");
-    if (accept.indexOf("audio/x-mpegurl") != -1 || accept.indexOf("application/m3u") != -1) {
-      wantM3U = true;
-    }
+  // Return JSON format (default)
+  File file = SPIFFS.open("/playlist.json", "r");
+  if (!file) {
+    server.send(200, "application/json", "[]");
+    return;
   }
   
-  if (wantM3U) {
-    // Return M3U format
-    String m3uContent = "#EXTM3U\n";
-    
-    // Load and parse JSON playlist
-    File jsonFile = SPIFFS.open("/playlist.json", "r");
-    if (jsonFile) {
-      String content = jsonFile.readString();
-      jsonFile.close();
-      
-      DynamicJsonDocument doc(4096);
-      DeserializationError error = deserializeJson(doc, content);
-      if (!error && doc.is<JsonArray>()) {
-        JsonArray array = doc.as<JsonArray>();
-        for (JsonObject item : array) {
-          if (item.containsKey("name") && item.containsKey("url")) {
-            m3uContent += "#EXTINF:-1," + String(item["name"].as<String>()) + "\n";
-            m3uContent += String(item["url"].as<String>()) + "\n";
-          }
-        }
-      }
-    }
-    
-    server.send(200, "audio/x-mpegurl", m3uContent);
-  } else {
-    // Return JSON format (default)
-    File file = SPIFFS.open("/playlist.json", "r");
-    if (!file) {
-      server.send(200, "application/json", "[]");
-      return;
-    }
-    
-    server.streamFile(file, "application/json");
-    file.close();
-  }
+  server.streamFile(file, "application/json");
+  file.close();
 }
 
 
 /**
  * @brief Handle POST request for streams
- * Updates the playlist with new JSON data or M3U data
+ * Updates the playlist with new JSON data
  */
 void handlePostStreams() {
   // Handle file upload through the standard upload mechanism
@@ -1053,88 +1001,27 @@ void handlePostStreams() {
       return;
     }
     
-    String filename = upload.filename;
-    filename.toLowerCase();
+    // Handle JSON upload (default)
+    String jsonContent = String((char*)upload.buf, upload.currentSize);
     
-    if (filename.endsWith(".m3u") || filename.endsWith(".m3u8")) {
-      // Handle M3U upload
-      String m3uContent = String((char*)upload.buf, upload.currentSize);
-      
-      // Parse M3U content and convert to JSON
-      DynamicJsonDocument doc(4096);
-      JsonArray array = doc.to<JsonArray>();
-      
-      int startPos = 0;
-      String currentName = "";
-      
-      for (unsigned int i = 0; i < m3uContent.length(); i++) {
-        if (m3uContent[i] == '\n' || m3uContent[i] == '\r' || i == m3uContent.length() - 1) {
-          // Handle the last line if it doesn't end with a newline
-          unsigned int endPos = (i == m3uContent.length() - 1) ? i + 1 : i;
-          String line = m3uContent.substring(startPos, endPos);
-          line.trim();
-          
-          if (line.length() > 0) {
-            if (line.startsWith("#EXTINF:")) {
-              // Extract name from EXTINF line
-              int commaPos = line.indexOf(",");
-              if (commaPos != -1) {
-                currentName = line.substring(commaPos + 1);
-                currentName.trim();
-              }
-            } else if (!line.startsWith("#") && (line.startsWith("http://") || line.startsWith("https://"))) {
-              // This is a URL line
-              JsonObject item = array.createNestedObject();
-              item["name"] = (currentName.length() > 0) ? currentName : ("Stream " + String(array.size()));
-              item["url"] = line;
-              currentName = ""; // Reset for next entry
-            }
-          }
-          
-          // Skip line endings
-          while (i < m3uContent.length() && (m3uContent[i] == '\n' || m3uContent[i] == '\r')) {
-            i++;
-          }
-          startPos = i;
-          i--; // Adjust for loop increment
-        }
-      }
-      
-      // Save as JSON
-      File file = SPIFFS.open("/playlist.json", "w");
-      if (!file) {
-        server.send(500, "text/plain", "Failed to save playlist");
-        return;
-      }
-      serializeJson(array, file);
-      file.close();
-      
-      loadPlaylist(); // Reload playlist
-      server.send(200, "text/plain", "M3U playlist uploaded and converted successfully");
-      return;
-    } else {
-      // Handle JSON upload (default)
-      String jsonContent = String((char*)upload.buf, upload.currentSize);
-      
-      // Validate JSON format
-      jsonContent.trim();
-      if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-        server.send(400, "text/plain", "Invalid JSON format");
-        return;
-      }
-      
-      File file = SPIFFS.open("/playlist.json", "w");
-      if (!file) {
-        server.send(500, "text/plain", "Failed to save playlist");
-        return;
-      }
-      file.print(jsonContent);
-      file.close();
-      
-      loadPlaylist(); // Reload playlist
-      server.send(200, "text/plain", "JSON playlist updated successfully");
+    // Validate JSON format
+    jsonContent.trim();
+    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+      server.send(400, "text/plain", "Invalid JSON format");
       return;
     }
+    
+    File file = SPIFFS.open("/playlist.json", "w");
+    if (!file) {
+      server.send(500, "text/plain", "Failed to save playlist");
+      return;
+    }
+    file.print(jsonContent);
+    file.close();
+    
+    loadPlaylist(); // Reload playlist
+    server.send(200, "text/plain", "JSON playlist updated successfully");
+    return;
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     Serial.println("Upload Aborted");
     server.send(500, "text/plain", "Upload Aborted");
@@ -1179,8 +1066,8 @@ void handlePostStreams() {
 }
 
 /**
- * @brief Handle playlist upload (JSON or M3U)
- * Parses uploaded file and replaces the existing playlist
+ * @brief Handle playlist upload (JSON only)
+ * Parses uploaded JSON file and replaces the existing playlist
  */
 void handleM3UUpload() {
   HTTPUpload& upload = server.upload();
@@ -1192,86 +1079,26 @@ void handleM3UUpload() {
   } else if (upload.status == UPLOAD_FILE_END) {
     Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
     
-    String filename = upload.filename;
-    filename.toLowerCase();
+    // Handle JSON upload (default)
+    String jsonContent = String((char*)upload.buf, upload.currentSize);
     
-    if (filename.endsWith(".m3u") || filename.endsWith(".m3u8")) {
-      // Handle M3U upload
-      String m3uContent = String((char*)upload.buf, upload.currentSize);
-      
-      // Parse M3U content and convert to JSON
-      DynamicJsonDocument doc(4096);
-      JsonArray array = doc.to<JsonArray>();
-      
-      int startPos = 0;
-      String currentName = "";
-      
-      for (unsigned int i = 0; i < m3uContent.length(); i++) {
-        if (m3uContent[i] == '\n' || m3uContent[i] == '\r' || i == m3uContent.length() - 1) {
-          // Handle the last line if it doesn't end with a newline
-          unsigned int endPos = (i == m3uContent.length() - 1) ? i + 1 : i;
-          String line = m3uContent.substring(startPos, endPos);
-          line.trim();
-          
-          if (line.length() > 0) {
-            if (line.startsWith("#EXTINF:")) {
-              // Extract name from EXTINF line
-              int commaPos = line.indexOf(",");
-              if (commaPos != -1) {
-                currentName = line.substring(commaPos + 1);
-                currentName.trim();
-              }
-            } else if (!line.startsWith("#") && (line.startsWith("http://") || line.startsWith("https://"))) {
-              // This is a URL line
-              JsonObject item = array.createNestedObject();
-              item["name"] = (currentName.length() > 0) ? currentName : ("Stream " + String(array.size()));
-              item["url"] = line;
-              currentName = ""; // Reset for next entry
-            }
-          }
-          
-          // Skip line endings
-          while (i < m3uContent.length() && (m3uContent[i] == '\n' || m3uContent[i] == '\r')) {
-            i++;
-          }
-          startPos = i;
-          i--; // Adjust for loop increment
-        }
-      }
-      
-      // Save as JSON
-      File file = SPIFFS.open("/playlist.json", "w");
-      if (!file) {
-        server.send(500, "text/plain", "Failed to save playlist");
-        return;
-      }
-      serializeJson(array, file);
-      file.close();
-      
-      loadPlaylist(); // Reload playlist
-      server.send(200, "text/plain", "M3U playlist uploaded and converted successfully");
-    } else {
-      // Handle JSON upload (default)
-      String jsonContent = String((char*)upload.buf, upload.currentSize);
-      
-      // Validate JSON format
-      jsonContent.trim();
-      if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-        server.send(400, "text/plain", "Invalid JSON format");
-        return;
-      }
-      
-      File file = SPIFFS.open("/playlist.json", "w");
-      if (!file) {
-        server.send(500, "text/plain", "Failed to save playlist");
-        return;
-      }
-      file.print(jsonContent);
-      file.close();
-      
-      loadPlaylist(); // Reload playlist
-      server.send(200, "text/plain", "JSON playlist updated successfully");
+    // Validate JSON format
+    jsonContent.trim();
+    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
     }
+    
+    File file = SPIFFS.open("/playlist.json", "w");
+    if (!file) {
+      server.send(500, "text/plain", "Failed to save playlist");
+      return;
+    }
+    file.print(jsonContent);
+    file.close();
+    
+    loadPlaylist(); // Reload playlist
+    server.send(200, "text/plain", "JSON playlist updated successfully");
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     Serial.println("Upload Aborted");
     server.send(500, "text/plain", "Upload Aborted");

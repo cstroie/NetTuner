@@ -293,14 +293,17 @@
                 const fileContent = e.target.result;
                 console.log('File content:', fileContent);
                 
+                // Convert M3U to JSON
+                const jsonData = convertM3UToJSON(fileContent);
+                
                 try {
                     const response = await fetch('/api/streams', {
                         method: 'POST',
                         headers: { 
-                            'Content-Type': 'text/plain',
+                            'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         },
-                        body: fileContent
+                        body: jsonData
                     });
                     
                     console.log('Upload response status:', response.status);
@@ -356,15 +359,17 @@
         
         async function downloadM3U() {
             try {
-                const response = await fetch('/api/streams.m3u', {
+                const response = await fetch('/api/streams', {
                     headers: {
+                        'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 });
-                console.log('Download M3U response status:', response.status);
+                console.log('Download JSON response status:', response.status);
                 
                 if (response.ok) {
-                    const m3uContent = await response.text();
+                    const jsonData = await response.json();
+                    const m3uContent = convertJSONToM3U(jsonData);
                     const blob = new Blob([m3uContent], { type: 'audio/x-mpegurl' });
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -376,13 +381,57 @@
                     document.body.removeChild(a);
                 } else {
                     const error = await response.text();
-                    console.error('Error downloading M3U:', error);
-                    alert('Error downloading M3U: ' + error);
+                    console.error('Error downloading JSON:', error);
+                    alert('Error downloading playlist: ' + error);
                 }
             } catch (error) {
-                console.error('Error downloading M3U:', error);
-                alert('Error downloading M3U: ' + error.message);
+                console.error('Error downloading playlist:', error);
+                alert('Error downloading playlist: ' + error.message);
             }
+        }
+        
+        // Convert M3U content to JSON
+        function convertM3UToJSON(m3uContent) {
+            const lines = m3uContent.split('\n');
+            const streams = [];
+            let currentName = '';
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                if (line.length === 0) continue;
+                
+                if (line.startsWith('#EXTINF:')) {
+                    // Extract name from EXTINF line
+                    const commaPos = line.indexOf(',');
+                    if (commaPos !== -1) {
+                        currentName = line.substring(commaPos + 1).trim();
+                    }
+                } else if (!line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
+                    // This is a URL line
+                    streams.push({
+                        name: currentName || ('Stream ' + (streams.length + 1)),
+                        url: line
+                    });
+                    currentName = ''; // Reset for next entry
+                }
+            }
+            
+            return JSON.stringify(streams);
+        }
+        
+        // Convert JSON content to M3U
+        function convertJSONToM3U(jsonData) {
+            let m3uContent = '#EXTM3U\n';
+            
+            jsonData.forEach(item => {
+                if (item.name && item.url) {
+                    m3uContent += '#EXTINF:-1,' + item.name + '\n';
+                    m3uContent += item.url + '\n';
+                }
+            });
+            
+            return m3uContent;
         }
         
         // Initialize
