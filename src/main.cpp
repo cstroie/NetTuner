@@ -314,9 +314,7 @@ void setup() {
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
   server.on("/api/m3u", HTTP_POST, handleM3UUpload);
   
-  server.serveStatic("/", SPIFFS, "/")
-    .setDefaultFile("index.html")
-    .setCacheControl("max-age=3600"); // Cache for 1 hour
+  server.serveStatic("/", SPIFFS, "/index.html");
   
   server.begin();
   
