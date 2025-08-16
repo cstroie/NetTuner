@@ -647,7 +647,8 @@ void audioTask(void *parameter) {
         sendStatusToClients(); // Notify clients of status change
       }
     }
-    delay(1);  // Small delay to prevent monopolizing CPU
+    delay(1);  // Small delay to prevent monopolizing CPU and feed the watchdog
+    yield();   // Yield to other tasks to feed the watchdog
   }
 }
 
