@@ -46,6 +46,12 @@ WebServer server(80);
 WebSocketsServer webSocket(81);
 
 /**
+ * @brief MPD server instance running on port 6600
+ */
+WiFiServer mpdServer(6600);
+WiFiClient mpdClient;
+
+/**
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
@@ -202,6 +208,12 @@ void updateDisplay();
 void handleRotary();
 void sendStatusToClients();
 
+// MPD functions
+void handleMPDClient();
+String mpdResponseOK();
+String mpdResponseError(const String& message);
+void handleMPDCommand(const String& command);
+
 // Web server handlers
 void handleRoot();
 void handlePlaylistPage();
@@ -331,18 +343,22 @@ void setup() {
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   
+  // Start MPD server
+  mpdServer.begin();
+  
   // Update display
   updateDisplay();
 }
 
 /**
  * @brief Arduino main loop function
- * Handles web server requests, WebSocket events, and rotary encoder input
+ * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
+  handleMPDClient();       // Process MPD commands
   delay(10);               // Small delay to prevent busy waiting
 }
 
@@ -1303,4 +1319,239 @@ void updateDisplay() {
   }
   
   display.display();  // Send buffer to display
+}
+
+/**
+ * @brief Handle MPD client connections and commands
+ * Processes commands from MPD clients
+ */
+void handleMPDClient() {
+  if (mpdServer.hasClient()) {
+    if (!mpdClient || !mpdClient.connected()) {
+      if (mpdClient) {
+        mpdClient.stop();
+      }
+      mpdClient = mpdServer.available();
+      // Send MPD welcome message
+      mpdClient.println("OK MPD 0.20.0");
+    } else {
+      // Reject connection if we already have a client
+      WiFiClient rejectedClient = mpdServer.available();
+      rejectedClient.stop();
+    }
+  }
+  
+  if (mpdClient && mpdClient.connected()) {
+    if (mpdClient.available()) {
+      String command = mpdClient.readStringUntil('\n');
+      command.trim();
+      Serial.println("MPD Command: " + command);
+      handleMPDCommand(command);
+    }
+  }
+}
+
+/**
+ * @brief Generate MPD OK response
+ * @return OK response string
+ */
+String mpdResponseOK() {
+  return "OK\n";
+}
+
+/**
+ * @brief Generate MPD error response
+ * @param message Error message
+ * @return Error response string
+ */
+String mpdResponseError(const String& message) {
+  return "ACK {" + message + "}\n";
+}
+
+/**
+ * @brief Handle MPD commands
+ * Processes MPD protocol commands
+ * @param command The command string to process
+ */
+void handleMPDCommand(const String& command) {
+  if (command.startsWith("play")) {
+    // Play command
+    if (playlistCount > 0) {
+      int index = -1;
+      if (command.length() > 5) {
+        index = command.substring(5).toInt();
+      }
+      
+      if (index >= 0 && index < playlistCount) {
+        startStream(playlist[index].url, playlist[index].name);
+      } else if (playlistCount > 0 && currentSelection < playlistCount) {
+        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      }
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("No playlist"));
+    }
+  } else if (command.startsWith("stop")) {
+    // Stop command
+    stopStream();
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("pause")) {
+    // Pause command (treat as stop for simplicity)
+    stopStream();
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("status")) {
+    // Status command
+    mpdClient.println("volume: " + String(volume));
+    mpdClient.println("state: " + String(isPlaying ? "play" : "stop"));
+    if (isPlaying && strlen(currentStreamName) > 0) {
+      mpdClient.println("song: " + String(currentSelection));
+      mpdClient.println("songid: " + String(currentSelection));
+      mpdClient.println("title: " + String(currentStreamName));
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("currentsong")) {
+    // Current song command
+    if (isPlaying && strlen(currentStreamName) > 0) {
+      mpdClient.println("file: " + String(currentStream));
+      mpdClient.println("Title: " + String(currentStreamName));
+      mpdClient.println("Id: " + String(currentSelection));
+      mpdClient.println("Pos: " + String(currentSelection));
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("playlistinfo")) {
+    // Playlist info command
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.println("file: " + String(playlist[i].url));
+      mpdClient.println("Title: " + String(playlist[i].name));
+      mpdClient.println("Id: " + String(i));
+      mpdClient.println("Pos: " + String(i));
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("playlistid")) {
+    // Playlist ID command
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.println("file: " + String(playlist[i].url));
+      mpdClient.println("Title: " + String(playlist[i].name));
+      mpdClient.println("Id: " + String(i));
+      mpdClient.println("Pos: " + String(i));
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("lsinfo")) {
+    // List info command
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.println("file: " + String(playlist[i].url));
+      mpdClient.println("Title: " + String(playlist[i].name));
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("setvol")) {
+    // Set volume command
+    if (command.length() > 7) {
+      int newVolume = command.substring(7).toInt();
+      if (newVolume >= 0 && newVolume <= 100) {
+        volume = newVolume;
+        if (out) {
+          out->SetGain(volume / 100.0);
+        }
+        sendStatusToClients();  // Notify WebSocket clients
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("Volume out of range"));
+      }
+    } else {
+      mpdClient.print(mpdResponseError("Missing volume value"));
+    }
+  } else if (command.startsWith("next")) {
+    // Next command
+    if (playlistCount > 0) {
+      currentSelection = (currentSelection + 1) % playlistCount;
+      if (isPlaying) {
+        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      }
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("No playlist"));
+    }
+  } else if (command.startsWith("previous")) {
+    // Previous command
+    if (playlistCount > 0) {
+      currentSelection = (currentSelection - 1 + playlistCount) % playlistCount;
+      if (isPlaying) {
+        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      }
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("No playlist"));
+    }
+  } else if (command.startsWith("clear")) {
+    // Clear command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("add")) {
+    // Add command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("delete")) {
+    // Delete command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("load")) {
+    // Load command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("save")) {
+    // Save command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("outputs")) {
+    // Outputs command
+    mpdClient.println("outputid: 0");
+    mpdClient.println("outputname: NetTuner");
+    mpdClient.println("outputenabled: 1");
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("disableoutput") || command.startsWith("enableoutput")) {
+    // Output control commands
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("commands")) {
+    // Commands command
+    mpdClient.println("command: add");
+    mpdClient.println("command: clear");
+    mpdClient.println("command: currentsong");
+    mpdClient.println("command: delete");
+    mpdClient.println("command: disableoutput");
+    mpdClient.println("command: enableoutput");
+    mpdClient.println("command: load");
+    mpdClient.println("command: lsinfo");
+    mpdClient.println("command: next");
+    mpdClient.println("command: outputs");
+    mpdClient.println("command: pause");
+    mpdClient.println("command: play");
+    mpdClient.println("command: playlistid");
+    mpdClient.println("command: playlistinfo");
+    mpdClient.println("command: previous");
+    mpdClient.println("command: save");
+    mpdClient.println("command: setvol");
+    mpdClient.println("command: status");
+    mpdClient.println("command: stop");
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("notcommands")) {
+    // Not commands command
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("tagtypes")) {
+    // Tag types command
+    mpdClient.println("tagtype: Artist");
+    mpdClient.println("tagtype: Album");
+    mpdClient.println("tagtype: Title");
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("idle")) {
+    // Idle command
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("noidle")) {
+    // Noidle command
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("close")) {
+    // Close command
+    mpdClient.print(mpdResponseOK());
+    mpdClient.stop();
+  } else if (command.length() == 0) {
+    // Empty command
+    mpdClient.print(mpdResponseOK());
+  } else {
+    // Unknown command
+    mpdClient.print(mpdResponseError("Unknown command"));
+  }
 }
