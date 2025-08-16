@@ -1,7 +1,22 @@
 [
-    {"name":"Radio Swiss Jazz","url":"http://stream.srg-ssr.ch:80/m/rsj/mp3_128"},
-    {"name":"Radio Swiss Classic","url":"http://stream.srg-ssr.ch:80/m/rsc_de/mp3_128"},
-    {"name":"Radio Swiss Pop","url":"http://stream.srg-ssr.ch:80/m/rsp/mp3_128"},
-    {"name":"Synthwave City FM","url":"http://188.40.97.185:8179/stream"},
-    {"name":"Absolute Chillout","url":"http://streaming.live365.com:80/b05055_128mp3"}
+    {
+        "name": "Radio Swiss Jazz",
+        "url": "http://stream.srg-ssr.ch:80/m/rsj/mp3_128"
+    },
+    {
+        "name": "Radio Swiss Classic",
+        "url": "http://stream.srg-ssr.ch:80/m/rsc_de/mp3_128"
+    },
+    {
+        "name": "Radio Swiss Pop",
+        "url": "http://stream.srg-ssr.ch:80/m/rsp/mp3_128"
+    },
+    {
+        "name": "Synthwave City FM",
+        "url": "http://188.40.97.185:8179/stream"
+    },
+    {
+        "name": "Absolute Chillout",
+        "url": "http://streaming.live365.com:80/b05055_128mp3"
+    }
 ]
