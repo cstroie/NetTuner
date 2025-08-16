@@ -329,6 +329,9 @@ void setup() {
   
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
+  server.serveStatic("/main.js", SPIFFS, "/main.js");
+  server.serveStatic("/playlist.js", SPIFFS, "/playlist.js");
+  server.serveStatic("/wifi.js", SPIFFS, "/wifi.js");
   
   server.begin();
   
@@ -375,54 +378,7 @@ void handleWiFiConfig() {
   <button onclick="scanNetworks()">Refresh Networks</button>
   <button onclick="window.location.href='/'">Back to Main</button>
 
-  <script>
-    function scanNetworks() {
-      document.getElementById('networks').innerHTML = 'Scanning for networks...';
-      fetch('/api/wifiscan')
-        .then(response => response.json())
-        .then(data => {
-          let html = '<h2>Available Networks:</h2>';
-          data.forEach(network => {
-            html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
-          });
-          document.getElementById('networks').innerHTML = html;
-        })
-        .catch(error => {
-          document.getElementById('networks').innerHTML = 'Error scanning networks';
-          console.error('Error:', error);
-        });
-    }
-
-    function selectNetwork(ssid) {
-      document.getElementById('ssid').value = ssid;
-    }
-
-    document.getElementById('wifiForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const ssid = document.getElementById('ssid').value;
-      const password = document.getElementById('password').value;
-      
-      fetch('/api/wifisave', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ssid: ssid, password: password })
-      })
-      .then(response => response.text())
-      .then(data => {
-        alert(data);
-        if (data === 'WiFi configuration saved') {
-          window.location.href = '/';
-        }
-      })
-      .catch(error => {
-        alert('Error saving configuration');
-        console.error('Error:', error);
-      });
-    });
-
-    // Scan networks on page load
-    scanNetworks();
-  </script>
+  <script src="/wifi.js"></script>
 </body>
 </html>
 )=====";
