@@ -125,12 +125,19 @@ let reconnectTimeout = null;
 let isConnecting = false;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
+let heartbeatInterval = null;
 
 function connectWebSocket() {
     // Clear any existing reconnection timeout
     if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
         reconnectTimeout = null;
+    }
+    
+    // Clear any existing heartbeat interval
+    if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
     }
     
     // Prevent multiple connection attempts
@@ -160,11 +167,26 @@ function connectWebSocket() {
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
+            
+            // Start heartbeat to detect disconnections
+            heartbeatInterval = setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({type: 'ping'}));
+                }
+            }, 30000); // Send ping every 30 seconds
         };
         
         ws.onmessage = function(event) {
             try {
-                const status = JSON.parse(event.data);
+                const data = JSON.parse(event.data);
+                
+                // Handle pong messages
+                if (data.type === 'pong') {
+                    return; // Ignore pong messages
+                }
+                
+                // Handle status updates
+                const status = data;
                 console.log('Received status update:', status);
                 const statusElement = document.getElementById('status');
                 const currentElement = document.getElementById('currentStream');
@@ -206,6 +228,13 @@ function connectWebSocket() {
         
         ws.onclose = function() {
             isConnecting = false;
+            
+            // Clear heartbeat interval on close
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+            
             reconnectAttempts++;
             console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
             showToast('Disconnected from NetTuner', 'warning');
