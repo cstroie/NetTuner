@@ -647,8 +647,8 @@ void audioTask(void *parameter) {
         sendStatusToClients(); // Notify clients of status change
       }
     }
-    delay(1);  // Small delay to prevent monopolizing CPU and feed the watchdog
-    yield();   // Yield to other tasks to feed the watchdog
+    // Use FreeRTOS delay to properly feed the watchdog
+    vTaskDelay(1);  // Delay for 1 tick (1ms on ESP32)
   }
 }
 
