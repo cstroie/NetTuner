@@ -923,55 +923,6 @@ function initWiFiPage() {
     scanNetworks();
 }
 
-// Initialize based on current page
-document.addEventListener('DOMContentLoaded', function() {
-    // Add toast styles to all pages
-    addToastStyles();
-    
-    if (document.getElementById('streamSelect')) {
-        initMainPage();
-    } else if (document.getElementById('playlistBody')) {
-        initPlaylistPage();
-    }
-});
-
-// WiFi functions
-function initWiFiPage() {
-    // Setup form submit handler
-    const wifiForm = document.getElementById('wifiForm');
-    if (wifiForm) {
-        wifiForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const ssidInput = document.getElementById('ssid');
-            const passwordInput = document.getElementById('password');
-            
-            if (!ssidInput || !passwordInput) return;
-            
-            const ssid = ssidInput.value;
-            const password = passwordInput.value;
-            
-            fetch('/api/wifisave', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid: ssid, password: password })
-            })
-            .then(response => response.text())
-            .then(data => {
-                alert(data);
-                if (data === 'WiFi configuration saved') {
-                    window.location.href = '/';
-                }
-            })
-            .catch(error => {
-                alert('Error saving configuration');
-                console.error('Error:', error);
-            });
-        });
-    }
-    
-    // Scan networks on page load
-    scanNetworks();
-}
 
 // Config functions
 function initConfigPage() {
