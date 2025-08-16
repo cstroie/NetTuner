@@ -307,17 +307,6 @@ void setup() {
   server.on("/playlist.html", HTTP_GET, handlePlaylistPage);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
-  server.on("/api/streams.m3u", HTTP_GET, []() {
-    // Return JSON format (default)
-    File file = SPIFFS.open("/playlist.json", "r");
-    if (!file) {
-      server.send(200, "application/json", "[]");
-      return;
-    }
-    
-    server.streamFile(file, "application/json");
-    file.close();
-  });
   server.on("/api/play", HTTP_POST, handlePlay);
   server.on("/api/stop", HTTP_POST, handleStop);
   server.on("/api/volume", HTTP_POST, handleVolume);
@@ -325,8 +314,7 @@ void setup() {
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
-  server.on("/api/m3u", HTTP_POST, handleM3UUpload);
-  
+   
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
