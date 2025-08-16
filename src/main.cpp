@@ -28,7 +28,6 @@
 #include "AudioGeneratorMP3.h"
 #include "AudioOutputI2S.h"
 #include <Adafruit_SSD1306.h>
-#include <ESPAsyncWebServer.h>
 
 /**
  * @brief WiFi network credentials
