@@ -26,17 +26,17 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 
 ### Pin Connections
 
-| Component        | ESP32 Pin |
-|------------------|-----------|
-| I2S BCLK         | GPIO 25   |
-| I2S LRC          | GPIO 26   |
-| I2S DOUT         | GPIO 22   |
+| Component         | ESP32 Pin |
+|-------------------|-----------|
+| I2S BCLK          | GPIO 25   |
+| I2S LRC           | GPIO 26   |
+| I2S DOUT          | GPIO 22   |
 | I2S SD (Amplifier)| GPIO 21   |
-| OLED SDA         | GPIO 5    |
-| OLED SCL         | GPIO 4    |
-| Rotary CLK       | GPIO 18   |
-| Rotary DT        | GPIO 19   |
-| Rotary SW        | GPIO 23   |
+| OLED SDA          | GPIO 5    |
+| OLED SCL          | GPIO 4    |
+| Rotary CLK        | GPIO 18   |
+| Rotary DT         | GPIO 19   |
+| Rotary SW         | GPIO 23   |
 
 ## Software Setup
 
