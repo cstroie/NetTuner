@@ -302,7 +302,7 @@ void setup() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/streams.m3u", HTTP_GET, []() {
-    // Return JSON format instead of M3U
+    // Return JSON format (default)
     File file = SPIFFS.open("/playlist.json", "r");
     if (!file) {
       server.send(200, "application/json", "[]");
