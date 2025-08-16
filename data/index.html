@@ -95,7 +95,9 @@
             }
             
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            // WebSocket server runs on port 81, not the same port as HTTP server
+            const host = window.location.hostname;
+            const wsUrl = `${protocol}//${host}:81/`;
             
             try {
                 ws = new WebSocket(wsUrl);

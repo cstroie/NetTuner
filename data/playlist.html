@@ -390,38 +390,6 @@
             }
         }
         
-        async function downloadJSON() {
-            try {
-                const response = await fetch('/api/streams', {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                console.log('Download JSON response status:', response.status);
-                
-                if (response.ok) {
-                    const jsonContent = await response.text();
-                    const blob = new Blob([jsonContent], { type: 'application/json' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'playlist.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                } else {
-                    const error = await response.text();
-                    console.error('Error downloading JSON:', error);
-                    alert('Error downloading JSON: ' + error);
-                }
-            } catch (error) {
-                console.error('Error downloading JSON:', error);
-                alert('Error downloading JSON: ' + error.message);
-            }
-        }
-        
         // Convert M3U content to JSON
         function convertM3UToJSON(m3uContent) {
             const lines = m3uContent.split('\n');
