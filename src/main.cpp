@@ -1246,15 +1246,55 @@ void handlePostStreams() {
           return;
         }
         
-        File file = SPIFFS.open("/playlist.json", "w");
-        if (!file) {
-          server.send(500, "text/plain", "Failed to save playlist");
+        // Parse JSON and update playlist array
+        DynamicJsonDocument doc(4096);
+        DeserializationError error = deserializeJson(doc, jsonContent);
+        if (error) {
+          Serial.print("Error: Failed to parse playlist JSON: ");
+          Serial.println(error.c_str());
+          server.send(400, "text/plain", "Invalid JSON format");
           return;
         }
-        file.print(jsonContent);
-        file.close();
         
-        loadPlaylist(); // Reload playlist
+        if (!doc.is<JsonArray>()) {
+          Serial.println("Error: Playlist JSON is not an array");
+          server.send(400, "text/plain", "Invalid JSON format");
+          return;
+        }
+        
+        JsonArray array = doc.as<JsonArray>();
+        playlistCount = 0;
+        
+        for (JsonObject item : array) {
+          if (playlistCount >= 20) {
+            Serial.println("Warning: Playlist limit reached (20 entries)");
+            break;
+          }
+          
+          if (item.containsKey("name") && item.containsKey("url")) {
+            const char* name = item["name"];
+            const char* url = item["url"];
+            
+            // Validate name and URL
+            if (name && url && strlen(name) > 0 && strlen(url) > 0) {
+              // Validate URL format
+              if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+                strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
+                playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+                strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
+                playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+                playlistCount++;
+              } else {
+                Serial.println("Warning: Skipping stream with invalid URL format");
+              }
+            } else {
+              Serial.println("Warning: Skipping stream with empty name or URL");
+            }
+          }
+        }
+        
+        // Save the playlist using the savePlaylist function
+        savePlaylist();
         server.send(200, "text/plain", "JSON playlist updated successfully");
         return;
       } else if (upload.status == UPLOAD_FILE_ABORTED) {
@@ -1289,14 +1329,55 @@ void handlePostStreams() {
     return;
   }
   
-  File file = SPIFFS.open("/playlist.json", "w");
-  if (!file) {
-    server.send(500, "text/plain", "Failed to save playlist");
+  // Parse JSON and update playlist array
+  DynamicJsonDocument doc(4096);
+  DeserializationError error = deserializeJson(doc, json);
+  if (error) {
+    Serial.print("Error: Failed to parse playlist JSON: ");
+    Serial.println(error.c_str());
+    server.send(400, "text/plain", "Invalid JSON format");
     return;
   }
-  file.print(json);
-  file.close();
-  loadPlaylist(); // Reload playlist
+  
+  if (!doc.is<JsonArray>()) {
+    Serial.println("Error: Playlist JSON is not an array");
+    server.send(400, "text/plain", "Invalid JSON format");
+    return;
+  }
+  
+  JsonArray array = doc.as<JsonArray>();
+  playlistCount = 0;
+  
+  for (JsonObject item : array) {
+    if (playlistCount >= 20) {
+      Serial.println("Warning: Playlist limit reached (20 entries)");
+      break;
+    }
+    
+    if (item.containsKey("name") && item.containsKey("url")) {
+      const char* name = item["name"];
+      const char* url = item["url"];
+      
+      // Validate name and URL
+      if (name && url && strlen(name) > 0 && strlen(url) > 0) {
+        // Validate URL format
+        if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+          strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
+          playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+          strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
+          playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+          playlistCount++;
+        } else {
+          Serial.println("Warning: Skipping stream with invalid URL format");
+        }
+      } else {
+        Serial.println("Warning: Skipping stream with empty name or URL");
+      }
+    }
+  }
+  
+  // Save the playlist using the savePlaylist function
+  savePlaylist();
   server.send(200, "text/plain", "OK");
 }
 
