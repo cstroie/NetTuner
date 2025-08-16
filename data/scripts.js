@@ -1,0 +1,552 @@
+// Main functions
+let streams = [];
+
+async function loadStreams() {
+    try {
+        console.log('Loading streams from /api/streams');
+        const response = await fetch('/api/streams');
+        console.log('Streams response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        streams = await response.json();
+        console.log('Loaded streams:', streams);
+        const select = document.getElementById('streamSelect');
+        if (select) {
+            select.innerHTML = '<option value="">Select a stream...</option>';
+            streams.forEach(stream => {
+                const option = document.createElement('option');
+                option.value = stream.url;
+                option.textContent = stream.name;
+                option.dataset.name = stream.name;
+                select.appendChild(option);
+            });
+        }
+        
+        // Also update playlist if on playlist page
+        if (document.getElementById('playlistBody')) {
+            renderPlaylist();
+        }
+    } catch (error) {
+        console.error('Error loading streams:', error);
+    }
+}
+
+// WebSocket connection
+let ws = null;
+
+function connectWebSocket() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // WebSocket server runs on port 81, not the same port as HTTP server
+    const host = window.location.hostname;
+    const wsUrl = `${protocol}//${host}:81/`;
+    
+    try {
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = function() {
+            console.log('WebSocket connected');
+        };
+        
+        ws.onmessage = function(event) {
+            try {
+                const status = JSON.parse(event.data);
+                console.log('Received status update:', status);
+                const statusElement = document.getElementById('status');
+                const currentElement = document.getElementById('currentStream');
+                
+                if (statusElement) {
+                    statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
+                    statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                }
+                
+                if (currentElement) {
+                    currentElement.textContent = status.currentStreamName || 'No stream selected';
+                }
+                
+                const volumeControl = document.getElementById('volume');
+                const volumeValue = document.getElementById('volumeValue');
+                
+                if (volumeControl) {
+                    volumeControl.value = status.volume;
+                }
+                
+                if (volumeValue) {
+                    volumeValue.textContent = status.volume + '%';
+                }
+            } catch (error) {
+                console.error('Error parsing WebSocket message:', error);
+            }
+        };
+        
+        ws.onclose = function() {
+            console.log('WebSocket disconnected');
+            // Try to reconnect after 3 seconds
+            setTimeout(connectWebSocket, 3000);
+        };
+        
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+    } catch (error) {
+        console.error('Error creating WebSocket:', error);
+        // Fallback to polling if WebSocket fails
+        setTimeout(connectWebSocket, 5000);
+    }
+}
+
+async function playStream() {
+    const select = document.getElementById('streamSelect');
+    const option = select.options[select.selectedIndex];
+    const url = select.value;
+    const name = option ? option.dataset.name : '';
+    
+    console.log('Playing stream:', { url, name });
+    
+    if (!url) {
+        alert('Please select a stream');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/play', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: 'url=' + encodeURIComponent(url) + '&name=' + encodeURIComponent(name)
+        });
+        console.log('Play response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Failed to play stream');
+        }
+    } catch (error) {
+        console.error('Error playing stream:', error);
+        alert('Error playing stream: ' + error.message);
+    }
+}
+
+async function stopStream() {
+    try {
+        console.log('Stopping current stream');
+        const response = await fetch('/api/stop', { method: 'POST' });
+        console.log('Stop response status:', response.status);
+    } catch (error) {
+        console.error('Error stopping stream:', error);
+    }
+}
+
+async function setVolume(volume) {
+    try {
+        console.log('Setting volume to:', volume);
+        const response = await fetch('/api/volume', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'volume=' + volume
+        });
+        console.log('Volume response status:', response.status);
+        if (response.ok) {
+            const volumeValue = document.getElementById('volumeValue');
+            if (volumeValue) {
+                volumeValue.textContent = volume + '%';
+            }
+        }
+    } catch (error) {
+        console.error('Error setting volume:', error);
+    }
+}
+
+// Playlist functions
+function renderPlaylist() {
+    const tbody = document.getElementById('playlistBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    streams.forEach((stream, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td data-label="Order">${index + 1}</td>
+            <td data-label="Name"><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></td>
+            <td data-label="URL"><input type="text" value="${stream.url}" onchange="updateStream(${index}, 'url', this.value)"></td>
+            <td data-label="Actions" class="actions">
+                <button class="btn-danger" onclick="deleteStream(${index})">Delete</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function addStream() {
+    const name = document.getElementById('name');
+    const url = document.getElementById('url');
+    
+    if (!name || !url) return;
+    
+    console.log('Adding stream:', { name: name.value, url: url.value });
+    
+    if (!name.value || !url.value) {
+        alert('Please enter both name and URL');
+        return;
+    }
+    
+    streams.push({ name: name.value, url: url.value });
+    renderPlaylist();
+    
+    // Clear form
+    name.value = '';
+    url.value = '';
+}
+
+function updateStream(index, field, value) {
+    if (streams[index]) {
+        streams[index][field] = value;
+    }
+}
+
+function deleteStream(index) {
+    if (confirm('Are you sure you want to delete this stream?')) {
+        streams.splice(index, 1);
+        renderPlaylist();
+    }
+}
+
+async function savePlaylist() {
+    // Convert streams to JSON
+    const jsonData = JSON.stringify(streams);
+    
+    console.log('Saving playlist:', jsonData);
+    
+    try {
+        const response = await fetch('/api/streams', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: jsonData
+        });
+        
+        console.log('Save playlist response status:', response.status);
+        
+        if (response.ok) {
+            alert('Playlist saved successfully!');
+        } else {
+            const error = await response.text();
+            console.error('Error saving playlist:', error);
+            alert('Error saving playlist: ' + error);
+        }
+    } catch (error) {
+        console.error('Error saving playlist:', error);
+        alert('Error saving playlist: ' + error.message);
+    }
+}
+
+async function uploadJSON() {
+    const fileInput = document.getElementById('playlistFile');
+    const file = fileInput.files[0];
+    
+    console.log('Uploading JSON playlist file:', file);
+    
+    if (!file) {
+        alert('Please select a playlist file');
+        return;
+    }
+    
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.json')) {
+        alert('Please select a JSON file');
+        return;
+    }
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileContent = e.target.result;
+        console.log('File content:', fileContent);
+        
+        try {
+            const response = await fetch('/api/streams', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: fileContent
+            });
+            
+            console.log('Upload response status:', response.status);
+            const message = await response.text();
+            console.log('Upload response message:', message);
+            alert(message);
+            
+            if (response.ok) {
+                // Reload streams after successful upload
+                loadStreams();
+                // Clear file input
+                fileInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error uploading playlist:', error);
+            alert('Error uploading playlist file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function uploadM3U() {
+    const fileInput = document.getElementById('playlistFile');
+    const file = fileInput.files[0];
+    
+    console.log('Uploading M3U playlist file:', file);
+    
+    if (!file) {
+        alert('Please select a playlist file');
+        return;
+    }
+    
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
+        alert('Please select an M3U file');
+        return;
+    }
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileContent = e.target.result;
+        console.log('File content:', fileContent);
+        
+        // Convert M3U to JSON
+        const jsonData = convertM3UToJSON(fileContent);
+        
+        try {
+            const response = await fetch('/api/streams', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: jsonData
+            });
+            
+            console.log('Upload response status:', response.status);
+            const message = await response.text();
+            console.log('Upload response message:', message);
+            alert(message);
+            
+            if (response.ok) {
+                // Reload streams after successful upload
+                loadStreams();
+                // Clear file input
+                fileInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error uploading playlist:', error);
+            alert('Error uploading playlist file: ' + error.message);
+        }
+    };
+    reader.readAsText(file);
+}
+
+async function downloadJSON() {
+    try {
+        const response = await fetch('/api/streams', {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        console.log('Download JSON response status:', response.status);
+        
+        if (response.ok) {
+            const jsonContent = await response.text();
+            const blob = new Blob([jsonContent], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'playlist.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            const error = await response.text();
+            console.error('Error downloading JSON:', error);
+            alert('Error downloading JSON: ' + error);
+        }
+    } catch (error) {
+        console.error('Error downloading JSON:', error);
+        alert('Error downloading JSON: ' + error.message);
+    }
+}
+
+async function downloadM3U() {
+    try {
+        const response = await fetch('/api/streams', {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        console.log('Download JSON response status:', response.status);
+        
+        if (response.ok) {
+            const jsonData = await response.json();
+            const m3uContent = convertJSONToM3U(jsonData);
+            const blob = new Blob([m3uContent], { type: 'audio/x-mpegurl' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'playlist.m3u';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            const error = await response.text();
+            console.error('Error downloading JSON:', error);
+            alert('Error downloading playlist: ' + error);
+        }
+    } catch (error) {
+        console.error('Error downloading playlist:', error);
+        alert('Error downloading playlist: ' + error.message);
+    }
+}
+
+// Convert M3U content to JSON
+function convertM3UToJSON(m3uContent) {
+    const lines = m3uContent.split('\n');
+    const streams = [];
+    let currentName = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        
+        if (line.length === 0) continue;
+        
+        if (line.startsWith('#EXTINF:')) {
+            // Extract name from EXTINF line
+            const commaPos = line.indexOf(',');
+            if (commaPos !== -1) {
+                currentName = line.substring(commaPos + 1).trim();
+            }
+        } else if (!line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
+            // This is a URL line
+            streams.push({
+                name: currentName || ('Stream ' + (streams.length + 1)),
+                url: line
+            });
+            currentName = ''; // Reset for next entry
+        }
+    }
+    
+    return JSON.stringify(streams);
+}
+
+// Convert JSON content to M3U
+function convertJSONToM3U(jsonData) {
+    let m3uContent = '#EXTM3U\n';
+    
+    jsonData.forEach(item => {
+        if (item.name && item.url) {
+            m3uContent += '#EXTINF:-1,' + item.name + '\n';
+            m3uContent += item.url + '\n';
+        }
+    });
+    
+    return m3uContent;
+}
+
+// WiFi functions
+function scanNetworks() {
+    const networksDiv = document.getElementById('networks');
+    if (!networksDiv) return;
+    
+    networksDiv.innerHTML = 'Scanning for networks...';
+    fetch('/api/wifiscan')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<h2>Available Networks:</h2>';
+            data.forEach(network => {
+                html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
+            });
+            networksDiv.innerHTML = html;
+        })
+        .catch(error => {
+            networksDiv.innerHTML = 'Error scanning networks';
+            console.error('Error:', error);
+        });
+}
+
+function selectNetwork(ssid) {
+    const ssidInput = document.getElementById('ssid');
+    if (ssidInput) {
+        ssidInput.value = ssid;
+    }
+}
+
+// Initialize functions
+function initMainPage() {
+    loadStreams();
+    connectWebSocket();
+}
+
+function initPlaylistPage() {
+    loadStreams();
+}
+
+function initWiFiPage() {
+    // Setup form submit handler
+    const wifiForm = document.getElementById('wifiForm');
+    if (wifiForm) {
+        wifiForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const ssidInput = document.getElementById('ssid');
+            const passwordInput = document.getElementById('password');
+            
+            if (!ssidInput || !passwordInput) return;
+            
+            const ssid = ssidInput.value;
+            const password = passwordInput.value;
+            
+            fetch('/api/wifisave', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ssid: ssid, password: password })
+            })
+            .then(response => response.text())
+            .then(data => {
+                alert(data);
+                if (data === 'WiFi configuration saved') {
+                    window.location.href = '/';
+                }
+            })
+            .catch(error => {
+                alert('Error saving configuration');
+                console.error('Error:', error);
+            });
+        });
+    }
+    
+    // Scan networks on page load
+    scanNetworks();
+}
+
+// Initialize based on current page
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('streamSelect')) {
+        initMainPage();
+    } else if (document.getElementById('playlistBody')) {
+        initPlaylistPage();
+    } else if (document.getElementById('networks')) {
+        initWiFiPage();
+    }
+});

@@ -329,9 +329,7 @@ void setup() {
   
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
-  server.serveStatic("/main.js", SPIFFS, "/main.js");
-  server.serveStatic("/playlist.js", SPIFFS, "/playlist.js");
-  server.serveStatic("/wifi.js", SPIFFS, "/wifi.js");
+  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   
   server.begin();
   
@@ -378,7 +376,7 @@ void handleWiFiConfig() {
   <button onclick="scanNetworks()">Refresh Networks</button>
   <button onclick="window.location.href='/'">Back to Main</button>
 
-  <script src="/wifi.js"></script>
+  <script src="/scripts.js"></script>
 </body>
 </html>
 )=====";
