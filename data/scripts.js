@@ -561,13 +561,13 @@ function addStream() {
     console.log('Adding stream:', { name: name.value, url: url.value });
     
     if (!name.value || !url.value) {
-        alert('Please enter both name and URL');
+        showToast('Please enter both name and URL', 'warning');
         return;
     }
     
     // Validate URL format
     if (!url.value.startsWith('http://') && !url.value.startsWith('https://')) {
-        alert('Please enter a valid URL starting with http:// or https://');
+        showToast('Please enter a valid URL starting with http:// or https://', 'warning');
         return;
     }
     
@@ -849,46 +849,60 @@ async function downloadM3U() {
 
 // Convert M3U content to JSON
 function convertM3UToJSON(m3uContent) {
-    const lines = m3uContent.split('\n');
-    const streams = [];
-    let currentName = '';
-    
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+    try {
+        const lines = m3uContent.split('\n');
+        const streams = [];
+        let currentName = '';
         
-        if (line.length === 0) continue;
-        
-        if (line.startsWith('#EXTINF:')) {
-            // Extract name from EXTINF line
-            const commaPos = line.indexOf(',');
-            if (commaPos !== -1) {
-                currentName = line.substring(commaPos + 1).trim();
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line.length === 0) continue;
+            
+            if (line.startsWith('#EXTINF:')) {
+                // Extract name from EXTINF line
+                const commaPos = line.indexOf(',');
+                if (commaPos !== -1) {
+                    currentName = line.substring(commaPos + 1).trim();
+                }
+            } else if (!line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
+                // This is a URL line
+                streams.push({
+                    name: currentName || ('Stream ' + (streams.length + 1)),
+                    url: line
+                });
+                currentName = ''; // Reset for next entry
             }
-        } else if (!line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
-            // This is a URL line
-            streams.push({
-                name: currentName || ('Stream ' + (streams.length + 1)),
-                url: line
-            });
-            currentName = ''; // Reset for next entry
         }
+        
+        return JSON.stringify(streams);
+    } catch (error) {
+        console.error('Error converting M3U to JSON:', error);
+        throw new Error('Failed to convert M3U file: ' + error.message);
     }
-    
-    return JSON.stringify(streams);
 }
 
 // Convert JSON content to M3U
 function convertJSONToM3U(jsonData) {
-    let m3uContent = '#EXTM3U\n';
-    
-    jsonData.forEach(item => {
-        if (item.name && item.url) {
-            m3uContent += '#EXTINF:-1,' + item.name + '\n';
-            m3uContent += item.url + '\n';
+    try {
+        let m3uContent = '#EXTM3U\n';
+        
+        if (!Array.isArray(jsonData)) {
+            throw new Error('Invalid JSON format: expected array of streams');
         }
-    });
-    
-    return m3uContent;
+        
+        jsonData.forEach(item => {
+            if (item.name && item.url) {
+                m3uContent += '#EXTINF:-1,' + item.name + '\n';
+                m3uContent += item.url + '\n';
+            }
+        });
+        
+        return m3uContent;
+    } catch (error) {
+        console.error('Error converting JSON to M3U:', error);
+        throw new Error('Failed to convert playlist to M3U: ' + error.message);
+    }
 }
 
 // WiFi functions
@@ -1051,31 +1065,64 @@ document.addEventListener('DOMContentLoaded', function() {
 function initConfigPage() {
     // Load current configuration
     fetch('/api/config')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load configuration');
+            }
+            return response.json();
+        })
         .then(config => {
             document.getElementById('output').value = config.output || 0;
         })
-        .catch(error => console.error('Error loading config:', error));
+        .catch(error => {
+            console.error('Error loading config:', error);
+            showToast('Error loading configuration: ' + error.message, 'error');
+        });
     
     // Handle form submission
-    document.getElementById('configForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const output = document.getElementById('output').value;
-        
-        fetch('/api/config', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ output: parseInt(output) })
-        })
-        .then(response => response.text())
-        .then(data => {
-            alert(data);
-            // Reload the page to reflect changes
-            location.reload();
-        })
-        .catch(error => {
-            alert('Error saving configuration');
-            console.error('Error:', error);
+    const configForm = document.getElementById('configForm');
+    if (configForm) {
+        configForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const output = document.getElementById('output').value;
+            
+            // Show loading state
+            const submitButton = configForm.querySelector('button[type="submit"]');
+            const originalText = submitButton ? submitButton.textContent : null;
+            if (submitButton) {
+                submitButton.textContent = 'Saving...';
+                submitButton.disabled = true;
+            }
+            
+            fetch('/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ output: parseInt(output) })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to save configuration');
+                }
+                return response.text();
+            })
+            .then(data => {
+                showToast(data, 'success');
+                // Reload the page to reflect changes after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            })
+            .catch(error => {
+                showToast('Error saving configuration: ' + error.message, 'error');
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Restore button state
+                if (submitButton) {
+                    submitButton.textContent = originalText || 'Save Configuration';
+                    submitButton.disabled = false;
+                }
+            });
         });
-    });
+    }
 }
