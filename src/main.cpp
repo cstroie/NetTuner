@@ -390,7 +390,13 @@ void loop() {
  * Serves the WiFi configuration page
  */
 void handleWiFiConfig() {
-  server.send(SPIFFS, "/wifi.html");
+  File file = SPIFFS.open("/wifi.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
 }
 
 /**
