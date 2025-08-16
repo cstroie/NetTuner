@@ -111,17 +111,13 @@ public:
     int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
     int DT = digitalRead(ROTARY_DT);    // Read data signal
     
-    // Only process when CLK transitions
-    if (CLK != lastCLK) {
-      // Determine rotation direction based on CLK and DT relationship
-      if (CLK == 1 && DT == 0) {
+    // Only process when CLK transitions from LOW to HIGH
+    if (CLK == HIGH && lastCLK == LOW) {
+      // Determine rotation direction based on DT state
+      if (DT == LOW) {
         position++;      // Clockwise rotation
-      } else if (CLK == 0 && DT == 1) {
-        position++;      // Clockwise rotation (alternative pattern)
-      } else if (CLK == 1 && DT == 1) {
+      } else {
         position--;      // Counter-clockwise rotation
-      } else if (CLK == 0 && DT == 0) {
-        position--;      // Counter-clockwise rotation (alternative pattern)
       }
       lastRotaryTime = currentTime;  // Update last event time
     }
