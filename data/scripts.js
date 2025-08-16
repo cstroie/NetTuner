@@ -218,7 +218,7 @@ function connectWebSocket() {
             heartbeatInterval = setInterval(() => {
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     try {
-                        ws.send(JSON.stringify({type: 'ping'}));
+                        ws.send('ping');
                     } catch (e) {
                         console.error('Error sending ping:', e);
                     }
