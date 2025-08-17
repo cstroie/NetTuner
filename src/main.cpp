@@ -897,7 +897,7 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-  audio->setVolume(volume); // 0-21
+  audio->setVolume(volume * 21 / 100); // Convert 0-100 to 0-21 scale
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
