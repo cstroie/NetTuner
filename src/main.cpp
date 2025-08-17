@@ -480,6 +480,7 @@ void loop() {
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
+  
   if (audio) {
       // Check if audio is still connected
       if (isPlaying && !audio->isRunning()) {
@@ -498,6 +499,17 @@ void loop() {
         }
       }
     }
+  
+  // Periodic cleanup - add this
+  static unsigned long lastCleanup = 0;
+  if (millis() - lastCleanup > 30000) {  // Every 30 seconds
+    lastCleanup = millis();
+    // Force cleanup of any stale connections
+    if (mpdClient && !mpdClient.connected()) {
+      mpdClient.stop();
+    }
+  }
+  
   delay(1);               // Small delay to prevent busy waiting
 }
 
@@ -1609,7 +1621,10 @@ void sendStatusToClients() {
   status += "\"volume\":" + String(volume);
   status += "}";
   
-  webSocket.broadcastTXT(status);
+  // Only broadcast if WebSocket server has clients
+  if (webSocket.connectedClients() > 0) {
+    webSocket.broadcastTXT(status);
+  }
 }
 
 /**
@@ -1631,13 +1646,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_DISCONNECTED:
       Serial.printf("WebSocket client #%u disconnected\n", num);
+      // Add a small delay to ensure proper cleanup
+      delay(10);
       break;
     case WStype_TEXT:
       Serial.printf("WebSocket client #%u text: %s\n", num, payload);
       // Handle ping messages from client
       if (length == 4 && strncmp((char*)payload, "ping", 4) == 0) {
         // Respond with pong
-        webSocket.sendTXT(num, "pong");
+        if (webSocket.connected(num)) {  // Check if client is still connected
+          webSocket.sendTXT(num, "pong");
+        }
       }
       break;
     default:
@@ -1756,16 +1775,23 @@ void handleMPDClient() {
   if (mpdServer.hasClient()) {
     if (!mpdClient || !mpdClient.connected()) {
       if (mpdClient) {
-        mpdClient.stop();
+        mpdClient.stop();  // Ensure previous client is properly closed
       }
       mpdClient = mpdServer.available();
       // Send MPD welcome message
-      mpdClient.println("OK MPD 0.20.0");
+      if (mpdClient && mpdClient.connected()) {
+        mpdClient.println("OK MPD 0.20.0");
+      }
     } else {
       // Reject connection if we already have a client
       WiFiClient rejectedClient = mpdServer.available();
-      rejectedClient.stop();
+      rejectedClient.stop();  // Properly close rejected connection
     }
+  }
+  
+  // Check if client disconnected unexpectedly
+  if (mpdClient && !mpdClient.connected()) {
+    mpdClient.stop();
   }
   
   if (mpdClient && mpdClient.connected()) {
