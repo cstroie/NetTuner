@@ -24,14 +24,26 @@ async function loadStreams() {
         const response = await fetch('/api/streams');
         console.log('Streams response status:', response.status);
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
         }
-        streams = await response.json();
+        const data = await response.json();
+        
+        // Validate that we received an array
+        if (!Array.isArray(data)) {
+            throw new Error('Invalid response format: expected array of streams');
+        }
+        
+        streams = data;
         console.log('Loaded streams:', streams);
         
         if (select) {
             select.innerHTML = '<option value="">Select a stream...</option>';
             streams.forEach(stream => {
+                // Validate stream object
+                if (!stream || typeof stream !== 'object' || !stream.url || !stream.name) {
+                    console.warn('Skipping invalid stream object:', stream);
+                    return;
+                }
                 const option = document.createElement('option');
                 option.value = stream.url;
                 option.textContent = stream.name;
@@ -47,13 +59,15 @@ async function loadStreams() {
         }
     } catch (error) {
         console.error('Error loading streams:', error);
+        const errorMessage = error.message || 'Unknown error occurred';
         if (select) {
             select.innerHTML = '<option value="">Error loading streams</option>';
             select.disabled = false;
         }
         if (playlistBody) {
-            playlistBody.innerHTML = '<tr><td colspan="4">Error loading streams</td></tr>';
+            playlistBody.innerHTML = `<tr><td colspan="4">Error loading streams: ${errorMessage}</td></tr>`;
         }
+        showToast(`Error loading streams: ${errorMessage}`, 'error');
     }
 }
 
@@ -431,6 +445,14 @@ async function playStream() {
         return;
     }
     
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        showToast('Invalid URL format', 'error');
+        return;
+    }
+    
     // Show loading state
     const playButton = document.querySelector('button[onclick="playStream()"]');
     const originalText = playButton ? playButton.textContent : 'Play';
@@ -451,12 +473,17 @@ async function playStream() {
         console.log('Play response status:', response.status);
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error('Failed to play stream: ' + errorText);
+            throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        const result = await response.text();
+        if (result !== 'OK') {
+            throw new Error(`Unexpected response from server: ${result}`);
         }
         showToast('Stream started', 'success');
     } catch (error) {
         console.error('Error playing stream:', error);
-        showToast('Error playing stream: ' + error.message, 'error');
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error playing stream: ' + errorMessage, 'error');
     } finally {
         // Restore button state
         if (playButton) {
@@ -480,6 +507,14 @@ function playSelectedStream() {
         return;
     }
     
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        showToast('Invalid URL format', 'error');
+        return;
+    }
+    
     console.log('Playing selected stream:', { url, name });
     
     // Play the selected stream without showing toast
@@ -495,19 +530,20 @@ function playSelectedStream() {
         console.log('Play response status:', response.status);
         if (!response.ok) {
             return response.text().then(errorText => {
-                throw new Error('Failed to play stream: ' + errorText);
+                throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
             });
         }
         return response.text();
     })
     .then(result => {
         if (result !== 'OK') {
-            throw new Error('Unexpected response from server');
+            throw new Error(`Unexpected response from server: ${result}`);
         }
     })
     .catch(error => {
         console.error('Error playing stream:', error);
-        showToast('Error playing stream: ' + error.message, 'error');
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error playing stream: ' + errorMessage, 'error');
     });
 }
 
@@ -534,13 +570,18 @@ async function stopStream() {
         });
         console.log('Stop response status:', response.status);
         if (response.ok) {
+            const result = await response.text();
+            if (result !== 'OK') {
+                throw new Error(`Unexpected response from server: ${result}`);
+            }
             showToast('Stream stopped', 'info');
         } else {
-            throw new Error('Failed to stop stream');
+            throw new Error(`Failed to stop stream: ${response.status} ${response.statusText}`);
         }
     } catch (error) {
         console.error('Error stopping stream:', error);
-        showToast('Error stopping stream: ' + error.message, 'error');
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error stopping stream: ' + errorMessage, 'error');
     } finally {
         // Restore button state
         if (stopButton) {
@@ -559,6 +600,14 @@ function handleVolumeChange(volume) {
 }
 
 async function setVolume(volume) {
+    // Validate volume parameter
+    const volumeNum = parseInt(volume, 10);
+    if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 100) {
+        console.error('Invalid volume value:', volume);
+        showToast('Invalid volume value. Must be between 0 and 100.', 'error');
+        return;
+    }
+    
     // Show loading state
     const volumeControl = document.getElementById('volume');
     const volumeValue = document.getElementById('volumeValue');
@@ -572,27 +621,32 @@ async function setVolume(volume) {
     }
     
     try {
-        console.log('Setting volume to:', volume);
+        console.log('Setting volume to:', volumeNum);
         const response = await fetch('/api/volume', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: JSON.stringify({ volume: volume })
+            body: JSON.stringify({ volume: volumeNum })
         });
         console.log('Volume response status:', response.status);
         if (response.ok) {
-            if (volumeValue) {
-                volumeValue.textContent = volume + '%';
+            const result = await response.text();
+            if (result !== 'OK') {
+                throw new Error(`Unexpected response from server: ${result}`);
             }
-            showToast('Volume set to ' + volume + '%', 'info');
+            if (volumeValue) {
+                volumeValue.textContent = volumeNum + '%';
+            }
+            showToast('Volume set to ' + volumeNum + '%', 'info');
         } else {
-            throw new Error('Failed to set volume');
+            throw new Error(`Failed to set volume: ${response.status} ${response.statusText}`);
         }
     } catch (error) {
         console.error('Error setting volume:', error);
-        showToast('Error setting volume: ' + error.message, 'error');
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error setting volume: ' + errorMessage, 'error');
         // Restore original volume value on error
         if (volumeControl) {
             volumeControl.value = originalVolume;
@@ -682,19 +736,62 @@ function addStream() {
 }
 
 function updateStream(index, field, value) {
-    if (streams[index]) {
-        // Validate URL format if updating URL field
-        if (field === 'url' && value) {
-            if (!value.startsWith('http://') && !value.startsWith('https://')) {
-                showToast('Invalid URL format. Must start with http:// or https://', 'error');
-                return;
-            }
-        }
-        streams[index][field] = value;
+    if (index < 0 || index >= streams.length) {
+        showToast('Invalid stream index', 'error');
+        return;
     }
+    
+    if (!streams[index]) {
+        showToast('Stream not found', 'error');
+        return;
+    }
+    
+    // Validate URL format if updating URL field
+    if (field === 'url' && value) {
+        if (!value.startsWith('http://') && !value.startsWith('https://')) {
+            showToast('Invalid URL format. Must start with http:// or https://', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
+        }
+        
+        // Additional URL validation
+        try {
+            new URL(value);
+        } catch (e) {
+            showToast('Invalid URL format', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
+        }
+    }
+    
+    // Validate name field
+    if (field === 'name' && !value.trim()) {
+        showToast('Name cannot be empty', 'error');
+        // Revert to previous value
+        const input = event.target;
+        if (input) {
+            input.value = streams[index][field] || '';
+        }
+        return;
+    }
+    
+    streams[index][field] = value;
 }
 
 function deleteStream(index) {
+    if (index < 0 || index >= streams.length) {
+        showToast('Invalid stream index', 'error');
+        return;
+    }
+    
     if (confirm('Are you sure you want to delete this stream?')) {
         streams.splice(index, 1);
         renderPlaylist();
