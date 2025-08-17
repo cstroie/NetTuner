@@ -57,6 +57,25 @@ WiFiClient mpdClient;
 Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 bool audioConnected = false;                ///< Audio connection status flag
 
+/**
+ * @brief Audio stream title callback function
+ * This function is called by the Audio library when stream title information is available
+ * @param info Pointer to the stream title information
+ */
+void audio_showstreamtitle(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("Stream title: ");
+    Serial.println(info);
+    
+    // Update stream title if it has changed
+    if (strcmp(streamTitle, info) != 0) {
+      strncpy(streamTitle, info, sizeof(streamTitle) - 1);
+      streamTitle[sizeof(streamTitle) - 1] = '\0';
+      sendStatusToClients();  // Notify clients of title change
+    }
+  }
+}
+
 
 /**
  * @brief Player state variables
@@ -406,16 +425,9 @@ void loop() {
       sendStatusToClients();
     }
     
-    // Update stream title and bitrate if they've changed
+    // Update bitrate if it has changed
     if (isPlaying) {
-      String newTitle = audio->getCodecString();  // Use correct method name
-      if (newTitle.length() > 0 && newTitle != String(streamTitle)) {
-        strncpy(streamTitle, newTitle.c_str(), sizeof(streamTitle) - 1);
-        streamTitle[sizeof(streamTitle) - 1] = '\0';
-        sendStatusToClients();  // Notify clients of title change
-      }
-      
-      int newBitrate = audio->getBitrate();  // Use correct method name (lowercase 'r')
+      int newBitrate = audio->getBitrate();
       if (newBitrate > 0 && newBitrate != bitrate) {
         bitrate = newBitrate;
         sendStatusToClients();  // Notify clients of bitrate change
@@ -750,6 +762,7 @@ void setupAudioOutput() {
   audio = new Audio(true); // true = use I2S, false = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume); // 0-21
+  audio->setAudioShowStreamTitle(audio_showstreamtitle); // Set stream title callback
 }
 
 /**
