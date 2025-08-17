@@ -1654,7 +1654,11 @@ void updateDisplay() {
     
     // Display station name (first line)
     display.setCursor(0, 18);
-    display.println(currentStreamName);
+    String stationName = String(currentStreamName);
+    if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
+      stationName = stationName.substring(0, 18) + "...";
+    }
+    display.println(stationName);
     
     // Display stream title (second line) if available
     if (strlen(streamTitle) > 0) {
