@@ -76,6 +76,46 @@ void audio_showstreamtitle(const char *info) {
   }
 }
 
+/**
+ * @brief Audio station name callback function
+ * This function is called by the Audio library when station name information is available
+ * @param info Pointer to the station name information
+ */
+void audio_showstation(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("Station name: ");
+    Serial.println(info);
+    
+    // Update current stream name if it has changed and we're not already using a custom name
+    if (strcmp(currentStreamName, info) != 0) {
+      strncpy(currentStreamName, info, sizeof(currentStreamName) - 1);
+      currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+      sendStatusToClients();  // Notify clients of station name change
+    }
+  }
+}
+
+/**
+ * @brief Audio bitrate callback function
+ * This function is called by the Audio library when bitrate information is available
+ * @param info Pointer to the bitrate information
+ */
+void audio_bitrate(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("Bitrate: ");
+    Serial.println(info);
+    
+    // Convert string to integer
+    int newBitrate = atoi(info);
+    
+    // Update bitrate if it has changed
+    if (newBitrate > 0 && newBitrate != bitrate) {
+      bitrate = newBitrate;
+      sendStatusToClients();  // Notify clients of bitrate change
+    }
+  }
+}
+
 
 /**
  * @brief Player state variables
@@ -763,6 +803,8 @@ void setupAudioOutput() {
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume); // 0-21
   audio->setAudioShowStreamTitle(audio_showstreamtitle); // Set stream title callback
+  audio->setAudioShowStation(audio_showstation);         // Set station name callback
+  audio->setAudioBitrate(audio_bitrate);                 // Set bitrate callback
 }
 
 /**
