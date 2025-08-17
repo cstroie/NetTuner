@@ -1369,10 +1369,105 @@ void handleGetStreams() {
  * Supports both direct JSON POST and file upload mechanisms
  */
 void handlePostStreams() {
-  static String jsonDataBuffer = "";  // Static buffer to accumulate upload data
-  
-  // Check if this is a file upload
+  // Handle file upload
   HTTPUpload& upload = server.upload();
+  
+  if (upload.status == UPLOAD_FILE_START) {
+    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
+    return;
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    // Accumulate data in a static buffer
+    static String uploadData = "";
+    if (upload.buf && upload.currentSize > 0) {
+      uploadData += String((char*)upload.buf, upload.currentSize);
+    }
+    return;
+  } else if (upload.status == UPLOAD_FILE_END) {
+    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
+    
+    // Process the accumulated upload data
+    static String uploadData = "";
+    if (uploadData.length() == 0) {
+      server.send(400, "text/plain", "No data received");
+      uploadData = "";  // Reset for next upload
+      return;
+    }
+    
+    // Validate JSON data
+    uploadData.trim();
+    if (!uploadData.startsWith("[") || !uploadData.endsWith("]")) {
+      server.send(400, "text/plain", "Invalid JSON format");
+      uploadData = "";  // Reset for next upload
+      return;
+    }
+    
+    // Parse JSON and update playlist array
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, uploadData);
+    uploadData = "";  // Reset for next upload
+    
+    if (error) {
+      Serial.print("Error: Failed to parse playlist JSON: ");
+      Serial.println(error.c_str());
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    if (!doc.is<JsonArray>()) {
+      Serial.println("Error: Playlist JSON is not an array");
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    JsonArray array = doc.as<JsonArray>();
+    playlistCount = 0;
+    
+    for (JsonObject item : array) {
+      if (playlistCount >= 20) {
+        Serial.println("Warning: Playlist limit reached (20 entries)");
+        break;
+      }
+      
+      if (item.containsKey("name") && item.containsKey("url")) {
+        const char* name = item["name"];
+        const char* url = item["url"];
+        
+        // Validate name and URL
+        if (name && url && strlen(name) > 0 && strlen(url) > 0) {
+          // Validate URL format
+          if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+            strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
+            playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+            strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
+            playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+            playlistCount++;
+          } else {
+            Serial.println("Warning: Skipping stream with invalid URL format");
+          }
+        } else {
+          Serial.println("Warning: Skipping stream with empty name or URL");
+        }
+      }
+    }
+    
+    // Save the playlist using the savePlaylist function
+    savePlaylist();
+    
+    server.send(200, "text/plain", "JSON playlist updated successfully");
+    return;
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    Serial.println("Upload Aborted");
+    server.send(500, "text/plain", "Upload Aborted");
+    return;
+  }
+  
+  // Handle regular POST data (not file upload)
+  if (!server.hasArg("plain")) {
+    server.send(400, "text/plain", "Missing JSON data");
+    return;
+  }
+  
+  String jsonData = server.arg("plain");
   
   if (upload.status == UPLOAD_FILE_START) {
     Serial.printf("UploadStart: %s\n", upload.filename.c_str());
@@ -1408,33 +1503,30 @@ void handlePostStreams() {
   }
   
   // Validate JSON data
-  if (jsonDataBuffer.length() == 0) {
+  if (jsonData.length() == 0) {
     server.send(400, "text/plain", "Empty JSON data");
     return;
   }
   
-  jsonDataBuffer.trim();
-  if (!jsonDataBuffer.startsWith("[") || !jsonDataBuffer.endsWith("]")) {
+  jsonData.trim();
+  if (!jsonData.startsWith("[") || !jsonData.endsWith("]")) {
     server.send(400, "text/plain", "Invalid JSON format");
-    jsonDataBuffer = "";  // Clear buffer
     return;
   }
   
   // Parse JSON and update playlist array
   DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, jsonDataBuffer);
+  DeserializationError error = deserializeJson(doc, jsonData);
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
     server.send(400, "text/plain", "Invalid JSON format");
-    jsonDataBuffer = "";  // Clear buffer
     return;
   }
   
   if (!doc.is<JsonArray>()) {
     Serial.println("Error: Playlist JSON is not an array");
     server.send(400, "text/plain", "Invalid JSON format");
-    jsonDataBuffer = "";  // Clear buffer
     return;
   }
   
@@ -1469,18 +1561,10 @@ void handlePostStreams() {
     }
   }
   
-  // Clear buffer before saving
-  jsonDataBuffer = "";
-  
   // Save the playlist using the savePlaylist function
   savePlaylist();
   
-  // Send appropriate response based on upload type
-  if (upload.status == UPLOAD_FILE_END) {
-    server.send(200, "text/plain", "JSON playlist updated successfully");
-  } else {
-    server.send(200, "text/plain", "OK");
-  }
+  server.send(200, "text/plain", "OK");
 }
 
 
