@@ -1582,7 +1582,7 @@ void sendStatusToClients() {
   status += "\"currentStream\":\"" + String(currentStream) + "\",";
   status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"bitrate\":" + String(bitrate) + ",";
+  status += "\"bitrate\":" + String(bitrate / 1000) + ",";
   status += "\"volume\":" + String(volume);
   status += "}";
   
@@ -1662,7 +1662,7 @@ void updateDisplay() {
     // Display bitrate if available
     if (bitrate > 0) {
       display.setCursor(0, 42);
-      display.print(bitrate);
+      display.print(bitrate / 1000);
       display.println(" kbps");
     }
     
@@ -1800,6 +1800,9 @@ void handleMPDCommand(const String& command) {
       mpdClient.println("song: " + String(currentSelection));
       mpdClient.println("songid: " + String(currentSelection));
       mpdClient.println("title: " + String(currentStreamName));
+      if (bitrate > 0) {
+        mpdClient.println("bitrate: " + String(bitrate / 1000));
+      }
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("currentsong")) {
