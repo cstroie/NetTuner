@@ -373,6 +373,12 @@ void loop() {
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
+  
+  // Process audio streaming
+  if (audio) {
+    audio->loop();
+  }
+  
   delay(10);               // Small delay to prevent busy waiting
 }
 
