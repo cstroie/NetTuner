@@ -10,17 +10,24 @@
     <div class="container">
         <h1>NetTuner - WiFi Configuration</h1>
         <div id="networks">Scanning for networks...</div>
+        
         <form id="wifiForm">
-            <div class="form-group">
-                <label for="ssid">SSID:</label>
-                <input type="text" id="ssid" name="ssid" placeholder="Enter SSID" required>
+            <div id="networkFields">
+                <div class="network-entry">
+                    <div class="form-group">
+                        <label for="ssid0">SSID:</label>
+                        <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
+                    </div>
+                    <div class="form-group">
+                        <label for="password0">Password:</label>
+                        <input type="password" id="password0" name="password0" placeholder="Enter Password">
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" placeholder="Enter Password">
-            </div>
+            <button type="button" id="addNetwork" onclick="addNetworkField()">Add Network</button>
             <button type="submit" class="save-btn">Save Configuration</button>
         </form>
+        
         <div class="form-actions">
             <button onclick="scanNetworks()">Refresh Networks</button>
             <button onclick="window.location.href='/'">Back to Main</button>
@@ -28,5 +35,117 @@
     </div>
 
     <script src="/scripts.js"></script>
+    <script>
+        let networkCount = 1;
+        
+        function addNetworkField() {
+            if (networkCount >= 5) {
+                alert('Maximum of 5 networks allowed');
+                return;
+            }
+            
+            const networkFields = document.getElementById('networkFields');
+            const newEntry = document.createElement('div');
+            newEntry.className = 'network-entry';
+            newEntry.innerHTML = `
+                <div class="form-group">
+                    <label for="ssid${networkCount}">SSID:</label>
+                    <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
+                </div>
+                <div class="form-group">
+                    <label for="password${networkCount}">Password:</label>
+                    <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
+                </div>
+                <button type="button" class="remove-btn" onclick="removeNetworkField(this)">Remove</button>
+            `;
+            networkFields.appendChild(newEntry);
+            networkCount++;
+        }
+        
+        function removeNetworkField(button) {
+            if (networkCount <= 1) {
+                alert('At least one network is required');
+                return;
+            }
+            
+            button.parentElement.remove();
+            networkCount--;
+        }
+        
+        // Override form submit to handle multiple networks
+        document.getElementById('wifiForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const ssids = [];
+            const passwords = [];
+            
+            for (let i = 0; i < networkCount; i++) {
+                const ssid = document.getElementById(`ssid${i}`).value.trim();
+                const password = document.getElementById(`password${i}`).value;
+                
+                if (ssid) {
+                    ssids.push(ssid);
+                    passwords.push(password);
+                }
+            }
+            
+            if (ssids.length === 0) {
+                alert('At least one SSID is required');
+                return;
+            }
+            
+            const data = {
+                ssid: ssids,
+                password: passwords
+            };
+            
+            fetch('/api/wifisave', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('WiFi configuration saved successfully');
+                } else {
+                    alert('Error saving WiFi configuration');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving WiFi configuration');
+            });
+        });
+        
+        // Load existing WiFi configuration
+        window.addEventListener('load', function() {
+            fetch('/api/wifiscan')
+                .then(response => response.json())
+                .then(networks => {
+                    const networksDiv = document.getElementById('networks');
+                    networksDiv.innerHTML = '<h3>Available Networks:</h3>';
+                    networks.forEach(network => {
+                        const networkDiv = document.createElement('div');
+                        networkDiv.className = 'network-item';
+                        networkDiv.innerHTML = `
+                            <span class="network-name">${network.ssid}</span>
+                            <span class="network-rssi">(${network.rssi} dBm)</span>
+                            <button onclick="selectNetwork('${network.ssid}')">Select</button>
+                        `;
+                        networksDiv.appendChild(networkDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error scanning networks:', error);
+                    document.getElementById('networks').innerHTML = 'Error scanning networks';
+                });
+        });
+        
+        function selectNetwork(ssid) {
+            document.getElementById('ssid0').value = ssid;
+        }
+    </script>
 </body>
 </html>
