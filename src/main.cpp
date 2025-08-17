@@ -1290,107 +1290,89 @@ void handleGetStreams() {
  * Supports both direct JSON POST and file upload mechanisms
  */
 void handlePostStreams() {
-  // First check if this is a file upload
-  // We need to be careful accessing server.upload() - only do so when we know it's safe
-  bool isUpload = false;
+  // Check if this is a file upload by checking if we're in upload mode
+  HTTPUpload& upload = server.upload();
   
-  // Check if there's an upload by looking at the request arguments
-  // This is a safer way to determine if we're dealing with an upload
-  if (server.method() == HTTP_POST && server.hasHeader("Content-Type")) {
-    String contentType = server.header("Content-Type");
-    if (contentType.startsWith("multipart/form-data")) {
-      isUpload = true;
-    }
-  }
-  
-  if (isUpload) {
-    // Handle file upload through the standard upload mechanism
-    HTTPUpload& upload = server.upload();
+  // If we're in the middle of an upload, handle the upload states
+  if (upload.status == UPLOAD_FILE_START) {
+    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
+    return; // Continue with upload process
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    // Process uploaded data in chunks - nothing to do here as we'll process at the end
+    return; // Continue with upload process
+  } else if (upload.status == UPLOAD_FILE_END) {
+    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
     
-    // Only process if we have a valid upload reference
-    if (&upload != nullptr) {
-      if (upload.status == UPLOAD_FILE_START) {
-        Serial.printf("UploadStart: %s\n", upload.filename.c_str());
-      } else if (upload.status == UPLOAD_FILE_WRITE) {
-        // Process uploaded data in chunks
-      } else if (upload.status == UPLOAD_FILE_END) {
-        Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
+    // Check if we have data to process
+    if (upload.buf == nullptr || upload.currentSize == 0) {
+      server.send(400, "text/plain", "No data received");
+      return;
+    }
+    
+    // Handle JSON upload (default)
+    String jsonContent = String((char*)upload.buf, upload.currentSize);
+    
+    // Validate JSON format
+    jsonContent.trim();
+    if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    // Parse JSON and update playlist array
+    DynamicJsonDocument doc(4096);
+    DeserializationError error = deserializeJson(doc, jsonContent);
+    if (error) {
+      Serial.print("Error: Failed to parse playlist JSON: ");
+      Serial.println(error.c_str());
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    if (!doc.is<JsonArray>()) {
+      Serial.println("Error: Playlist JSON is not an array");
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    JsonArray array = doc.as<JsonArray>();
+    playlistCount = 0;
+    
+    for (JsonObject item : array) {
+      if (playlistCount >= 20) {
+        Serial.println("Warning: Playlist limit reached (20 entries)");
+        break;
+      }
+      
+      if (item.containsKey("name") && item.containsKey("url")) {
+        const char* name = item["name"];
+        const char* url = item["url"];
         
-        // Check if we have data to process
-        if (upload.buf == nullptr || upload.currentSize == 0) {
-          server.send(400, "text/plain", "No data received");
-          return;
-        }
-        
-        // Handle JSON upload (default)
-        String jsonContent = String((char*)upload.buf, upload.currentSize);
-        
-        // Validate JSON format
-        jsonContent.trim();
-        if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
-          server.send(400, "text/plain", "Invalid JSON format");
-          return;
-        }
-        
-        // Parse JSON and update playlist array
-        DynamicJsonDocument doc(4096);
-        DeserializationError error = deserializeJson(doc, jsonContent);
-        if (error) {
-          Serial.print("Error: Failed to parse playlist JSON: ");
-          Serial.println(error.c_str());
-          server.send(400, "text/plain", "Invalid JSON format");
-          return;
-        }
-        
-        if (!doc.is<JsonArray>()) {
-          Serial.println("Error: Playlist JSON is not an array");
-          server.send(400, "text/plain", "Invalid JSON format");
-          return;
-        }
-        
-        JsonArray array = doc.as<JsonArray>();
-        playlistCount = 0;
-        
-        for (JsonObject item : array) {
-          if (playlistCount >= 20) {
-            Serial.println("Warning: Playlist limit reached (20 entries)");
-            break;
+        // Validate name and URL
+        if (name && url && strlen(name) > 0 && strlen(url) > 0) {
+          // Validate URL format
+          if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+            strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
+            playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
+            strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
+            playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
+            playlistCount++;
+          } else {
+            Serial.println("Warning: Skipping stream with invalid URL format");
           }
-          
-          if (item.containsKey("name") && item.containsKey("url")) {
-            const char* name = item["name"];
-            const char* url = item["url"];
-            
-            // Validate name and URL
-            if (name && url && strlen(name) > 0 && strlen(url) > 0) {
-              // Validate URL format
-              if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
-                strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-                playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-                strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-                playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-                playlistCount++;
-              } else {
-                Serial.println("Warning: Skipping stream with invalid URL format");
-              }
-            } else {
-              Serial.println("Warning: Skipping stream with empty name or URL");
-            }
-          }
+        } else {
+          Serial.println("Warning: Skipping stream with empty name or URL");
         }
-        
-        // Save the playlist using the savePlaylist function
-        savePlaylist();
-        server.send(200, "text/plain", "JSON playlist updated successfully");
-        return;
-      } else if (upload.status == UPLOAD_FILE_ABORTED) {
-        Serial.println("Upload Aborted");
-        server.send(500, "text/plain", "Upload Aborted");
-        return;
       }
     }
     
-    // If we're in upload processing, return early
+    // Save the playlist using the savePlaylist function
+    savePlaylist();
+    server.send(200, "text/plain", "JSON playlist updated successfully");
+    return;
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    Serial.println("Upload Aborted");
+    server.send(500, "text/plain", "Upload Aborted");
     return;
   }
   
