@@ -28,7 +28,7 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 
-Audio audio(False);  // Increased buffer size to 10KB for better streaming performance
+Audio audio;  // Audio object for ESP32-audioI2S
 
 
 /**
@@ -802,6 +802,7 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(volume); // 0-21
+  audio.setBufsize(10240); // Set buffer size to 10KB for better streaming performance
 }
 
 /**
