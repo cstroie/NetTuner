@@ -299,13 +299,8 @@ void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
-void handleConfigPage();
-void handleGetConfig();
-void handleSaveConfig();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
-void loadConfig();
-void saveConfig();
 
 // WebSocket handlers
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
@@ -437,9 +432,6 @@ void setup() {
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
-  server.on("/config", HTTP_GET, handleConfigPage);
-  server.on("/api/config", HTTP_GET, handleGetConfig);
-  server.on("/api/config", HTTP_POST, handleSaveConfig);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
