@@ -74,7 +74,6 @@ bool displayOn = true;             ///< Display on/off status
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
-//Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 bool audioConnected = false;                ///< Audio connection status flag
 
 // Forward declaration of sendStatusToClients function
@@ -462,11 +461,10 @@ void setup() {
  */
 void loop() {
   // Process audio streaming
-//  if (audio) {
-    audio->loop();
+  audio.loop();
     
     // Check if audio is still connected
-    if (isPlaying && !audio->isRunning()) {
+    if (isPlaying && !audio.isRunning()) {
       Serial.println("Audio stream stopped unexpectedly");
       isPlaying = false;
       audioConnected = false;
@@ -476,13 +474,12 @@ void loop() {
     
     // Update bitrate if it has changed
     if (isPlaying) {
-      int newBitrate = audio->getBitRate();
+      int newBitrate = audio.getBitRate();
       if (newBitrate > 0 && newBitrate != bitrate) {
         bitrate = newBitrate;
         sendStatusToClients();  // Notify clients of bitrate change
       }
     }
-//  }
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
@@ -808,9 +805,8 @@ void setupAudioOutput() {
   digitalWrite(I2S_SD, HIGH); // Enable amplifier
   
   // Initialize ESP32-audioI2S
-  //audio = new Audio(true); // true = use I2S, false = use DAC
-  audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-  audio->setVolume(volume); // 0-21
+  audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+  audio.setVolume(volume); // 0-21
 }
 
 /**
@@ -849,19 +845,17 @@ void startStream(const char* url, const char* name) {
   isPlaying = true;         // Set playback status to playing
   
   // Use ESP32-audioI2S to play the stream
-  if (audio) {
-    audioConnected = audio->connecttohost(url);
-    if (!audioConnected) {
-      Serial.println("Error: Failed to connect to audio stream");
-      isPlaying = false;
-      currentStream[0] = '\0';
-      currentStreamName[0] = '\0';
-      streamTitle[0] = '\0';
-      bitrate = 0;
-    } else {
-      isPlaying = true;
-      Serial.println("Successfully connected to audio stream");
-    }
+  audioConnected = audio.connecttohost(url);
+  if (!audioConnected) {
+    Serial.println("Error: Failed to connect to audio stream");
+    isPlaying = false;
+    currentStream[0] = '\0';
+    currentStreamName[0] = '\0';
+    streamTitle[0] = '\0';
+    bitrate = 0;
+  } else {
+    isPlaying = true;
+    Serial.println("Successfully connected to audio stream");
   }
   
   updateDisplay();  // Refresh the display with new playback info
@@ -874,9 +868,7 @@ void startStream(const char* url, const char* name) {
  */
 void stopStream() {
   // Stop the audio playback
-  if (audio) {
-    audio->stopSong();
-  }
+  audio.stopSong();
   audioConnected = false;
   
   isPlaying = false;        // Set playback status to stopped
