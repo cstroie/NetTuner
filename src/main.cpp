@@ -573,6 +573,12 @@ void handleWiFiSave() {
   DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, json);
   
+  // Check if JSON document was successfully allocated
+  if (!doc) {
+    server.send(500, "text/plain", "Server error: Memory allocation failed");
+    return;
+  }
+  
   if (error) {
     server.send(400, "text/plain", "Invalid JSON");
     return;
@@ -921,6 +927,12 @@ void loadPlaylist() {
   
   // Allocate buffer for file content
   std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (!buf) {
+    Serial.println("Error: Failed to allocate memory for playlist file");
+    file.close();
+    return;
+  }
+  
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Error: Failed to read playlist file");
     file.close();
@@ -1288,6 +1300,12 @@ void handlePostStreams() {
     // Accumulate data in a static buffer
     static String uploadData = "";
     if (upload.buf && upload.currentSize > 0) {
+      // Check for memory constraints
+      if (uploadData.length() + upload.currentSize > 8192) {  // Limit to 8KB
+        server.send(413, "text/plain", "File too large");
+        uploadData = "";  // Reset
+        return;
+      }
       uploadData += String((char*)upload.buf, upload.currentSize);
     }
     return;
@@ -1314,6 +1332,13 @@ void handlePostStreams() {
     DynamicJsonDocument doc(4096);
     DeserializationError error = deserializeJson(doc, uploadData);
     uploadData = "";  // Reset for next upload
+    
+    // Check if JSON document was successfully parsed
+    if (!doc) {
+      Serial.println("Error: Failed to allocate memory for JSON document");
+      server.send(500, "text/plain", "Server error: Memory allocation failed");
+      return;
+    }
     
     if (error) {
       Serial.print("Error: Failed to parse playlist JSON: ");
@@ -1393,6 +1418,14 @@ void handlePostStreams() {
   // Parse JSON and update playlist array
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, jsonData);
+  
+  // Check if JSON document was successfully allocated
+  if (!doc) {
+    Serial.println("Error: Failed to allocate memory for JSON document");
+    server.send(500, "text/plain", "Server error: Memory allocation failed");
+    return;
+  }
+  
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
@@ -1454,6 +1487,12 @@ void handlePlay() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
+    
+    // Check if JSON document was successfully allocated
+    if (!doc) {
+      server.send(500, "text/plain", "Server error: Memory allocation failed");
+      return;
+    }
     
     if (error) {
       server.send(400, "text/plain", "Invalid JSON");
@@ -1530,6 +1569,12 @@ void handleVolume() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, json);
+    
+    // Check if JSON document was successfully allocated
+    if (!doc) {
+      server.send(500, "text/plain", "Server error: Memory allocation failed");
+      return;
+    }
     
     if (error) {
       server.send(400, "text/plain", "Invalid JSON");
