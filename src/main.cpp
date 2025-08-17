@@ -465,7 +465,22 @@ void audioTask(void *pvParameters) {
     // Process audio streaming
     if (audio) {
       audio->loop();
-      
+    }
+    delay(1);  // Small delay to prevent busy waiting
+  }
+}
+
+/**
+ * @brief Arduino main loop function
+ * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
+ */
+void loop() {
+  server.handleClient();   // Process incoming web requests
+  webSocket.loop();        // Process WebSocket events
+  handleRotary();          // Process rotary encoder input
+  handleMPDClient();       // Process MPD commands
+  handleDisplayTimeout();  // Handle display timeout
+    if (audio) {
       // Check if audio is still connected
       if (isPlaying && !audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
@@ -484,21 +499,7 @@ void audioTask(void *pvParameters) {
         }
       }
     }
-    delay(10);  // Small delay to prevent busy waiting
-  }
-}
-
-/**
- * @brief Arduino main loop function
- * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
- */
-void loop() {
-  server.handleClient();   // Process incoming web requests
-  webSocket.loop();        // Process WebSocket events
-  handleRotary();          // Process rotary encoder input
-  handleMPDClient();       // Process MPD commands
-  handleDisplayTimeout();  // Handle display timeout
-  delay(10);               // Small delay to prevent busy waiting
+  delay(1);               // Small delay to prevent busy waiting
 }
 
 /**
