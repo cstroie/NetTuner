@@ -723,7 +723,7 @@ void startStream(const char* url, const char* name) {
     return;
   }
   
-  AudioFileSourceBuffer* newBuff = new AudioFileSourceBuffer(newFile, 2048); // Buffer with 2KB buffer size
+  AudioFileSourceBuffer* newBuff = new AudioFileSourceBuffer(newFile, 8192); // Buffer with 8KB buffer size
   if (!newBuff) {
     Serial.println("Error: Failed to create buffer");
     delete newFile;
