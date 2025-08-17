@@ -464,27 +464,8 @@ void setup() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming
-    if (audio) {
+    if (audio)
       audio->loop();
-      
-      // Check if audio is still connected
-      if (isPlaying && !audio->isRunning()) {
-        Serial.println("Audio stream stopped unexpectedly");
-        isPlaying = false;
-        audioConnected = false;
-        updateDisplay();
-        sendStatusToClients();
-      }
-      
-      // Update bitrate if it has changed
-      if (isPlaying) {
-        int newBitrate = audio->getBitRate();
-        if (newBitrate > 0 && newBitrate != bitrate) {
-          bitrate = newBitrate;
-          sendStatusToClients();  // Notify clients of bitrate change
-        }
-      }
-    }
     delay(1);  // Small delay to prevent busy waiting
   }
 }
@@ -499,6 +480,24 @@ void loop() {
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
+  if (audio) {
+      // Check if audio is still connected
+      if (isPlaying && !audio->isRunning()) {
+        Serial.println("Audio stream stopped unexpectedly");
+        isPlaying = false;
+        audioConnected = false;
+        updateDisplay();
+        sendStatusToClients();
+      }
+      // Update bitrate if it has changed
+      if (isPlaying) {
+        int newBitrate = audio->getBitRate();
+        if (newBitrate > 0 && newBitrate != bitrate) {
+          bitrate = newBitrate;
+          sendStatusToClients();  // Notify clients of bitrate change
+        }
+      }
+    }
   delay(1);               // Small delay to prevent busy waiting
 }
 
