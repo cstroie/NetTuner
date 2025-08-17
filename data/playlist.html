@@ -9,22 +9,18 @@
 <body>
     <div class="container">
         <h1>Manage Playlist - NetTuner</h1>
-        
-        <div class="form-group">
-            <label for="name">Station Name:</label>
-            <input type="text" id="name" placeholder="Enter station name">
-        </div>
-        
         <div class="form-group">
             <label for="url">Stream URL:</label>
             <input type="url" id="url" placeholder="Enter stream URL (http://...)">
         </div>
-        
+        <div class="form-group">
+            <label for="name">Station Name:</label>
+            <input type="text" id="name" placeholder="Enter station name">
+        </div>
         <div class="form-group">
             <button class="btn-primary" onclick="addStream()">Add Stream</button>
             <button class="btn-back" onclick="window.location='/'">Back to Player</button>
         </div>
-        
         <h2>Current Playlist</h2>
         <table id="playlistTable">
             <thead>
@@ -38,11 +34,9 @@
             <tbody id="playlistBody">
             </tbody>
         </table>
-        
         <div class="form-group">
             <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
         </div>
-        
         <h2>Playlist Management</h2>
         <div class="form-group">
             <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
@@ -52,7 +46,6 @@
             <button class="btn-secondary" onclick="downloadM3U()">Download M3U</button>
         </div>
     </div>
-
     <script src="/scripts.js"></script>
 </body>
 </html>

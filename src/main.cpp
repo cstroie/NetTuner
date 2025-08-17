@@ -160,8 +160,8 @@ Adafruit_SSD1306 display(128, 64, &Wire, -1); // 128x64 display, using Wire, no 
  * Defines the pin mapping for the rotary encoder with push button
  */
 #define ROTARY_CLK 18  ///< Rotary encoder clock pin (quadrature signal A)
-#define ROTARY_DT 19   ///< Rotary encoder data pin (quadrature signal B)
-#define ROTARY_SW 23   ///< Rotary encoder switch pin (push button)
+#define ROTARY_DT  19  ///< Rotary encoder data pin (quadrature signal B)
+#define ROTARY_SW  23  ///< Rotary encoder switch pin (push button)
 
 /**
  * @brief Rotary encoder state variables
@@ -409,8 +409,7 @@ void setup() {
   
   // Setup audio output
   setupAudioOutput();
-  
-  
+    
   // Setup rotary encoder
   setupRotaryEncoder();
   
@@ -797,7 +796,7 @@ void setupAudioOutput() {
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume); // 0-21
-  audio->setBufsize(81920, 0); // Increased buffer size to 20KB for better streaming performance
+  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
 /**
