@@ -1652,13 +1652,20 @@ void updateDisplay() {
         title = title.substring(0, 18) + "...";
       }
       display.println(title);
-    }
-    
-    // Display bitrate if available
-    if (bitrate > 0) {
-      display.setCursor(0, 42);
-      display.print(bitrate / 1000);
-      display.println(" kbps");
+      
+      // Display bitrate on third line if available
+      if (bitrate > 0) {
+        display.setCursor(0, 42);
+        display.print(bitrate / 1000);
+        display.println(" kbps");
+      }
+    } else {
+      // Display bitrate on second line if no title and bitrate available
+      if (bitrate > 0) {
+        display.setCursor(0, 30);
+        display.print(bitrate / 1000);
+        display.println(" kbps");
+      }
     }
     
     // Display volume on the last line
