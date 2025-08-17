@@ -252,11 +252,15 @@ struct StreamInfo {
   char url[256];   ///< URL of the audio stream
 };
 
+// Constants
+#define MAX_PLAYLIST_SIZE 20
+#define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
+
 /**
  * @brief Playlist storage and management variables
  * Array to store playlist entries and tracking variables
  */
-StreamInfo playlist[20];    ///< Array of stream information (max 20 entries)
+StreamInfo playlist[MAX_PLAYLIST_SIZE];    ///< Array of stream information (max 20 entries)
 int playlistCount = 0;      ///< Number of valid entries in the playlist
 int currentSelection = 0;   ///< Currently selected item in the playlist
 
@@ -479,7 +483,6 @@ void loop() {
   if (audio) {
       // Check if audio is still connected
       if (isPlaying) {
-        /* FIXME
         if (!audio->isRunning()) {
           Serial.println("Audio stream stopped unexpectedly");
           isPlaying = false;
@@ -487,7 +490,6 @@ void loop() {
           updateDisplay();
           sendStatusToClients();
         }
-        */
         // Update bitrate if it has changed
         int newBitrate = audio->getBitRate();
         if (newBitrate > 0 && newBitrate != bitrate) {
@@ -991,7 +993,7 @@ void loadPlaylist() {
       // Validate name and URL
       if (name && url && strlen(name) > 0 && strlen(url) > 0) {
         // Validate URL format
-        if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+        if (VALIDATE_URL(url)) {
           strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
           playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
           strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
@@ -1024,7 +1026,7 @@ void savePlaylist() {
   for (int i = 0; i < playlistCount; i++) {
     // Validate URL format before saving
     if (strlen(playlist[i].url) == 0 || 
-        (strncmp(playlist[i].url, "http://", 7) != 0 && strncmp(playlist[i].url, "https://", 8) != 0)) {
+        !VALIDATE_URL(playlist[i].url)) {
       Serial.println("Warning: Skipping stream with invalid URL format during save");
       continue;
     }
@@ -1342,7 +1344,7 @@ void handlePostStreams() {
         // Validate name and URL
         if (name && url && strlen(name) > 0 && strlen(url) > 0) {
           // Validate URL format
-          if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+          if (VALIDATE_URL(url)) {
             strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
             playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
             strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
@@ -1420,7 +1422,7 @@ void handlePostStreams() {
       // Validate name and URL
       if (name && url && strlen(name) > 0 && strlen(url) > 0) {
         // Validate URL format
-        if (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0) {
+        if (VALIDATE_URL(url)) {
           strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
           playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
           strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
