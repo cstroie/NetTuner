@@ -466,23 +466,17 @@ void setup() {
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   
-  // Start server with error checking
-  if (server.begin()) {
-    Serial.println("Web server started successfully");
-  } else {
-    Serial.println("ERROR: Failed to start web server");
-  }
+  // Start server
+  server.begin();
+  Serial.println("Web server started");
   
-  // Setup WebSocket server with error checking
+  // Setup WebSocket server
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   
-  // Start MPD server with error checking
-  if (mpdServer.begin()) {
-    Serial.println("MPD server started successfully");
-  } else {
-    Serial.println("ERROR: Failed to start MPD server");
-  }
+  // Start MPD server
+  mpdServer.begin();
+  Serial.println("MPD server started");
   
   // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
@@ -660,12 +654,6 @@ void handleWiFiSave() {
   String json = server.arg("plain");
   DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, json);
-  
-  // Check if JSON document was successfully allocated
-  if (!doc) {
-    server.send(500, "text/plain", "Server error: Memory allocation failed");
-    return;
-  }
   
   if (error) {
     server.send(400, "text/plain", "Invalid JSON");
@@ -1038,31 +1026,6 @@ void loadPlaylist() {
   // Parse the JSON content
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, buf.get());
-  
-  // Check if JSON document was successfully allocated
-  if (!doc) {
-    Serial.println("Error: Failed to allocate memory for playlist JSON document");
-    
-    // Try to recover by creating a backup and a new empty playlist
-    Serial.println("Attempting to recover by creating backup and new playlist");
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      SPIFFS.remove("/playlist.json.bak");
-    }
-    if (SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
-      Serial.println("Created backup of playlist file");
-    }
-    
-    // Create a new empty playlist
-    File newFile = SPIFFS.open("/playlist.json", "w");
-    if (newFile) {
-      newFile.println("[]");
-      newFile.close();
-      Serial.println("Created new empty playlist file");
-    } else {
-      Serial.println("Error: Failed to create new playlist file during recovery");
-    }
-    return;
-  }
   
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
@@ -1457,13 +1420,6 @@ void handlePostStreams() {
     DeserializationError error = deserializeJson(doc, uploadData);
     uploadData = "";  // Reset for next upload
     
-    // Check if JSON document was successfully parsed
-    if (!doc) {
-      Serial.println("Error: Failed to allocate memory for JSON document");
-      server.send(500, "text/plain", "Server error: Memory allocation failed");
-      return;
-    }
-    
     if (error) {
       Serial.print("Error: Failed to parse playlist JSON: ");
       Serial.println(error.c_str());
@@ -1543,13 +1499,6 @@ void handlePostStreams() {
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, jsonData);
   
-  // Check if JSON document was successfully allocated
-  if (!doc) {
-    Serial.println("Error: Failed to allocate memory for JSON document");
-    server.send(500, "text/plain", "Server error: Memory allocation failed");
-    return;
-  }
-  
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
@@ -1611,12 +1560,6 @@ void handlePlay() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
-    
-    // Check if JSON document was successfully allocated
-    if (!doc) {
-      server.send(500, "text/plain", "Server error: Memory allocation failed");
-      return;
-    }
     
     if (error) {
       server.send(400, "text/plain", "Invalid JSON");
@@ -1693,12 +1636,6 @@ void handleVolume() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, json);
-    
-    // Check if JSON document was successfully allocated
-    if (!doc) {
-      server.send(500, "text/plain", "Server error: Memory allocation failed");
-      return;
-    }
     
     if (error) {
       server.send(400, "text/plain", "Invalid JSON");
