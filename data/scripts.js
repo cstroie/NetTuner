@@ -799,6 +799,44 @@ function deleteStream(index) {
 }
 
 async function savePlaylist() {
+    // Validate playlist before saving
+    if (streams.length === 0) {
+        if (!confirm('Playlist is empty. Do you want to save an empty playlist?')) {
+            return;
+        }
+    }
+    
+    // Validate each stream in the playlist
+    for (let i = 0; i < streams.length; i++) {
+        const stream = streams[i];
+        if (!stream || typeof stream !== 'object') {
+            showToast(`Invalid stream at position ${i+1}`, 'error');
+            return;
+        }
+        
+        if (!stream.name || !stream.name.trim()) {
+            showToast(`Stream at position ${i+1} has an empty name`, 'error');
+            return;
+        }
+        
+        if (!stream.url) {
+            showToast(`Stream at position ${i+1} has no URL`, 'error');
+            return;
+        }
+        
+        if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+            showToast(`Stream at position ${i+1} has invalid URL format`, 'error');
+            return;
+        }
+        
+        try {
+            new URL(stream.url);
+        } catch (e) {
+            showToast(`Stream at position ${i+1} has invalid URL`, 'error');
+            return;
+        }
+    }
+    
     // Show loading state
     const saveButton = document.querySelector('button[onclick="savePlaylist()"]');
     const originalText = saveButton ? saveButton.textContent : null;
@@ -808,7 +846,18 @@ async function savePlaylist() {
     }
     
     // Convert streams to JSON
-    const jsonData = JSON.stringify(streams);
+    let jsonData;
+    try {
+        jsonData = JSON.stringify(streams);
+    } catch (error) {
+        console.error('Error serializing playlist:', error);
+        showToast('Error serializing playlist: ' + error.message, 'error');
+        if (saveButton) {
+            saveButton.textContent = originalText || 'Save Playlist';
+            saveButton.disabled = false;
+        }
+        return;
+    }
     
     console.log('Saving playlist:', jsonData);
     
@@ -825,15 +874,19 @@ async function savePlaylist() {
         console.log('Save playlist response status:', response.status);
         
         if (response.ok) {
+            const result = await response.text();
+            if (result !== 'OK') {
+                throw new Error(`Unexpected response from server: ${result}`);
+            }
             showToast('Playlist saved successfully!', 'success');
         } else {
             const error = await response.text();
-            console.error('Error saving playlist:', error);
-            showToast('Error saving playlist: ' + error, 'error');
+            throw new Error(`Error saving playlist: ${response.status} ${response.statusText} - ${error}`);
         }
     } catch (error) {
         console.error('Error saving playlist:', error);
-        showToast('Error saving playlist: ' + error.message, 'error');
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error saving playlist: ' + errorMessage, 'error');
     } finally {
         // Restore button state
         if (saveButton) {
