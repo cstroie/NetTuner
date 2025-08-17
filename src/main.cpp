@@ -273,6 +273,7 @@ void updateDisplay();
 void handleRotary();
 void handleDisplayTimeout();
 void sendStatusToClients();
+void audioTask(void *pvParameters);
 
 // MPD functions
 void handleMPDClient();
@@ -448,8 +449,43 @@ void setup() {
   // Start MPD server
   mpdServer.begin();
   
+  // Create audio task on core 0
+  xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
+  
   // Update display
   updateDisplay();
+}
+
+/**
+ * @brief Audio task function
+ * Handles audio streaming on core 0
+ */
+void audioTask(void *pvParameters) {
+  while (true) {
+    // Process audio streaming
+    if (audio) {
+      audio->loop();
+      
+      // Check if audio is still connected
+      if (isPlaying && !audio->isRunning()) {
+        Serial.println("Audio stream stopped unexpectedly");
+        isPlaying = false;
+        audioConnected = false;
+        updateDisplay();
+        sendStatusToClients();
+      }
+      
+      // Update bitrate if it has changed
+      if (isPlaying) {
+        int newBitrate = audio->getBitRate();
+        if (newBitrate > 0 && newBitrate != bitrate) {
+          bitrate = newBitrate;
+          sendStatusToClients();  // Notify clients of bitrate change
+        }
+      }
+    }
+    delay(10);  // Small delay to prevent busy waiting
+  }
 }
 
 /**
@@ -457,28 +493,6 @@ void setup() {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
-  // Process audio streaming
-  if (audio) {
-    audio->loop();
-    
-    // Check if audio is still connected
-    if (isPlaying && !audio->isRunning()) {
-      Serial.println("Audio stream stopped unexpectedly");
-      isPlaying = false;
-      audioConnected = false;
-      updateDisplay();
-      sendStatusToClients();
-    }
-    
-    // Update bitrate if it has changed
-    if (isPlaying) {
-      int newBitrate = audio->getBitRate();
-      if (newBitrate > 0 && newBitrate != bitrate) {
-        bitrate = newBitrate;
-        sendStatusToClients();  // Notify clients of bitrate change
-      }
-    }
-  }
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
