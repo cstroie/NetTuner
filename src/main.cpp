@@ -54,6 +54,23 @@ WiFiClient mpdClient;
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
+/**
+ * @brief Player state variables
+ * Track current playback status, stream information, and volume level
+ */
+char currentStream[256] = "";      ///< URL of currently playing stream
+char currentStreamName[128] = "";  ///< Name of currently playing stream
+char streamTitle[128] = "";        ///< Current stream title
+int bitrate = 0;                   ///< Current stream bitrate
+bool isPlaying = false;            ///< Playback status flag
+int volume = 50;                   ///< Volume level (0-100)
+unsigned long lastActivityTime = 0; ///< Last activity timestamp
+bool displayOn = true;             ///< Display on/off status
+
+/**
+ * @brief Audio processing components
+ * These pointers manage the audio streaming pipeline
+ */
 Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 bool audioConnected = false;                ///< Audio connection status flag
 
@@ -115,20 +132,6 @@ void audio_bitrate(const char *info) {
     }
   }
 }
-
-
-/**
- * @brief Player state variables
- * Track current playback status, stream information, and volume level
- */
-char currentStream[256] = "";      ///< URL of currently playing stream
-char currentStreamName[128] = "";  ///< Name of currently playing stream
-char streamTitle[128] = "";        ///< Current stream title
-int bitrate = 0;                   ///< Current stream bitrate
-bool isPlaying = false;            ///< Playback status flag
-int volume = 50;                   ///< Volume level (0-100)
-unsigned long lastActivityTime = 0; ///< Last activity timestamp
-bool displayOn = true;             ///< Display on/off status
 
 /**
  * @brief I2S pin configuration for audio output
