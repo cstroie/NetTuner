@@ -802,8 +802,8 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(volume); // 0-21
-  audio.setBufsize(10240, 0); // Set buffer size to 10KB for better streaming performance
-  audio.forceMono(true);
+  audio.setBufsize(20480, 0); // Increased buffer size to 20KB for better streaming performance
+  // audio.forceMono(true); // Removed to prevent playback speed issues
 }
 
 /**
