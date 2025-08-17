@@ -1654,9 +1654,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       // Handle ping messages from client
       if (length == 4 && strncmp((char*)payload, "ping", 4) == 0) {
         // Respond with pong
-        if (webSocket.connected(num)) {  // Check if client is still connected
-          webSocket.sendTXT(num, "pong");
-        }
+        // Note: We don't have a direct way to check if a specific client is connected
+        // The WebSocket library will handle disconnected clients automatically
+        webSocket.sendTXT(num, "{\"event\":\"pong\"}");
       }
       break;
     default:
