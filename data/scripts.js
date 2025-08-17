@@ -297,7 +297,7 @@ function connectWebSocket() {
                 const data = JSON.parse(event.data);
                 
                 // Handle pong messages
-                if (data.type === 'pong') {
+                if (data.event === 'pong') {
                     return; // Ignore pong messages
                 }
                 
