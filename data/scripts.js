@@ -716,23 +716,59 @@ function addStream() {
     
     console.log('Adding stream:', { name: name.value, url: url.value });
     
-    if (!name.value || !url.value) {
-        showToast('Please enter both name and URL', 'warning');
+    // Trim and validate name
+    const trimmedName = name.value.trim();
+    if (!trimmedName) {
+        showToast('Please enter a stream name', 'warning');
+        name.focus();
+        return;
+    }
+    
+    // Validate name length
+    if (trimmedName.length > 128) {
+        showToast('Stream name must be 128 characters or less', 'warning');
+        name.focus();
+        return;
+    }
+    
+    // Trim and validate URL
+    const trimmedUrl = url.value.trim();
+    if (!trimmedUrl) {
+        showToast('Please enter a stream URL', 'warning');
+        url.focus();
         return;
     }
     
     // Validate URL format
-    if (!url.value.startsWith('http://') && !url.value.startsWith('https://')) {
+    if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
         showToast('Please enter a valid URL starting with http:// or https://', 'warning');
+        url.focus();
         return;
     }
     
-    streams.push({ name: name.value, url: url.value });
+    // Additional URL validation
+    try {
+        new URL(trimmedUrl);
+    } catch (e) {
+        showToast('Please enter a valid URL', 'warning');
+        url.focus();
+        return;
+    }
+    
+    // Validate URL length
+    if (trimmedUrl.length > 256) {
+        showToast('Stream URL must be 256 characters or less', 'warning');
+        url.focus();
+        return;
+    }
+    
+    streams.push({ name: trimmedName, url: trimmedUrl });
     renderPlaylist();
     
     // Clear form
     name.value = '';
     url.value = '';
+    name.focus(); // Focus back to name field for next entry
 }
 
 function updateStream(index, field, value) {
@@ -746,9 +782,21 @@ function updateStream(index, field, value) {
         return;
     }
     
+    const trimmedValue = value.trim();
+    
     // Validate URL format if updating URL field
-    if (field === 'url' && value) {
-        if (!value.startsWith('http://') && !value.startsWith('https://')) {
+    if (field === 'url') {
+        if (!trimmedValue) {
+            showToast('URL cannot be empty', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
+        }
+        
+        if (!trimmedValue.startsWith('http://') && !trimmedValue.startsWith('https://')) {
             showToast('Invalid URL format. Must start with http:// or https://', 'error');
             // Revert to previous value
             const input = event.target;
@@ -760,9 +808,20 @@ function updateStream(index, field, value) {
         
         // Additional URL validation
         try {
-            new URL(value);
+            new URL(trimmedValue);
         } catch (e) {
             showToast('Invalid URL format', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
+        }
+        
+        // Validate URL length
+        if (trimmedValue.length > 256) {
+            showToast('Stream URL must be 256 characters or less', 'error');
             // Revert to previous value
             const input = event.target;
             if (input) {
@@ -773,17 +832,30 @@ function updateStream(index, field, value) {
     }
     
     // Validate name field
-    if (field === 'name' && !value.trim()) {
-        showToast('Name cannot be empty', 'error');
-        // Revert to previous value
-        const input = event.target;
-        if (input) {
-            input.value = streams[index][field] || '';
+    if (field === 'name') {
+        if (!trimmedValue) {
+            showToast('Name cannot be empty', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
         }
-        return;
+        
+        // Validate name length
+        if (trimmedValue.length > 128) {
+            showToast('Stream name must be 128 characters or less', 'error');
+            // Revert to previous value
+            const input = event.target;
+            if (input) {
+                input.value = streams[index][field] || '';
+            }
+            return;
+        }
     }
     
-    streams[index][field] = value;
+    streams[index][field] = trimmedValue;
 }
 
 function deleteStream(index) {
@@ -1171,10 +1243,33 @@ function convertM3UToJSON(m3uContent) {
                 }
             } else if (!line.startsWith('#') && (line.startsWith('http://') || line.startsWith('https://'))) {
                 // This is a URL line
-                streams.push({
-                    name: currentName || ('Stream ' + (streams.length + 1)),
-                    url: line
-                });
+                // Validate URL
+                try {
+                    new URL(line);
+                } catch (e) {
+                    console.warn('Skipping invalid URL in M3U file:', line);
+                    currentName = ''; // Reset for next entry
+                    continue;
+                }
+                
+                // Validate name
+                if (!currentName) {
+                    currentName = 'Stream ' + (streams.length + 1);
+                }
+                
+                // Validate lengths
+                if (currentName.length > 128) {
+                    currentName = currentName.substring(0, 125) + '...';
+                }
+                
+                if (line.length <= 256) {
+                    streams.push({
+                        name: currentName,
+                        url: line
+                    });
+                } else {
+                    console.warn('Skipping URL that exceeds maximum length:', line);
+                }
                 currentName = ''; // Reset for next entry
             }
         }
@@ -1197,7 +1292,27 @@ function convertJSONToM3U(jsonData) {
         
         jsonData.forEach(item => {
             if (item.name && item.url) {
-                m3uContent += '#EXTINF:-1,' + item.name + '\n';
+                // Validate and sanitize name
+                let sanitizedName = item.name.trim();
+                if (sanitizedName.length > 128) {
+                    sanitizedName = sanitizedName.substring(0, 125) + '...';
+                }
+                
+                // Validate URL
+                try {
+                    new URL(item.url);
+                } catch (e) {
+                    console.warn('Skipping invalid URL in JSON:', item.url);
+                    return;
+                }
+                
+                // Validate URL length
+                if (item.url.length > 256) {
+                    console.warn('Skipping URL that exceeds maximum length:', item.url);
+                    return;
+                }
+                
+                m3uContent += '#EXTINF:-1,' + sanitizedName + '\n';
                 m3uContent += item.url + '\n';
             }
         });
@@ -1319,10 +1434,11 @@ function initWiFiPage() {
             }
             
             // For better security, warn if password is provided but too short
-            if (password && password.length < 8) {
-                showToast('Password should be at least 8 characters for security', 'warning');
-                passwordInput.focus();
-                return;
+            if (password && password.length > 0 && password.length < 8) {
+                if (!confirm('Password is less than 8 characters. This may be insecure. Continue anyway?')) {
+                    passwordInput.focus();
+                    return;
+                }
             }
             
             // Show loading state
