@@ -65,6 +65,8 @@ char currentStream[256] = "";      ///< URL of currently playing stream
 char currentStreamName[128] = "";  ///< Name of currently playing stream
 bool isPlaying = false;            ///< Playback status flag
 int volume = 50;                   ///< Volume level (0-100)
+unsigned long lastActivityTime = 0; ///< Last activity timestamp
+bool displayOn = true;             ///< Display on/off status
 
 /**
  * @brief I2S pin configuration for audio output
@@ -202,6 +204,7 @@ void setupRotaryEncoder();
 void rotaryISR();
 void updateDisplay();
 void handleRotary();
+void handleDisplayTimeout();
 void sendStatusToClients();
 
 // MPD functions
@@ -395,6 +398,7 @@ void loop() {
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
+  handleDisplayTimeout();  // Handle display timeout
   delay(10);               // Small delay to prevent busy waiting
 }
 
@@ -1112,6 +1116,12 @@ void handleRotary() {
   
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
+    lastActivityTime = millis(); // Update activity time
+    if (!displayOn) {
+      displayOn = true;
+      updateDisplay(); // Turn display back on and update
+    }
+    
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
@@ -1125,6 +1135,34 @@ void handleRotary() {
       }
     }
     updateDisplay();  // Refresh display
+  }
+}
+
+/**
+ * @brief Handle display timeout
+ * Turns off the display after a period of inactivity when not playing
+ */
+void handleDisplayTimeout() {
+  const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
+  unsigned long currentTime = millis();
+  
+  // If we're playing, keep the display on
+  if (isPlaying) {
+    lastActivityTime = currentTime;
+    if (!displayOn) {
+      displayOn = true;
+      display.display(); // Turn display back on
+    }
+    return;
+  }
+  
+  // If we're not playing, check for timeout
+  if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
+    if (displayOn) {
+      displayOn = false;
+      display.clearDisplay();
+      display.display(); // Update display to clear it
+    }
   }
 }
 
@@ -1488,6 +1526,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * Shows playback status, current stream, volume level, and playlist selection
  */
 void updateDisplay() {
+  // Update last activity time
+  lastActivityTime = millis();
+  
+  // If display is off, turn it on
+  if (!displayOn) {
+    displayOn = true;
+  }
+  
   display.clearDisplay();  // Clear the display
   
   if (isPlaying) {
