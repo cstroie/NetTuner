@@ -74,6 +74,9 @@ bool displayOn = true;             ///< Display on/off status
 Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 bool audioConnected = false;                ///< Audio connection status flag
 
+// Forward declaration of sendStatusToClients function
+void sendStatusToClients();
+
 /**
  * @brief Audio stream title callback function
  * This function is called by the Audio library when stream title information is available
