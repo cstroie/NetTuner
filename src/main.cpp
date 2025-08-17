@@ -473,7 +473,7 @@ void loop() {
     
     // Update bitrate if it has changed
     if (isPlaying) {
-      int newBitrate = audio->getBitrate();
+      int newBitrate = audio->getBitRate();
       if (newBitrate > 0 && newBitrate != bitrate) {
         bitrate = newBitrate;
         sendStatusToClients();  // Notify clients of bitrate change
