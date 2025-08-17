@@ -273,33 +273,11 @@ function connectWebSocket() {
             console.log('WebSocket connected');
             showToast('Connected to NetTuner', 'success');
             
-            // Start heartbeat to detect disconnections with proper cleanup
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-            }
-            heartbeatInterval = setInterval(() => {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    try {
-                        ws.send('ping');
-                    } catch (e) {
-                        console.error('Error sending ping:', e);
-                    }
-                } else if (heartbeatInterval) {
-                    // Clear heartbeat if connection is no longer open
-                    clearInterval(heartbeatInterval);
-                    heartbeatInterval = null;
-                }
-            }, 25000); // Send ping every 25 seconds
         };
         
         ws.onmessage = function(event) {
             try {
                 const data = JSON.parse(event.data);
-                
-                // Handle pong messages
-                if (data.event === 'pong') {
-                    return; // Ignore pong messages
-                }
                 
                 // Handle status updates
                 const status = data;
