@@ -145,7 +145,6 @@ void audio_bitrate(const char *info) {
 #define I2S_DOUT      26  ///< I2S Data Out pin
 #define I2S_BCLK      27  ///< I2S Bit Clock pin
 #define I2S_LRC       25  ///< I2S Left/Right Clock pin
-#define I2S_SD        21  ///< I2S Slave Data pin (amplifier control)
 
 /**
  * @brief OLED display instance
@@ -800,10 +799,6 @@ void saveWiFiCredentials() {
  * Configures the selected audio output method
  */
 void setupAudioOutput() {
-  // Configure amplifier control pin
-  pinMode(I2S_SD, OUTPUT);
-  digitalWrite(I2S_SD, HIGH); // Enable amplifier
-  
   // Initialize ESP32-audioI2S
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(volume); // 0-21
