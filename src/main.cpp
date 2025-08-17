@@ -55,6 +55,7 @@ WiFiClient mpdClient;
  * These pointers manage the audio streaming pipeline
  */
 Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
+bool audioConnected = false;                ///< Audio connection status flag
 
 
 /**
@@ -393,6 +394,15 @@ void loop() {
   // Process audio streaming
   if (audio) {
     audio->loop();
+    
+    // Check if audio is still connected
+    if (isPlaying && !audio->isRunning()) {
+      Serial.println("Audio stream stopped unexpectedly");
+      isPlaying = false;
+      audioConnected = false;
+      updateDisplay();
+      sendStatusToClients();
+    }
   }
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
@@ -761,10 +771,20 @@ void startStream(const char* url, const char* name) {
   
   // Use ESP32-audioI2S to play the stream
   if (audio) {
-    audio->connecttohost(url);
+    audioConnected = audio->connecttohost(url);
+    if (!audioConnected) {
+      Serial.println("Error: Failed to connect to audio stream");
+      isPlaying = false;
+      currentStream[0] = '\0';
+      currentStreamName[0] = '\0';
+    } else {
+      isPlaying = true;
+      Serial.println("Successfully connected to audio stream");
+    }
   }
   
   updateDisplay();  // Refresh the display with new playback info
+  sendStatusToClients();  // Notify clients of status change
 }
 
 /**
@@ -776,12 +796,14 @@ void stopStream() {
   if (audio) {
     audio->stopSong();
   }
+  audioConnected = false;
   
   isPlaying = false;        // Set playback status to stopped
   currentStream[0] = '\0';       // Clear current stream URL
   currentStreamName[0] = '\0';   // Clear current stream name
   
   updateDisplay();  // Refresh the display
+  sendStatusToClients();  // Notify clients of status change
 }
 
 /**
