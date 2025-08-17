@@ -1469,39 +1469,6 @@ void handlePostStreams() {
   
   String jsonData = server.arg("plain");
   
-  if (upload.status == UPLOAD_FILE_START) {
-    Serial.printf("UploadStart: %s\n", upload.filename.c_str());
-    jsonDataBuffer = "";  // Reset buffer at start of upload
-    return;
-  } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // Accumulate data in buffer
-    if (upload.buf && upload.currentSize > 0) {
-      jsonDataBuffer += String((char*)upload.buf, upload.currentSize);
-    }
-    return;
-  } else if (upload.status == UPLOAD_FILE_END) {
-    Serial.printf("UploadEnd: %s (%d)\n", upload.filename.c_str(), (int)upload.totalSize);
-    
-    // Use accumulated data
-    if (jsonDataBuffer.length() == 0) {
-      server.send(400, "text/plain", "No data received");
-      return;
-    }
-  } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    Serial.println("Upload Aborted");
-    jsonDataBuffer = "";  // Clear buffer
-    server.send(500, "text/plain", "Upload Aborted");
-    return;
-  } else {
-    // Handle regular POST data
-    if (!server.hasArg("plain")) {
-      server.send(400, "text/plain", "Missing JSON data");
-      return;
-    }
-    
-    jsonDataBuffer = server.arg("plain");
-  }
-  
   // Validate JSON data
   if (jsonData.length() == 0) {
     server.send(400, "text/plain", "Empty JSON data");
