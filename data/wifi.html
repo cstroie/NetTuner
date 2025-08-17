@@ -43,6 +43,7 @@
         window.addEventListener('load', function() {
             loadConfiguredNetworks();
             scanNetworks();
+            loadCurrentConfiguration();
         });
         
         function loadConfiguredNetworks() {
@@ -54,6 +55,41 @@
                 })
                 .catch(error => {
                     console.error('Error loading configured networks:', error);
+                });
+        }
+        
+        function loadCurrentConfiguration() {
+            // Load current WiFi configuration to populate the form
+            fetch('/api/wifiscan')
+                .then(response => response.json())
+                .then(data => {
+                    const configured = data.configured || [];
+                    const networks = data.networks || [];
+                    
+                    // Clear existing fields except the first one
+                    const networkFields = document.getElementById('networkFields');
+                    while (networkFields.children.length > 1) {
+                        networkFields.removeChild(networkFields.lastChild);
+                    }
+                    
+                    // Reset network count
+                    networkCount = 1;
+                    
+                    // Populate with configured networks
+                    if (configured.length > 0) {
+                        // Fill the first entry
+                        document.getElementById('ssid0').value = configured[0];
+                        
+                        // Add additional entries for each configured network
+                        for (let i = 1; i < configured.length && i < 5; i++) {
+                            addNetworkField();
+                            document.getElementById(`ssid${i}`).value = configured[i];
+                        }
+                        networkCount = configured.length;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading current configuration:', error);
                 });
         }
         
@@ -82,13 +118,13 @@
         }
         
         function removeNetworkField(button) {
-            if (networkCount <= 1) {
+            if (document.querySelectorAll('.network-entry').length <= 1) {
                 alert('At least one network is required');
                 return;
             }
             
             button.parentElement.remove();
-            networkCount--;
+            networkCount = document.querySelectorAll('.network-entry').length;
         }
         
         // Override form submit to handle multiple networks
@@ -98,15 +134,17 @@
             const ssids = [];
             const passwords = [];
             
-            for (let i = 0; i < networkCount; i++) {
-                const ssid = document.getElementById(`ssid${i}`).value.trim();
-                const password = document.getElementById(`password${i}`).value;
+            // Collect all network entries
+            const networkEntries = document.querySelectorAll('.network-entry');
+            networkEntries.forEach((entry, index) => {
+                const ssidInput = entry.querySelector(`#ssid${index}`);
+                const passwordInput = entry.querySelector(`#password${index}`);
                 
-                if (ssid) {
-                    ssids.push(ssid);
-                    passwords.push(password);
+                if (ssidInput && ssidInput.value.trim()) {
+                    ssids.push(ssidInput.value.trim());
+                    passwords.push(passwordInput ? passwordInput.value : '');
                 }
-            }
+            });
             
             if (ssids.length === 0) {
                 alert('At least one SSID is required');
@@ -117,6 +155,12 @@
                 ssid: ssids,
                 password: passwords
             };
+            
+            // Show saving state
+            const saveButton = document.querySelector('.save-btn');
+            const originalText = saveButton.textContent;
+            saveButton.textContent = 'Saving...';
+            saveButton.disabled = true;
             
             fetch('/api/wifisave', {
                 method: 'POST',
@@ -135,32 +179,14 @@
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error saving WiFi configuration');
+            })
+            .finally(() => {
+                // Restore button state
+                saveButton.textContent = originalText;
+                saveButton.disabled = false;
             });
         });
         
-        // Load existing WiFi configuration
-        window.addEventListener('load', function() {
-            fetch('/api/wifiscan')
-                .then(response => response.json())
-                .then(networks => {
-                    const networksDiv = document.getElementById('networks');
-                    networksDiv.innerHTML = '<h3>Available Networks:</h3>';
-                    networks.forEach(network => {
-                        const networkDiv = document.createElement('div');
-                        networkDiv.className = 'network-item';
-                        networkDiv.innerHTML = `
-                            <span class="network-name">${network.ssid}</span>
-                            <span class="network-rssi">(${network.rssi} dBm)</span>
-                            <button onclick="selectNetwork('${network.ssid}')">Select</button>
-                        `;
-                        networksDiv.appendChild(networkDiv);
-                    });
-                })
-                .catch(error => {
-                    console.error('Error scanning networks:', error);
-                    document.getElementById('networks').innerHTML = 'Error scanning networks';
-                });
-        });
         
         function selectNetwork(ssid) {
             document.getElementById('ssid0').value = ssid;
