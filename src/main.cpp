@@ -349,10 +349,10 @@ void setup() {
   display.println("Connecting WiFi...");
   display.display();
   
-  // Load WiFi credentials
+  // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   
-  // Connect to WiFi
+  // Connect to WiFi with improved error handling
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
@@ -363,7 +363,7 @@ void setup() {
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
-        const int maxAttempts = 10; // Reduced attempts per network
+        const int maxAttempts = 15; // Increased attempts per network
         while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
           delay(500);
           Serial.print(".");
@@ -376,6 +376,9 @@ void setup() {
           break;
         } else {
           Serial.printf("Failed to connect to %s\n", ssid[i]);
+          // Reset WiFi before trying next network
+          WiFi.disconnect();
+          delay(1000);
         }
       }
     }
@@ -403,22 +406,37 @@ void setup() {
     display.println("Configure WiFi");
     display.display();
     
-    // Start WiFi access point mode
-    WiFi.softAP("NetTuner-Setup");
-    Serial.println("Access Point Started");
-    display.println("AP: NetTuner-Setup");
-    display.println("192.168.4.1");
-    display.display();
+    // Start WiFi access point mode with error handling
+    if (WiFi.softAP("NetTuner-Setup")) {
+      Serial.println("Access Point Started");
+      display.println("AP: NetTuner-Setup");
+      display.println(WiFi.softAPIP().toString());
+      display.display();
+    } else {
+      Serial.println("Failed to start Access Point");
+      display.println("AP Start Failed");
+      display.display();
+    }
   }
   
-  // Setup audio output
+  // Setup audio output with error handling
   setupAudioOutput();
     
-  // Setup rotary encoder
+  // Setup rotary encoder with error handling
   setupRotaryEncoder();
   
-  // Load playlist
+  // Load playlist with error recovery
   loadPlaylist();
+  
+  // Validate loaded playlist
+  if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
+    Serial.println("Warning: Invalid playlist count detected, resetting to 0");
+    playlistCount = 0;
+  }
+  
+  if (currentSelection < 0 || currentSelection >= playlistCount) {
+    currentSelection = 0;
+  }
   
   
   // Setup web server routes
@@ -438,18 +456,31 @@ void setup() {
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   
-  // Start server on both AP and station interfaces if in AP mode
-  server.begin();
+  // Start server with error checking
+  if (server.begin()) {
+    Serial.println("Web server started successfully");
+  } else {
+    Serial.println("ERROR: Failed to start web server");
+  }
   
-  // Setup WebSocket server
+  // Setup WebSocket server with error checking
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
   
-  // Start MPD server
-  mpdServer.begin();
+  // Start MPD server with error checking
+  if (mpdServer.begin()) {
+    Serial.println("MPD server started successfully");
+  } else {
+    Serial.println("ERROR: Failed to start MPD server");
+  }
   
-  // Create audio task on core 0
-  xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
+  // Create audio task on core 0 with error checking
+  BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
+  if (result != pdPASS) {
+    Serial.println("ERROR: Failed to create AudioTask");
+  } else {
+    Serial.println("AudioTask created successfully");
+  }
   
   // Update display
   updateDisplay();
@@ -461,9 +492,14 @@ void setup() {
  */
 void audioTask(void *pvParameters) {
   while (true) {
-    // Process audio streaming
-    if (audio)
-      audio->loop();
+    // Process audio streaming with error handling
+    if (audio) {
+      try {
+        audio->loop();
+      } catch (...) {
+        Serial.println("Warning: Exception in audio loop");
+      }
+    }
     // Small delay to prevent busy waiting
     delay(1);
   }
@@ -480,33 +516,69 @@ void loop() {
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
   
+  // Check audio connection status with improved error recovery
   if (audio) {
-      // Check if audio is still connected
-      if (isPlaying) {
-        if (!audio->isRunning()) {
-          Serial.println("Audio stream stopped unexpectedly");
-          isPlaying = false;
-          audioConnected = false;
-          updateDisplay();
-          sendStatusToClients();
-        }
-        // Update bitrate if it has changed
-        int newBitrate = audio->getBitRate();
-        if (newBitrate > 0 && newBitrate != bitrate) {
-          bitrate = newBitrate;
-          updateDisplay();
-          sendStatusToClients();  // Notify clients of bitrate change
-        }
+    // Check if audio is still connected
+    if (isPlaying) {
+      if (!audio->isRunning()) {
+        Serial.println("Audio stream stopped unexpectedly");
+        isPlaying = false;
+        audioConnected = false;
+        // Clear stream info to prevent stale data
+        currentStream[0] = '\0';
+        currentStreamName[0] = '\0';
+        streamTitle[0] = '\0';
+        bitrate = 0;
+        updateDisplay();
+        sendStatusToClients();
+      }
+      // Update bitrate if it has changed
+      int newBitrate = audio->getBitRate();
+      if (newBitrate > 0 && newBitrate != bitrate) {
+        bitrate = newBitrate;
+        updateDisplay();
+        sendStatusToClients();  // Notify clients of bitrate change
       }
     }
+  }
   
-  // Periodic cleanup - add this
+  // Periodic cleanup with error recovery
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
     // Force cleanup of any stale connections
     if (mpdClient && !mpdClient.connected()) {
       mpdClient.stop();
+    }
+    
+    // Check and recover from potential WiFi disconnections
+    if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
+      Serial.println("WiFi disconnected, attempting to reconnect...");
+      // Try to reconnect to WiFi
+      for (int i = 0; i < wifiNetworkCount; i++) {
+        if (strlen(ssid[i]) > 0) {
+          WiFi.begin(ssid[i], password[i]);
+          int wifiAttempts = 0;
+          const int maxAttempts = 5;
+          while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
+            delay(500);
+            wifiAttempts++;
+          }
+          
+          if (WiFi.status() == WL_CONNECTED) {
+            Serial.printf("Reconnected to %s\n", ssid[i]);
+            // Update display with new IP
+            display.clearDisplay();
+            display.setCursor(0, 0);
+            display.println("WiFi Reconnected");
+            display.println(WiFi.localIP().toString());
+            display.display();
+            delay(2000);
+            updateDisplay();
+            break;
+          }
+        }
+      }
     }
   }
   // Small delay to prevent busy waiting
