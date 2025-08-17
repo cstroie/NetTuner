@@ -688,17 +688,20 @@ void startStream(const char* url, const char* name) {
   // Validate inputs
   if (!url || !name) {
     Serial.println("Error: NULL pointer passed to startStream");
+    updateDisplay();
     return;
   }
   
   if (strlen(url) == 0 || strlen(name) == 0) {
     Serial.println("Error: Empty URL or name passed to startStream");
+    updateDisplay();
     return;
   }
   
   // Validate URL format
   if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
     Serial.println("Error: Invalid URL format");
+    updateDisplay();
     return;
   }
   
