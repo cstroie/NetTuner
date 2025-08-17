@@ -619,18 +619,36 @@ function renderPlaylist() {
     
     tbody.innerHTML = '';
     
+    if (streams.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="4" class="empty-playlist">No streams in playlist</td>';
+        tbody.appendChild(row);
+        return;
+    }
+    
     streams.forEach((stream, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td data-label="Order">${index + 1}</td>
-            <td data-label="Name"><input type="text" value="${stream.name}" onchange="updateStream(${index}, 'name', this.value)"></td>
-            <td data-label="URL"><input type="text" value="${stream.url}" onchange="updateStream(${index}, 'url', this.value)"></td>
+            <td data-label="Name"><input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)"></td>
+            <td data-label="URL"><input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)"></td>
             <td data-label="Actions" class="actions">
                 <button class="btn-danger" onclick="deleteStream(${index})">Delete</button>
             </td>
         `;
         tbody.appendChild(row);
     });
+}
+
+// Helper function to escape HTML entities
+function escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function addStream() {
