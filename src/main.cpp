@@ -1189,9 +1189,7 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, increase volume by 5% (capped at 100%)
         volume = min(100, volume + 5);
-        if (audio) {
-          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
-        }
+        audio.setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
@@ -1205,9 +1203,7 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, decrease volume by 5% (capped at 0%)
         volume = max(0, volume - 5);
-        if (audio) {
-          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
-        }
+        audio.setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
@@ -1540,9 +1536,7 @@ void handleVolume() {
     }
     
     volume = newVolume;
-    if (audio) {
-      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
-    }
+    audio.setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else if (server.hasArg("volume")) {
