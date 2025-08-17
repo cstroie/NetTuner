@@ -30,6 +30,18 @@
 
 Audio audio;  // Audio object for ESP32-audioI2S
 
+/**
+ * @brief Audio processing task
+ * Runs on core 0 to handle audio decoding and streaming
+ * @param parameter Task parameters (unused)
+ */
+void audioTask(void *parameter) {
+  while (true) {
+    audio.loop();
+    delay(1);
+  }
+}
+
 
 /**
  * @brief WiFi network credentials
@@ -419,6 +431,16 @@ void setup() {
   // Load playlist
   loadPlaylist();
   
+  // Create audio processing task on core 0
+  xTaskCreatePinnedToCore(
+    audioTask,        // Task function
+    "AudioTask",      // Task name
+    4096,             // Stack size
+    NULL,             // Task parameters
+    1,                // Task priority
+    &audioTaskHandle, // Task handle
+    0                 // Core ID (core 0)
+  );
   
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
@@ -459,32 +481,30 @@ void setup() {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
-  // Process audio streaming
-  audio.loop();
-    
-    // Check if audio is still connected
-    if (isPlaying && !audio.isRunning()) {
-      Serial.println("Audio stream stopped unexpectedly");
-      isPlaying = false;
-      audioConnected = false;
-      updateDisplay();
-      sendStatusToClients();
+  // Check if audio is still connected
+  if (isPlaying && !audio.isRunning()) {
+    Serial.println("Audio stream stopped unexpectedly");
+    isPlaying = false;
+    audioConnected = false;
+    updateDisplay();
+    sendStatusToClients();
+  }
+  
+  // Update bitrate if it has changed
+  if (isPlaying) {
+    int newBitrate = audio.getBitRate();
+    if (newBitrate > 0 && newBitrate != bitrate) {
+      bitrate = newBitrate;
+      sendStatusToClients();  // Notify clients of bitrate change
     }
-    
-    // Update bitrate if it has changed
-    if (isPlaying) {
-      int newBitrate = audio.getBitRate();
-      if (newBitrate > 0 && newBitrate != bitrate) {
-        bitrate = newBitrate;
-        sendStatusToClients();  // Notify clients of bitrate change
-      }
-    }
+  }
+  
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
-  delay(1);                // Minimal delay to prevent busy waiting
+  delay(10);               // Small delay to prevent busy waiting
 }
 
 /**
