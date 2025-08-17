@@ -986,7 +986,8 @@ void savePlaylist() {
   // Add playlist entries
   for (int i = 0; i < playlistCount; i++) {
     // Validate URL format before saving
-    if (strncmp(playlist[i].url, "http://", 7) != 0 && strncmp(playlist[i].url, "https://", 8) != 0) {
+    if (strlen(playlist[i].url) == 0 || 
+        (strncmp(playlist[i].url, "http://", 7) != 0 && strncmp(playlist[i].url, "https://", 8) != 0)) {
       Serial.println("Warning: Skipping stream with invalid URL format during save");
       continue;
     }
