@@ -316,10 +316,20 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void setup() {
   Serial.begin(115200);
   
-  // Initialize SPIFFS
+  // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
+    // Try to reformat SPIFFS
+    if (!SPIFFS.format()) {
+      Serial.println("ERROR: Failed to format SPIFFS");
+      return;
+    }
+    // Try to mount again after formatting
+    if (!SPIFFS.begin(true)) {
+      Serial.println("ERROR: Failed to mount SPIFFS after formatting");
+      return;
+    }
+    Serial.println("SPIFFS formatted and mounted successfully");
   }
   
   // Test SPIFFS write capability
@@ -531,6 +541,12 @@ void loop() {
         bitrate = 0;
         updateDisplay();
         sendStatusToClients();
+        
+        // Attempt to restart the stream if it was playing
+        if (strlen(currentStream) > 0 && strlen(currentStreamName) > 0) {
+          Serial.println("Attempting to restart stream...");
+          startStream(currentStream, currentStreamName);
+        }
       }
       // Update bitrate if it has changed
       int newBitrate = audio->getBitRate();
@@ -1022,6 +1038,32 @@ void loadPlaylist() {
   // Parse the JSON content
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, buf.get());
+  
+  // Check if JSON document was successfully allocated
+  if (!doc) {
+    Serial.println("Error: Failed to allocate memory for playlist JSON document");
+    
+    // Try to recover by creating a backup and a new empty playlist
+    Serial.println("Attempting to recover by creating backup and new playlist");
+    if (SPIFFS.exists("/playlist.json.bak")) {
+      SPIFFS.remove("/playlist.json.bak");
+    }
+    if (SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
+      Serial.println("Created backup of playlist file");
+    }
+    
+    // Create a new empty playlist
+    File newFile = SPIFFS.open("/playlist.json", "w");
+    if (newFile) {
+      newFile.println("[]");
+      newFile.close();
+      Serial.println("Created new empty playlist file");
+    } else {
+      Serial.println("Error: Failed to create new playlist file during recovery");
+    }
+    return;
+  }
+  
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
@@ -1031,7 +1073,9 @@ void loadPlaylist() {
     if (SPIFFS.exists("/playlist.json.bak")) {
       SPIFFS.remove("/playlist.json.bak");
     }
-    SPIFFS.rename("/playlist.json", "/playlist.json.bak");
+    if (SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
+      Serial.println("Created backup of playlist file");
+    }
     
     // Create a new empty playlist
     File newFile = SPIFFS.open("/playlist.json", "w");
@@ -1152,8 +1196,9 @@ void savePlaylist() {
     return;
   }
   
-  // Write JSON to file
-  if (serializeJson(array, file) == 0) {
+  // Write JSON to file with better error handling
+  size_t bytesWritten = serializeJson(array, file);
+  if (bytesWritten == 0) {
     Serial.println("Error: Failed to write playlist to file");
     file.close();
     
@@ -1168,6 +1213,7 @@ void savePlaylist() {
     }
     return;
   }
+  file.close();
   file.close();
   
   // Remove backup file after successful save
@@ -1749,7 +1795,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
                     webSocket.remoteIP(num)[0], webSocket.remoteIP(num)[1],
                     webSocket.remoteIP(num)[2], webSocket.remoteIP(num)[3]);
       // Send current status to newly connected client
-      sendStatusToClients();
+      {
+        String status = "{";
+        status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
+        status += "\"currentStream\":\"" + String(currentStream) + "\",";
+        status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+        status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+        status += "\"bitrate\":" + String(bitrate / 1000) + ",";
+        status += "\"volume\":" + String(volume);
+        status += "}";
+        webSocket.sendTXT(num, status);
+      }
       break;
     case WStype_DISCONNECTED:
       Serial.printf("WebSocket client #%u disconnected\n", num);
