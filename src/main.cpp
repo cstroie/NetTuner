@@ -140,9 +140,9 @@ void audio_bitrate(const char *info) {
  * @brief I2S pin configuration for audio output
  * Defines the pin mapping for I2S audio interface
  */
-#define I2S_DOUT      22  ///< I2S Data Out pin
-#define I2S_BCLK      25  ///< I2S Bit Clock pin
-#define I2S_LRC       26  ///< I2S Left/Right Clock pin
+#define I2S_DOUT      26  ///< I2S Data Out pin
+#define I2S_BCLK      27  ///< I2S Bit Clock pin
+#define I2S_LRC       25  ///< I2S Left/Right Clock pin
 #define I2S_SD        21  ///< I2S Slave Data pin (amplifier control)
 
 /**
