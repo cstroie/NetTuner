@@ -91,6 +91,7 @@ void audio_showstreamtitle(const char *info) {
     if (strcmp(streamTitle, info) != 0) {
       strncpy(streamTitle, info, sizeof(streamTitle) - 1);
       streamTitle[sizeof(streamTitle) - 1] = '\0';
+      updateDisplay();
       sendStatusToClients();  // Notify clients of title change
     }
   }
@@ -110,6 +111,7 @@ void audio_showstation(const char *info) {
     if (strcmp(currentStreamName, info) != 0) {
       strncpy(currentStreamName, info, sizeof(currentStreamName) - 1);
       currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+      updateDisplay();
       sendStatusToClients();  // Notify clients of station name change
     }
   }
@@ -131,6 +133,7 @@ void audio_bitrate(const char *info) {
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
+      updateDisplay();
       sendStatusToClients();  // Notify clients of bitrate change
     }
   }
@@ -466,7 +469,8 @@ void audioTask(void *pvParameters) {
     // Process audio streaming
     if (audio)
       audio->loop();
-    delay(1);  // Small delay to prevent busy waiting
+    // Small delay to prevent busy waiting
+    delay(1);
   }
 }
 
@@ -483,18 +487,21 @@ void loop() {
   
   if (audio) {
       // Check if audio is still connected
-      if (isPlaying && !audio->isRunning()) {
-        Serial.println("Audio stream stopped unexpectedly");
-        isPlaying = false;
-        audioConnected = false;
-        updateDisplay();
-        sendStatusToClients();
-      }
-      // Update bitrate if it has changed
       if (isPlaying) {
+        /* FIXME
+        if (!audio->isRunning()) {
+          Serial.println("Audio stream stopped unexpectedly");
+          isPlaying = false;
+          audioConnected = false;
+          updateDisplay();
+          sendStatusToClients();
+        }
+        */
+        // Update bitrate if it has changed
         int newBitrate = audio->getBitRate();
         if (newBitrate > 0 && newBitrate != bitrate) {
           bitrate = newBitrate;
+          updateDisplay();
           sendStatusToClients();  // Notify clients of bitrate change
         }
       }
@@ -509,8 +516,8 @@ void loop() {
       mpdClient.stop();
     }
   }
-  
-  delay(1);               // Small delay to prevent busy waiting
+  // Small delay to prevent busy waiting
+  delay(1);
 }
 
 /**
@@ -1501,6 +1508,7 @@ void handlePlay() {
     }
     
     startStream(url.c_str(), name.c_str());
+    updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else if (server.hasArg("url") && server.hasArg("name")) {
@@ -1520,6 +1528,7 @@ void handlePlay() {
     }
     
     startStream(url.c_str(), name.c_str());
+    updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else {
@@ -1534,6 +1543,7 @@ void handlePlay() {
  */
 void handleStop() {
   stopStream();
+  updateDisplay();
   sendStatusToClients();  // Notify clients of status change
   server.send(200, "text/plain", "OK");
 }
@@ -1570,6 +1580,7 @@ void handleVolume() {
     if (audio) {
       audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     }
+    updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else if (server.hasArg("volume")) {
@@ -1586,6 +1597,7 @@ void handleVolume() {
     if (audio) {
       audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     }
+    updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else {
@@ -1696,6 +1708,8 @@ void updateDisplay() {
         title = title.substring(0, 18) + "...";
       }
       display.println(title);
+      // TODO
+      Serial.println(title);
       
       // Display bitrate on third line if available
       if (bitrate > 0) {
@@ -1742,7 +1756,6 @@ void updateDisplay() {
     }
     // Display volume on the last line
     display.setCursor(0, 54);
-    display.print("[");
     for (int i = 0; i < 20; i++) {
       if (i < volume / 5) {
         display.print("|");
@@ -1750,7 +1763,6 @@ void updateDisplay() {
         display.print(" ");
       }
     }
-    display.print("] ");
     display.print(volume);
     display.println("%");
   }
@@ -1899,6 +1911,7 @@ void handleMPDCommand(const String& command) {
         if (audio) {
           audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         }
+        updateDisplay();
         sendStatusToClients();  // Notify WebSocket clients
         mpdClient.print(mpdResponseOK());
       } else {
