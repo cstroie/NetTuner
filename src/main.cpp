@@ -62,7 +62,7 @@ char currentStream[256] = "";      ///< URL of currently playing stream
 char currentStreamName[128] = "";  ///< Name of currently playing stream
 char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
-bool isPlaying = false;            ///< Playback status flag
+volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
 int volume = 50;                   ///< Volume level (0-100)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
@@ -274,6 +274,7 @@ void handleRotary();
 void handleDisplayTimeout();
 void sendStatusToClients();
 void audioTask(void *pvParameters);
+void forceDisplayUpdate();
 
 // MPD functions
 void handleMPDClient();
