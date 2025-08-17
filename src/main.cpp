@@ -484,7 +484,7 @@ void loop() {
   handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
-  delay(10);               // Small delay to prevent busy waiting
+  delay(1);                // Minimal delay to prevent busy waiting
 }
 
 /**
@@ -802,7 +802,7 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(volume); // 0-21
-  audio.setBufsize(81920, 0); // Increased buffer size to 20KB for better streaming performance
+  audio.setBufsize(163840, 0); // Increased buffer size to 160KB for better streaming performance
   // audio.forceMono(true); // Removed to prevent playback speed issues
 }
 
