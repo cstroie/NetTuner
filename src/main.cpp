@@ -369,16 +369,14 @@ void setup() {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
-  server.handleClient();   // Process incoming web requests
-  webSocket.loop();        // Process WebSocket events
-  handleRotary();          // Process rotary encoder input
-  handleMPDClient();       // Process MPD commands
-  
   // Process audio streaming
   if (audio) {
     audio->loop();
   }
-  
+  server.handleClient();   // Process incoming web requests
+  webSocket.loop();        // Process WebSocket events
+  handleRotary();          // Process rotary encoder input
+  handleMPDClient();       // Process MPD commands
   delay(10);               // Small delay to prevent busy waiting
 }
 
