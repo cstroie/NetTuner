@@ -211,19 +211,19 @@ function connectWebSocket() {
     const host = window.location.hostname;
     const wsUrl = `${protocol}//${host}:81/`;
     
-    try {
-        // Ensure we don't have an existing connection
-        if (ws) {
-            ws.onopen = null;
-            ws.onmessage = null;
-            ws.onclose = null;
-            ws.onerror = null;
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
-            }
-            ws = null;
+    // Ensure proper cleanup of previous connection
+    if (ws) {
+        ws.onopen = null;
+        ws.onmessage = null;
+        ws.onclose = null;
+        ws.onerror = null;
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close();
         }
-        
+        ws = null;
+    }
+    
+    try {
         ws = new WebSocket(wsUrl);
         
         // Set up connection timeout with proper cleanup
@@ -232,8 +232,6 @@ function connectWebSocket() {
             connectionTimer = setTimeout(() => {
                 if (ws && ws.readyState === WebSocket.CONNECTING) {
                     console.log('WebSocket connection timeout');
-                    isConnecting = false;
-                    connectionLock = false;
                     // Force close to trigger onclose handler
                     if (ws) {
                         ws.onclose = null; // Prevent reconnection trigger
@@ -242,6 +240,8 @@ function connectWebSocket() {
                     }
                     // Schedule reconnection
                     reconnectAttempts++;
+                    isConnecting = false;
+                    connectionLock = false;
                     if (reconnectAttempts < maxReconnectAttempts) {
                         const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
                         console.log(`Reconnecting in ${timeout}ms`);
@@ -347,8 +347,6 @@ function connectWebSocket() {
                 clearTimeout(connectionTimer);
                 connectionTimer = null;
             }
-            isConnecting = false;
-            connectionLock = false;
             
             // Clear heartbeat interval on close
             if (heartbeatInterval) {
@@ -366,6 +364,10 @@ function connectWebSocket() {
             
             console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
             showToast('Disconnected from NetTuner', 'warning');
+            
+            // Release connection lock and reset connecting flag
+            isConnecting = false;
+            connectionLock = false;
             
             // Try to reconnect with exponential backoff, but reset counter on successful connection
             if (reconnectAttempts < maxReconnectAttempts) {
@@ -391,11 +393,13 @@ function connectWebSocket() {
         if (connectionTimer) {
             clearTimeout(connectionTimer);
         }
-        isConnecting = false;
-        connectionLock = false;
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
         showToast('Failed to connect', 'error');
+        
+        // Release connection lock and reset connecting flag
+        isConnecting = false;
+        connectionLock = false;
         
         // Try to reconnect with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
