@@ -679,6 +679,12 @@ void loadWiFiCredentials() {
   }
   
   std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (!buf) {
+    Serial.println("Error: Failed to allocate memory for WiFi config file");
+    file.close();
+    return;
+  }
+  
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Failed to read WiFi config file");
     file.close();
