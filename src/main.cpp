@@ -808,9 +808,6 @@ void setupAudioOutput() {
   audio = new Audio(true); // true = use I2S, false = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume); // 0-21
-  audio->setAudioShowStreamTitle(audio_showstreamtitle); // Set stream title callback
-  audio->setAudioShowStation(audio_showstation);         // Set station name callback
-  audio->setAudioBitrate(audio_bitrate);                 // Set bitrate callback
 }
 
 /**
