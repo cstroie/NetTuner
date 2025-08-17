@@ -1934,7 +1934,7 @@ void handleMPDClient() {
       mpdClient = mpdServer.available();
       // Send MPD welcome message
       if (mpdClient && mpdClient.connected()) {
-        mpdClient.println("OK MPD 0.20.0");
+        mpdClient.print("OK MPD 0.20.0\n");
       }
     } else {
       // Reject connection if we already have a client
@@ -1972,7 +1972,7 @@ String mpdResponseOK() {
  * @return Error response string
  */
 String mpdResponseError(const String& message) {
-  return "ACK {" + message + "}\n";
+  return "ACK [0@0] {" + message + "}\n";
 }
 
 /**
@@ -1990,6 +1990,7 @@ void handleMPDCommand(const String& command) {
       }
       
       if (index >= 0 && index < playlistCount) {
+        currentSelection = index;
         startStream(playlist[index].url, playlist[index].name);
       } else if (playlistCount > 0 && currentSelection < playlistCount) {
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
@@ -2008,49 +2009,75 @@ void handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("status")) {
     // Status command
-    mpdClient.println("volume: " + String(volume));
-    mpdClient.println("state: " + String(isPlaying ? "play" : "stop"));
+    mpdClient.print("volume: " + String(volume) + "\n");
+    mpdClient.print("repeat: 0\n");
+    mpdClient.print("random: 0\n");
+    mpdClient.print("single: 0\n");
+    mpdClient.print("consume: 0\n");
+    mpdClient.print("playlist: 1\n");
+    mpdClient.print("playlistlength: " + String(playlistCount) + "\n");
+    mpdClient.print("mixrampdb: 0.000000\n");
+    mpdClient.print("state: " + String(isPlaying ? "play" : "stop") + "\n");
     if (isPlaying && strlen(currentStreamName) > 0) {
-      mpdClient.println("song: " + String(currentSelection));
-      mpdClient.println("songid: " + String(currentSelection));
-      mpdClient.println("title: " + String(currentStreamName));
-      if (bitrate > 0) {
-        mpdClient.println("bitrate: " + String(bitrate / 1000));
-      }
+      mpdClient.print("song: " + String(currentSelection) + "\n");
+      mpdClient.print("songid: " + String(currentSelection) + "\n");
+      mpdClient.print("time: 0:0\n");
+      mpdClient.print("elapsed: 0.000\n");
+      mpdClient.print("bitrate: " + String(bitrate / 1000) + "\n");
+      mpdClient.print("audio: 44100:f:2\n");
+      mpdClient.print("nextsong: " + String((currentSelection + 1) % playlistCount) + "\n");
+      mpdClient.print("nextsongid: " + String((currentSelection + 1) % playlistCount) + "\n");
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("currentsong")) {
     // Current song command
     if (isPlaying && strlen(currentStreamName) > 0) {
-      mpdClient.println("file: " + String(currentStream));
-      mpdClient.println("Title: " + String(currentStreamName));
-      mpdClient.println("Id: " + String(currentSelection));
-      mpdClient.println("Pos: " + String(currentSelection));
+      mpdClient.print("file: " + String(currentStream) + "\n");
+      mpdClient.print("Title: " + String(currentStreamName) + "\n");
+      mpdClient.print("Id: " + String(currentSelection) + "\n");
+      mpdClient.print("Pos: " + String(currentSelection) + "\n");
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistinfo")) {
     // Playlist info command
     for (int i = 0; i < playlistCount; i++) {
-      mpdClient.println("file: " + String(playlist[i].url));
-      mpdClient.println("Title: " + String(playlist[i].name));
-      mpdClient.println("Id: " + String(i));
-      mpdClient.println("Pos: " + String(i));
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Id: " + String(i) + "\n");
+      mpdClient.print("Pos: " + String(i) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistid")) {
     // Playlist ID command
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.println("file: " + String(playlist[i].url));
-      mpdClient.println("Title: " + String(playlist[i].name));
-      mpdClient.println("Id: " + String(i));
-      mpdClient.println("Pos: " + String(i));
+    int id = -1;
+    if (command.length() > 10) {
+      id = command.substring(11).toInt();
+    }
+    
+    if (id >= 0 && id < playlistCount) {
+      mpdClient.print("file: " + String(playlist[id].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[id].name) + "\n");
+      mpdClient.print("Id: " + String(id) + "\n");
+      mpdClient.print("Pos: " + String(id) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    } else {
+      // Return all if no specific ID
+      for (int i = 0; i < playlistCount; i++) {
+        mpdClient.print("file: " + String(playlist[i].url) + "\n");
+        mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+        mpdClient.print("Id: " + String(i) + "\n");
+        mpdClient.print("Pos: " + String(i) + "\n");
+        mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+      }
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("lsinfo")) {
     // List info command
     for (int i = 0; i < playlistCount; i++) {
-      mpdClient.println("file: " + String(playlist[i].url));
-      mpdClient.println("Title: " + String(playlist[i].name));
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("setvol")) {
@@ -2110,9 +2137,10 @@ void handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("outputs")) {
     // Outputs command - with ESP32-audioI2S, we only have I2S output
-    mpdClient.println("outputid: 0");
-    mpdClient.println("outputname: I2S (External DAC)");
-    mpdClient.println("outputenabled: 1");
+    mpdClient.print("outputid: 0\n");
+    mpdClient.print("outputname: I2S (External DAC)\n");
+    mpdClient.print("outputenabled: 1\n");
+    mpdClient.print("attribute: allowed_formats=\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("disableoutput")) {
     // Disable output command
@@ -2138,37 +2166,53 @@ void handleMPDCommand(const String& command) {
     }
   } else if (command.startsWith("commands")) {
     // Commands command
-    mpdClient.println("command: add");
-    mpdClient.println("command: clear");
-    mpdClient.println("command: currentsong");
-    mpdClient.println("command: delete");
-    mpdClient.println("command: disableoutput");
-    mpdClient.println("command: enableoutput");
-    mpdClient.println("command: load");
-    mpdClient.println("command: lsinfo");
-    mpdClient.println("command: next");
-    mpdClient.println("command: outputs");
-    mpdClient.println("command: pause");
-    mpdClient.println("command: play");
-    mpdClient.println("command: playlistid");
-    mpdClient.println("command: playlistinfo");
-    mpdClient.println("command: previous");
-    mpdClient.println("command: save");
-    mpdClient.println("command: setvol");
-    mpdClient.println("command: status");
-    mpdClient.println("command: stop");
+    mpdClient.print("command: add\n");
+    mpdClient.print("command: clear\n");
+    mpdClient.print("command: currentsong\n");
+    mpdClient.print("command: delete\n");
+    mpdClient.print("command: disableoutput\n");
+    mpdClient.print("command: enableoutput\n");
+    mpdClient.print("command: load\n");
+    mpdClient.print("command: lsinfo\n");
+    mpdClient.print("command: next\n");
+    mpdClient.print("command: outputs\n");
+    mpdClient.print("command: pause\n");
+    mpdClient.print("command: play\n");
+    mpdClient.print("command: playlistid\n");
+    mpdClient.print("command: playlistinfo\n");
+    mpdClient.print("command: previous\n");
+    mpdClient.print("command: save\n");
+    mpdClient.print("command: setvol\n");
+    mpdClient.print("command: status\n");
+    mpdClient.print("command: stop\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("notcommands")) {
     // Not commands command
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("tagtypes")) {
     // Tag types command
-    mpdClient.println("tagtype: Artist");
-    mpdClient.println("tagtype: Album");
-    mpdClient.println("tagtype: Title");
+    mpdClient.print("tagtype: Artist\n");
+    mpdClient.print("tagtype: Album\n");
+    mpdClient.print("tagtype: Title\n");
+    mpdClient.print("tagtype: Track\n");
+    mpdClient.print("tagtype: Name\n");
+    mpdClient.print("tagtype: Genre\n");
+    mpdClient.print("tagtype: Date\n");
+    mpdClient.print("tagtype: Composer\n");
+    mpdClient.print("tagtype: Performer\n");
+    mpdClient.print("tagtype: Comment\n");
+    mpdClient.print("tagtype: Disc\n");
+    mpdClient.print("tagtype: MUSICBRAINZ_ARTISTID\n");
+    mpdClient.print("tagtype: MUSICBRAINZ_ALBUMID\n");
+    mpdClient.print("tagtype: MUSICBRAINZ_ALBUMARTISTID\n");
+    mpdClient.print("tagtype: MUSICBRAINZ_TRACKID\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
     // Idle command
+    mpdClient.print("changed: playlist\n");
+    mpdClient.print("changed: player\n");
+    mpdClient.print("changed: mixer\n");
+    mpdClient.print("changed: output\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("noidle")) {
     // Noidle command
