@@ -409,9 +409,8 @@ void handleConfigPage() {
  * Returns the current configuration as JSON
  */
 void handleGetConfig() {
-  String config = "{";
-  config += "\"output\":" + String(currentOutputType);
-  config += "}";
+  // No audio output configuration needed with ESP32-audioI2S
+  String config = "{}";
   server.send(200, "application/json", config);
 }
 
@@ -420,31 +419,8 @@ void handleGetConfig() {
  * Updates the configuration with new data
  */
 void handleSaveConfig() {
-  if (!server.hasArg("plain")) {
-    server.send(400, "text/plain", "Missing JSON data");
-    return;
-  }
-  
-  String json = server.arg("plain");
-  DynamicJsonDocument doc(256);
-  DeserializationError error = deserializeJson(doc, json);
-  
-  if (error) {
-    server.send(400, "text/plain", "Invalid JSON");
-    return;
-  }
-  
-  if (doc.containsKey("output")) {
-    int type = doc["output"];
-    if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
-      currentOutputType = (AudioOutputType)type;
-      saveConfig();
-      server.send(200, "text/plain", "Configuration saved");
-      return;
-    }
-  }
-  
-  server.send(400, "text/plain", "Invalid output type");
+  // No audio output configuration needed with ESP32-audioI2S
+  server.send(200, "text/plain", "Configuration saved");
 }
 
 /**
