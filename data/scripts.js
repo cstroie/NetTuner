@@ -1204,75 +1204,8 @@ document.addEventListener('DOMContentLoaded', function() {
         initMainPage();
     } else if (document.getElementById('playlistBody')) {
         initPlaylistPage();
-    } else if (document.getElementById('output')) {
-        initConfigPage();
     } else if (document.getElementById('ssid')) {
         initWiFiPage();
     }
 });
 
-// Config functions
-function initConfigPage() {
-    // Load current configuration
-    fetch('/api/config')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Failed to load configuration');
-            }
-            return response.json();
-        })
-        .then(config => {
-            document.getElementById('output').value = config.output || 0;
-        })
-        .catch(error => {
-            console.error('Error loading config:', error);
-            showToast('Error loading configuration: ' + error.message, 'error');
-        });
-    
-    // Handle form submission
-    const configForm = document.getElementById('configForm');
-    if (configForm) {
-        configForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const output = document.getElementById('output').value;
-            
-            // Show loading state
-            const submitButton = configForm.querySelector('button[type="submit"]');
-            const originalText = submitButton ? submitButton.textContent : null;
-            if (submitButton) {
-                submitButton.textContent = 'Saving...';
-                submitButton.disabled = true;
-            }
-            
-            fetch('/api/config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ output: parseInt(output) })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to save configuration');
-                }
-                return response.text();
-            })
-            .then(data => {
-                showToast(data, 'success');
-                // Reload the page to reflect changes after a short delay
-                setTimeout(() => {
-                    location.reload();
-                }, 1000);
-            })
-            .catch(error => {
-                showToast('Error saving configuration: ' + error.message, 'error');
-                console.error('Error:', error);
-            })
-            .finally(() => {
-                // Restore button state
-                if (submitButton) {
-                    submitButton.textContent = originalText || 'Save Configuration';
-                    submitButton.disabled = false;
-                }
-            });
-        });
-    }
-}
