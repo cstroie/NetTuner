@@ -410,8 +410,6 @@ void setup() {
   // Setup audio output
   setupAudioOutput();
   
-  // Load configuration
-  loadConfig();
   
   // Setup rotary encoder
   setupRotaryEncoder();
@@ -528,38 +526,7 @@ void handleWiFiConfig() {
   file.close();
 }
 
-/**
- * @brief Handle configuration page
- * Serves the audio configuration page
- */
-void handleConfigPage() {
-  File file = SPIFFS.open("/config.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-}
 
-/**
- * @brief Handle GET request for configuration
- * Returns the current configuration as JSON
- */
-void handleGetConfig() {
-  // No audio output configuration needed with ESP32-audioI2S
-  String config = "{}";
-  server.send(200, "application/json", config);
-}
-
-/**
- * @brief Handle POST request for configuration
- * Updates the configuration with new data
- */
-void handleSaveConfig() {
-  // No audio output configuration needed with ESP32-audioI2S
-  server.send(200, "text/plain", "Configuration saved");
-}
 
 /**
  * @brief Handle WiFi network scan
