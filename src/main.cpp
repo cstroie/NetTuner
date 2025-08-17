@@ -1550,9 +1550,7 @@ void handleVolume() {
     }
     
     volume = newVolume;
-    if (audio) {
-      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
-    }
+    audio.setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
   } else {
