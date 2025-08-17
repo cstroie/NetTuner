@@ -408,14 +408,14 @@ void loop() {
     
     // Update stream title and bitrate if they've changed
     if (isPlaying) {
-      String newTitle = audio->getAudioFileTitle();
+      String newTitle = audio->getCodecString();  // Use correct method name
       if (newTitle.length() > 0 && newTitle != String(streamTitle)) {
         strncpy(streamTitle, newTitle.c_str(), sizeof(streamTitle) - 1);
         streamTitle[sizeof(streamTitle) - 1] = '\0';
         sendStatusToClients();  // Notify clients of title change
       }
       
-      int newBitrate = audio->getBitRate();
+      int newBitrate = audio->getBitrate();  // Use correct method name (lowercase 'r')
       if (newBitrate > 0 && newBitrate != bitrate) {
         bitrate = newBitrate;
         sendStatusToClients();  // Notify clients of bitrate change
