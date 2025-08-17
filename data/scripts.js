@@ -488,6 +488,51 @@ async function playStream() {
     }
 }
 
+function playSelectedStream() {
+    const select = document.getElementById('streamSelect');
+    if (!select || select.selectedIndex === 0) {
+        return; // No stream selected or it's the placeholder option
+    }
+    
+    const option = select.options[select.selectedIndex];
+    const url = select.value;
+    const name = option ? option.dataset.name : '';
+    
+    if (!url) {
+        return;
+    }
+    
+    console.log('Playing selected stream:', { url, name });
+    
+    // Play the selected stream without showing toast
+    fetch('/api/play', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ url: url, name: name })
+    })
+    .then(response => {
+        console.log('Play response status:', response.status);
+        if (!response.ok) {
+            return response.text().then(errorText => {
+                throw new Error('Failed to play stream: ' + errorText);
+            });
+        }
+        return response.text();
+    })
+    .then(result => {
+        if (result !== 'OK') {
+            throw new Error('Unexpected response from server');
+        }
+    })
+    .catch(error => {
+        console.error('Error playing stream:', error);
+        showToast('Error playing stream: ' + error.message, 'error');
+    });
+}
+
 async function stopStream() {
     // Show loading state
     const stopButton = document.querySelector('button[onclick="stopStream()"]');
