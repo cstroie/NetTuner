@@ -64,6 +64,8 @@ bool audioConnected = false;                ///< Audio connection status flag
  */
 char currentStream[256] = "";      ///< URL of currently playing stream
 char currentStreamName[128] = "";  ///< Name of currently playing stream
+char streamTitle[128] = "";        ///< Current stream title
+int bitrate = 0;                   ///< Current stream bitrate
 bool isPlaying = false;            ///< Playback status flag
 int volume = 50;                   ///< Volume level (0-100)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
@@ -402,6 +404,22 @@ void loop() {
       audioConnected = false;
       updateDisplay();
       sendStatusToClients();
+    }
+    
+    // Update stream title and bitrate if they've changed
+    if (isPlaying) {
+      String newTitle = audio->getAudioFileTitle();
+      if (newTitle.length() > 0 && newTitle != String(streamTitle)) {
+        strncpy(streamTitle, newTitle.c_str(), sizeof(streamTitle) - 1);
+        streamTitle[sizeof(streamTitle) - 1] = '\0';
+        sendStatusToClients();  // Notify clients of title change
+      }
+      
+      int newBitrate = audio->getBitRate();
+      if (newBitrate > 0 && newBitrate != bitrate) {
+        bitrate = newBitrate;
+        sendStatusToClients();  // Notify clients of bitrate change
+      }
     }
   }
   server.handleClient();   // Process incoming web requests
@@ -777,6 +795,8 @@ void startStream(const char* url, const char* name) {
       isPlaying = false;
       currentStream[0] = '\0';
       currentStreamName[0] = '\0';
+      streamTitle[0] = '\0';
+      bitrate = 0;
     } else {
       isPlaying = true;
       Serial.println("Successfully connected to audio stream");
@@ -801,6 +821,8 @@ void stopStream() {
   isPlaying = false;        // Set playback status to stopped
   currentStream[0] = '\0';       // Clear current stream URL
   currentStreamName[0] = '\0';   // Clear current stream name
+  streamTitle[0] = '\0';         // Clear stream title
+  bitrate = 0;                   // Clear bitrate
   
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
@@ -1514,6 +1536,8 @@ void sendStatusToClients() {
   status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
   status += "\"currentStream\":\"" + String(currentStream) + "\",";
   status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+  status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+  status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume);
   status += "}";
   
@@ -1573,11 +1597,32 @@ void updateDisplay() {
     display.setTextSize(2);  // Larger font for status
     display.setCursor(0, 0);
     display.println("PLAYING");
-    display.setTextSize(1);  // Normal font for stream name
+    display.setTextSize(1);  // Normal font for stream info
+    
+    // Display station name (first line)
     display.setCursor(0, 18);
     display.println(currentStreamName);
+    
+    // Display stream title (second line) if available
+    if (strlen(streamTitle) > 0) {
+      display.setCursor(0, 30);
+      // Truncate title if too long for display
+      String title = String(streamTitle);
+      if (title.length() > 21) {  // ~21 chars fit on a 128px display
+        title = title.substring(0, 18) + "...";
+      }
+      display.println(title);
+    }
+    
+    // Display bitrate if available
+    if (bitrate > 0) {
+      display.setCursor(0, 42);
+      display.print(bitrate);
+      display.println(" kbps");
+    }
+    
     // Display volume on the last line
-    display.setCursor(0, 50);
+    display.setCursor(0, 54);
     display.print("[");
     for (int i = 0; i < 20; i++) {
       if (i < volume / 5) {
@@ -1607,7 +1652,7 @@ void updateDisplay() {
       display.println("No streams");
     }
     // Display volume on the last line
-    display.setCursor(0, 50);
+    display.setCursor(0, 54);
     display.print("[");
     for (int i = 0; i < 20; i++) {
       if (i < volume / 5) {

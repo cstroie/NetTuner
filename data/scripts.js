@@ -324,7 +324,19 @@ function connectWebSocket() {
                 }
                 
                 if (currentElement) {
-                    currentElement.textContent = status.currentStreamName || 'No stream selected';
+                    if (status.playing) {
+                        // Show station name and stream title when playing
+                        let displayText = status.currentStreamName || 'Unknown Station';
+                        if (status.streamTitle) {
+                            displayText += ' - ' + status.streamTitle;
+                        }
+                        if (status.bitrate) {
+                            displayText += ' (' + status.bitrate + ' kbps)';
+                        }
+                        currentElement.textContent = displayText;
+                    } else {
+                        currentElement.textContent = status.currentStreamName || 'No stream selected';
+                    }
                 }
                 
                 const volumeControl = document.getElementById('volume');
