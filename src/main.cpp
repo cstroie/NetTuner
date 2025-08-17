@@ -455,7 +455,8 @@ void handleSaveConfig() {
  */
 void handleWiFiScan() {
   int n = WiFi.scanNetworks();
-  String json = "[";
+  String json = "{";
+  json += "\"networks\":[";
   
   for (int i = 0; i < n; ++i) {
     if (i > 0) json += ",";
@@ -464,7 +465,16 @@ void handleWiFiScan() {
     json += "\"rssi\":" + String(WiFi.RSSI(i));
     json += "}";
   }
+  json += "],";
+  
+  // Add configured networks
+  json += "\"configured\":[";
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    if (i > 0) json += ",";
+    json += "\"" + String(ssid[i]) + "\"";
+  }
   json += "]";
+  json += "}";
   
   server.send(200, "application/json", json);
 }

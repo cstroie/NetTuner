@@ -37,6 +37,25 @@
     <script src="/scripts.js"></script>
     <script>
         let networkCount = 1;
+        let configuredNetworks = [];
+        
+        // Load existing WiFi configuration when page loads
+        window.addEventListener('load', function() {
+            loadConfiguredNetworks();
+            scanNetworks();
+        });
+        
+        function loadConfiguredNetworks() {
+            // Load existing configuration to know which networks are already configured
+            fetch('/api/wifiscan')
+                .then(response => response.json())
+                .then(data => {
+                    configuredNetworks = data.configured || [];
+                })
+                .catch(error => {
+                    console.error('Error loading configured networks:', error);
+                });
+        }
         
         function addNetworkField() {
             if (networkCount >= 5) {
@@ -145,6 +164,55 @@
         
         function selectNetwork(ssid) {
             document.getElementById('ssid0').value = ssid;
+        }
+        
+        // Override the scanNetworks function to highlight configured networks
+        function scanNetworks() {
+            const networksDiv = document.getElementById('networks');
+            networksDiv.innerHTML = 'Scanning for networks...';
+            
+            fetch('/api/wifiscan')
+                .then(response => response.json())
+                .then(data => {
+                    networksDiv.innerHTML = '<h3>Available Networks:</h3>';
+                    
+                    // Extract just the network list if the response includes configured networks
+                    const networks = Array.isArray(data) ? data : data.networks || [];
+                    
+                    if (networks.length === 0) {
+                        networksDiv.innerHTML += '<p>No networks found</p>';
+                        return;
+                    }
+                    
+                    networks.forEach(network => {
+                        const networkDiv = document.createElement('div');
+                        networkDiv.className = 'network-item';
+                        
+                        // Check if this network is already configured
+                        const isConfigured = configuredNetworks.includes(network.ssid);
+                        
+                        if (isConfigured) {
+                            networkDiv.classList.add('configured-network');
+                            networkDiv.innerHTML = `
+                                <span class="network-name">${network.ssid} ★</span>
+                                <span class="network-rssi">(${network.rssi} dBm)</span>
+                                <button onclick="selectNetwork('${network.ssid}')">Reconfigure</button>
+                            `;
+                        } else {
+                            networkDiv.innerHTML = `
+                                <span class="network-name">${network.ssid}</span>
+                                <span class="network-rssi">(${network.rssi} dBm)</span>
+                                <button onclick="selectNetwork('${network.ssid}')">Select</button>
+                            `;
+                        }
+                        
+                        networksDiv.appendChild(networkDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error scanning networks:', error);
+                    networksDiv.innerHTML = 'Error scanning networks';
+                });
         }
     </script>
 </body>
