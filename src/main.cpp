@@ -979,7 +979,7 @@ void handleRotary() {
         // If playing, increase volume by 5% (capped at 100%)
         volume = min(100, volume + 5);
         if (audio) {
-          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -995,7 +995,7 @@ void handleRotary() {
         // If playing, decrease volume by 5% (capped at 0%)
         volume = max(0, volume - 5);
         if (audio) {
-          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -1296,7 +1296,7 @@ void handleVolume() {
     
     volume = newVolume;
     if (audio) {
-      audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
+      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     }
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
@@ -1312,7 +1312,7 @@ void handleVolume() {
     
     volume = newVolume;
     if (audio) {
-      audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
+      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
     }
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
@@ -1575,7 +1575,7 @@ void handleMPDCommand(const String& command) {
       if (newVolume >= 0 && newVolume <= 100) {
         volume = newVolume;
         if (audio) {
-          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify WebSocket clients
         mpdClient.print(mpdResponseOK());
