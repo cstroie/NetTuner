@@ -23,11 +23,7 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <driver/i2s.h>
-#include "AudioFileSourceHTTPStream.h"
-#include "AudioFileSourceBuffer.h"
-#include "AudioGeneratorMP3.h"
-#include "AudioOutputI2S.h"
-#include "AudioOutputI2SNoDAC.h"
+#include "Audio.h"
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
@@ -56,21 +52,8 @@ WiFiClient mpdClient;
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
-AudioGeneratorMP3 *mp3 = nullptr;           ///< MP3 decoder instance
-AudioFileSourceHTTPStream *file = nullptr;  ///< HTTP stream source
-AudioFileSourceBuffer *buff = nullptr;      ///< Buffer for audio data
-AudioOutputI2S *out = nullptr;              ///< I2S audio output
+Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 
-/**
- * @brief Audio output configuration
- * Defines the available output methods and the currently selected one
- */
-enum AudioOutputType {
-  OUTPUT_I2S = 0,
-  OUTPUT_DAC = 1
-};
-
-AudioOutputType currentOutputType = OUTPUT_I2S;  ///< Currently selected output type
 
 /**
  * @brief Player state variables
@@ -208,7 +191,6 @@ int currentSelection = 0;   ///< Currently selected item in the playlist
 TaskHandle_t audioTaskHandle = NULL;  ///< Handle for the audio processing task
 
 // Function declarations
-void audioTask(void *parameter);
 void setupAudioOutput();
 void startStream(const char* url, const char* name);
 void stopStream();
@@ -347,16 +329,6 @@ void setup() {
   // Load playlist
   loadPlaylist();
   
-  // Create audio task on core 0
-  xTaskCreatePinnedToCore(
-    audioTask,      // Function
-    "AudioTask",    // Name
-    10000,          // Stack size
-    NULL,           // Parameter
-    1,              // Priority
-    &audioTaskHandle, // Task handle
-    0               // Core 0
-  );
   
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
@@ -642,29 +614,6 @@ void saveWiFiCredentials() {
   Serial.println("Saved WiFi credentials to SPIFFS");
 }
 
-/**
- * @brief Audio processing task function
- * Runs on core 0 to handle continuous audio decoding and playback
- * (ESP32 has 2 main cores + 1 ultra-low-power core)
- * @param parameter Unused parameter required by FreeRTOS task function signature
- */
-void audioTask(void *parameter) {
-  while (true) {
-    // If MP3 decoder is running, process the next audio frame
-    if (mp3 && mp3->isRunning()) {
-      // Process one frame of audio data
-      if (!mp3->loop()) {
-        // If loop() returns false, the stream has ended
-        mp3->stop();        // Stop the decoder
-        isPlaying = false;  // Update playback status
-        updateDisplay();    // Refresh the display
-        sendStatusToClients(); // Notify clients of status change
-      }
-    }
-    // Use FreeRTOS delay to properly feed the watchdog
-    vTaskDelay(1);  // Delay for 1 tick (1ms on ESP32)
-  }
-}
 
 /**
  * @brief Initialize audio output interface
@@ -674,6 +623,11 @@ void setupAudioOutput() {
   // Configure amplifier control pin
   pinMode(I2S_SD, OUTPUT);
   digitalWrite(I2S_SD, HIGH); // Enable amplifier
+  
+  // Initialize ESP32-audioI2S
+  audio = new Audio(true); // true = use I2S, false = use DAC
+  audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+  audio->setVolume(volume); // 0-21
 }
 
 /**
@@ -711,93 +665,10 @@ void startStream(const char* url, const char* name) {
   currentStreamName[sizeof(currentStreamName) - 1] = '\0';
   isPlaying = true;         // Set playback status to playing
   
-  // Create new audio components for the stream
-  AudioFileSourceHTTPStream* newFile = new AudioFileSourceHTTPStream(url);  // HTTP stream source
-  if (!newFile || !newFile->isOpen()) {
-    Serial.println("Error: Failed to create HTTP stream source");
-    if (newFile) {
-      delete newFile;
-    }
-    isPlaying = false;
-    updateDisplay();
-    return;
+  // Use ESP32-audioI2S to play the stream
+  if (audio) {
+    audio->connecttohost(url);
   }
-  
-  AudioFileSourceBuffer* newBuff = new AudioFileSourceBuffer(newFile, 2048); // Buffer with 2KB buffer size
-  if (!newBuff) {
-    Serial.println("Error: Failed to create buffer");
-    delete newFile;
-    isPlaying = false;
-    updateDisplay();
-    return;
-  }
-  
-  AudioOutputI2S* newOut = nullptr;
-  
-  // Create the appropriate output based on currentOutputType
-  switch (currentOutputType) {
-    case OUTPUT_I2S:
-      newOut = new AudioOutputI2S();
-      break;
-    case OUTPUT_DAC:
-      newOut = new AudioOutputI2SNoDAC();
-      break;
-    default:
-      newOut = new AudioOutputI2S(); // Fallback to I2S
-      break;
-  }
-  
-  if (!newOut) {
-    Serial.println("Error: Failed to create audio output");
-    delete newBuff;
-    delete newFile;
-    isPlaying = false;
-    updateDisplay();
-    return;
-  }
-  
-  // Configure output pins based on type
-  switch (currentOutputType) {
-    case OUTPUT_I2S:
-      newOut->SetPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-      break;
-    case OUTPUT_DAC:
-      // DAC output uses the same pins but in DAC mode
-      newOut->SetPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-      break;
-  }
-  
-  AudioGeneratorMP3* newMp3 = new AudioGeneratorMP3();              // MP3 decoder
-  if (!newMp3) {
-    Serial.println("Error: Failed to create MP3 decoder");
-    delete newOut;
-    delete newBuff;
-    delete newFile;
-    isPlaying = false;
-    updateDisplay();
-    return;
-  }
-  
-  // Set volume (0.0 to 1.0)
-  newOut->SetGain(volume / 100.0);
-  
-  // Start the decoding process
-  if (!newMp3->begin(newBuff, newOut)) {
-    Serial.println("Error: Failed to start MP3 decoder");
-    delete newMp3;
-    delete newOut;
-    delete newBuff;
-    delete newFile;
-    isPlaying = false;
-    updateDisplay();
-    return;
-  }
-  
-  // Only assign to global pointers after everything is successfully initialized
-  file = newFile;
-  buff = newBuff;
-  out = newOut;
-  mp3 = newMp3;
   
   updateDisplay();  // Refresh the display with new playback info
 }
@@ -807,31 +678,9 @@ void startStream(const char* url, const char* name) {
  * Cleans up audio components and resets playback state
  */
 void stopStream() {
-  // Stop and delete the MP3 decoder if it exists
-  if (mp3) {
-    if (mp3->isRunning()) {
-      mp3->stop();  // Stop decoding
-    }
-    delete mp3;
-    mp3 = nullptr;
-  }
-  
-  // Delete the buffer if it exists
-  if (buff) {
-    delete buff;
-    buff = nullptr;
-  }
-  
-  // Delete the I2S output if it exists
-  if (out) {
-    delete out;
-    out = nullptr;
-  }
-  
-  // Delete the HTTP stream source if it exists
-  if (file) {
-    delete file;
-    file = nullptr;
+  // Stop the audio playback
+  if (audio) {
+    audio->stopSong();
   }
   
   isPlaying = false;        // Set playback status to stopped
@@ -1056,6 +905,7 @@ void savePlaylist() {
  * @brief Load configuration from SPIFFS
  */
 void loadConfig() {
+  // No audio output configuration needed with ESP32-audioI2S
   if (!SPIFFS.exists("/config.json")) {
     Serial.println("Config file not found, using defaults");
     return;
@@ -1089,48 +939,16 @@ void loadConfig() {
   buf[size] = '\0';
   file.close();
   
-  DynamicJsonDocument doc(512);
-  DeserializationError error = deserializeJson(doc, buf.get());
-  if (error) {
-    Serial.print("Failed to parse config JSON: ");
-    Serial.println(error.c_str());
-    return;
-  }
-  
-  if (doc.containsKey("output")) {
-    int type = doc["output"];
-    if (type >= OUTPUT_I2S && type <= OUTPUT_DAC) {
-      currentOutputType = (AudioOutputType)type;
-    }
-  }
-  
+  // Config file exists but we don't need to parse audio output settings
   Serial.println("Loaded configuration from SPIFFS");
-  Serial.print("Output Type: ");
-  Serial.println(currentOutputType);
 }
 
 /**
  * @brief Save configuration to SPIFFS
  */
 void saveConfig() {
-  DynamicJsonDocument doc(512);
-  doc["output"] = currentOutputType;
-  
-  File file = SPIFFS.open("/config.json", "w");
-  if (!file) {
-    Serial.println("Failed to open config file for writing");
-    return;
-  }
-  
-  size_t bytesWritten = serializeJson(doc, file);
-  if (bytesWritten == 0) {
-    Serial.println("Failed to write config to file");
-    file.close();
-    return;
-  }
-  file.close();
-  
-  Serial.println("Saved configuration to SPIFFS");
+  // No audio output configuration needed with ESP32-audioI2S
+  Serial.println("Configuration saved to SPIFFS");
 }
 
 
@@ -1180,8 +998,8 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, increase volume by 5% (capped at 100%)
         volume = min(100, volume + 5);
-        if (out) {
-          out->SetGain((float)volume / 100.0);  // Update audio output gain
+        if (audio) {
+          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -1196,8 +1014,8 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, decrease volume by 5% (capped at 0%)
         volume = max(0, volume - 5);
-        if (out) {
-          out->SetGain((float)volume / 100.0);  // Update audio output gain
+        if (audio) {
+          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -1497,8 +1315,8 @@ void handleVolume() {
     }
     
     volume = newVolume;
-    if (out) {
-      out->SetGain(volume / 100.0);
+    if (audio) {
+      audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
     }
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
@@ -1513,8 +1331,8 @@ void handleVolume() {
     }
     
     volume = newVolume;
-    if (out) {
-      out->SetGain(volume / 100.0);
+    if (audio) {
+      audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
     }
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "text/plain", "OK");
@@ -1776,8 +1594,8 @@ void handleMPDCommand(const String& command) {
       int newVolume = command.substring(7).toInt();
       if (newVolume >= 0 && newVolume <= 100) {
         volume = newVolume;
-        if (out) {
-          out->SetGain(volume / 100.0);
+        if (audio) {
+          audio->setVolume(volume / 5);  // ESP32-audioI2S uses 0-21 scale
         }
         sendStatusToClients();  // Notify WebSocket clients
         mpdClient.print(mpdResponseOK());
