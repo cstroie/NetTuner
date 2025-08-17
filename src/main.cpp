@@ -76,6 +76,8 @@ bool audioConnected = false;                ///< Audio connection status flag
 
 // Forward declaration of sendStatusToClients function
 void sendStatusToClients();
+// Forward declaration of updateDisplay function
+void updateDisplay();
 
 /**
  * @brief Audio stream title callback function
