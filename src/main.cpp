@@ -1088,57 +1088,6 @@ void savePlaylist() {
 }
 
 /**
- * @brief Load configuration from SPIFFS
- */
-void loadConfig() {
-  // No audio output configuration needed with ESP32-audioI2S
-  if (!SPIFFS.exists("/config.json")) {
-    Serial.println("Config file not found, using defaults");
-    return;
-  }
-  
-  File file = SPIFFS.open("/config.json", "r");
-  if (!file) {
-    Serial.println("Failed to open config file");
-    return;
-  }
-  
-  size_t size = file.size();
-  if (size > 512) {
-    Serial.println("Config file too large");
-    file.close();
-    return;
-  }
-  
-  if (size == 0) {
-    Serial.println("Config file is empty");
-    file.close();
-    return;
-  }
-  
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Failed to read config file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
-  
-  // Config file exists but we don't need to parse audio output settings
-  Serial.println("Loaded configuration from SPIFFS");
-}
-
-/**
- * @brief Save configuration to SPIFFS
- */
-void saveConfig() {
-  // No audio output configuration needed with ESP32-audioI2S
-  Serial.println("Configuration saved to SPIFFS");
-}
-
-
-/**
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder
  */
