@@ -33,8 +33,10 @@
  * These should be updated with your actual network credentials
  */
 // WiFi credentials will be stored in SPIFFS
-char ssid[64] = "";
-char password[64] = "";
+#define MAX_WIFI_NETWORKS 5
+char ssid[MAX_WIFI_NETWORKS][64] = {""};
+char password[MAX_WIFI_NETWORKS][64] = {""};
+int wifiNetworkCount = 0;
 
 /**
  * @brief Web server instance running on port 80
@@ -275,18 +277,34 @@ void setup() {
   loadWiFiCredentials();
   
   // Connect to WiFi
-  if (strlen(ssid) > 0) {
+  bool connected = false;
+  if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
-    WiFi.begin(ssid, password);
-    int wifiAttempts = 0;
-    const int maxAttempts = 20;
-    while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-      delay(500);
-      Serial.print(".");
-      wifiAttempts++;
+    
+    // Try each configured network
+    for (int i = 0; i < wifiNetworkCount; i++) {
+      if (strlen(ssid[i]) > 0) {
+        Serial.printf("Attempting to connect to %s...\n", ssid[i]);
+        WiFi.begin(ssid[i], password[i]);
+        int wifiAttempts = 0;
+        const int maxAttempts = 10; // Reduced attempts per network
+        while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
+          delay(500);
+          Serial.print(".");
+          wifiAttempts++;
+        }
+        
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.printf("Connected to %s\n", ssid[i]);
+          connected = true;
+          break;
+        } else {
+          Serial.printf("Failed to connect to %s\n", ssid[i]);
+        }
+      }
     }
     
-    if (WiFi.status() == WL_CONNECTED) {
+    if (connected) {
       Serial.println("Connected to WiFi");
       display.clearDisplay();
       display.setCursor(0, 0);
@@ -294,7 +312,7 @@ void setup() {
       display.println(WiFi.localIP().toString());
       display.display();
     } else {
-      Serial.println("Failed to connect to WiFi");
+      Serial.println("Failed to connect to any configured WiFi network");
       display.clearDisplay();
       display.setCursor(0, 0);
       display.println("WiFi Failed");
@@ -466,32 +484,66 @@ void handleWiFiSave() {
     return;
   }
   
-  if (!doc.containsKey("ssid")) {
+  // Handle both single network and multiple networks
+  wifiNetworkCount = 0;
+    
+  if (doc.containsKey("ssid")) {
+    if (doc["ssid"].is<JsonArray>()) {
+      JsonArray ssidArray = doc["ssid"];
+      JsonArray passwordArray = doc["password"].as<JsonArray>();
+        
+      for (int i = 0; i < (int)ssidArray.size() && i < MAX_WIFI_NETWORKS; i++) {
+        String newSSID = ssidArray[i].as<String>();
+        if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid[i])) {
+          server.send(400, "text/plain", "Invalid SSID length");
+          return;
+        }
+          
+        strncpy(ssid[i], newSSID.c_str(), sizeof(ssid[i]) - 1);
+        ssid[i][sizeof(ssid[i]) - 1] = '\0';
+          
+        if (i < (int)passwordArray.size()) {
+          String newPassword = passwordArray[i].as<String>();
+          if (newPassword.length() >= sizeof(password[i])) {
+            server.send(400, "text/plain", "Password too long");
+            return;
+          }
+          strncpy(password[i], newPassword.c_str(), sizeof(password[i]) - 1);
+          password[i][sizeof(password[i]) - 1] = '\0';
+        } else {
+          password[i][0] = '\0';
+        }
+          
+        wifiNetworkCount++;
+      }
+    } else {
+      // Single network for backward compatibility
+      String newSSID = doc["ssid"].as<String>();
+      if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid[0])) {
+        server.send(400, "text/plain", "Invalid SSID length");
+        return;
+      }
+        
+      strncpy(ssid[0], newSSID.c_str(), sizeof(ssid[0]) - 1);
+      ssid[0][sizeof(ssid[0]) - 1] = '\0';
+      wifiNetworkCount = 1;
+        
+      if (doc.containsKey("password")) {
+        String newPassword = doc["password"].as<String>();
+        // Validate password length
+        if (newPassword.length() >= sizeof(password[0])) {
+          server.send(400, "text/plain", "Password too long");
+          return;
+        }
+        strncpy(password[0], newPassword.c_str(), sizeof(password[0]) - 1);
+        password[0][sizeof(password[0]) - 1] = '\0';
+      } else {
+        password[0][0] = '\0';
+      }
+    }
+  } else {
     server.send(400, "text/plain", "Missing SSID");
     return;
-  }
-  
-  // Validate SSID length
-  String newSSID = doc["ssid"].as<String>();
-  if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid)) {
-    server.send(400, "text/plain", "Invalid SSID length");
-    return;
-  }
-  
-  strncpy(ssid, newSSID.c_str(), sizeof(ssid) - 1);
-  ssid[sizeof(ssid) - 1] = '\0';
-  
-  if (doc.containsKey("password")) {
-    String newPassword = doc["password"].as<String>();
-    // Validate password length
-    if (newPassword.length() >= sizeof(password)) {
-      server.send(400, "text/plain", "Password too long");
-      return;
-    }
-    strncpy(password, newPassword.c_str(), sizeof(password) - 1);
-    password[sizeof(password) - 1] = '\0';
-  } else {
-    password[0] = '\0';
   }
   
   saveWiFiCredentials();
@@ -544,28 +596,66 @@ void loadWiFiCredentials() {
   }
   
   if (doc.containsKey("ssid")) {
-    strncpy(ssid, doc["ssid"], sizeof(ssid) - 1);
-    ssid[sizeof(ssid) - 1] = '\0';
+    // Handle both single SSID and array of SSIDs
+    if (doc["ssid"].is<JsonArray>()) {
+      JsonArray ssidArray = doc["ssid"];
+      wifiNetworkCount = 0;
+      for (JsonVariant value : ssidArray) {
+        if (wifiNetworkCount >= MAX_WIFI_NETWORKS) break;
+        strncpy(ssid[wifiNetworkCount], value.as<const char*>(), sizeof(ssid[wifiNetworkCount]) - 1);
+        ssid[wifiNetworkCount][sizeof(ssid[wifiNetworkCount]) - 1] = '\0';
+        wifiNetworkCount++;
+      }
+    } else {
+      // Single SSID for backward compatibility
+      strncpy(ssid[0], doc["ssid"], sizeof(ssid[0]) - 1);
+      ssid[0][sizeof(ssid[0]) - 1] = '\0';
+      wifiNetworkCount = 1;
+    }
   }
   
   if (doc.containsKey("password")) {
-    const char* pwd = doc["password"];
-    if (pwd) {
-      strncpy(password, pwd, sizeof(password) - 1);
-      password[sizeof(password) - 1] = '\0';
+    // Handle both single password and array of passwords
+    if (doc["password"].is<JsonArray>()) {
+      JsonArray passwordArray = doc["password"];
+      for (int i = 0; i < wifiNetworkCount && i < MAX_WIFI_NETWORKS; i++) {
+        if (i < (int)passwordArray.size()) {
+          const char* pwd = passwordArray[i];
+          if (pwd) {
+            strncpy(password[i], pwd, sizeof(password[i]) - 1);
+            password[i][sizeof(password[i]) - 1] = '\0';
+          } else {
+            password[i][0] = '\0';
+          }
+        } else {
+          password[i][0] = '\0';
+        }
+      }
     } else {
-      password[0] = '\0';
+      // Single password for backward compatibility
+      const char* pwd = doc["password"];
+      if (pwd) {
+        strncpy(password[0], pwd, sizeof(password[0]) - 1);
+        password[0][sizeof(password[0]) - 1] = '\0';
+      } else {
+        password[0][0] = '\0';
+      }
+      // Clear other passwords
+      for (int i = 1; i < MAX_WIFI_NETWORKS; i++) {
+        password[i][0] = '\0';
+      }
     }
   }
   
   Serial.println("Loaded WiFi credentials from SPIFFS");
-  Serial.print("SSID: ");
-  Serial.println(ssid);
-  // Only print password if it exists and is not empty
-  if (strlen(password) > 0) {
-    Serial.println("Password: [REDACTED]");
-  } else {
-    Serial.println("Password: [NONE]");
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    Serial.printf("SSID[%d]: %s\n", i, ssid[i]);
+    // Only print password if it exists and is not empty
+    if (strlen(password[i]) > 0) {
+      Serial.println("Password: [REDACTED]");
+    } else {
+      Serial.println("Password: [NONE]");
+    }
   }
 }
 
@@ -573,9 +663,19 @@ void loadWiFiCredentials() {
  * @brief Save WiFi credentials to SPIFFS
  */
 void saveWiFiCredentials() {
-  DynamicJsonDocument doc(512);
-  doc["ssid"] = ssid;
-  doc["password"] = password;
+  DynamicJsonDocument doc(1024); // Increased size for multiple networks
+  
+  // Save SSIDs as array
+  JsonArray ssidArray = doc.createNestedArray("ssid");
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    ssidArray.add(ssid[i]);
+  }
+  
+  // Save passwords as array
+  JsonArray passwordArray = doc.createNestedArray("password");
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    passwordArray.add(password[i]);
+  }
   
   File file = SPIFFS.open("/wifi.json", "w");
   if (!file) {
