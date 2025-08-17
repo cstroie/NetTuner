@@ -28,6 +28,9 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 
+Audio audio;
+
+
 /**
  * @brief WiFi network credentials
  * These should be updated with your actual network credentials
@@ -71,7 +74,7 @@ bool displayOn = true;             ///< Display on/off status
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
-Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
+//Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
 bool audioConnected = false;                ///< Audio connection status flag
 
 // Forward declaration of sendStatusToClients function
@@ -459,7 +462,7 @@ void setup() {
  */
 void loop() {
   // Process audio streaming
-  if (audio) {
+//  if (audio) {
     audio->loop();
     
     // Check if audio is still connected
@@ -479,7 +482,7 @@ void loop() {
         sendStatusToClients();  // Notify clients of bitrate change
       }
     }
-  }
+//  }
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleRotary();          // Process rotary encoder input
@@ -805,7 +808,7 @@ void setupAudioOutput() {
   digitalWrite(I2S_SD, HIGH); // Enable amplifier
   
   // Initialize ESP32-audioI2S
-  audio = new Audio(true); // true = use I2S, false = use DAC
+  //audio = new Audio(true); // true = use I2S, false = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume); // 0-21
 }
