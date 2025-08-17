@@ -1721,7 +1721,6 @@ void updateDisplay() {
     
     // Display volume on the last line
     display.setCursor(0, 54);
-    display.print("[");
     for (int i = 0; i < 20; i++) {
       if (i < volume / 5) {
         display.print("|");
@@ -1729,7 +1728,6 @@ void updateDisplay() {
         display.print(" ");
       }
     }
-    display.print("] ");
     display.print(volume);
     display.println("%");
   } else {
