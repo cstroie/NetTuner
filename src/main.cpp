@@ -28,7 +28,7 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 
-Audio audio;
+Audio audio(10240);  // Increased buffer size to 10KB for better streaming performance
 
 
 /**
