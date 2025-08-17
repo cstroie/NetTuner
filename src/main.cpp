@@ -1619,13 +1619,10 @@ void handleMPDCommand(const String& command) {
     // Save command (not implemented for this player)
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("outputs")) {
-    // Outputs command
+    // Outputs command - with ESP32-audioI2S, we only have I2S output
     mpdClient.println("outputid: 0");
     mpdClient.println("outputname: I2S (External DAC)");
-    mpdClient.println("outputenabled: " + String(currentOutputType == OUTPUT_I2S ? "1" : "0"));
-    mpdClient.println("outputid: 1");
-    mpdClient.println("outputname: DAC (Internal DAC)");
-    mpdClient.println("outputenabled: " + String(currentOutputType == OUTPUT_DAC ? "1" : "0"));
+    mpdClient.println("outputenabled: 1");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("disableoutput")) {
     // Disable output command
@@ -1640,10 +1637,8 @@ void handleMPDCommand(const String& command) {
     // Enable output command
     if (command.length() > 12) {
       int outputId = command.substring(13).toInt();
-      if (outputId >= 0 && outputId <= 1) {
-        // Set the output type
-        currentOutputType = (AudioOutputType)outputId;
-        saveConfig();  // Save the configuration
+      if (outputId == 0) {
+        // Only output 0 (I2S) is supported with ESP32-audioI2S
         mpdClient.print(mpdResponseOK());
       } else {
         mpdClient.print(mpdResponseError("Invalid output ID"));
