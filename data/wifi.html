@@ -73,7 +73,21 @@
             fetch('/api/wificonfig')
                 .then(response => response.json())
                 .then(data => {
-                    configuredNetworks = Array.isArray(data) ? data : (data.configured || []);
+                    // Handle consistent data structure for configured networks
+                    if (Array.isArray(data)) {
+                        // If array of strings (SSIDs only)
+                        configuredNetworks = data;
+                    } else if (data.configured && Array.isArray(data.configured)) {
+                        // If object with configured array
+                        configuredNetworks = data.configured;
+                    } else if (data.networks && Array.isArray(data.networks)) {
+                        // If object with networks array containing objects with ssid property
+                        configuredNetworks = data.networks.map(network => 
+                            typeof network === 'string' ? network : network.ssid
+                        ).filter(ssid => ssid);
+                    } else {
+                        configuredNetworks = [];
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading configured networks:', error);
@@ -86,14 +100,20 @@
             fetch('/api/wificonfig')
                 .then(response => response.json())
                 .then(data => {
-                    // Handle different response formats
-                    let configuredNetworks = [];
+                    // Handle consistent data structure for configuration loading
+                    let configNetworks = [];
                     if (Array.isArray(data)) {
-                        configuredNetworks = data;
+                        // If array of strings (SSIDs only)
+                        configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
                     } else if (data.configured && Array.isArray(data.configured)) {
-                        configuredNetworks = data.configured;
+                        // If object with configured array of strings
+                        configNetworks = data.configured.map((ssid, index) => ({ ssid, password: '' }));
                     } else if (data.networks && Array.isArray(data.networks)) {
-                        configuredNetworks = data.networks;
+                        // If object with networks array containing objects
+                        configNetworks = data.networks.map(network => ({
+                            ssid: typeof network === 'string' ? network : network.ssid || '',
+                            password: network.password || ''
+                        }));
                     }
                     
                     // Clear existing fields except the first one
@@ -106,26 +126,16 @@
                     networkCount = 1;
                     
                     // Populate with configured networks
-                    if (configuredNetworks.length > 0) {
+                    if (configNetworks.length > 0) {
                         // Fill the first entry
-                        const firstNetwork = configuredNetworks[0];
-                        if (typeof firstNetwork === 'string') {
-                            document.getElementById('ssid0').value = firstNetwork || '';
-                        } else if (firstNetwork.ssid) {
-                            document.getElementById('ssid0').value = firstNetwork.ssid || '';
-                        }
+                        document.getElementById('ssid0').value = configNetworks[0].ssid || '';
                         
                         // Add additional entries for each configured network
-                        for (let i = 1; i < configuredNetworks.length && i < 5; i++) {
+                        for (let i = 1; i < configNetworks.length && i < 5; i++) {
                             addNetworkField();
-                            const network = configuredNetworks[i];
-                            if (typeof network === 'string') {
-                                document.getElementById(`ssid${i}`).value = network || '';
-                            } else if (network.ssid) {
-                                document.getElementById(`ssid${i}`).value = network.ssid || '';
-                            }
+                            document.getElementById(`ssid${i}`).value = configNetworks[i].ssid || '';
                         }
-                        networkCount = configuredNetworks.length;
+                        networkCount = configNetworks.length;
                     }
                 })
                 .catch(error => {
@@ -242,10 +252,20 @@
                 .then(data => {
                     networksDiv.innerHTML = '';
                     
-                    // Extract just the network list if the response includes configured networks
-                    const networks = Array.isArray(data) ? data : data.networks || [];
+                    // Handle consistent data structure for network scanning
+                    let scanNetworks = [];
+                    if (Array.isArray(data)) {
+                        // If array of objects with ssid and rssi properties
+                        scanNetworks = data;
+                    } else if (data.networks && Array.isArray(data.networks)) {
+                        // If object with networks array
+                        scanNetworks = data.networks;
+                    } else {
+                        // If object with ssid and rssi properties directly
+                        scanNetworks = [data];
+                    }
                     
-                    if (networks.length === 0) {
+                    if (scanNetworks.length === 0 || (scanNetworks.length === 1 && !scanNetworks[0].ssid)) {
                         networksDiv.innerHTML = '<p class="no-networks">No networks found. Move closer to your router or check if WiFi is enabled.</p>';
                         return;
                     }
@@ -253,7 +273,10 @@
                     const networksList = document.createElement('div');
                     networksList.className = 'networks-list';
                     
-                    networks.forEach(network => {
+                    scanNetworks.forEach(network => {
+                        // Skip invalid networks
+                        if (!network || !network.ssid) return;
+                        
                         const networkDiv = document.createElement('div');
                         networkDiv.className = 'network-item';
                         
