@@ -424,28 +424,13 @@ function forceReconnect() {
 }
 
 async function playStream() {
-    const select = document.getElementById('streamSelect');
+    const { select, url, name } = getSelectedStream();
     if (!select) {
         showToast('Stream selection not available', 'error');
         return;
     }
     
-    const option = select.options[select.selectedIndex];
-    const url = select.value;
-    const name = option ? option.dataset.name : '';
-    
-    console.log('Playing stream:', { url, name });
-    
-    if (!url) {
-        showToast('Please select a stream', 'warning');
-        return;
-    }
-    
-    // Validate URL format
-    try {
-        new URL(url);
-    } catch (e) {
-        showToast('Invalid URL format', 'error');
+    if (!validateStreamSelection(url)) {
         return;
     }
     
@@ -458,28 +443,10 @@ async function playStream() {
     }
     
     try {
-        const response = await fetch('/api/play', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ url: url, name: name })
-        });
-        console.log('Play response status:', response.status);
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-        const result = await response.text();
-        if (result !== 'OK') {
-            throw new Error(`Unexpected response from server: ${result}`);
-        }
+        await sendPlayRequest(url, name);
         showToast('Stream started successfully', 'success');
     } catch (error) {
-        console.error('Error playing stream:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
+        handlePlayError(error);
     } finally {
         // Restore button state
         if (playButton) {
@@ -489,18 +456,24 @@ async function playStream() {
     }
 }
 
-function playSelectedStream() {
+function getSelectedStream() {
     const select = document.getElementById('streamSelect');
-    if (!select || select.selectedIndex === 0) {
-        return; // No stream selected or it's the placeholder option
+    if (!select) {
+        return { select: null, url: null, name: null };
     }
     
     const option = select.options[select.selectedIndex];
     const url = select.value;
     const name = option ? option.dataset.name : '';
     
+    console.log('Playing stream:', { url, name });
+    return { select, url, name };
+}
+
+function validateStreamSelection(url) {
     if (!url) {
-        return;
+        showToast('Please select a stream', 'warning');
+        return false;
     }
     
     // Validate URL format
@@ -508,39 +481,57 @@ function playSelectedStream() {
         new URL(url);
     } catch (e) {
         showToast('Invalid URL format', 'error');
-        return;
+        return false;
     }
     
-    console.log('Playing selected stream:', { url, name });
-    
-    // Play the selected stream without showing toast
-    fetch('/api/play', {
+    return true;
+}
+
+async function sendPlayRequest(url, name) {
+    const response = await fetch('/api/play', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({ url: url, name: name })
-    })
-    .then(response => {
-        console.log('Play response status:', response.status);
-        if (!response.ok) {
-            return response.text().then(errorText => {
-                throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
-            });
-        }
-        return response.text();
-    })
-    .then(result => {
-        if (result !== 'OK') {
-            throw new Error(`Unexpected response from server: ${result}`);
-        }
-    })
-    .catch(error => {
-        console.error('Error playing stream:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
     });
+    console.log('Play response status:', response.status);
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    const result = await response.text();
+    if (result !== 'OK') {
+        throw new Error(`Unexpected response from server: ${result}`);
+    }
+}
+
+function handlePlayError(error) {
+    console.error('Error playing stream:', error);
+    const errorMessage = error.message || 'Unknown error occurred';
+    showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
+}
+
+function playSelectedStream() {
+    const { select, url, name } = getSelectedStream();
+    if (!select || select.selectedIndex === 0) {
+        return; // No stream selected or it's the placeholder option
+    }
+    
+    if (!validateStreamSelection(url)) {
+        return;
+    }
+    
+    console.log('Playing selected stream:', { url, name });
+    
+    // Play the selected stream without showing toast
+    sendPlayRequest(url, name)
+        .catch(error => {
+            console.error('Error playing stream:', error);
+            const errorMessage = error.message || 'Unknown error occurred';
+            showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
+        });
 }
 
 async function stopStream() {
@@ -556,28 +547,10 @@ async function stopStream() {
     }
     
     try {
-        console.log('Stopping current stream');
-        const response = await fetch('/api/stop', { 
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        console.log('Stop response status:', response.status);
-        if (response.ok) {
-            const result = await response.text();
-            if (result !== 'OK') {
-                throw new Error(`Unexpected response from server: ${result}`);
-            }
-            showToast('Stream stopped successfully', 'info');
-        } else {
-            throw new Error(`Failed to stop stream: ${response.status} ${response.statusText}`);
-        }
+        await sendStopRequest();
+        showToast('Stream stopped successfully', 'info');
     } catch (error) {
-        console.error('Error stopping stream:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error stopping stream: ' + errorMessage + '. Please try again.', 'error');
+        handleStopError(error);
     } finally {
         // Restore button state
         if (stopButton) {
@@ -585,6 +558,32 @@ async function stopStream() {
             stopButton.disabled = false;
         }
     }
+}
+
+async function sendStopRequest() {
+    console.log('Stopping current stream');
+    const response = await fetch('/api/stop', { 
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+    console.log('Stop response status:', response.status);
+    if (response.ok) {
+        const result = await response.text();
+        if (result !== 'OK') {
+            throw new Error(`Unexpected response from server: ${result}`);
+        }
+    } else {
+        throw new Error(`Failed to stop stream: ${response.status} ${response.statusText}`);
+    }
+}
+
+function handleStopError(error) {
+    console.error('Error stopping stream:', error);
+    const errorMessage = error.message || 'Unknown error occurred';
+    showToast('Error stopping stream: ' + errorMessage + '. Please try again.', 'error');
 }
 
 // Wrapper function for volume change to handle errors in inline event handlers
