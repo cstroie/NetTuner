@@ -9,47 +9,63 @@
 <body>
     <div class="container">
         <h1>Manage Playlist - NetTuner</h1>
-        <form id="streamForm">
-            <div class="form-group">
-                <label for="url">Stream URL:</label>
-                <input type="url" id="url" placeholder="Enter stream URL (http://...)" required>
-            </div>
-            <div class="form-group">
-                <label for="name">Station Name:</label>
-                <input type="text" id="name" placeholder="Enter station name" required>
-            </div>
-            <div class="form-group">
-                <button class="btn-primary" type="button" onclick="addStream()">Add Stream</button>
-                <button class="btn-back" type="button" onclick="window.location='/'">Back to Player</button>
-            </div>
-        </form>
-        <h2>Current Playlist</h2>
-        <table id="playlistTable">
-            <thead>
-                <tr>
-                    <th>Order</th>
-                    <th>Name</th>
-                    <th>URL</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="playlistBody">
-            </tbody>
-        </table>
-        <div class="form-group">
-            <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
+        
+        <div class="section">
+            <h2>Add New Stream</h2>
+            <p class="help-text">Enter the details for a new radio stream to add to your playlist.</p>
+            <form id="streamForm">
+                <div class="form-group">
+                    <label for="url">Stream URL:</label>
+                    <input type="url" id="url" placeholder="Enter stream URL (http://...)" required>
+                    <small class="form-help">Must be a valid HTTP or HTTPS URL</small>
+                </div>
+                <div class="form-group">
+                    <label for="name">Station Name:</label>
+                    <input type="text" id="name" placeholder="Enter station name" required>
+                    <small class="form-help">A descriptive name for this station</small>
+                </div>
+                <div class="form-group">
+                    <button class="btn-primary" type="button" onclick="addStream()">Add Stream</button>
+                    <button class="btn-back" type="button" onclick="window.location='/'">Back to Player</button>
+                </div>
+            </form>
         </div>
-        <h2>Playlist Management</h2>
-        <div class="form-group">
-            <label for="playlistFile">Upload Playlist File:</label>
-            <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
-            <div class="button-group">
-                <button class="btn-secondary" onclick="uploadJSON()">Upload JSON</button>
-                <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
+        
+        <div class="section">
+            <h2>Current Playlist</h2>
+            <p class="help-text">Edit or remove existing streams in your playlist.</p>
+            <table id="playlistTable">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Name</th>
+                        <th>URL</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="playlistBody">
+                </tbody>
+            </table>
+            <div class="form-group">
+                <button class="btn-primary" onclick="savePlaylist()">Save Playlist</button>
             </div>
-            <div class="button-group">
-                <button class="btn-secondary" onclick="downloadJSON()">Download JSON</button>
-                <button class="btn-secondary" onclick="downloadM3U()">Download M3U</button>
+        </div>
+        
+        <div class="section">
+            <h2>Playlist Management</h2>
+            <p class="help-text">Import or export your playlist in different formats.</p>
+            <div class="form-group">
+                <label for="playlistFile">Upload Playlist File:</label>
+                <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
+                <small class="form-help">Supported formats: JSON, M3U, M3U8</small>
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="uploadJSON()">Upload JSON</button>
+                    <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
+                </div>
+                <div class="button-group">
+                    <button class="btn-secondary" onclick="downloadJSON()">Download JSON</button>
+                    <button class="btn-secondary" onclick="downloadM3U()">Download M3U</button>
+                </div>
             </div>
         </div>
     </div>
