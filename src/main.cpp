@@ -1779,25 +1779,73 @@ void updateDisplay() {
     display.println("PLAYING");
     display.setTextSize(1);  // Normal font for stream info
     
-    // Display station name (first line)
+    // Display station name (first line) with scrolling
     display.setCursor(0, 18);
     String stationName = String(currentStreamName);
     if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
-      stationName = stationName.substring(0, 18) + "...";
+      static unsigned long lastScrollTime = 0;
+      static int scrollOffset = 0;
+      static String scrollText = "";
+      
+      // Reset scroll if text changed
+      if (scrollText != stationName) {
+        scrollText = stationName;
+        scrollOffset = 0;
+      }
+      
+      // Scroll every 500ms
+      if (millis() - lastScrollTime > 500) {
+        scrollOffset++;
+        if (scrollOffset > (int)stationName.length()) {
+          scrollOffset = 0;  // Reset scroll
+        }
+        lastScrollTime = millis();
+      }
+      
+      // Display scrolled text
+      String displayText = stationName + " *** ";
+      if (scrollOffset < (int)displayText.length()) {
+        displayText = displayText.substring(scrollOffset) + displayText.substring(0, scrollOffset);
+      }
+      display.println(displayText.substring(0, 21));
+    } else {
+      display.println(stationName);
     }
-    display.println(stationName);
     
-    // Display stream title (second line) if available
+    // Display stream title (second line) if available with scrolling
     if (strlen(streamTitle) > 0) {
       display.setCursor(0, 30);
-      // Truncate title if too long for display
+      // Scroll title if too long for display
       String title = String(streamTitle);
       if (title.length() > 21) {  // ~21 chars fit on a 128px display
-        title = title.substring(0, 18) + "...";
+        static unsigned long lastTitleScrollTime = 0;
+        static int titleScrollOffset = 0;
+        static String titleScrollText = "";
+        
+        // Reset scroll if text changed
+        if (titleScrollText != title) {
+          titleScrollText = title;
+          titleScrollOffset = 0;
+        }
+        
+        // Scroll every 500ms
+        if (millis() - lastTitleScrollTime > 500) {
+          titleScrollOffset++;
+          if (titleScrollOffset > (int)title.length()) {
+            titleScrollOffset = 0;  // Reset scroll
+          }
+          lastTitleScrollTime = millis();
+        }
+        
+        // Display scrolled text
+        String displayText = title + " *** ";
+        if (titleScrollOffset < (int)displayText.length()) {
+          displayText = displayText.substring(titleScrollOffset) + displayText.substring(0, titleScrollOffset);
+        }
+        display.println(displayText.substring(0, 21));
+      } else {
+        display.println(title);
       }
-      display.println(title);
-      // TODO
-      Serial.println(title);
       
       // Display bitrate on third line if available
       if (bitrate > 0) {
@@ -1832,9 +1880,38 @@ void updateDisplay() {
     display.println("STOPPED");
     display.setTextSize(1);  // Normal font for other text
     if (playlistCount > 0 && currentSelection < playlistCount) {
-      // Show selected playlist item
+      // Show selected playlist item with scrolling
       display.setCursor(0, 18);
-      display.println(playlist[currentSelection].name);
+      String playlistName = String(playlist[currentSelection].name);
+      if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
+        static unsigned long lastPlaylistScrollTime = 0;
+        static int playlistScrollOffset = 0;
+        static String playlistScrollText = "";
+        
+        // Reset scroll if text changed
+        if (playlistScrollText != playlistName) {
+          playlistScrollText = playlistName;
+          playlistScrollOffset = 0;
+        }
+        
+        // Scroll every 500ms
+        if (millis() - lastPlaylistScrollTime > 500) {
+          playlistScrollOffset++;
+          if (playlistScrollOffset > (int)playlistName.length()) {
+            playlistScrollOffset = 0;  // Reset scroll
+          }
+          lastPlaylistScrollTime = millis();
+        }
+        
+        // Display scrolled text
+        String displayText = playlistName + " *** ";
+        if (playlistScrollOffset < (int)displayText.length()) {
+          displayText = displayText.substring(playlistScrollOffset) + displayText.substring(0, playlistScrollOffset);
+        }
+        display.println(displayText.substring(0, 21));
+      } else {
+        display.println(playlistName);
+      }
       display.setCursor(0, 30);
       display.println("Press to play");
     } else {
