@@ -570,14 +570,14 @@ async function stopStream() {
             if (result !== 'OK') {
                 throw new Error(`Unexpected response from server: ${result}`);
             }
-            showToast('Stream stopped', 'info');
+            showToast('Stream stopped successfully', 'info');
         } else {
             throw new Error(`Failed to stop stream: ${response.status} ${response.statusText}`);
         }
     } catch (error) {
         console.error('Error stopping stream:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error stopping stream: ' + errorMessage, 'error');
+        showToast('Error stopping stream: ' + errorMessage + '. Please try again.', 'error');
     } finally {
         // Restore button state
         if (stopButton) {
