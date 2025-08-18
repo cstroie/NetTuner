@@ -9,9 +9,10 @@
 <body>
     <div class="container">
         <h1>NetTuner - WiFi Configuration</h1>
+        
         <div class="section">
             <h2>Available Networks</h2>
-            <p class="help-text">Select a network from the list below to add it to your configuration.</p>
+            <p class="help-text">Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
             <div id="networks">Scanning for networks...</div>
             <div class="form-group">
                 <button class="btn-secondary" onclick="scanNetworks()">Refresh Networks</button>
@@ -20,12 +21,15 @@
         
         <div class="section">
             <h2>Configure WiFi Networks</h2>
-            <p class="help-text">Add up to 5 WiFi networks. The device will try to connect to them in order.</p>
+            <p class="help-text">Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
+            <div class="form-group">
+                <small class="form-help">Tip: Add your most reliable networks first. The device will connect to the first available network in the list.</small>
+            </div>
             <form id="wifiForm">
                 <div id="networkFields">
                     <div class="network-entry">
                         <div class="form-group">
-                            <label for="ssid0">SSID:</label>
+                            <label for="ssid0">Primary Network (SSID):</label>
                             <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
                         </div>
                         <div class="form-group">
@@ -37,6 +41,14 @@
                 <button type="button" id="addNetwork" class="btn-secondary" onclick="addNetworkField()">Add Network</button>
                 <button type="submit" class="btn-primary">Save Configuration</button>
             </form>
+        </div>
+        
+        <div class="section">
+            <h2>Connection Status</h2>
+            <p class="help-text">Current network connection information</p>
+            <div id="connection-status">
+                <p>Not connected</p>
+            </div>
         </div>
         
         <div class="form-actions">
@@ -205,20 +217,23 @@
         // Override the scanNetworks function to highlight configured networks
         function scanNetworks() {
             const networksDiv = document.getElementById('networks');
-            networksDiv.innerHTML = 'Scanning for networks...';
+            networksDiv.innerHTML = '<p class="scanning">Scanning for networks...</p>';
             
             fetch('/api/wifiscan')
                 .then(response => response.json())
                 .then(data => {
-                    networksDiv.innerHTML = '<h3>Available Networks:</h3>';
+                    networksDiv.innerHTML = '';
                     
                     // Extract just the network list if the response includes configured networks
                     const networks = Array.isArray(data) ? data : data.networks || [];
                     
                     if (networks.length === 0) {
-                        networksDiv.innerHTML += '<p>No networks found</p>';
+                        networksDiv.innerHTML = '<p class="no-networks">No networks found. Move closer to your router or check if WiFi is enabled.</p>';
                         return;
                     }
+                    
+                    const networksList = document.createElement('div');
+                    networksList.className = 'networks-list';
                     
                     networks.forEach(network => {
                         const networkDiv = document.createElement('div');
@@ -227,27 +242,38 @@
                         // Check if this network is already configured
                         const isConfigured = configuredNetworks.includes(network.ssid);
                         
+                        // Signal strength indicator
+                        let signalClass = 'signal-weak';
+                        if (network.rssi > -60) signalClass = 'signal-strong';
+                        else if (network.rssi > -70) signalClass = 'signal-medium';
+                        
                         if (isConfigured) {
                             networkDiv.classList.add('configured-network');
                             networkDiv.innerHTML = `
-                                <span class="network-name">${network.ssid} ★</span>
-                                <span class="network-rssi">(${network.rssi} dBm)</span>
-                                <button onclick="selectNetwork('${network.ssid}')">Reconfigure</button>
+                                <div class="network-info">
+                                    <span class="network-name">${network.ssid} <span class="configured-marker">★ Configured</span></span>
+                                    <span class="network-rssi ${signalClass}">${network.rssi} dBm</span>
+                                </div>
+                                <button class="btn-small" onclick="selectNetwork('${network.ssid}')">Reconfigure</button>
                             `;
                         } else {
                             networkDiv.innerHTML = `
-                                <span class="network-name">${network.ssid}</span>
-                                <span class="network-rssi">(${network.rssi} dBm)</span>
-                                <button onclick="selectNetwork('${network.ssid}')">Select</button>
+                                <div class="network-info">
+                                    <span class="network-name">${network.ssid}</span>
+                                    <span class="network-rssi ${signalClass}">${network.rssi} dBm</span>
+                                </div>
+                                <button class="btn-small" onclick="selectNetwork('${network.ssid}')">Select</button>
                             `;
                         }
                         
-                        networksDiv.appendChild(networkDiv);
+                        networksList.appendChild(networkDiv);
                     });
+                    
+                    networksDiv.appendChild(networksList);
                 })
                 .catch(error => {
                     console.error('Error scanning networks:', error);
-                    networksDiv.innerHTML = 'Error scanning networks';
+                    networksDiv.innerHTML = '<p class="error">Error scanning networks. Please try again.</p>';
                 });
         }
     </script>
