@@ -264,13 +264,9 @@ function connectWebSocket() {
                         console.log('Max reconnect attempts reached. Stopping reconnection.');
                         showToast('Connection failed. Please refresh the page.', 'error');
                     }
-                } else {
-                    // Clear timer if connection is no longer in CONNECTING state
-                    if (connectionTimer) {
-                        clearTimeout(connectionTimer);
-                        connectionTimer = null;
-                    }
                 }
+                // Always clear timer reference
+                connectionTimer = null;
             }, connectionTimeout);
         };
         
@@ -788,21 +784,11 @@ function updateStream(index, field, value) {
     if (field === 'url') {
         if (!trimmedValue) {
             showToast('URL cannot be empty', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
         
         if (!trimmedValue.startsWith('http://') && !trimmedValue.startsWith('https://')) {
             showToast('Invalid URL format. Must start with http:// or https://', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
         
@@ -811,22 +797,12 @@ function updateStream(index, field, value) {
             new URL(trimmedValue);
         } catch (e) {
             showToast('Invalid URL format', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
         
         // Validate URL length
         if (trimmedValue.length > 256) {
             showToast('Stream URL must be 256 characters or less', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
     }
@@ -835,22 +811,12 @@ function updateStream(index, field, value) {
     if (field === 'name') {
         if (!trimmedValue) {
             showToast('Name cannot be empty', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
         
         // Validate name length
         if (trimmedValue.length > 128) {
             showToast('Stream name must be 128 characters or less', 'error');
-            // Revert to previous value
-            const input = event.target;
-            if (input) {
-                input.value = streams[index][field] || '';
-            }
             return;
         }
     }
