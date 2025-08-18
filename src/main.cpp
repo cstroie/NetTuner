@@ -463,6 +463,7 @@ void setup() {
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
   server.on("/api/wifistatus", HTTP_GET, handleWiFiStatus);
+  server.on("/api/wificonfig", HTTP_GET, handleWiFiConfigAPI);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
