@@ -72,5 +72,13 @@
         </div>
     </div>
     <script src="/scripts.js"></script>
+    <script>
+        // Initialize the playlist page
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('playlistBody')) {
+                initPlaylistPage();
+            }
+        });
+    </script>
 </body>
 </html>
