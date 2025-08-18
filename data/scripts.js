@@ -1307,160 +1307,25 @@ function convertJSONToM3U(jsonData) {
 }
 
 // WiFi functions
-function scanNetworks() {
-    const networksDiv = document.getElementById('networks');
-    if (!networksDiv) return;
-    
-    // Show loading state
-    networksDiv.innerHTML = 'Scanning for networks...';
-    
-    // Disable scan button during scan
-    const scanButton = document.querySelector('button[onclick="scanNetworks()"]');
-    const originalText = scanButton ? scanButton.textContent : null;
-    if (scanButton) {
-        scanButton.textContent = 'Scanning...';
-        scanButton.disabled = true;
-    }
-    
-    fetch('/api/wifiscan')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            let html = '<h2>Available Networks:</h2>';
-            data.forEach(network => {
-                html += `<div class="network" onclick="selectNetwork('${network.ssid}')">${network.ssid} (${network.rssi}dBm)</div>`;
-            });
-            networksDiv.innerHTML = html;
-        })
-        .catch(error => {
-            networksDiv.innerHTML = 'Error scanning networks';
-            showToast('Error scanning networks: ' + error.message, 'error');
-            console.error('Error:', error);
-        })
-        .finally(() => {
-            // Restore scan button
-            if (scanButton) {
-                scanButton.textContent = originalText || 'Refresh Networks';
-                scanButton.disabled = false;
-            }
-        });
-}
-
-function selectNetwork(ssid) {
-    const ssidInput = document.getElementById('ssid');
-    if (ssidInput) {
-        ssidInput.value = ssid;
-    } else {
-        console.warn('SSID input not found');
-    }
-}
-
-// Initialize functions
-function initMainPage() {
-    loadStreams();
-    connectWebSocket();
-    
-    // Add visibility change listener to handle tab switching
-    document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-            // Page became visible, check if we need to reconnect
-            if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
-                console.log('Page became visible, checking WebSocket connection');
-                connectWebSocket();
-            }
-        }
-    });
-}
-
-function initPlaylistPage() {
-    loadStreams();
-}
+let networkCount = 1;
+let configuredNetworks = [];
 
 function initWiFiPage() {
+    // Load existing WiFi configuration when page loads
+    window.addEventListener('load', function() {
+        loadConfiguredNetworks();
+        scanNetworks();
+        loadCurrentConfiguration();
+    });
+    
     // Setup form submit handler
     const wifiForm = document.getElementById('wifiForm');
     if (wifiForm) {
         wifiForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const ssidInput = document.getElementById('ssid');
-            const passwordInput = document.getElementById('password');
-            
-            if (!ssidInput || !passwordInput) return;
-            
-            const ssid = ssidInput.value.trim();
-            const password = passwordInput.value;
-            
-            // Validate SSID is not empty
-            if (!ssid) {
-                showToast('Please enter an SSID', 'warning');
-                ssidInput.focus();
-                return;
-            }
-            
-            // Validate SSID length (typically 1-32 characters)
-            if (ssid.length > 32) {
-                showToast('SSID must be 32 characters or less', 'warning');
-                ssidInput.focus();
-                return;
-            }
-            
-            // Validate password length if provided (typically 8-63 characters for WPA)
-            if (password && (password.length < 8 || password.length > 63)) {
-                showToast('Password should be between 8 and 63 characters', 'warning');
-                passwordInput.focus();
-                return;
-            }
-            
-            // For better security, warn if password is provided but too short
-            if (password && password.length > 0 && password.length < 8) {
-                if (!confirm('Password is less than 8 characters. This may be insecure. Continue anyway?')) {
-                    passwordInput.focus();
-                    return;
-                }
-            }
-            
-            // Show loading state
-            const submitButton = document.querySelector('#wifiForm button[type="submit"]');
-            const originalText = submitButton ? submitButton.textContent : null;
-            if (submitButton) {
-                submitButton.textContent = 'Saving...';
-                submitButton.disabled = true;
-            }
-            
-            fetch('/api/wifisave', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ssid: ssid, password: password })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    showToast(data.message || 'WiFi configuration saved', 'success');
-                    window.location.href = '/';
-                } else {
-                    showToast(data.message || 'Error saving WiFi configuration', 'error');
-                }
-            })
-            .catch(error => {
-                showToast('Error saving configuration: ' + error.message, 'error');
-                console.error('Error:', error);
-            })
-            .finally(() => {
-                // Restore button state
-                if (submitButton) {
-                    submitButton.textContent = originalText || 'Save Configuration';
-                    submitButton.disabled = false;
-                }
-            });
+            handleWiFiFormSubmit();
         });
     }
-    
-    // Scan networks on page load
-    scanNetworks();
 }
 
 function loadConfiguredNetworks() {
@@ -1633,10 +1498,6 @@ function handleWiFiFormSubmit() {
     });
 }
 
-function selectNetwork(ssid) {
-    document.getElementById('ssid0').value = ssid;
-}
-
 // Override the scanNetworks function to highlight configured networks
 function scanNetworks() {
     const networksDiv = document.getElementById('networks');
@@ -1754,17 +1615,7 @@ function loadConnectionStatus() {
         });
 }
 
-// Initialize based on current page
-document.addEventListener('DOMContentLoaded', function() {
-    // Add toast styles to all pages
-    addToastStyles();
-    
-    if (document.getElementById('streamSelect')) {
-        initMainPage();
-    } else if (document.getElementById('playlistBody')) {
-        initPlaylistPage();
-    } else if (document.getElementById('ssid0')) {
-        initWiFiPage();
-    }
-});
+function selectNetwork(ssid) {
+    document.getElementById('ssid0').value = ssid;
+}
 
