@@ -1559,7 +1559,7 @@ void handleStop() {
   stopStream();
   updateDisplay();
   sendStatusToClients();  // Notify clients of status change
-  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
+  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
 }
 
 /**
