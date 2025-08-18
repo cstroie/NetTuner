@@ -649,7 +649,7 @@ void handleWiFiScan() {
  */
 void handleWiFiSave() {
   if (!server.hasArg("plain")) {
-    server.send(400, "text/plain", "Missing JSON data");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
     return;
   }
   
@@ -658,7 +658,7 @@ void handleWiFiSave() {
   DeserializationError error = deserializeJson(doc, json);
   
   if (error) {
-    server.send(400, "text/plain", "Invalid JSON");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
     return;
   }
   
@@ -673,7 +673,7 @@ void handleWiFiSave() {
       for (int i = 0; i < (int)ssidArray.size() && i < MAX_WIFI_NETWORKS; i++) {
         String newSSID = ssidArray[i].as<String>();
         if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid[i])) {
-          server.send(400, "text/plain", "Invalid SSID length");
+          server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid SSID length\"}");
           return;
         }
           
@@ -683,7 +683,7 @@ void handleWiFiSave() {
         if (i < (int)passwordArray.size()) {
           String newPassword = passwordArray[i].as<String>();
           if (newPassword.length() >= sizeof(password[i])) {
-            server.send(400, "text/plain", "Password too long");
+            server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Password too long\"}");
             return;
           }
           strncpy(password[i], newPassword.c_str(), sizeof(password[i]) - 1);
@@ -720,12 +720,12 @@ void handleWiFiSave() {
       }
     }
   } else {
-    server.send(400, "text/plain", "Missing SSID");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing SSID\"}");
     return;
   }
   
   saveWiFiCredentials();
-  server.send(200, "text/plain", "WiFi configuration saved");
+  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"WiFi configuration saved\"}");
 }
 
 /**
@@ -1403,14 +1403,14 @@ void handlePostStreams() {
   
   // Validate that we received data
   if (jsonData.length() == 0) {
-    server.send(400, "text/plain", "Missing JSON data");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
     return;
   }
   
   // Validate JSON format (should be an array)
   jsonData.trim();
   if (!jsonData.startsWith("[") || !jsonData.endsWith("]")) {
-    server.send(400, "text/plain", "Invalid JSON format - expected array");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format - expected array\"}");
     return;
   }
   
@@ -1421,13 +1421,13 @@ void handlePostStreams() {
   if (error) {
     Serial.print("JSON parsing error: ");
     Serial.println(error.c_str());
-    server.send(400, "text/plain", "Invalid JSON format");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
     return;
   }
   
   // Ensure it's an array
   if (!doc.is<JsonArray>()) {
-    server.send(400, "text/plain", "JSON root must be an array");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"JSON root must be an array\"}");
     return;
   }
   
@@ -1435,7 +1435,7 @@ void handlePostStreams() {
   
   // Validate array size
   if (array.size() > MAX_PLAYLIST_SIZE) {
-    server.send(400, "text/plain", "Playlist exceeds maximum size");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Playlist exceeds maximum size\"}");
     return;
   }
   
@@ -1450,7 +1450,7 @@ void handlePostStreams() {
     
     // Validate required fields
     if (!item.containsKey("name") || !item.containsKey("url")) {
-      server.send(400, "text/plain", "Each item must have 'name' and 'url' fields");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Each item must have 'name' and 'url' fields\"}");
       return;
     }
     
@@ -1459,13 +1459,13 @@ void handlePostStreams() {
     
     // Validate data
     if (!name || !url || strlen(name) == 0 || strlen(url) == 0) {
-      server.send(400, "text/plain", "Name and URL cannot be empty");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Name and URL cannot be empty\"}");
       return;
     }
     
     // Validate URL format
     if (!VALIDATE_URL(url)) {
-      server.send(400, "text/plain", "Invalid URL format");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format\"}");
       return;
     }
     
@@ -1498,12 +1498,12 @@ void handlePlay() {
     DeserializationError error = deserializeJson(doc, json);
     
     if (error) {
-      server.send(400, "text/plain", "Invalid JSON");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
       return;
     }
     
     if (!doc.containsKey("url") || !doc.containsKey("name")) {
-      server.send(400, "text/plain", "Missing required parameters: url and name");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters: url and name\"}");
       return;
     }
     
@@ -1511,40 +1511,40 @@ void handlePlay() {
     String name = doc["name"].as<String>();
     
     if (url.length() == 0 || name.length() == 0) {
-      server.send(400, "text/plain", "URL and name cannot be empty");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
       return;
     }
     
     // Validate URL format
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
       return;
     }
     
     startStream(url.c_str(), name.c_str());
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "text/plain", "OK");
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
   } else if (server.hasArg("url") && server.hasArg("name")) {
     // Handle form data
     String url = server.arg("url");
     String name = server.arg("name");
     
     if (url.length() == 0 || name.length() == 0) {
-      server.send(400, "text/plain", "URL and name cannot be empty");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
       return;
     }
     
     // Validate URL format
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      server.send(400, "text/plain", "Invalid URL format. Must start with http:// or https://");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
       return;
     }
     
     startStream(url.c_str(), name.c_str());
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "text/plain", "OK");
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
   } else {
     server.send(400, "text/plain", "Missing required parameters: url and name");
     return;
@@ -1559,7 +1559,7 @@ void handleStop() {
   stopStream();
   updateDisplay();
   sendStatusToClients();  // Notify clients of status change
-  server.send(200, "text/plain", "OK");
+  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
 }
 
 /**
@@ -1574,19 +1574,19 @@ void handleVolume() {
     DeserializationError error = deserializeJson(doc, json);
     
     if (error) {
-      server.send(400, "text/plain", "Invalid JSON");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
       return;
     }
     
     if (!doc.containsKey("volume")) {
-      server.send(400, "text/plain", "Missing required parameter: volume");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
       return;
     }
     
     int newVolume = doc["volume"];
     
     if (newVolume < 0 || newVolume > 100) {
-      server.send(400, "text/plain", "Volume must be between 0 and 100");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 100\"}");
       return;
     }
     
@@ -1596,14 +1596,14 @@ void handleVolume() {
     }
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "text/plain", "OK");
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
   } else if (server.hasArg("volume")) {
     // Handle form data
     String vol = server.arg("volume");
     int newVolume = vol.toInt();
     
     if (newVolume < 0 || newVolume > 100) {
-      server.send(400, "text/plain", "Volume must be between 0 and 100");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 100\"}");
       return;
     }
     
@@ -1613,9 +1613,9 @@ void handleVolume() {
     }
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "text/plain", "OK");
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
   } else {
-    server.send(400, "text/plain", "Missing required parameter: volume");
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
     return;
   }
 }
