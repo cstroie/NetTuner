@@ -2,6 +2,10 @@
 
 An ESP32-based internet radio player with web interface control
 
+![NetTuner](https://img.shields.io/badge/status-active-brightgreen)
+![PlatformIO](https://img.shields.io/badge/platformio-latest-blue)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
+
 ## Overview
 
 NetTuner is an open-source internet radio player built on the ESP32 platform. It allows you to stream MP3 audio from HTTP URLs and control playback through a web interface or physical rotary encoder. The project features an OLED display for local status feedback and supports playlist management through a web API.
