@@ -47,7 +47,7 @@
             <h2>Connection Status</h2>
             <p class="help-text">Current network connection information</p>
             <div id="connection-status">
-                <p>Not connected</p>
+                <p>Loading connection status...</p>
             </div>
         </div>
         
@@ -57,5 +57,39 @@
     </div>
 
     <script src="/scripts.js"></script>
+    <script>
+        // Initialize the WiFi page and load connection status
+        document.addEventListener('DOMContentLoaded', function() {
+            initWiFiPage();
+            loadConnectionStatus();
+        });
+        
+        // Load current connection status
+        function loadConnectionStatus() {
+            const statusDiv = document.getElementById('connection-status');
+            if (!statusDiv) return;
+            
+            statusDiv.innerHTML = '<p>Loading connection status...</p>';
+            
+            fetch('/api/wifistatus')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.connected) {
+                        statusDiv.innerHTML = `
+                            <p><strong>Connected</strong></p>
+                            <p>SSID: ${data.ssid || 'Unknown'}</p>
+                            <p>IP Address: ${data.ip || 'Unknown'}</p>
+                            <p>Signal Strength: ${data.rssi || 'Unknown'} dBm</p>
+                        `;
+                    } else {
+                        statusDiv.innerHTML = '<p><strong>Not connected</strong></p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading connection status:', error);
+                    statusDiv.innerHTML = '<p>Error loading connection status</p>';
+                });
+        }
+    </script>
 </body>
 </html>
