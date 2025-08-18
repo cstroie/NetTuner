@@ -304,6 +304,7 @@ void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
 void handleWiFiStatus();
+void handleWiFiConfigAPI();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
 
