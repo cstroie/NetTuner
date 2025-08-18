@@ -1463,28 +1463,6 @@ function initWiFiPage() {
     scanNetworks();
 }
 
-// WiFi functions
-let networkCount = 1;
-let configuredNetworks = [];
-
-function initWiFiPage() {
-    // Load existing WiFi configuration when page loads
-    window.addEventListener('load', function() {
-        loadConfiguredNetworks();
-        scanNetworks();
-        loadCurrentConfiguration();
-    });
-    
-    // Setup form submit handler
-    const wifiForm = document.getElementById('wifiForm');
-    if (wifiForm) {
-        wifiForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleWiFiFormSubmit();
-        });
-    }
-}
-
 function loadConfiguredNetworks() {
     // Load existing configuration to know which networks are already configured
     fetch('/api/wificonfig')
