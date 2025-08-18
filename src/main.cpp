@@ -1480,8 +1480,9 @@ void handlePostStreams() {
   // Save to SPIFFS
   savePlaylist();
   
-  // Send success response
-  server.send(200, "text/plain", "Playlist updated successfully");
+  // Send success response as JSON
+  String response = "{\"status\":\"success\",\"message\":\"Playlist updated successfully\"}";
+  server.send(200, "application/json", response);
 }
 
 
