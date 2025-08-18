@@ -729,6 +729,26 @@ void handleWiFiSave() {
 }
 
 /**
+ * @brief Handle WiFi status request
+ * Returns the current WiFi connection status as JSON
+ */
+void handleWiFiStatus() {
+  String json = "{";
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    json += "\"connected\":true,";
+    json += "\"ssid\":\"" + WiFi.SSID() + "\",";
+    json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+    json += "\"rssi\":" + String(WiFi.RSSI());
+  } else {
+    json += "\"connected\":false";
+  }
+  
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
+/**
  * @brief Load WiFi credentials from SPIFFS
  */
 void loadWiFiCredentials() {
