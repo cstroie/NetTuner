@@ -1436,11 +1436,13 @@ function initWiFiPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ssid: ssid, password: password })
             })
-            .then(response => response.text())
+            .then(response => response.json())
             .then(data => {
-                showToast(data, 'info');
-                if (data === 'WiFi configuration saved') {
+                if (data.status === 'success') {
+                    showToast(data.message || 'WiFi configuration saved', 'success');
                     window.location.href = '/';
+                } else {
+                    showToast(data.message || 'Error saving WiFi configuration', 'error');
                 }
             })
             .catch(error => {
