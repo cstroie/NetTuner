@@ -1,6 +1,22 @@
 // Main functions
 let streams = [];
 
+function initMainPage() {
+    loadStreams();
+    connectWebSocket();
+    
+    // Add visibility change listener to handle tab switching
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            // Page became visible, check if we need to reconnect
+            if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
+                console.log('Page became visible, checking WebSocket connection');
+                connectWebSocket();
+            }
+        }
+    });
+}
+
 /**
  * @brief Load streams from the server
  * Fetches the playlist from the server and updates the UI
