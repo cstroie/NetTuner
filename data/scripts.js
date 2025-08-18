@@ -1657,20 +1657,17 @@ function scanNetworks() {
         .then(data => {
             networksDiv.innerHTML = '';
             
-            // Handle consistent data structure for network scanning
+            // Handle the actual data structure from the API
+            // The API returns an object with "networks" array and "configured" array
             let scanNetworks = [];
-            if (Array.isArray(data)) {
-                // If array of objects with ssid and rssi properties
-                scanNetworks = data;
-            } else if (data.networks && Array.isArray(data.networks)) {
-                // If object with networks array
+            if (data.networks && Array.isArray(data.networks)) {
                 scanNetworks = data.networks;
             } else {
-                // If object with ssid and rssi properties directly
-                scanNetworks = [data];
+                // Fallback for unexpected data structure
+                scanNetworks = [];
             }
             
-            if (scanNetworks.length === 0 || (scanNetworks.length === 1 && !scanNetworks[0].ssid)) {
+            if (scanNetworks.length === 0) {
                 networksDiv.innerHTML = '<p class="no-networks">No networks found. Move closer to your router or check if WiFi is enabled.</p>';
                 return;
             }
@@ -1686,7 +1683,7 @@ function scanNetworks() {
                 networkDiv.className = 'network-item';
                 
                 // Check if this network is already configured
-                const isConfigured = configuredNetworks.includes(network.ssid);
+                const isConfigured = data.configured && Array.isArray(data.configured) && data.configured.includes(network.ssid);
                 
                 // Signal strength indicator
                 let signalClass = 'signal-weak';
