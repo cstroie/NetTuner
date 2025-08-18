@@ -615,6 +615,24 @@ void handleWiFiConfig() {
 
 
 /**
+ * @brief Handle WiFi configuration API request
+ * Returns the current WiFi configuration as JSON
+ */
+void handleWiFiConfigAPI() {
+  String json = "[";
+  
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    if (i > 0) json += ",";
+    json += "\"" + String(ssid[i]) + "\"";
+  }
+  
+  json += "]";
+  server.send(200, "application/json", json);
+}
+
+
+
+/**
  * @brief Handle WiFi network scan
  * Returns a list of available WiFi networks as JSON
  */
