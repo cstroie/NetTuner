@@ -911,11 +911,13 @@ async function savePlaylist() {
         console.log('Save playlist response status:', response.status);
         
         if (response.ok) {
-            const result = await response.text();
-            if (result !== 'OK') {
-                throw new Error(`Unexpected response from server: ${result}`);
+            // Handle JSON response
+            const result = await response.json();
+            if (result.status === 'success') {
+                showToast('Playlist saved successfully!', 'success');
+            } else {
+                throw new Error(result.message || 'Unknown error');
             }
-            showToast('Playlist saved successfully!', 'success');
         } else {
             const error = await response.text();
             throw new Error(`Error saving playlist: ${response.status} ${response.statusText} - ${error}`);
@@ -978,13 +980,20 @@ async function uploadJSON() {
             });
             
             console.log('Upload response status:', response.status);
-            const message = await response.text();
-            console.log('Upload response message:', message);
-            showToast(message, response.ok ? 'success' : 'error');
             
             if (response.ok) {
-                // Reload streams after successful upload
-                loadStreams();
+                // Handle JSON response
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showToast(result.message || 'Playlist uploaded successfully', 'success');
+                    // Reload streams after successful upload
+                    loadStreams();
+                } else {
+                    showToast(result.message || 'Error uploading playlist', 'error');
+                }
+            } else {
+                const error = await response.text();
+                showToast('Error uploading playlist: ' + error, 'error');
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
@@ -1060,13 +1069,20 @@ async function uploadM3U() {
             });
             
             console.log('Upload response status:', response.status);
-            const message = await response.text();
-            console.log('Upload response message:', message);
-            showToast(message, response.ok ? 'success' : 'error');
             
             if (response.ok) {
-                // Reload streams after successful upload
-                loadStreams();
+                // Handle JSON response
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showToast(result.message || 'Playlist uploaded successfully', 'success');
+                    // Reload streams after successful upload
+                    loadStreams();
+                } else {
+                    showToast(result.message || 'Error uploading playlist', 'error');
+                }
+            } else {
+                const error = await response.text();
+                showToast('Error uploading playlist: ' + error, 'error');
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
