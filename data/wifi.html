@@ -86,7 +86,15 @@
             fetch('/api/wificonfig')
                 .then(response => response.json())
                 .then(data => {
-                    const configured = Array.isArray(data) ? data : (data.configured || []);
+                    // Handle different response formats
+                    let configuredNetworks = [];
+                    if (Array.isArray(data)) {
+                        configuredNetworks = data;
+                    } else if (data.configured && Array.isArray(data.configured)) {
+                        configuredNetworks = data.configured;
+                    } else if (data.networks && Array.isArray(data.networks)) {
+                        configuredNetworks = data.networks;
+                    }
                     
                     // Clear existing fields except the first one
                     const networkFields = document.getElementById('networkFields');
@@ -98,16 +106,26 @@
                     networkCount = 1;
                     
                     // Populate with configured networks
-                    if (configured.length > 0) {
+                    if (configuredNetworks.length > 0) {
                         // Fill the first entry
-                        document.getElementById('ssid0').value = configured[0] || '';
+                        const firstNetwork = configuredNetworks[0];
+                        if (typeof firstNetwork === 'string') {
+                            document.getElementById('ssid0').value = firstNetwork || '';
+                        } else if (firstNetwork.ssid) {
+                            document.getElementById('ssid0').value = firstNetwork.ssid || '';
+                        }
                         
                         // Add additional entries for each configured network
-                        for (let i = 1; i < configured.length && i < 5; i++) {
+                        for (let i = 1; i < configuredNetworks.length && i < 5; i++) {
                             addNetworkField();
-                            document.getElementById(`ssid${i}`).value = configured[i] || '';
+                            const network = configuredNetworks[i];
+                            if (typeof network === 'string') {
+                                document.getElementById(`ssid${i}`).value = network || '';
+                            } else if (network.ssid) {
+                                document.getElementById(`ssid${i}`).value = network.ssid || '';
+                            }
                         }
-                        networkCount = configured.length;
+                        networkCount = configuredNetworks.length;
                     }
                 })
                 .catch(error => {
