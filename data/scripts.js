@@ -501,9 +501,9 @@ async function sendPlayRequest(url, name) {
         const errorText = await response.text();
         throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    const result = await response.text();
-    if (result !== 'OK') {
-        throw new Error(`Unexpected response from server: ${result}`);
+    const result = await response.json();
+    if (result.status !== 'success') {
+        throw new Error(result.message || 'Failed to play stream');
     }
 }
 
@@ -571,9 +571,9 @@ async function sendStopRequest() {
     });
     console.log('Stop response status:', response.status);
     if (response.ok) {
-        const result = await response.text();
-        if (result !== 'OK') {
-            throw new Error(`Unexpected response from server: ${result}`);
+        const result = await response.json();
+        if (result.status !== 'success') {
+            throw new Error(result.message || 'Failed to stop stream');
         }
     } else {
         throw new Error(`Failed to stop stream: ${response.status} ${response.statusText}`);
@@ -627,14 +627,15 @@ async function setVolume(volume) {
         });
         console.log('Volume response status:', response.status);
         if (response.ok) {
-            const result = await response.text();
-            if (result !== 'OK') {
-                throw new Error(`Unexpected response from server: ${result}`);
+            const result = await response.json();
+            if (result.status === 'success') {
+                if (volumeValue) {
+                    volumeValue.textContent = volumeNum + '%';
+                }
+                showToast(result.message || 'Volume set to ' + volumeNum + '%', 'info');
+            } else {
+                throw new Error(result.message || 'Failed to set volume');
             }
-            if (volumeValue) {
-                volumeValue.textContent = volumeNum + '%';
-            }
-            showToast('Volume set to ' + volumeNum + '%', 'info');
         } else {
             throw new Error(`Failed to set volume: ${response.status} ${response.statusText}`);
         }
