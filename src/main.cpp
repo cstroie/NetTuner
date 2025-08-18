@@ -523,6 +523,15 @@ void loop() {
   handleMPDClient();       // Process MPD commands
   handleDisplayTimeout();  // Handle display timeout
   
+  // Periodically update display for scrolling text animation
+  static unsigned long lastDisplayUpdate = 0;
+  if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
+    if (displayOn) {  // Only update if display is on
+      updateDisplay();
+    }
+    lastDisplayUpdate = millis();
+  }
+  
   // Check audio connection status with improved error recovery
   if (audio) {
     // Check if audio is still connected
