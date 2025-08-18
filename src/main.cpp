@@ -303,6 +303,7 @@ void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
+void handleWiFiStatus();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
 
@@ -461,6 +462,7 @@ void setup() {
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
+  server.on("/api/wifistatus", HTTP_GET, handleWiFiStatus);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
