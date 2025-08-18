@@ -24,13 +24,13 @@ async function loadStreams() {
         const response = await fetch('/api/streams');
         console.log('Streams response status:', response.status);
         if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+            throw new Error(`Failed to load streams: ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
         
         // Validate that we received an array
         if (!Array.isArray(data)) {
-            throw new Error('Invalid response format: expected array of streams');
+            throw new Error('Invalid response format from server: expected array of streams');
         }
         
         streams = data;
@@ -67,7 +67,7 @@ async function loadStreams() {
         if (playlistBody) {
             playlistBody.innerHTML = `<tr><td colspan="4">Error loading streams: ${errorMessage}</td></tr>`;
         }
-        showToast(`Error loading streams: ${errorMessage}`, 'error');
+        showToast(`Error loading streams: ${errorMessage}. Please refresh the page or check your connection.`, 'error');
     }
 }
 
@@ -475,11 +475,11 @@ async function playStream() {
         if (result !== 'OK') {
             throw new Error(`Unexpected response from server: ${result}`);
         }
-        showToast('Stream started', 'success');
+        showToast('Stream started successfully', 'success');
     } catch (error) {
         console.error('Error playing stream:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error playing stream: ' + errorMessage, 'error');
+        showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
     } finally {
         // Restore button state
         if (playButton) {
@@ -539,7 +539,7 @@ function playSelectedStream() {
     .catch(error => {
         console.error('Error playing stream:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error playing stream: ' + errorMessage, 'error');
+        showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
     });
 }
 
@@ -642,7 +642,7 @@ async function setVolume(volume) {
     } catch (error) {
         console.error('Error setting volume:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error setting volume: ' + errorMessage, 'error');
+        showToast('Error setting volume: ' + errorMessage + '. Please try again.', 'error');
         // Restore original volume value on error
         if (volumeControl) {
             volumeControl.value = originalVolume;
@@ -671,7 +671,7 @@ function renderPlaylist() {
     
     if (streams.length === 0) {
         const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="4" class="empty-playlist">No streams in playlist</td>';
+        row.innerHTML = '<td colspan="4" class="empty-playlist">No streams in playlist. Add some streams to get started!</td>';
         tbody.appendChild(row);
         return;
     }
@@ -924,7 +924,7 @@ async function savePlaylist() {
     } catch (error) {
         console.error('Error saving playlist:', error);
         const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error saving playlist: ' + errorMessage, 'error');
+        showToast('Error saving playlist: ' + errorMessage + '. Please check your connection and try again.', 'error');
     } finally {
         // Restore button state
         if (saveButton) {
@@ -1001,7 +1001,7 @@ async function uploadJSON() {
         }
     };
     reader.onerror = function() {
-        showToast('Error reading file', 'error');
+        showToast('Error reading file. Please make sure the file is not corrupted and try again.', 'error');
         fileInput.value = '';
         // Restore button state
         if (uploadButton) {
@@ -1083,7 +1083,7 @@ async function uploadM3U() {
         }
     };
     reader.onerror = function() {
-        showToast('Error reading file', 'error');
+        showToast('Error reading file. Please make sure the file is not corrupted and try again.', 'error');
         fileInput.value = '';
         // Restore button state
         if (uploadButton) {
