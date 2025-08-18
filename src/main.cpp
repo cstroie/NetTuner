@@ -1816,32 +1816,42 @@ void updateDisplay() {
         display.println(title);
       }
       
-      // Display bitrate on third line if available
+      // Display bitrate and volume on third line if available
       if (bitrate > 0) {
         display.setCursor(0, 42);
         display.print(bitrate / 1000);
-        display.println(" kbps");
+        display.print(" kbps | ");
+        display.print(volume);
+        display.println("%");
+      } else {
+        display.setCursor(0, 42);
+        display.print("Volume: ");
+        display.print(volume);
+        display.println("%");
       }
     } else {
-      // Display bitrate on second line if no title and bitrate available
+      // Display bitrate and volume on second line if no title and bitrate available
       if (bitrate > 0) {
         display.setCursor(0, 30);
         display.print(bitrate / 1000);
-        display.println(" kbps");
+        display.print(" kbps | ");
+        display.print(volume);
+        display.println("%");
+      } else {
+        display.setCursor(0, 30);
+        display.print("Volume: ");
+        display.print(volume);
+        display.println("%");
       }
     }
     
-    // Display volume on the last line
+    // Display IP address on the last line
     display.setCursor(0, 54);
-    for (int i = 0; i < 20; i++) {
-      if (i < volume / 5) {
-        display.print("|");
-      } else {
-        display.print(" ");
-      }
+    if (WiFi.status() == WL_CONNECTED) {
+      display.println(WiFi.localIP().toString());
+    } else {
+      display.println("No IP");
     }
-    display.print(volume);
-    display.println("%");
   } else {
     // Display when stopped
     display.setTextSize(2);  // Larger font for status
@@ -1888,17 +1898,20 @@ void updateDisplay() {
       display.setCursor(0, 18);
       display.println("No streams");
     }
-    // Display volume on the last line
-    display.setCursor(0, 54);
-    for (int i = 0; i < 20; i++) {
-      if (i < volume / 5) {
-        display.print("|");
-      } else {
-        display.print(" ");
-      }
-    }
+    
+    // Display volume and IP on the last lines
+    display.setCursor(0, 42);
+    display.print("Volume: ");
     display.print(volume);
     display.println("%");
+    
+    // Display IP address on the last line
+    display.setCursor(0, 54);
+    if (WiFi.status() == WL_CONNECTED) {
+      display.println(WiFi.localIP().toString());
+    } else {
+      display.println("No IP");
+    }
   }
   
   display.display();  // Send buffer to display
