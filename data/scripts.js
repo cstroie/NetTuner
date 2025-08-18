@@ -17,6 +17,10 @@ function initMainPage() {
     });
 }
 
+function initPlaylistPage() {
+    loadStreams();
+}
+
 /**
  * @brief Load streams from the server
  * Fetches the playlist from the server and updates the UI
