@@ -397,6 +397,8 @@ void setup() {
     
     if (connected) {
       Serial.println("Connected to WiFi");
+      Serial.print("IP Address: ");
+      Serial.println(WiFi.localIP().toString());
       display.clearDisplay();
       display.setCursor(0, 0);
       display.println("WiFi Connected");
@@ -421,6 +423,8 @@ void setup() {
     // Start WiFi access point mode with error handling
     if (WiFi.softAP("NetTuner-Setup")) {
       Serial.println("Access Point Started");
+      Serial.print("AP IP Address: ");
+      Serial.println(WiFi.softAPIP().toString());
       display.println("AP: NetTuner-Setup");
       display.println(WiFi.softAPIP().toString());
       display.display();
