@@ -312,11 +312,14 @@ function connectWebSocket() {
                 // Handle status updates
                 const status = data;
                 console.log('Received status update:', status);
-                const statusElement = document.getElementById('status');
-                const currentElement = document.getElementById('currentStream');
                 
-                // Show toast notifications for status changes
+                // Update status element
+                const statusElement = document.getElementById('status');
                 if (statusElement) {
+                    statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
+                    statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                    
+                    // Show toast notifications for status changes
                     const wasPlaying = statusElement.classList.contains('playing');
                     const isPlaying = status.playing;
                     
@@ -326,27 +329,28 @@ function connectWebSocket() {
                     }
                 }
                 
-                if (statusElement) {
-                    statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
-                    statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                // Update stream name element
+                const streamNameElement = document.getElementById('currentStreamName');
+                if (streamNameElement) {
+                    streamNameElement.textContent = status.currentStreamName || 'No station selected';
                 }
                 
+                // Update stream info element
+                const currentElement = document.getElementById('currentStream');
                 if (currentElement) {
                     if (status.playing) {
-                        // Show station name and stream title when playing
-                        let displayText = status.currentStreamName || 'Unknown Station';
-                        if (status.streamTitle) {
-                            displayText += ' - ' + status.streamTitle;
-                        }
+                        // Show stream title when playing
+                        let displayText = status.streamTitle || 'Unknown Stream';
                         if (status.bitrate) {
                             displayText += ' (' + status.bitrate + ' kbps)';
                         }
                         currentElement.textContent = displayText;
                     } else {
-                        currentElement.textContent = status.currentStreamName || 'No stream selected';
+                        currentElement.textContent = 'No stream selected';
                     }
                 }
                 
+                // Update volume controls
                 const volumeControl = document.getElementById('volume');
                 const volumeValue = document.getElementById('volumeValue');
                 
