@@ -1338,8 +1338,8 @@ function initWiFiPage() {
     // Load existing WiFi configuration when page loads
     window.addEventListener('load', function() {
         loadConfiguredNetworks();
-        scanNetworks();
         loadCurrentConfiguration();
+        // Don't automatically scan networks - user must click Refresh Networks button
     });
     
     // Setup form submit handler
