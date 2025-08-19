@@ -520,17 +520,11 @@ void audioTask(void *pvParameters) {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  * This is the main application loop that runs continuously after setup()
  */
-void loop() {
-  static unsigned long streamStoppedTime = 0;
+void handleBoardButton() {
   static bool lastButtonState = HIGH;  // Keep track of button state
   static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
 
-  handleRotary();          // Process rotary encoder input
-  server.handleClient();   // Process incoming web requests
-  webSocket.loop();        // Process WebSocket events
-  handleMPDClient();       // Process MPD commands
-  
   // Handle board button press for play/stop toggle
   int buttonReading = digitalRead(BOARD_BUTTON);
   
@@ -562,6 +556,16 @@ void loop() {
   }
   
   lastButtonState = buttonReading;
+}
+
+void loop() {
+  static unsigned long streamStoppedTime = 0;
+
+  handleRotary();          // Process rotary encoder input
+  server.handleClient();   // Process incoming web requests
+  webSocket.loop();        // Process WebSocket events
+  handleMPDClient();       // Process MPD commands
+  handleBoardButton();     // Process board button input
   
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
