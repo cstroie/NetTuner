@@ -508,8 +508,8 @@ void audioTask(void *pvParameters) {
     if (audio) {
       audio->loop();
     }
-    // Small delay to prevent busy waiting
-    delay(1);
+    // Very small delay to prevent busy waiting but allow frequent processing
+    delay(0);
   }
 }
 
@@ -537,6 +537,7 @@ void loop() {
     // Check if audio is still connected
     if (isPlaying) {
       if (!audio->isRunning()) {
+        Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
@@ -945,7 +946,7 @@ void setupAudioOutput() {
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume * 21 / 100); // Convert 0-100 to 0-21 scale
-  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
+  audio->setBufsize(131072, 0); // Increased buffer size to 128KB for better streaming performance
 }
 
 /**
