@@ -539,9 +539,11 @@ void loop() {
       if (!audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
-        if (strlen(currentStream) > 0 && strlen(currentStreamName) > 0) {
+        if (strlen(currentStream) > 0) {
           Serial.println("Attempting to restart stream...");
-          startStream(currentStream, currentStreamName);
+          // Use currentStreamName if available, otherwise use a default
+          const char* nameToUse = (strlen(currentStreamName) > 0) ? currentStreamName : "Unknown Station";
+          startStream(currentStream, nameToUse);
         }
       }
       // Update bitrate if it has changed
