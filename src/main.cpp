@@ -943,6 +943,7 @@ void setupAudioOutput() {
  * @param name Human-readable name of the stream (optional)
  */
 void startStream(const char* url, const char* name) {
+  bool resume = false;
   // Stop any currently playing stream
   if (audio) {
     // Stop first
@@ -958,6 +959,8 @@ void startStream(const char* url, const char* name) {
       if (!name || strlen(name) == 0) {
         name = (strlen(currentStreamName) > 0) ? currentStreamName : "Unknown Station";
       }
+      // We are resuming playback
+      resume = true;
     } else {
       Serial.println("Error: No URL provided and no current stream to resume");
       updateDisplay();
@@ -985,10 +988,14 @@ void startStream(const char* url, const char* name) {
     return;
   }
   
-  strncpy(currentStream, url, sizeof(currentStream) - 1);
-  currentStream[sizeof(currentStream) - 1] = '\0';
-  strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
-  currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+  // Keep the stream url and name if they are new
+  if (not resume) {
+    strncpy(currentStream, url, sizeof(currentStream) - 1);
+    currentStream[sizeof(currentStream) - 1] = '\0';
+    strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
+    currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+  };
+
   // Set playback status to playing
   isPlaying = true;
   
@@ -998,9 +1005,6 @@ void startStream(const char* url, const char* name) {
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
       isPlaying = false;
-      // Don't clear currentStream and currentStreamName when resuming fails
-      // This allows for retrying the resume operation
-      streamTitle[0] = '\0';
       bitrate = 0;
     } else {
       isPlaying = true;
