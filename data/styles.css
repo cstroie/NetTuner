@@ -22,27 +22,27 @@ select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-r
     color: #000; /* Dark text */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     text-align: center;
-    font-family: 'Courier New', monospace; /* Monospace font for digital look */
+    font-family: 'Share Tech Mono', monospace; /* Monospace font for digital look */
     border: 1px solid #a0b0a0; /* Slightly darker border */
 }
 .stream-info div {
     margin: 8px 0;
 }
 #status {
-    font-family: 'Courier New', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-weight: bold;
     font-size: 1.4em;
     text-transform: uppercase;
     letter-spacing: 2px;
 }
 #currentStreamName {
-    font-family: 'Courier New', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 1.2em;
     font-weight: 600;
     margin-top: 10px;
 }
 #currentStream {
-    font-family: 'Courier New', monospace;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 0.9em;
     background: rgba(0, 0, 0, 0.1); /* Slightly darker background */
     padding: 8px;
