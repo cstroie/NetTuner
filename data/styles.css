@@ -26,6 +26,8 @@ label { display: block; margin-bottom: 5px; font-weight: bold; }
 .btn-secondary { background: #2196F3; color: white; }
 .btn-danger { background: #f44336; color: white; }
 .btn-back { background: #9E9E9E; color: white; }
+.button-row { display: flex; gap: 10px; }
+.button-row button { flex: 1; }
 .save-btn { background: #4CAF50; color: white; }
 table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9em; }
 th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
