@@ -539,6 +539,7 @@ void loop() {
   
   // Check audio connection status with improved error recovery
   if (audio) {
+    // AI, this logic is flawed: once you reset isPlaying ...
     // Check if audio is still connected
     if (isPlaying) {
       if (!audio->isRunning()) {
@@ -567,6 +568,7 @@ void loop() {
         sendStatusToClients();  // Notify clients of bitrate change
       }
     }
+    //  you never reach the sencond part, AI!
   }
   
   // Periodic cleanup with error recovery
