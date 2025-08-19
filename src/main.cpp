@@ -942,8 +942,17 @@ void setupAudioOutput() {
  * @param name Human-readable name of the stream
  */
 void startStream(const char* url, const char* name) {
-  stopStream();  // Stop any currently playing stream
+// Stop any currently playing stream
+  if (audio) {
+    // Stop first
+    audio->stopSong();
+  }
   
+            // FIXME
+          Serial.println("STREAM")
+          Serial.println(currentStream);
+          Serial.println(currentStreamName);
+
   // Validate inputs
   if (!url || !name) {
     Serial.println("Error: NULL pointer passed to startStream");
