@@ -162,6 +162,7 @@ Adafruit_SSD1306 display(128, 64, &Wire, -1); // 128x64 display, using Wire, no 
 #define ROTARY_CLK 18  ///< Rotary encoder clock pin (quadrature signal A)
 #define ROTARY_DT  19  ///< Rotary encoder data pin (quadrature signal B)
 #define ROTARY_SW  23  ///< Rotary encoder switch pin (push button)
+#define BOARD_BUTTON 0 ///< ESP32 board button pin
 
 /**
  * @brief Rotary encoder state variables
@@ -521,11 +522,46 @@ void audioTask(void *pvParameters) {
  */
 void loop() {
   static unsigned long streamStoppedTime = 0;
+  static bool lastButtonState = HIGH;  // Keep track of button state
+  static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
+  const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
 
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleMPDClient();       // Process MPD commands
+  
+  // Handle board button press for play/stop toggle
+  int buttonReading = digitalRead(BOARD_BUTTON);
+  
+  // Check if button state changed (debounce)
+  if (buttonReading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+  
+  // If button state has been stable for debounce delay
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // If button is pressed (LOW due to pull-up)
+    if (buttonReading == LOW && lastButtonState == HIGH) {
+      // Toggle play/stop
+      if (isPlaying) {
+        stopStream();
+      } else {
+        // If we have a current stream, resume it
+        if (strlen(currentStream) > 0) {
+          startStream();
+        } 
+        // Otherwise, if we have playlist items, play the selected one
+        else if (playlistCount > 0 && currentSelection < playlistCount) {
+          startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        }
+      }
+      updateDisplay();
+      sendStatusToClients();
+    }
+  }
+  
+  lastButtonState = buttonReading;
   
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
@@ -1307,6 +1343,7 @@ void setupRotaryEncoder() {
   pinMode(ROTARY_CLK, INPUT_PULLUP);  // Enable internal pull-up resistor
   pinMode(ROTARY_DT, INPUT_PULLUP);   // Enable internal pull-up resistor
   pinMode(ROTARY_SW, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(BOARD_BUTTON, INPUT_PULLUP); // Enable internal pull-up resistor for board button
   
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(ROTARY_CLK), rotaryISR, CHANGE);
