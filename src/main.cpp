@@ -501,6 +501,7 @@ void setup() {
 /**
  * @brief Audio task function
  * Handles audio streaming on core 0
+ * @param pvParameters Task parameters (not used)
  */
 void audioTask(void *pvParameters) {
   while (true) {
@@ -516,6 +517,7 @@ void audioTask(void *pvParameters) {
 /**
  * @brief Arduino main loop function
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
+ * This is the main application loop that runs continuously after setup()
  */
 void loop() {
   static unsigned long streamStoppedTime = 0;
@@ -620,6 +622,7 @@ void loop() {
 /**
  * @brief Handle WiFi configuration page
  * Serves the WiFi configuration page
+ * This function reads the wifi.html file from SPIFFS and sends it to the client
  */
 void handleWiFiConfig() {
   File file = SPIFFS.open("/wifi.html", "r");
@@ -636,6 +639,7 @@ void handleWiFiConfig() {
 /**
  * @brief Handle WiFi configuration API request
  * Returns the current WiFi configuration as JSON
+ * This function provides the list of configured WiFi networks in JSON format
  */
 void handleWiFiConfigAPI() {
   String json = "[";
@@ -654,6 +658,8 @@ void handleWiFiConfigAPI() {
 /**
  * @brief Handle WiFi network scan
  * Returns a list of available WiFi networks as JSON
+ * This function scans for available WiFi networks and returns them along with
+ * the list of already configured networks
  */
 void handleWiFiScan() {
   int n = WiFi.scanNetworks();
@@ -684,6 +690,8 @@ void handleWiFiScan() {
 /**
  * @brief Handle WiFi configuration save
  * Saves WiFi credentials to SPIFFS
+ * This function receives WiFi credentials via HTTP POST and saves them to wifi.json
+ * It supports both single network and multiple network configurations
  */
 void handleWiFiSave() {
   if (!server.hasArg("plain")) {
@@ -769,6 +777,8 @@ void handleWiFiSave() {
 /**
  * @brief Handle WiFi status request
  * Returns the current WiFi connection status as JSON
+ * This function provides information about the current WiFi connection including
+ * connection status, SSID, IP address, and signal strength
  */
 void handleWiFiStatus() {
   String json = "{";
@@ -788,6 +798,9 @@ void handleWiFiStatus() {
 
 /**
  * @brief Load WiFi credentials from SPIFFS
+ * This function reads WiFi credentials from wifi.json in SPIFFS and populates
+ * the ssid and password arrays. It supports both single network and multiple
+ * network configurations for backward compatibility.
  */
 void loadWiFiCredentials() {
   if (!SPIFFS.exists("/wifi.json")) {
@@ -903,6 +916,8 @@ void loadWiFiCredentials() {
 
 /**
  * @brief Save WiFi credentials to SPIFFS
+ * This function saves the current WiFi credentials to wifi.json in SPIFFS.
+ * It stores both SSIDs and passwords as arrays to support multiple networks.
  */
 void saveWiFiCredentials() {
   DynamicJsonDocument doc(1024); // Increased size for multiple networks
@@ -940,6 +955,8 @@ void saveWiFiCredentials() {
 /**
  * @brief Initialize audio output interface
  * Configures the selected audio output method
+ * This function initializes the ESP32-audioI2S library with I2S pin configuration
+ * and sets up the audio buffer with an increased size for better performance.
  */
 void setupAudioOutput() {
   // Initialize ESP32-audioI2S
@@ -1033,6 +1050,8 @@ void startStream(const char* url, const char* name) {
 /**
  * @brief Stop the currently playing stream
  * Cleans up audio components and resets playback state
+ * This function stops audio playback, clears stream information, and resets
+ * the playback state to stopped.
  */
 void stopStream() {
   // Stop the audio playback
@@ -1054,6 +1073,8 @@ void stopStream() {
 /**
  * @brief Load playlist from SPIFFS storage
  * Reads playlist.json from SPIFFS and populates the playlist array
+ * This function loads the playlist from SPIFFS with error recovery mechanisms.
+ * If the playlist file is corrupted, it creates a backup and a new empty playlist.
  */
 void loadPlaylist() {
   playlistCount = 0;  // Reset playlist count
@@ -1199,6 +1220,8 @@ void loadPlaylist() {
 /**
  * @brief Save playlist to SPIFFS storage
  * Serializes the current playlist array to playlist.json
+ * This function saves the current playlist to SPIFFS with backup functionality.
+ * It creates a backup before saving and restores from backup if saving fails.
  */
 void savePlaylist() {
   // Create JSON array
@@ -1276,6 +1299,8 @@ void savePlaylist() {
 /**
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder
+ * This function sets up the rotary encoder pins with internal pull-up resistors
+ * and attaches interrupt handlers for rotation and button press events.
  */
 void setupRotaryEncoder() {
   // Configure rotary encoder pins with internal pull-up resistors
@@ -1296,6 +1321,8 @@ void setupRotaryEncoder() {
  * @brief Rotary encoder interrupt service routine
  * Called when the rotary encoder position changes
  * Kept minimal to reduce interrupt execution time
+ * This function is called by the interrupt handler and delegates to the
+ * RotaryEncoder class for processing.
  */
 void rotaryISR() {
   rotaryEncoder.handleRotation();
@@ -1304,6 +1331,8 @@ void rotaryISR() {
 /**
  * @brief Handle rotary encoder input
  * Processes rotation and button press events from the rotary encoder
+ * This function processes rotary encoder events and controls volume when playing
+ * or playlist selection when stopped. It also handles button presses to start/stop playback.
  */
 void handleRotary() {
   static int lastRotaryPosition = 0;
@@ -1378,6 +1407,9 @@ void handleRotary() {
 /**
  * @brief Handle display timeout
  * Turns off the display after a period of inactivity when not playing
+ * This function manages the OLED display timeout to conserve power. When not playing,
+ * the display turns off after 30 seconds of inactivity. The display turns back on
+ * when there's activity or when playback starts.
  */
 void handleDisplayTimeout() {
   const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
@@ -1406,6 +1438,7 @@ void handleDisplayTimeout() {
 /**
  * @brief Handle root page request
  * Serves the main index.html file
+ * This function reads the index.html file from SPIFFS and sends it to the client
  */
 void handleRoot() {
   File file = SPIFFS.open("/index.html", "r");
@@ -1420,6 +1453,7 @@ void handleRoot() {
 /**
  * @brief Handle playlist page request
  * Serves the playlist.html file
+ * This function reads the playlist.html file from SPIFFS and sends it to the client
  */
 void handlePlaylistPage() {
   File file = SPIFFS.open("/playlist.html", "r");
@@ -1434,6 +1468,8 @@ void handlePlaylistPage() {
 /**
  * @brief Handle GET request for streams
  * Returns the current playlist as JSON
+ * This function serves the current playlist in JSON format. If the playlist file
+ * doesn't exist, it creates a default empty one.
  */
 void handleGetStreams() {
   // If playlist file doesn't exist, create a default empty one
@@ -1460,6 +1496,8 @@ void handleGetStreams() {
 /**
  * @brief Handle POST request for streams
  * Updates the playlist with new JSON data and saves to SPIFFS
+ * This function receives a new playlist via HTTP POST, validates it, and saves it to SPIFFS.
+ * It supports both JSON array format and validates each stream entry.
  */
 void handlePostStreams() {
   // Get the JSON data from the request
@@ -1553,6 +1591,8 @@ void handlePostStreams() {
 /**
  * @brief Handle play request
  * Starts playing a stream with the given URL and name
+ * This function handles HTTP requests to start playing a stream. It supports both
+ * JSON payload and form data, validates the input, and starts the stream.
  */
 void handlePlay() {
   if (server.hasArg("plain")) {
@@ -1618,6 +1658,7 @@ void handlePlay() {
 /**
  * @brief Handle stop request
  * Stops the currently playing stream
+ * This function handles HTTP requests to stop the currently playing stream.
  */
 void handleStop() {
   stopStream();
@@ -1629,6 +1670,8 @@ void handleStop() {
 /**
  * @brief Handle volume request
  * Sets the volume level
+ * This function handles HTTP requests to set the volume level. It supports both
+ * JSON payload and form data, validates the input, and updates the volume.
  */
 void handleVolume() {
   if (server.hasArg("plain")) {
@@ -1687,6 +1730,8 @@ void handleVolume() {
 /**
  * @brief Handle status request
  * Returns the current player status as JSON
+ * This function provides the current player status including playback state,
+ * current stream information, and volume level in JSON format.
  */
 void handleStatus() {
   String status = "{";
@@ -1700,6 +1745,8 @@ void handleStatus() {
 
 /**
  * @brief Send status to all connected WebSocket clients
+ * This function broadcasts the current player status to all connected WebSocket clients.
+ * The status includes playback state, stream information, bitrate, and volume.
  */
 void sendStatusToClients() {
   String status = "{";
@@ -1760,6 +1807,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 /**
  * @brief Update the OLED display with current status
  * Shows playback status, current stream, volume level, and playlist selection
+ * This function updates the OLED display with the current player status. When playing,
+ * it shows the station name, stream title, bitrate, and volume. When stopped, it shows
+ * the selected playlist item and volume. It also implements scrolling text for long strings.
  */
 void updateDisplay() {
   // Update last activity time
@@ -1949,6 +1999,8 @@ void updateDisplay() {
 /**
  * @brief Handle MPD client connections and commands
  * Processes commands from MPD clients
+ * This function handles connections from MPD clients and processes MPD protocol commands.
+ * It manages one client connection at a time and processes commands as they arrive.
  */
 void handleMPDClient() {
   if (mpdServer.hasClient()) {
@@ -2004,6 +2056,9 @@ String mpdResponseError(const String& message) {
  * @brief Handle MPD commands
  * Processes MPD protocol commands
  * @param command The command string to process
+ * This function processes MPD protocol commands and controls the player accordingly.
+ * It supports a subset of MPD commands including playback control, volume control,
+ * playlist management, and status queries.
  */
 void handleMPDCommand(const String& command) {
   if (command.startsWith("play")) {
