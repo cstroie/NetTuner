@@ -163,6 +163,7 @@ Adafruit_SSD1306 display(128, 64, &Wire, -1); // 128x64 display, using Wire, no 
 #define ROTARY_DT  19  ///< Rotary encoder data pin (quadrature signal B)
 #define ROTARY_SW  23  ///< Rotary encoder switch pin (push button)
 #define BOARD_BUTTON 0 ///< ESP32 board button pin
+#define LED_PIN 2      ///< ESP32 internal LED pin
 
 /**
  * @brief Rotary encoder state variables
@@ -318,6 +319,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  */
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize LED pin
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);  // Turn off LED initially
   
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
@@ -1070,6 +1075,9 @@ void startStream(const char* url, const char* name) {
   // Set playback status to playing
   isPlaying = true;
   
+  // Turn on LED when playing
+  digitalWrite(LED_PIN, HIGH);
+  
   // Use ESP32-audioI2S to play the stream
   if (audio) {
     audioConnected = audio->connecttohost(url);
@@ -1105,6 +1113,9 @@ void stopStream() {
   currentStreamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
   bitrate = 0;                   // Clear bitrate
+  
+  // Turn off LED when stopped
+  digitalWrite(LED_PIN, LOW);
   
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
