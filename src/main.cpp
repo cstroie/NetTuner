@@ -540,11 +540,25 @@ void loop() {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0) {
-          Serial.println("Attempting to restart stream...");
-          // With the updated startStream function, we can now call it without parameters
-          // to resume the current stream
-          startStream();
+          // Wait 1 second before attempting to restart (non-blocking)
+          static unsigned long streamStoppedTime = 0;
+          if (streamStoppedTime == 0) {
+            // First time detecting the stream has stopped
+            streamStoppedTime = millis();
+            Serial.println("Waiting 1 second before restart attempt...");
+          } else if (millis() - streamStoppedTime >= 1000) {
+            // 1 second has passed, attempt to restart
+            Serial.println("Attempting to restart stream...");
+            // With the updated startStream function, we can now call it without parameters
+            // to resume the current stream
+            startStream();
+            streamStoppedTime = 0; // Reset the timer
+          }
         }
+      } else {
+        // Stream is running, reset the stopped time
+        static unsigned long streamStoppedTime = 0;
+        streamStoppedTime = 0;
       }
       // Update bitrate if it has changed
       int newBitrate = audio->getBitRate();
