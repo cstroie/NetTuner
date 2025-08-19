@@ -509,7 +509,7 @@ void audioTask(void *pvParameters) {
       audio->loop();
     }
     // Very small delay to prevent busy waiting but allow frequent processing
-    delay(0);
+    delay(1);
   }
 }
 
@@ -518,6 +518,8 @@ void audioTask(void *pvParameters) {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
+  static unsigned long streamStoppedTime = 0;
+
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
@@ -541,7 +543,6 @@ void loop() {
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
-          static unsigned long streamStoppedTime = 0;
           if (streamStoppedTime == 0) {
             // First time detecting the stream has stopped
             streamStoppedTime = millis();
@@ -557,7 +558,6 @@ void loop() {
         }
       } else {
         // Stream is running, reset the stopped time
-        static unsigned long streamStoppedTime = 0;
         streamStoppedTime = 0;
         // Update bitrate if it has changed
         int newBitrate = audio->getBitRate();
@@ -946,7 +946,7 @@ void setupAudioOutput() {
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio->setVolume(volume * 21 / 100); // Convert 0-100 to 0-21 scale
-  audio->setBufsize(131072, 0); // Increased buffer size to 128KB for better streaming performance
+  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
 /**
