@@ -17,24 +17,26 @@ select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-r
 .stream-info { 
     margin: 15px 0; 
     padding: 15px; 
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    background: #d0e0d0; /* Gray-green background for LCD effect */
     border-radius: 10px; 
-    color: white; 
+    color: #000; /* Dark text */
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     text-align: center;
+    font-family: 'Courier New', monospace; /* Monospace font for digital look */
+    border: 1px solid #a0b0a0; /* Slightly darker border */
 }
 .stream-info div {
     margin: 8px 0;
 }
 #status {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Courier New', monospace;
     font-weight: bold;
     font-size: 1.4em;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 #currentStreamName {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Courier New', monospace;
     font-size: 1.2em;
     font-weight: 600;
     margin-top: 10px;
@@ -42,7 +44,7 @@ select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-r
 #currentStream {
     font-family: 'Courier New', monospace;
     font-size: 0.9em;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.1); /* Slightly darker background */
     padding: 8px;
     border-radius: 5px;
     word-break: break-all;
@@ -51,15 +53,13 @@ select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-r
     font-weight: bold;
     font-size: 1.4em;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 .playing { 
-    color: #4CAF50; 
-    text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    color: #006600; /* Dark green for playing state */
 }
 .stopped { 
-    color: #f44336; 
-    text-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+    color: #660000; /* Dark red for stopped state */
 }
 
 /* Playlist styles */
