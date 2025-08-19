@@ -537,7 +537,6 @@ void loop() {
     // Check if audio is still connected
     if (isPlaying) {
       if (!audio->isRunning()) {
-        Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
@@ -559,15 +558,15 @@ void loop() {
         // Stream is running, reset the stopped time
         static unsigned long streamStoppedTime = 0;
         streamStoppedTime = 0;
-      }
-      // Update bitrate if it has changed
-      int newBitrate = audio->getBitRate();
-      if (newBitrate > 0 && newBitrate != bitrate) {
-        bitrate = newBitrate;
-        // Update the bitrate on display
-        updateDisplay();
-        // Notify clients of bitrate change
-        sendStatusToClients();
+        // Update bitrate if it has changed
+        int newBitrate = audio->getBitRate();
+        if (newBitrate > 0 && newBitrate != bitrate) {
+          bitrate = newBitrate;
+          // Update the bitrate on display
+          updateDisplay();
+          // Notify clients of bitrate change
+          sendStatusToClients();
+        }
       }
     }
   }
