@@ -541,9 +541,9 @@ void loop() {
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0) {
           Serial.println("Attempting to restart stream...");
-          // Use currentStreamName if available, otherwise use a default
-          const char* nameToUse = (strlen(currentStreamName) > 0) ? currentStreamName : "Unknown Station";
-          startStream(currentStream, nameToUse);
+          // With the updated startStream function, we can now call it without parameters
+          // to resume the current stream
+          startStream();
         }
       }
       // Update bitrate if it has changed
@@ -938,20 +938,32 @@ void setupAudioOutput() {
 /**
  * @brief Start streaming an audio stream
  * Stops any currently playing stream and begins playing a new one
- * @param url URL of the audio stream to play
- * @param name Human-readable name of the stream
+ * If called without parameters, resumes playback of currentStream if available
+ * @param url URL of the audio stream to play (optional)
+ * @param name Human-readable name of the stream (optional)
  */
-void startStream(const char* url, const char* name) {
-// Stop any currently playing stream
+void startStream(const char* url = nullptr, const char* name = nullptr) {
+  // Stop any currently playing stream
   if (audio) {
     // Stop first
     audio->stopSong();
   }
-  
-            // FIXME
-          Serial.println("STREAM")
-          Serial.println(currentStream);
-          Serial.println(currentStreamName);
+
+  // If no URL provided, check if we have a current stream to resume
+  if (!url || strlen(url) == 0) {
+    if (strlen(currentStream) > 0) {
+      // Resume playback of current stream
+      url = currentStream;
+      // Use current name if available, otherwise use a default
+      if (!name || strlen(name) == 0) {
+        name = (strlen(currentStreamName) > 0) ? currentStreamName : "Unknown Station";
+      }
+    } else {
+      Serial.println("Error: No URL provided and no current stream to resume");
+      updateDisplay();
+      return;
+    }
+  }
 
   // Validate inputs
   if (!url || !name) {
@@ -986,8 +998,8 @@ void startStream(const char* url, const char* name) {
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
       isPlaying = false;
-      currentStream[0] = '\0';
-      currentStreamName[0] = '\0';
+      // Don't clear currentStream and currentStreamName when resuming fails
+      // This allows for retrying the resume operation
       streamTitle[0] = '\0';
       bitrate = 0;
     } else {
