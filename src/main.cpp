@@ -942,7 +942,7 @@ void setupAudioOutput() {
  * @param url URL of the audio stream to play (optional)
  * @param name Human-readable name of the stream (optional)
  */
-void startStream(const char* url = nullptr, const char* name = nullptr) {
+void startStream(const char* url, const char* name) {
   // Stop any currently playing stream
   if (audio) {
     // Stop first
