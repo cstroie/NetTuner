@@ -43,6 +43,11 @@
                 <input type="range" id="volume" min="0" max="100" value="50" oninput="handleVolumeChange(this.value)">
                 <span id="volumeValue">50%</span>
             </div>
+            
+            <div class="instant-play">
+                <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
+                <button onclick="playInstantStream()">Instant Play</button>
+            </div>
         </div>
     </div>
 

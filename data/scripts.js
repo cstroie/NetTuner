@@ -683,6 +683,55 @@ async function setVolume(volume) {
     }
 }
 
+async function playInstantStream() {
+    const urlInput = document.getElementById('instantUrl');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showToast('Please enter a stream URL', 'warning');
+        urlInput.focus();
+        return;
+    }
+    
+    // Validate URL format
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        showToast('Please enter a valid URL starting with http:// or https://', 'warning');
+        urlInput.focus();
+        return;
+    }
+    
+    try {
+        new URL(url);
+    } catch (e) {
+        showToast('Please enter a valid URL', 'warning');
+        urlInput.focus();
+        return;
+    }
+    
+    // Show loading state
+    const playButton = document.querySelector('.instant-play button');
+    const originalText = playButton ? playButton.textContent : 'Instant Play';
+    if (playButton) {
+        playButton.textContent = 'Playing...';
+        playButton.disabled = true;
+    }
+    
+    try {
+        await sendPlayRequest(url, 'Instant Stream');
+        showToast('Stream started successfully', 'success');
+        // Clear the input field after successful play
+        urlInput.value = '';
+    } catch (error) {
+        handlePlayError(error);
+    } finally {
+        // Restore button state
+        if (playButton) {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+        }
+    }
+}
+
 // Playlist functions
 function renderPlaylist() {
     const tbody = document.getElementById('playlistBody');
