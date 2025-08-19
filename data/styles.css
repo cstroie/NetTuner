@@ -1,17 +1,17 @@
 /* Main styles */
-body { font-family: Arial, sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
+body { font-family: 'Roboto', Arial, sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
 .container { max-width: 600px; margin: 0 auto; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-h1 { color: #333; text-align: center; font-size: 1.5em; margin-top: 10px; }
+h1 { color: #333; text-align: center; font-size: 1.5em; margin-top: 10px; font-family: 'Roboto', Arial, sans-serif; }
 .controls { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
-button { padding: 12px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
+button { padding: 12px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-family: 'Roboto', Arial, sans-serif; }
 .play-btn { background: #4CAF50; color: white; }
 .stop-btn { background: #f44336; color: white; }
 .playlist-btn { background: #2196F3; color: white; }
 .config-btn { background: #9C27B0; color: white; }
 .wifi-btn { background: #FF9800; color: white; }
-select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; }
+select, input { padding: 10px; font-size: 16px; border: 1px solid #ddd; border-radius: 5px; width: 100%; box-sizing: border-box; font-family: 'Roboto', Arial, sans-serif; }
 .volume-control { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.volume-control label { flex: 1; min-width: 80px; }
+.volume-control label { flex: 1; min-width: 80px; font-family: 'Roboto', Arial, sans-serif; }
 .volume-control input { flex: 3; min-width: 150px; }
 .volume-control span { flex: 1; min-width: 40px; text-align: center; }
 .stream-info { 
@@ -80,7 +80,7 @@ tr:hover { background-color: #f5f5f5; }
 .drag-handle { cursor: move; padding: 0 10px; }
 
 /* WiFi styles */
-.network { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; }
+.network { padding: 10px; margin: 5px 0; border: 1px solid #ccc; cursor: pointer; font-family: 'Roboto', Arial, sans-serif; }
 .network:hover { background-color: #f0f0f0; }
 .form-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
 
