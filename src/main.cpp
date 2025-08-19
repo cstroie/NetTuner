@@ -506,11 +506,7 @@ void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
     if (audio) {
-      try {
-        audio->loop();
-      } catch (...) {
-        Serial.println("Warning: Exception in audio loop");
-      }
+      audio->loop();
     }
     // Small delay to prevent busy waiting
     delay(1);
@@ -522,11 +518,10 @@ void audioTask(void *pvParameters) {
  * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
  */
 void loop() {
+  handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
-  handleRotary();          // Process rotary encoder input
   handleMPDClient();       // Process MPD commands
-  handleDisplayTimeout();  // Handle display timeout
   
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
@@ -539,21 +534,10 @@ void loop() {
   
   // Check audio connection status with improved error recovery
   if (audio) {
-    // AI, this logic is flawed: once you reset isPlaying ...
     // Check if audio is still connected
     if (isPlaying) {
       if (!audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
-        isPlaying = false;
-        audioConnected = false;
-        // Clear stream info to prevent stale data
-        currentStream[0] = '\0';
-        currentStreamName[0] = '\0';
-        streamTitle[0] = '\0';
-        bitrate = 0;
-        updateDisplay();
-        sendStatusToClients();
-        
         // Attempt to restart the stream if it was playing
         if (strlen(currentStream) > 0 && strlen(currentStreamName) > 0) {
           Serial.println("Attempting to restart stream...");
@@ -564,11 +548,12 @@ void loop() {
       int newBitrate = audio->getBitRate();
       if (newBitrate > 0 && newBitrate != bitrate) {
         bitrate = newBitrate;
+        // Update the bitrate on display
         updateDisplay();
-        sendStatusToClients();  // Notify clients of bitrate change
+        // Notify clients of bitrate change
+        sendStatusToClients();
       }
     }
-    //  you never reach the sencond part, AI!
   }
   
   // Periodic cleanup with error recovery
@@ -610,8 +595,10 @@ void loop() {
       }
     }
   }
+  // Handle display timeout
+  handleDisplayTimeout();
   // Small delay to prevent busy waiting
-  delay(1);
+  delay(10);
 }
 
 /**
@@ -979,7 +966,8 @@ void startStream(const char* url, const char* name) {
   currentStream[sizeof(currentStream) - 1] = '\0';
   strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
   currentStreamName[sizeof(currentStreamName) - 1] = '\0';
-  isPlaying = true;         // Set playback status to playing
+  // Set playback status to playing
+  isPlaying = true;
   
   // Use ESP32-audioI2S to play the stream
   if (audio) {
@@ -1012,7 +1000,7 @@ void stopStream() {
   }
   audioConnected = false;
   
-  isPlaying = false;        // Set playback status to stopped
+  isPlaying = false;             // Set playback status to stopped
   currentStream[0] = '\0';       // Clear current stream URL
   currentStreamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
@@ -1893,8 +1881,6 @@ void updateDisplay() {
       } else {
         display.println(playlistName);
       }
-      display.setCursor(0, 30);
-      display.println("Press to play");
     } else {
       // Show message when no streams available
       display.setCursor(0, 18);
