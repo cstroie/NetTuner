@@ -65,6 +65,7 @@ int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
 int volume = 50;                   ///< Volume level (0-100)
 int bass = 0;                      ///< Bass level (-40 to 6 dB)
+int midrange = 0;                  ///< Midrange level (-40 to 6 dB)
 int treble = 0;                    ///< Treble level (-40 to 6 dB)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
@@ -1831,6 +1832,17 @@ void handleTone() {
       updated = true;
     }
     
+    // Handle midrange setting
+    if (doc.containsKey("midrange")) {
+      int newMidrange = doc["midrange"];
+      if (newMidrange < -40 || newMidrange > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Midrange must be between -40 and 6\"}");
+        return;
+      }
+      midrange = newMidrange;
+      updated = true;
+    }
+    
     // Handle treble setting
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
@@ -1843,16 +1855,14 @@ void handleTone() {
     }
     
     if (!updated) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: bass or treble\"}");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: bass, midrange, or treble\"}");
       return;
     }
     
     // Apply tone settings to audio using the Audio library's setTone function
     if (audio) {
-      // Map our -10 to 10 range to the Audio library's expected range
-      // For setTone: gainLowPass (bass), gainBandPass (mid), gainHighPass (treble)
-      // We'll set mid to 0 and use bass for lowPass and treble for highPass
-      audio->setTone(bass, 0, treble);
+      // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
+      audio->setTone(bass, midrange, treble);
     }
     
     updateDisplay();
@@ -1894,6 +1904,7 @@ void sendStatusToClients() {
   status += "\"bitrate\":" + String(bitrate / 1000) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";
+  status += "\"midrange\":" + String(midrange) + ",";
   status += "\"treble\":" + String(treble);
   status += "}";
   
@@ -1927,6 +1938,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         status += "\"bitrate\":" + String(bitrate / 1000) + ",";
         status += "\"volume\":" + String(volume) + ",";
         status += "\"bass\":" + String(bass) + ",";
+        status += "\"midrange\":" + String(midrange) + ",";
         status += "\"treble\":" + String(treble);
         status += "}";
         webSocket.sendTXT(num, status);

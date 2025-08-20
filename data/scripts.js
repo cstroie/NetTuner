@@ -1,6 +1,7 @@
 // Main functions
 let streams = [];
 let bass = 0;
+let midrange = 0;
 let treble = 0;
 
 function initMainPage() {
@@ -367,6 +368,8 @@ function connectWebSocket() {
                 // Update tone controls
                 const bassControl = document.getElementById('bass');
                 const bassValue = document.getElementById('bassValue');
+                const midrangeControl = document.getElementById('midrange');
+                const midrangeValue = document.getElementById('midrangeValue');
                 const trebleControl = document.getElementById('treble');
                 const trebleValue = document.getElementById('trebleValue');
                 
@@ -377,6 +380,15 @@ function connectWebSocket() {
                 
                 if (bassValue && status.bass !== undefined) {
                     bassValue.textContent = status.bass + 'dB';
+                }
+                
+                if (midrangeControl && status.midrange !== undefined) {
+                    midrangeControl.value = status.midrange;
+                    midrange = status.midrange;
+                }
+                
+                if (midrangeValue && status.midrange !== undefined) {
+                    midrangeValue.textContent = status.midrange + 'dB';
                 }
                 
                 if (trebleControl && status.treble !== undefined) {
@@ -759,6 +771,8 @@ async function setTone(type, value) {
                 // Update global variable
                 if (type === 'bass') {
                     bass = toneValue;
+                } else if (type === 'midrange') {
+                    midrange = toneValue;
                 } else if (type === 'treble') {
                     treble = toneValue;
                 }

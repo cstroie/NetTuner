@@ -39,6 +39,12 @@
                     <input type="range" id="bass" min="-40" max="6" value="0" oninput="handleToneChange('bass', this.value)">
                 </div>
                 <div class="tone-control">
+                    <label for="midrange">Midrange:
+                        <span id="midrangeValue">0dB</span>
+                    </label>
+                    <input type="range" id="midrange" min="-40" max="6" value="0" oninput="handleToneChange('midrange', this.value)">
+                </div>
+                <div class="tone-control">
                     <label for="treble">Treble:
                         <span id="trebleValue">0dB</span>
                     </label>
