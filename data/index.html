@@ -2,54 +2,57 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>NetTuner - ESP32 Web Radio</title>
+    <title>NetTuner</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <main class="container">
-        <h1>NetTuner - ESP32 Web Radio</h1>
-        
-        <section>
-            <h2>Current Stream</h2>
-            <div class="stream-info">
-                <div id="status" class="status stopped">Stopped</div>
+<body class="container">
+    <nav>
+        <ul>
+            <li><strong>NetTuner</strong>&nbsp;<kbd id="status" class="status stopped">STOPPED</kbd></li>
+        </ul>
+        <ul>
+            <li><a href="/" class="contrast">Dashboard</a></li>
+            <li><a href="/playlist">Playlist</a></li>
+            <li><a href="/wifi">Wifi</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </nav>
+    <header>
+        <hgroup>
+            <h2 id="currentStream">No stream selected</h2>
+            <card class="stream-info">
                 <div id="currentStreamName">No station selected</div>
-                <div id="currentStream">No stream selected</div>
-            </div>
-        </section>
-        
+            </card>
+            <card>
+                <label for="volume">Volume:
+                    <span id="volumeValue">50%</span>
+                </label>
+                <input type="range" id="volume" min="0" max="100" value="50" oninput="handleVolumeChange(this.value)">
+            </card>
+        </hgroup>
+    </header>
+    <main>     
         <section>
-            <h2>Stream Controls</h2>
-            <label for="streamSelect">Select Stream:</label>
+            <label for="streamSelect">Select a stream</label>
             <select id="streamSelect" onchange="playSelectedStream()">
                 <option value="">Select a stream...</option>
             </select>
-            
-            <div class="grid">
+            <div role="group">
                 <button onclick="playStream()">Play</button>
                 <button class="secondary" onclick="stopStream()">Stop</button>
             </div>
-            
-            <div class="grid">
-                <button class="outline" onclick="window.location='/playlist.html'">Manage Playlist</button>
-                <button class="outline" onclick="window.location='/wifi'">WiFi Config</button>
-            </div>
-            
-            <label for="volume">Volume:
-                <span id="volumeValue">50%</span>
-            </label>
-            <input type="range" id="volume" min="0" max="100" value="50" oninput="handleVolumeChange(this.value)">
-            
-            <fieldset>
-                <label for="instantUrl">Instant Play</label>
-                <div class="grid">
-                    <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
-                    <button onclick="playInstantStream()">Play</button>
-                </div>
-            </fieldset>
         </section>
     </main>
+
+    <footer>
+        <label for="instantUrl">Instant play</label>
+        <div role="group">
+            <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
+            <button onclick="playInstantStream()">Play</button>
+        </div>
+    </footer>
 
     <script src="/scripts.js"></script>
     <script>

@@ -2,54 +2,56 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>NetTuner - WiFi Configuration</title>
+    <title>WiFi Configuration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <main class="container">
-        <h1>NetTuner - WiFi Configuration</h1>
-        
+<body class="container">
+    <nav>
+        <ul>
+            <li><strong>NetTuner</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/playlist">Playlist</a></li>
+            <li><a href="/wifi" class="contrast">Wifi</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </nav>
+    <main>
         <section>
             <h2>Available Networks</h2>
             <p>Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
             <div id="networks">Scanning for networks...</div>
-            <button class="outline" onclick="scanNetworks()">Refresh Networks</button>
+            <button type="submit" onclick="scanNetworks()">Refresh networks</button>
         </section>
         
         <section>
             <h2>Configure WiFi Networks</h2>
             <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
             <small>Tip: Add your most reliable networks first. The device will connect to the first available network in the list.</small>
-            
             <form id="wifiForm">
-                <div id="networkFields">
-                    <div class="network-entry">
-                        <label for="ssid0">Primary Network (SSID):
-                            <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
-                        </label>
-                        <label for="password0">Password:
-                            <input type="password" id="password0" name="password0" placeholder="Enter Password">
-                        </label>
+                <fieldset id="networkFields">
+                    <div role="group">
+                        <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
+                        <input type="password" id="password0" name="password0" placeholder="Enter password">
+                        <button type="button" id="addNetwork" onclick="addNetworkField()">Add</button>
                     </div>
-                </div>
-                <button type="button" id="addNetwork" class="outline" onclick="addNetworkField()">Add Network</button>
-                <button type="submit">Save Configuration</button>
+                </fieldset>
+                <button type="submit">Save configuration</button>
             </form>
         </section>
-        
-        <section>
-            <h2>Connection Status</h2>
+    </main>
+    <footer>
+        <hgroup>
+            <h2>Connection status</h2>
             <p>Current network connection information</p>
             <div id="connection-status">
                 <p>Loading connection status...</p>
             </div>
-        </section>
-        
-        <section>
-            <button onclick="window.location.href='/'">Back to Main</button>
-        </section>
-    </main>
+        </hgroup>
+    </footer>
 
     <script src="/scripts.js"></script>
     <script>

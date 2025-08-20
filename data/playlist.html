@@ -2,34 +2,44 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Manage Playlist - NetTuner</title>
+    <title>Playlist management</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <main class="container">
-        <h1>Manage Playlist - NetTuner</h1>
-        
+<body class="container">
+    <nav>
+        <ul>
+            <li><strong>NetTuner</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/playlist" class="contrast">Playlist</a></li>
+            <li><a href="/wifi">Wifi</a></li>
+            <li><a href="/about">About</a></li>
+        </ul>
+    </nav>
+    <main> 
         <section>
-            <h2>Add New Stream</h2>
+            <h2>Add new station</h2>
             <p>Enter the details for a new radio stream to add to your playlist.</p>
             <form id="streamForm">
-                <label for="url">Stream URL:
+                <fieldset>
+                <label for="url">Stream URL
                     <input type="url" id="url" placeholder="Enter stream URL (http://...)" required>
                     <small>Must be a valid HTTP or HTTPS URL</small>
                 </label>
-                
-                <label for="name">Station Name:
+                <label for="name">Station name
                     <input type="text" id="name" placeholder="Enter station name" required>
                     <small>A descriptive name for this station</small>
                 </label>
-                
-                <button type="button" onclick="addStream()">Add Stream</button>
+                </fieldset>
+                <button type="submit" onclick="addStream()">Add stream</button>
             </form>
         </section>
-        
+        <hr>
         <section>
-            <h2>Current Playlist</h2>
+            <h2>Current playlist</h2>
             <p>Edit or remove existing streams in your playlist.</p>
             <div class="overflow-auto">
                 <table id="playlistTable">
@@ -45,31 +55,27 @@
                     </tbody>
                 </table>
             </div>
-            <button onclick="savePlaylist()">Save Playlist</button>
+            <button type="submit" onclick="savePlaylist()">Save playlist</button>
         </section>
-        
+        <hr>
         <section>
-            <h2>Playlist Management</h2>
+            <h2>Playlist management</h2>
             <p>Import or export your playlist in different formats.</p>
             
-            <label for="playlistFile">Upload Playlist File:
+            <label for="playlistFile">Upload playlist file:
                 <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8">
                 <small>Supported formats: JSON, M3U, M3U8</small>
             </label>
             
-            <div class="grid">
-                <button class="outline" onclick="uploadJSON()">Upload JSON</button>
-                <button class="outline" onclick="downloadJSON()">Download JSON</button>
+            <div role="group">
+                <button onclick="uploadJSON()">Upload JSON</button>
+                <button onclick="downloadJSON()">Download JSON</button>
             </div>
             
-            <div class="grid">
-                <button class="outline" onclick="uploadM3U()">Upload M3U</button>
-                <button class="outline" onclick="downloadM3U()">Download M3U</button>
+            <div role="group">
+                <button class="secondary" onclick="uploadM3U()">Upload M3U</button>
+                <button class="secondary" onclick="downloadM3U()">Download M3U</button>
             </div>
-        </section>
-        
-        <section>
-            <button onclick="window.location.href='/'">Back to Main</button>
         </section>
     </main>
     
