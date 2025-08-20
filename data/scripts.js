@@ -4,6 +4,39 @@ let bass = 0;
 let midrange = 0;
 let treble = 0;
 
+// Theme handling
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeToggle();
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeToggle();
+}
+
+function updateThemeToggle() {
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    if (themeToggle) {
+        themeToggle.textContent = currentTheme === 'dark' ? '◑' : '◐';
+        themeToggle.title = currentTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+    }
+}
+
+// Add event listener for theme toggle
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
+    initTheme();
+});
+
 function initMainPage() {
     loadStreams();
     connectWebSocket();
