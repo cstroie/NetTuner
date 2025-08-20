@@ -1,1 +1,73 @@
 /* Custom styles for NetTuner */
+
+.stream-info {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #d0e0d0;
+    border-radius: 8px;
+    color: #000;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    font-family: monospace;
+    border: 1px solid #a0b0a0;
+}
+
+.stream-info div {
+    margin: 0.5rem 0;
+}
+
+#status {
+    font-family: monospace;
+    font-weight: bold;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#currentStreamName {
+    font-family: monospace;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+#currentStream {
+    font-family: monospace;
+    font-size: 0.9em;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0.5rem;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+.status {
+    font-weight: bold;
+    font-size: 1.2em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.playing {
+    color: #006600;
+}
+
+.stopped {
+    color: #660000;
+}
+
+.network {
+    padding: 0.5rem;
+    margin: 0.25rem 0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.network:hover {
+    background-color: #f0f0f0;
+}
+
+@media (max-width: 768px) {
+    .overflow-auto {
+        overflow-x: auto;
+    }
+}
