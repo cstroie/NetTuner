@@ -1,5 +1,7 @@
 // Main functions
 let streams = [];
+let bass = 0;
+let treble = 0;
 
 function initMainPage() {
     loadStreams();
@@ -361,6 +363,30 @@ function connectWebSocket() {
                 if (volumeValue) {
                     volumeValue.textContent = status.volume + '%';
                 }
+                
+                // Update tone controls
+                const bassControl = document.getElementById('bass');
+                const bassValue = document.getElementById('bassValue');
+                const trebleControl = document.getElementById('treble');
+                const trebleValue = document.getElementById('trebleValue');
+                
+                if (bassControl && status.bass !== undefined) {
+                    bassControl.value = status.bass;
+                    bass = status.bass;
+                }
+                
+                if (bassValue && status.bass !== undefined) {
+                    bassValue.textContent = status.bass + 'dB';
+                }
+                
+                if (trebleControl && status.treble !== undefined) {
+                    trebleControl.value = status.treble;
+                    treble = status.treble;
+                }
+                
+                if (trebleValue && status.treble !== undefined) {
+                    trebleValue.textContent = status.treble + 'dB';
+                }
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
             }
@@ -618,6 +644,14 @@ function handleVolumeChange(volume) {
     });
 }
 
+// Wrapper function for tone change to handle errors in inline event handlers
+function handleToneChange(type, value) {
+    setTone(type, value).catch(error => {
+        console.error('Error in tone change:', error);
+        showToast('Error setting ' + type + ': ' + error.message, 'error');
+    });
+}
+
 async function setVolume(volume) {
     // Validate volume parameter
     const volumeNum = parseInt(volume, 10);
@@ -679,6 +713,77 @@ async function setVolume(volume) {
         // Restore control state
         if (volumeControl) {
             volumeControl.disabled = false;
+        }
+    }
+}
+
+async function setTone(type, value) {
+    // Validate tone parameter
+    const toneValue = parseInt(value, 10);
+    if (isNaN(toneValue) || toneValue < -10 || toneValue > 10) {
+        console.error('Invalid ' + type + ' value:', value);
+        showToast('Invalid ' + type + ' value. Must be between -10 and 10.', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const toneControl = document.getElementById(type);
+    const toneValueElement = document.getElementById(type + 'Value');
+    const originalValue = toneControl ? toneControl.value : '0';
+    
+    if (toneControl) {
+        toneControl.disabled = true;
+    } else {
+        console.warn(type + ' control not found');
+        return;
+    }
+    
+    try {
+        console.log('Setting ' + type + ' to:', toneValue);
+        const response = await fetch('/api/tone', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ [type]: toneValue })
+        });
+        console.log(type + ' response status:', response.status);
+        if (response.ok) {
+            const result = await response.json();
+            if (result.status === 'success') {
+                if (toneValueElement) {
+                    toneValueElement.textContent = toneValue + 'dB';
+                }
+                showToast(result.message || type.charAt(0).toUpperCase() + type.slice(1) + ' set to ' + toneValue + 'dB', 'info');
+                // Update global variable
+                if (type === 'bass') {
+                    bass = toneValue;
+                } else if (type === 'treble') {
+                    treble = toneValue;
+                }
+            } else {
+                throw new Error(result.message || 'Failed to set ' + type);
+            }
+        } else {
+            throw new Error(`Failed to set ${type}: ${response.status} ${response.statusText}`);
+        }
+    } catch (error) {
+        console.error('Error setting ' + type + ':', error);
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error setting ' + type + ': ' + errorMessage + '. Please try again.', 'error');
+        // Restore original value on error
+        if (toneControl) {
+            toneControl.value = originalValue;
+        }
+        if (toneValueElement) {
+            toneValueElement.textContent = originalValue + 'dB';
+        }
+        throw error; // Re-throw to allow caller to handle
+    } finally {
+        // Restore control state
+        if (toneControl) {
+            toneControl.disabled = false;
         }
     }
 }

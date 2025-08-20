@@ -31,6 +31,20 @@
                 </label>
                 <input type="range" id="volume" min="0" max="100" value="50" oninput="handleVolumeChange(this.value)">
             </card>
+            <card class="tone-controls">
+                <div class="tone-control">
+                    <label for="bass">Bass:
+                        <span id="bassValue">0dB</span>
+                    </label>
+                    <input type="range" id="bass" min="-10" max="10" value="0" oninput="handleToneChange('bass', this.value)">
+                </div>
+                <div class="tone-control">
+                    <label for="treble">Treble:
+                        <span id="trebleValue">0dB</span>
+                    </label>
+                    <input type="range" id="treble" min="-10" max="10" value="0" oninput="handleToneChange('treble', this.value)">
+                </div>
+            </card>
         </hgroup>
     </header>
     <main>     

@@ -48,3 +48,24 @@
         opacity: 0;
     }
 }
+
+/* Tone controls */
+.tone-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tone-control {
+    flex: 1;
+    min-width: 200px;
+}
+
+.tone-control label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.tone-control input[type="range"] {
+    width: 100%;
+}

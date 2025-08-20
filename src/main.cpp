@@ -64,6 +64,8 @@ char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
 int volume = 50;                   ///< Volume level (0-100)
+int bass = 0;                      ///< Bass level (-10 to 10 dB)
+int treble = 0;                    ///< Treble level (-10 to 10 dB)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
 
@@ -302,6 +304,7 @@ void handlePostStreams();
 void handlePlay();
 void handleStop();
 void handleVolume();
+void handleTone();
 void handleStatus();
 void handleWiFiConfig();
 void handleWiFiScan();
@@ -472,6 +475,7 @@ void setup() {
   server.on("/api/play", HTTP_POST, handlePlay);
   server.on("/api/stop", HTTP_POST, handleStop);
   server.on("/api/volume", HTTP_POST, handleVolume);
+  server.on("/api/tone", HTTP_POST, handleTone);
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
@@ -1772,7 +1776,7 @@ void handleVolume() {
     }
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
   } else if (server.hasArg("volume")) {
     // Handle form data
     String vol = server.arg("volume");
@@ -1792,6 +1796,66 @@ void handleVolume() {
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
   } else {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
+    return;
+  }
+}
+
+/**
+ * @brief Handle tone request
+ * Sets the bass/treble levels
+ * This function handles HTTP requests to set the bass/treble levels. It supports
+ * JSON payload, validates the input, and updates the tone settings.
+ */
+void handleTone() {
+  if (server.hasArg("plain")) {
+    // Handle JSON payload
+    String json = server.arg("plain");
+    DynamicJsonDocument doc(256);
+    DeserializationError error = deserializeJson(doc, json);
+    
+    if (error) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+      return;
+    }
+    
+    bool updated = false;
+    
+    // Handle bass setting
+    if (doc.containsKey("bass")) {
+      int newBass = doc["bass"];
+      if (newBass < -10 || newBass > 10) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -10 and 10\"}");
+        return;
+      }
+      bass = newBass;
+      updated = true;
+    }
+    
+    // Handle treble setting
+    if (doc.containsKey("treble")) {
+      int newTreble = doc["treble"];
+      if (newTreble < -10 || newTreble > 10) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -10 and 10\"}");
+        return;
+      }
+      treble = newTreble;
+      updated = true;
+    }
+    
+    if (!updated) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: bass or treble\"}");
+      return;
+    }
+    
+    // Apply tone settings to audio (if supported by the audio library)
+    // Note: ESP32-audioI2S doesn't directly support tone controls
+    // This would need to be implemented with a custom audio processing chain
+    
+    updateDisplay();
+    sendStatusToClients();  // Notify clients of status change
+    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Tone settings updated successfully\"}");
+  } else {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
     return;
   }
 }
@@ -1824,7 +1888,9 @@ void sendStatusToClients() {
   status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
   status += "\"bitrate\":" + String(bitrate / 1000) + ",";
-  status += "\"volume\":" + String(volume);
+  status += "\"volume\":" + String(volume) + ",";
+  status += "\"bass\":" + String(bass) + ",";
+  status += "\"treble\":" + String(treble);
   status += "}";
   
   // Only broadcast if WebSocket server has clients
@@ -1855,7 +1921,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
         status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
         status += "\"bitrate\":" + String(bitrate / 1000) + ",";
-        status += "\"volume\":" + String(volume);
+        status += "\"volume\":" + String(volume) + ",";
+        status += "\"bass\":" + String(bass) + ",";
+        status += "\"treble\":" + String(treble);
         status += "}";
         webSocket.sendTXT(num, status);
       }
