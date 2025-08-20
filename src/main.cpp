@@ -463,14 +463,14 @@ void setup() {
   
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
-  server.on("/playlist.html", HTTP_GET, handlePlaylistPage);
+  server.on("/playlist", HTTP_GET, handlePlaylistPage);
+  server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/play", HTTP_POST, handlePlay);
   server.on("/api/stop", HTTP_POST, handleStop);
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/status", HTTP_GET, handleStatus);
-  server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
   server.on("/api/wifistatus", HTTP_GET, handleWiFiStatus);
