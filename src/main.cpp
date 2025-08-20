@@ -465,8 +465,8 @@ void setup() {
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/playlist", HTTP_GET, handlePlaylistPage);
-  server.on("/about", HTTP_GET, handleAboutPage);
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
+  server.on("/about", HTTP_GET, handleAboutPage);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/play", HTTP_POST, handlePlay);

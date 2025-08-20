@@ -1484,17 +1484,11 @@ function addNetworkField() {
     
     const networkFields = document.getElementById('networkFields');
     const newEntry = document.createElement('div');
-    newEntry.className = 'network-entry';
+    newEntry.role = "group"
     newEntry.innerHTML = `
-        <div class="form-group">
-            <label for="ssid${networkCount}">SSID:</label>
-            <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
-        </div>
-        <div class="form-group">
-            <label for="password${networkCount}">Password:</label>
-            <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
-        </div>
-        <button type="button" class="remove-btn" onclick="removeNetworkField(this)">Remove</button>
+        <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
+        <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
+        <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
     `;
     networkFields.appendChild(newEntry);
     networkCount++;
