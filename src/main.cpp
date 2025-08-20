@@ -296,6 +296,7 @@ void handleMPDCommand(const String& command);
 // Web server handlers
 void handleRoot();
 void handlePlaylistPage();
+void handleAboutPage();
 void handleGetStreams();
 void handlePostStreams();
 void handlePlay();
@@ -464,6 +465,7 @@ void setup() {
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/playlist", HTTP_GET, handlePlaylistPage);
+  server.on("/about", HTTP_GET, handleAboutPage);
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
@@ -1509,6 +1511,21 @@ void handleRoot() {
  */
 void handlePlaylistPage() {
   File file = SPIFFS.open("/playlist.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+/**
+ * @brief Handle about page request
+ * Serves the about.html file
+ * This function reads the about.html file from SPIFFS and sends it to the client
+ */
+void handleAboutPage() {
+  File file = SPIFFS.open("/about.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
     return;
