@@ -29,6 +29,11 @@
     word-wrap: break-word;
 }
 
+/* Ensure toast is visible on light theme */
+[data-theme="light"] #toast-container div {
+    color: white;
+}
+
 @keyframes slideIn {
     from {
         transform: translateX(100%);
