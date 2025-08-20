@@ -137,16 +137,16 @@ function showToast(message, type = 'info') {
     // Set toast style based on type
     switch (type) {
         case 'success':
-            toast.style.backgroundColor = '#4CAF50';
+            toast.style.backgroundColor = 'var(--pico-color-success)';
             break;
         case 'error':
-            toast.style.backgroundColor = '#f44336';
+            toast.style.backgroundColor = 'var(--pico-color-danger)';
             break;
         case 'warning':
-            toast.style.backgroundColor = '#ff9800';
+            toast.style.backgroundColor = 'var(--pico-color-warning)';
             break;
         default:
-            toast.style.backgroundColor = '#2196F3';
+            toast.style.backgroundColor = 'var(--pico-color-primary)';
     }
     
     toast.textContent = message;
@@ -756,7 +756,7 @@ function renderPlaylist() {
             <td data-label="Name"><input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)"></td>
             <td data-label="URL"><input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)"></td>
             <td data-label="Actions" class="actions">
-                <button class="btn-danger" onclick="deleteStream(${index})">Delete</button>
+                <button class="secondary" onclick="deleteStream(${index})">Delete</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -1537,7 +1537,7 @@ function handleWiFiFormSubmit() {
     };
     
     // Show saving state
-    const saveButton = document.querySelector('.btn-primary[type="submit"]');
+    const saveButton = document.querySelector('button[type="submit"]');
     const originalText = saveButton ? saveButton.textContent : 'Save Configuration';
     if (saveButton) {
         saveButton.textContent = 'Saving...';
