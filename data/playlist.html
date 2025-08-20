@@ -57,12 +57,12 @@
                 <label for="playlistFile">Upload Playlist File:</label>
                 <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8" style="margin-bottom: 10px;">
                 <small class="form-help">Supported formats: JSON, M3U, M3U8</small>
-                <div class="button-group">
+                <div class="button-row">
                     <button class="btn-secondary" onclick="uploadJSON()">Upload JSON</button>
-                    <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
-                </div>
-                <div class="button-group">
                     <button class="btn-secondary" onclick="downloadJSON()">Download JSON</button>
+                </div>
+                <div class="button-row">
+                    <button class="btn-secondary" onclick="uploadM3U()">Upload M3U</button>
                     <button class="btn-secondary" onclick="downloadM3U()">Download M3U</button>
                 </div>
             </div>
