@@ -720,9 +720,9 @@ async function setVolume(volume) {
 async function setTone(type, value) {
     // Validate tone parameter
     const toneValue = parseInt(value, 10);
-    if (isNaN(toneValue) || toneValue < -10 || toneValue > 10) {
+    if (isNaN(toneValue) || toneValue < -40 || toneValue > 6) {
         console.error('Invalid ' + type + ' value:', value);
-        showToast('Invalid ' + type + ' value. Must be between -10 and 10.', 'error');
+        showToast('Invalid ' + type + ' value. Must be between -40 and 6.', 'error');
         return;
     }
     

@@ -64,8 +64,8 @@ char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
 int volume = 50;                   ///< Volume level (0-100)
-int bass = 0;                      ///< Bass level (-10 to 10 dB)
-int treble = 0;                    ///< Treble level (-10 to 10 dB)
+int bass = 0;                      ///< Bass level (-40 to 6 dB)
+int treble = 0;                    ///< Treble level (-40 to 6 dB)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
 
@@ -1823,8 +1823,8 @@ void handleTone() {
     // Handle bass setting
     if (doc.containsKey("bass")) {
       int newBass = doc["bass"];
-      if (newBass < -10 || newBass > 10) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -10 and 10\"}");
+      if (newBass < -40 || newBass > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -40 and 6\"}");
         return;
       }
       bass = newBass;
@@ -1834,8 +1834,8 @@ void handleTone() {
     // Handle treble setting
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
-      if (newTreble < -10 || newTreble > 10) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -10 and 10\"}");
+      if (newTreble < -40 || newTreble > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -40 and 6\"}");
         return;
       }
       treble = newTreble;
