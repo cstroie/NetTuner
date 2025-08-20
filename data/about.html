@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>About NetTuner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+</head>
+<body class="container">
+    <nav>
+        <ul>
+            <li><strong>NetTuner</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/playlist">Playlist</a></li>
+            <li><a href="/wifi">Wifi</a></li>
+            <li><a href="/about" class="contrast">About</a></li>
+        </ul>
+    </nav>
+    <main>
+        <section>
+            <h1>About NetTuner</h1>
+            <p>NetTuner is an open-source ESP32-based internet radio player that allows you to stream your favorite radio stations directly from the internet.</p>
+            
+            <h2>Features</h2>
+            <ul>
+                <li>Stream internet radio stations over WiFi</li>
+                <li>Manage a playlist of your favorite stations</li>
+                <li>Control playback through a responsive web interface</li>
+                <li>Adjust volume with intuitive controls</li>
+                <li>Support for various audio formats including MP3, AAC, and more</li>
+                <li>Real-time status updates via WebSocket</li>
+                <li>MPD (Music Player Daemon) protocol compatibility</li>
+            </ul>
+            
+            <h2>How to Use</h2>
+            <ol>
+                <li><strong>Connect to WiFi:</strong> Configure your WiFi network in the WiFi settings</li>
+                <li><strong>Add Stations:</strong> Go to the Playlist page to add your favorite radio stations</li>
+                <li><strong>Play:</strong> Select a station from the dashboard and press Play</li>
+                <li><strong>Control:</strong> Use the volume slider to adjust audio levels</li>
+            </ol>
+            
+            <h2>Technical Details</h2>
+            <p>NetTuner is built on the following technologies:</p>
+            <ul>
+                <li><strong>Hardware:</strong> ESP32 microcontroller with I2S audio output</li>
+                <li><strong>Audio Library:</strong> ESP32-audioI2S for streaming audio decoding</li>
+                <li><strong>Web Framework:</strong> Arduino ESP32 with built-in web server</li>
+                <li><strong>Frontend:</strong> PicoCSS v2 for responsive UI design</li>
+                <li><strong>Communication:</strong> WebSocket for real-time updates</li>
+            </ul>
+            
+            <h2>Project Information</h2>
+            <p>NetTuner is an open-source project designed for hobbyists and makers who want to build their own internet radio player. The project is hosted on GitHub where you can find the source code, documentation, and instructions for building your own device.</p>
+            
+            <p><strong>License:</strong> MIT</p>
+            <p><strong>Version:</strong> 1.0</p>
+        </section>
+    </main>
+</body>
+</html>
