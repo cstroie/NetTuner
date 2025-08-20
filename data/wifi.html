@@ -4,58 +4,52 @@
     <meta charset="UTF-8">
     <title>NetTuner - WiFi Configuration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 </head>
 <body>
-    <div class="container">
+    <main class="container">
         <h1>NetTuner - WiFi Configuration</h1>
         
-        <div class="section">
+        <section>
             <h2>Available Networks</h2>
-            <p class="help-text">Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
+            <p>Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
             <div id="networks">Scanning for networks...</div>
-            <div class="form-group">
-                <button class="btn-secondary" onclick="scanNetworks()">Refresh Networks</button>
-            </div>
-        </div>
+            <button class="outline" onclick="scanNetworks()">Refresh Networks</button>
+        </section>
         
-        <div class="section">
+        <section>
             <h2>Configure WiFi Networks</h2>
-            <p class="help-text">Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
-            <div class="form-group">
-                <small class="form-help">Tip: Add your most reliable networks first. The device will connect to the first available network in the list.</small>
-            </div>
+            <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
+            <small>Tip: Add your most reliable networks first. The device will connect to the first available network in the list.</small>
+            
             <form id="wifiForm">
                 <div id="networkFields">
                     <div class="network-entry">
-                        <div class="form-group">
-                            <label for="ssid0">Primary Network (SSID):</label>
+                        <label for="ssid0">Primary Network (SSID):
                             <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
-                        </div>
-                        <div class="form-group">
-                            <label for="password0">Password:</label>
+                        </label>
+                        <label for="password0">Password:
                             <input type="password" id="password0" name="password0" placeholder="Enter Password">
-                        </div>
+                        </label>
                     </div>
                 </div>
-                <button type="button" id="addNetwork" class="btn-secondary" onclick="addNetworkField()">Add Network</button>
-                <button type="submit" class="btn-primary">Save Configuration</button>
+                <button type="button" id="addNetwork" class="outline" onclick="addNetworkField()">Add Network</button>
+                <button type="submit">Save Configuration</button>
             </form>
-        </div>
+        </section>
         
-        <div class="section">
+        <section>
             <h2>Connection Status</h2>
-            <p class="help-text">Current network connection information</p>
+            <p>Current network connection information</p>
             <div id="connection-status">
                 <p>Loading connection status...</p>
             </div>
-        </div>
+        </section>
         
-        <div class="form-actions">
-            <button class="btn-back" onclick="window.location.href='/'">Back to Main</button>
-        </div>
-    </div>
+        <section>
+            <button onclick="window.location.href='/'">Back to Main</button>
+        </section>
+    </main>
 
     <script src="/scripts.js"></script>
     <script>
