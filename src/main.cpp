@@ -1847,9 +1847,13 @@ void handleTone() {
       return;
     }
     
-    // Apply tone settings to audio (if supported by the audio library)
-    // Note: ESP32-audioI2S doesn't directly support tone controls
-    // This would need to be implemented with a custom audio processing chain
+    // Apply tone settings to audio using the Audio library's setTone function
+    if (audio) {
+      // Map our -10 to 10 range to the Audio library's expected range
+      // For setTone: gainLowPass (bass), gainBandPass (mid), gainHighPass (treble)
+      // We'll set mid to 0 and use bass for lowPass and treble for highPass
+      audio->setTone(bass, 0, treble);
+    }
     
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
