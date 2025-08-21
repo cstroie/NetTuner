@@ -1,4 +1,25 @@
 /* Custom styles for NetTuner */
+:root {
+    --pico-font-family-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --pico-font-family-sans-serif: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, var(--pico-font-family-emoji);
+    --pico-font-family-monospace: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace, var(--pico-font-family-emoji);
+    --pico-font-family: var(--pico-font-family-sans-serif);
+    --pico-line-height: 1.5;
+    --pico-font-weight: 400;
+    --pico-font-size: 100%;
+    --pico-text-underline-offset: .1rem;
+    --pico-border-radius: .375rem;
+    --pico-border-width: .0625rem;
+    --pico-outline-width: .125rem;
+    --pico-transition: .2sease-in-out;
+    --pico-spacing: 1rem;
+    --pico-typography-spacing-vertical: 1rem;
+    --pico-block-spacing-vertical: calc(var(--pico-spacing)* 1.5);
+    --pico-block-spacing-horizontal: calc(var(--pico-spacing)* 1.5);
+    --pico-form-element-spacing-vertical: .75rem;
+    --pico-form-element-spacing-horizontal: 1rem;
+    --pico-icon-chevron: url(data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgb(136, 145, 164)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E);
+}
 
 @media (max-width: 768px) {
     .overflow-auto {
@@ -25,4 +46,30 @@
 
 .tone-control input[type="range"] {
     width: 100%;
+}
+
+/* Various customizations */
+#instantUrl {
+    width: 80%;
+}
+
+#currentStream {
+    font-weight: 700;
+}
+
+.network-entry button {
+    min-width: 8rem;
+}
+
+.network-item {
+    grid-template-columns: 2rem 1fr 6rem 10rem;
+    margin-bottom: 0.25rem;
+}
+
+.network-item div, .network-item button {
+    padding: 0.25rem 0.5rem;
+}
+
+.network-item .configured-marker {
+    text-align: center;
 }

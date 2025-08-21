@@ -10,7 +10,10 @@
 <body class="container">
     <nav>
         <ul>
-            <li><strong>NetTuner</strong>&nbsp;<kbd id="status" class="status stopped">STOPPED</kbd></li>
+            <li><strong>NetTuner</strong></li>
+        </ul>
+        <ul>
+            <li><kbd id="status" class="status stopped">STOPPED</kbd></li>
         </ul>
         <ul>
             <li><a href="/" class="contrast">Home</a></li>
@@ -64,8 +67,8 @@
             </select>
             <footer>
                 <div role="group">
-                    <button onclick="playStream()">▶ Play</button>
-                    <button class="secondary" onclick="stopStream()">⏹ Stop</button>
+                    <button onclick="playStream()">▶&nbsp;Play</button>
+                    <button class="secondary" onclick="stopStream()">⏹&nbsp;Stop</button>
                 </div>
             </footer>
         </article>
@@ -74,7 +77,7 @@
         <label for="instantUrl">Instant play</label>
         <div role="group">
             <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
-            <button onclick="playInstantStream()">▶ Play</button>
+            <button onclick="playInstantStream()">▶&nbsp;Play</button>
         </div>
     </footer>
 
