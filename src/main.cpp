@@ -224,8 +224,8 @@ public:
       return;
     }
     
-    int CLK = digitalRead(ROTARY_CLK);  // Read clock signal
-    int DT = digitalRead(ROTARY_DT);    // Read data signal
+    int CLK = digitalRead(config.rotary_clk);  // Read clock signal
+    int DT = digitalRead(config.rotary_dt);    // Read data signal
     
     // Only process when CLK transitions from LOW to HIGH
     if (CLK == HIGH && lastCLK == LOW) {
@@ -277,6 +277,9 @@ public:
     return result;
   }
 };
+
+// Global rotary encoder instance
+RotaryEncoder rotaryEncoder;
 
 // Function declarations
 void loadConfig();
