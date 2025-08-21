@@ -851,8 +851,7 @@ void handleWiFiStatus() {
 /**
  * @brief Load WiFi credentials from SPIFFS
  * This function reads WiFi credentials from wifi.json in SPIFFS and populates
- * the ssid and password arrays. It supports both single network and multiple
- * network configurations for backward compatibility.
+ * the ssid and password arrays. It supports the new JSON array format.
  */
 void loadWiFiCredentials() {
   if (!SPIFFS.exists("/wifi.json")) {
@@ -867,7 +866,7 @@ void loadWiFiCredentials() {
   }
   
   size_t size = file.size();
-  if (size > 512) {
+  if (size > 2048) {  // Increased size for array format
     Serial.println("WiFi config file too large");
     file.close();
     return;
@@ -894,7 +893,7 @@ void loadWiFiCredentials() {
   buf[size] = '\0';
   file.close();
   
-  DynamicJsonDocument doc(512);
+  DynamicJsonDocument doc(2048);  // Increased size for array format
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
     Serial.print("Failed to parse WiFi config JSON: ");
@@ -902,7 +901,41 @@ void loadWiFiCredentials() {
     return;
   }
   
-  if (doc.containsKey("ssid")) {
+  // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
+  if (doc.is<JsonArray>()) {
+    JsonArray networks = doc.as<JsonArray>();
+    wifiNetworkCount = 0;
+    
+    for (JsonObject network : networks) {
+      if (wifiNetworkCount >= MAX_WIFI_NETWORKS) break;
+      
+      if (network.containsKey("ssid")) {
+        const char* ssidValue = network["ssid"];
+        if (ssidValue) {
+          strncpy(ssid[wifiNetworkCount], ssidValue, sizeof(ssid[wifiNetworkCount]) - 1);
+          ssid[wifiNetworkCount][sizeof(ssid[wifiNetworkCount]) - 1] = '\0';
+        } else {
+          ssid[wifiNetworkCount][0] = '\0';
+        }
+        
+        if (network.containsKey("password")) {
+          const char* pwdValue = network["password"];
+          if (pwdValue) {
+            strncpy(password[wifiNetworkCount], pwdValue, sizeof(password[wifiNetworkCount]) - 1);
+            password[wifiNetworkCount][sizeof(password[wifiNetworkCount]) - 1] = '\0';
+          } else {
+            password[wifiNetworkCount][0] = '\0';
+          }
+        } else {
+          password[wifiNetworkCount][0] = '\0';
+        }
+        
+        wifiNetworkCount++;
+      }
+    }
+  }
+  // Handle backward compatibility with old format
+  else if (doc.containsKey("ssid")) {
     // Handle both single SSID and array of SSIDs
     if (doc["ssid"].is<JsonArray>()) {
       JsonArray ssidArray = doc["ssid"];
@@ -919,37 +952,37 @@ void loadWiFiCredentials() {
       ssid[0][sizeof(ssid[0]) - 1] = '\0';
       wifiNetworkCount = 1;
     }
-  }
-  
-  if (doc.containsKey("password")) {
-    // Handle both single password and array of passwords
-    if (doc["password"].is<JsonArray>()) {
-      JsonArray passwordArray = doc["password"];
-      for (int i = 0; i < wifiNetworkCount && i < MAX_WIFI_NETWORKS; i++) {
-        if (i < (int)passwordArray.size()) {
-          const char* pwd = passwordArray[i];
-          if (pwd) {
-            strncpy(password[i], pwd, sizeof(password[i]) - 1);
-            password[i][sizeof(password[i]) - 1] = '\0';
+    
+    if (doc.containsKey("password")) {
+      // Handle both single password and array of passwords
+      if (doc["password"].is<JsonArray>()) {
+        JsonArray passwordArray = doc["password"];
+        for (int i = 0; i < wifiNetworkCount && i < MAX_WIFI_NETWORKS; i++) {
+          if (i < (int)passwordArray.size()) {
+            const char* pwd = passwordArray[i];
+            if (pwd) {
+              strncpy(password[i], pwd, sizeof(password[i]) - 1);
+              password[i][sizeof(password[i]) - 1] = '\0';
+            } else {
+              password[i][0] = '\0';
+            }
           } else {
             password[i][0] = '\0';
           }
+        }
+      } else {
+        // Single password for backward compatibility
+        const char* pwd = doc["password"];
+        if (pwd) {
+          strncpy(password[0], pwd, sizeof(password[0]) - 1);
+          password[0][sizeof(password[0]) - 1] = '\0';
         } else {
+          password[0][0] = '\0';
+        }
+        // Clear other passwords
+        for (int i = 1; i < MAX_WIFI_NETWORKS; i++) {
           password[i][0] = '\0';
         }
-      }
-    } else {
-      // Single password for backward compatibility
-      const char* pwd = doc["password"];
-      if (pwd) {
-        strncpy(password[0], pwd, sizeof(password[0]) - 1);
-        password[0][sizeof(password[0]) - 1] = '\0';
-      } else {
-        password[0][0] = '\0';
-      }
-      // Clear other passwords
-      for (int i = 1; i < MAX_WIFI_NETWORKS; i++) {
-        password[i][0] = '\0';
       }
     }
   }
@@ -969,21 +1002,19 @@ void loadWiFiCredentials() {
 /**
  * @brief Save WiFi credentials to SPIFFS
  * This function saves the current WiFi credentials to wifi.json in SPIFFS.
- * It stores both SSIDs and passwords as arrays to support multiple networks.
+ * It stores networks in the new JSON array format.
  */
 void saveWiFiCredentials() {
-  DynamicJsonDocument doc(1024); // Increased size for multiple networks
+  DynamicJsonDocument doc(2048); // Increased size for array format
+  JsonArray networks = doc.to<JsonArray>();
   
-  // Save SSIDs as array
-  JsonArray ssidArray = doc.createNestedArray("ssid");
+  // Save networks in the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
   for (int i = 0; i < wifiNetworkCount; i++) {
-    ssidArray.add(ssid[i]);
-  }
-  
-  // Save passwords as array
-  JsonArray passwordArray = doc.createNestedArray("password");
-  for (int i = 0; i < wifiNetworkCount; i++) {
-    passwordArray.add(password[i]);
+    JsonObject network = networks.createNestedObject();
+    network["ssid"] = ssid[i];
+    if (strlen(password[i]) > 0) {
+      network["password"] = password[i];
+    }
   }
   
   File file = SPIFFS.open("/wifi.json", "w");

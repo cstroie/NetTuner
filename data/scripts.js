@@ -1458,8 +1458,14 @@ function loadConfiguredNetworks() {
         .then(data => {
             // Handle consistent data structure for configured networks
             if (Array.isArray(data)) {
-                // If array of strings (SSIDs only)
-                configuredNetworks = data;
+                // If array of objects with ssid property (new format)
+                if (data.length > 0 && typeof data[0] === 'object' && data[0].ssid) {
+                    configuredNetworks = data.map(network => network.ssid);
+                }
+                // If array of strings (SSIDs only - old format)
+                else {
+                    configuredNetworks = data;
+                }
             } else if (data.configured && Array.isArray(data.configured)) {
                 // If object with configured array
                 configuredNetworks = data.configured;
@@ -1486,8 +1492,17 @@ function loadCurrentConfiguration() {
             // Handle consistent data structure for configuration loading
             let configNetworks = [];
             if (Array.isArray(data)) {
-                // If array of strings (SSIDs only)
-                configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
+                // If array of objects with ssid and password properties (new format)
+                if (data.length > 0 && typeof data[0] === 'object' && data[0].hasOwnProperty('ssid')) {
+                    configNetworks = data.map(network => ({
+                        ssid: network.ssid || '',
+                        password: network.password || ''
+                    }));
+                }
+                // If array of strings (SSIDs only - old format)
+                else {
+                    configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
+                }
             } else if (data.configured && Array.isArray(data.configured)) {
                 // If object with configured array of strings
                 configNetworks = data.configured.map((ssid, index) => ({ ssid, password: '' }));
@@ -1553,8 +1568,7 @@ function removeNetworkField(button) {
 }
 
 function handleWiFiFormSubmit() {
-    const ssids = [];
-    const passwords = [];
+    const networks = [];
     
     // Collect all network entries
     const networkEntries = document.querySelectorAll('.network-entry');
@@ -1563,19 +1577,21 @@ function handleWiFiFormSubmit() {
         const passwordInput = entry.querySelector(`#password${index}`);
         
         if (ssidInput && ssidInput.value.trim()) {
-            ssids.push(ssidInput.value.trim());
-            passwords.push(passwordInput ? passwordInput.value : '');
+            const network = {
+                ssid: ssidInput.value.trim()
+            };
+            
+            if (passwordInput && passwordInput.value) {
+                network.password = passwordInput.value;
+            }
+            
+            networks.push(network);
         }
     });
     
-    if (ssids.length === 0) {
+    if (networks.length === 0) {
         return;
     }
-    
-    const data = {
-        ssid: ssids,
-        password: passwords
-    };
     
     // Show saving state
     const saveButton = document.querySelector('button[type="submit"]');
@@ -1590,7 +1606,7 @@ function handleWiFiFormSubmit() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(networks)
     })
     .then(response => {
         if (response.ok) {
