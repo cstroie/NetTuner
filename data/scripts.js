@@ -1802,7 +1802,7 @@ function loadConnectionStatus() {
         });
 }
 
-async function selectNetwork(ssid) {
+function selectNetwork(ssid) {
     document.getElementById('ssid0').value = ssid;
 }
 
