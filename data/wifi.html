@@ -38,7 +38,7 @@
             </hgroup>
             <form id="wifiForm">
                 <fieldset id="networkFields">
-                    <div role="group">
+                    <div role="group" class="network-entry">
                         <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
                         <input type="password" id="password0" name="password0" placeholder="Enter password">
                         <button type="button" id="addNetwork" onclick="addNetworkField()">Add</button>
@@ -46,7 +46,7 @@
                 </fieldset>
             </form>
             <footer>
-                <button type="submit" onclick="handleWiFiFormSubmit()">Save configuration</button>
+                <button type="submit" form="wifiForm">Save configuration</button>
             </footer>
         </article>
     </main>
