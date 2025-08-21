@@ -1665,18 +1665,16 @@ function scanNetworks() {
                 if (isConfigured) {
                     networkDiv.classList.add('configured-network');
                     networkDiv.innerHTML = `
-                        <div class="network-info">
-                            <span class="network-name">${network.ssid} <span class="configured-marker">★ Configured</span></span>
-                            <span class="network-rssi ${signalClass}">${network.rssi} dBm</span>
-                        </div>
-                        <button class="btn-small" onclick="selectNetwork('${network.ssid}')">Reconfigure</button>
+                        <div class="configured-marker">★</div>
+                        <div class="network-name">${network.ssid}</div>
+                        <div class="network-rssi ${signalClass}">${network.rssi} dBm</div>
+                        <button class="btn-small secondary" onclick="selectNetwork('${network.ssid}')">Reconfigure</button>
                     `;
                 } else {
                     networkDiv.innerHTML = `
-                        <div class="network-info">
-                            <span class="network-name">${network.ssid}</span>
-                            <span class="network-rssi ${signalClass}">${network.rssi} dBm</span>
-                        </div>
+                        <div class="configured-marker"></div>
+                        <div class="network-name">${network.ssid}</div>
+                        <div class="network-rssi ${signalClass}">${network.rssi} dBm</div>
                         <button class="btn-small" onclick="selectNetwork('${network.ssid}')">Select</button>
                     `;
                 }
@@ -1693,7 +1691,7 @@ function scanNetworks() {
         .finally(() => {
             // Restore scan button
             if (scanButton) {
-                scanButton.textContent = originalText || 'Refresh Networks';
+                scanButton.textContent = originalText || 'Refresh networks';
                 scanButton.disabled = false;
             }
         });
