@@ -2318,9 +2318,9 @@ void handleMPDCommand(const String& command) {
     if (command.length() > 7) {
       int newVolume = command.substring(7).toInt();
       if (newVolume >= 0 && newVolume <= 100) {
-        volume = newVolume;
+        volume = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audio) {
-          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         updateDisplay();
         sendStatusToClients();  // Notify WebSocket clients
