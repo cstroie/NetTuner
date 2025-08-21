@@ -2061,7 +2061,6 @@ void updateDisplay() {
         display.setCursor(0, 42);
         display.print("Volume: ");
         display.print(volume);
-        display.println("%");
       }
     } else {
       // Display bitrate and volume on second line if no title and bitrate available
@@ -2075,7 +2074,6 @@ void updateDisplay() {
         display.setCursor(0, 30);
         display.print("Volume: ");
         display.print(volume);
-        display.println("%");
       }
     }
     
