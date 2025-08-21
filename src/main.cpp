@@ -984,6 +984,20 @@ void loadWiFiCredentials() {
 void loadConfig() {
   if (!SPIFFS.exists("/config.json")) {
     Serial.println("Config file not found, using defaults");
+    // Initialize config with default values
+    config.i2s_dout = DEFAULT_I2S_DOUT;
+    config.i2s_bclk = DEFAULT_I2S_BCLK;
+    config.i2s_lrc = DEFAULT_I2S_LRC;
+    config.led_pin = DEFAULT_LED_PIN;
+    config.rotary_clk = DEFAULT_ROTARY_CLK;
+    config.rotary_dt = DEFAULT_ROTARY_DT;
+    config.rotary_sw = DEFAULT_ROTARY_SW;
+    config.board_button = DEFAULT_BOARD_BUTTON;
+    config.display_sda = DEFAULT_DISPLAY_SDA;
+    config.display_scl = DEFAULT_DISPLAY_SCL;
+    config.display_width = DEFAULT_DISPLAY_WIDTH;
+    config.display_height = DEFAULT_DISPLAY_HEIGHT;
+    config.display_address = DEFAULT_DISPLAY_ADDR;
     return;
   }
   
@@ -1029,20 +1043,20 @@ void loadConfig() {
     return;
   }
   
-  // Load configuration values
-  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
-  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
-  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
-  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
-  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
-  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
-  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
-  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
-  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
-  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
-  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
-  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
-  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  // Load configuration values, using defaults for missing values
+  config.i2s_dout = doc.containsKey("i2s_dout") ? doc["i2s_dout"] : DEFAULT_I2S_DOUT;
+  config.i2s_bclk = doc.containsKey("i2s_bclk") ? doc["i2s_bclk"] : DEFAULT_I2S_BCLK;
+  config.i2s_lrc = doc.containsKey("i2s_lrc") ? doc["i2s_lrc"] : DEFAULT_I2S_LRC;
+  config.led_pin = doc.containsKey("led_pin") ? doc["led_pin"] : DEFAULT_LED_PIN;
+  config.rotary_clk = doc.containsKey("rotary_clk") ? doc["rotary_clk"] : DEFAULT_ROTARY_CLK;
+  config.rotary_dt = doc.containsKey("rotary_dt") ? doc["rotary_dt"] : DEFAULT_ROTARY_DT;
+  config.rotary_sw = doc.containsKey("rotary_sw") ? doc["rotary_sw"] : DEFAULT_ROTARY_SW;
+  config.board_button = doc.containsKey("board_button") ? doc["board_button"] : DEFAULT_BOARD_BUTTON;
+  config.display_sda = doc.containsKey("display_sda") ? doc["display_sda"] : DEFAULT_DISPLAY_SDA;
+  config.display_scl = doc.containsKey("display_scl") ? doc["display_scl"] : DEFAULT_DISPLAY_SCL;
+  config.display_width = doc.containsKey("display_width") ? doc["display_width"] : DEFAULT_DISPLAY_WIDTH;
+  config.display_height = doc.containsKey("display_height") ? doc["display_height"] : DEFAULT_DISPLAY_HEIGHT;
+  config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
   
   Serial.println("Loaded configuration from SPIFFS");
 }
