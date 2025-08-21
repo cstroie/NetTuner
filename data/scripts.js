@@ -970,8 +970,7 @@ function confirmSaveEmptyPlaylist() {
     savePlaylistInternal();
 }
 
-function savePlaylistInternal() {
-    
+async function savePlaylistInternal() {
     // Validate each stream in the playlist
     for (let i = 0; i < streams.length; i++) {
         const stream = streams[i];
