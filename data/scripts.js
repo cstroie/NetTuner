@@ -132,110 +132,9 @@ async function loadStreams() {
         if (playlistBody) {
             playlistBody.innerHTML = `<span>Error loading streams: ${errorMessage}</span>`;
         }
-        showToast(`Error loading streams: ${errorMessage}. Please refresh the page or check your connection.`, 'error');
     }
 }
 
-/**
- * @brief Show a toast notification
- * Displays a temporary message notification in the top-right corner
- * @param message The message to display
- * @param type The type of message (success, error, warning, info)
- */
-function showToast(message, type = 'info') {
-    // Create toast container if it doesn't exist
-    let toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.id = 'toast-container';
-        toastContainer.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        `;
-        document.body.appendChild(toastContainer);
-    }
-    
-    // Limit the number of toasts to prevent memory leaks
-    const maxToasts = 5;
-    while (toastContainer.children.length >= maxToasts) {
-        toastContainer.removeChild(toastContainer.firstChild);
-    }
-    
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        padding: 12px 20px;
-        border-radius: 4px;
-        color: white;
-        font-weight: bold;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        animation: slideIn 0.3s, fadeOut 0.5s 2.5s forwards;
-        max-width: 300px;
-        word-wrap: break-word;
-    `;
-    
-    // Set toast style based on type
-    switch (type) {
-        case 'success':
-            toast.style.backgroundColor = 'var(--pico-color-success)';
-            break;
-        case 'error':
-            toast.style.backgroundColor = 'var(--pico-color-danger)';
-            break;
-        case 'warning':
-            toast.style.backgroundColor = 'var(--pico-color-warning)';
-            break;
-        default:
-            toast.style.backgroundColor = 'var(--pico-color-primary)';
-    }
-    
-    toast.textContent = message;
-    
-    // Add toast to container
-    toastContainer.appendChild(toast);
-    
-    // Remove toast after animation completes
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 3000);
-}
-
-/**
- * @brief Add CSS styles for toast notifications
- * Injects the required CSS animations for toast notifications into the document head
- */
-function addToastStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
-            }
-            to {
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-}
 
 // WebSocket connection
 let ws = null;
@@ -276,7 +175,6 @@ function connectWebSocket() {
     // Check if we've exceeded max reconnect attempts
     if (reconnectAttempts >= maxReconnectAttempts) {
         console.log('Max reconnect attempts reached. Stopping reconnection.');
-        showToast('Connection failed. Please refresh the page.', 'error');
         return;
     }
     
@@ -327,7 +225,6 @@ function connectWebSocket() {
                         reconnectTimeout = setTimeout(connectWebSocket, timeout);
                     } else {
                         console.log('Max reconnect attempts reached. Stopping reconnection.');
-                        showToast('Connection failed. Please refresh the page.', 'error');
                     }
                 }
                 // Always clear timer reference
@@ -346,7 +243,6 @@ function connectWebSocket() {
             connectionLock = false;
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
-            showToast('Connected to NetTuner', 'success');
             
         };
         
@@ -364,14 +260,6 @@ function connectWebSocket() {
                     statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
                     statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
                     
-                    // Show toast notifications for status changes
-                    const wasPlaying = statusElement.classList.contains('playing');
-                    const isPlaying = status.playing;
-                    
-                    if (wasPlaying !== isPlaying) {
-                        showToast(isPlaying ? 'Playback started' : 'Playback stopped', 
-                                 isPlaying ? 'success' : 'info');
-                    }
                 }
                 
                 // Update stream name element
@@ -467,7 +355,6 @@ function connectWebSocket() {
             }
             
             console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
-            showToast('Disconnected from NetTuner', 'warning');
             
             // Release connection lock and reset connecting flag
             isConnecting = false;
@@ -480,7 +367,6 @@ function connectWebSocket() {
                 reconnectTimeout = setTimeout(connectWebSocket, timeout);
             } else {
                 console.log('Max reconnect attempts reached. Stopping reconnection.');
-                showToast('Connection failed. Please refresh the page.', 'error');
             }
         };
         
@@ -499,7 +385,6 @@ function connectWebSocket() {
         }
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
-        showToast('Failed to connect', 'error');
         
         // Release connection lock and reset connecting flag
         isConnecting = false;
@@ -512,7 +397,6 @@ function connectWebSocket() {
             reconnectTimeout = setTimeout(connectWebSocket, timeout);
         } else {
             console.log('Max reconnect attempts reached. Stopping reconnection.');
-            showToast('Connection failed. Please refresh the page.', 'error');
         }
     }
 }
@@ -530,7 +414,6 @@ function forceReconnect() {
 async function playStream() {
     const { select, url, name } = getSelectedStream();
     if (!select) {
-        showToast('Stream selection not available', 'error');
         return;
     }
     
@@ -548,7 +431,6 @@ async function playStream() {
     
     try {
         await sendPlayRequest(url, name);
-        showToast('Stream started successfully', 'success');
     } catch (error) {
         handlePlayError(error);
     } finally {
@@ -576,7 +458,6 @@ function getSelectedStream() {
 
 function validateStreamSelection(url) {
     if (!url) {
-        showToast('Please select a stream', 'warning');
         return false;
     }
     
@@ -584,7 +465,6 @@ function validateStreamSelection(url) {
     try {
         new URL(url);
     } catch (e) {
-        showToast('Invalid URL format', 'error');
         return false;
     }
     
@@ -633,8 +513,6 @@ function playSelectedStream() {
     sendPlayRequest(url, name)
         .catch(error => {
             console.error('Error playing stream:', error);
-            const errorMessage = error.message || 'Unknown error occurred';
-            showToast('Error playing stream: ' + errorMessage + '. Please check the stream URL and try again.', 'error');
         });
 }
 
@@ -645,14 +523,10 @@ async function stopStream() {
     if (stopButton) {
         stopButton.textContent = 'Stopping...';
         stopButton.disabled = true;
-    } else {
-        // If no button found, show toast immediately
-        showToast('Stopping stream...', 'info');
     }
     
     try {
         await sendStopRequest();
-        showToast('Stream stopped successfully', 'info');
     } catch (error) {
         handleStopError(error);
     } finally {
@@ -694,7 +568,6 @@ function handleStopError(error) {
 function handleVolumeChange(volume) {
     setVolume(volume).catch(error => {
         console.error('Error in volume change:', error);
-        showToast('Error setting volume: ' + error.message, 'error');
     });
 }
 
@@ -702,7 +575,6 @@ function handleVolumeChange(volume) {
 function handleToneChange(type, value) {
     setTone(type, value).catch(error => {
         console.error('Error in tone change:', error);
-        showToast('Error setting ' + type + ': ' + error.message, 'error');
     });
 }
 
@@ -711,7 +583,6 @@ async function setVolume(volume) {
     const volumeNum = parseInt(volume, 10);
     if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 22) {
         console.error('Invalid volume value:', volume);
-        showToast('Invalid volume value. Must be between 0 and 22.', 'error');
         return;
     }
     
@@ -744,7 +615,6 @@ async function setVolume(volume) {
                 if (volumeValue) {
                     volumeValue.textContent = volumeNum;
                 }
-                showToast(result.message || 'Volume set to ' + volumeNum, 'info');
             } else {
                 throw new Error(result.message || 'Failed to set volume');
             }
@@ -753,8 +623,6 @@ async function setVolume(volume) {
         }
     } catch (error) {
         console.error('Error setting volume:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error setting volume: ' + errorMessage + '. Please try again.', 'error');
         // Restore original volume value on error
         if (volumeControl) {
             volumeControl.value = originalVolume;
@@ -776,7 +644,6 @@ async function setTone(type, value) {
     const toneValue = parseInt(value, 10);
     if (isNaN(toneValue) || toneValue < -6 || toneValue > 6) {
         console.error('Invalid ' + type + ' value:', value);
-        showToast('Invalid ' + type + ' value. Must be between -6 and 6.', 'error');
         return;
     }
     
@@ -809,7 +676,6 @@ async function setTone(type, value) {
                 if (toneValueElement) {
                     toneValueElement.textContent = toneValue + 'dB';
                 }
-                showToast(result.message || type.charAt(0).toUpperCase() + type.slice(1) + ' set to ' + toneValue + 'dB', 'info');
                 // Update global variable
                 if (type === 'bass') {
                     bass = toneValue;
@@ -826,8 +692,6 @@ async function setTone(type, value) {
         }
     } catch (error) {
         console.error('Error setting ' + type + ':', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error setting ' + type + ': ' + errorMessage + '. Please try again.', 'error');
         // Restore original value on error
         if (toneControl) {
             toneControl.value = originalValue;
@@ -849,14 +713,12 @@ async function playInstantStream() {
     const url = urlInput.value.trim();
     
     if (!url) {
-        showToast('Please enter a stream URL', 'warning');
         urlInput.focus();
         return;
     }
     
     // Validate URL format
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        showToast('Please enter a valid URL starting with http:// or https://', 'warning');
         urlInput.focus();
         return;
     }
@@ -864,7 +726,6 @@ async function playInstantStream() {
     try {
         new URL(url);
     } catch (e) {
-        showToast('Please enter a valid URL', 'warning');
         urlInput.focus();
         return;
     }
@@ -879,7 +740,6 @@ async function playInstantStream() {
     
     try {
         await sendPlayRequest(url, 'Instant Stream');
-        showToast('Stream started successfully', 'success');
         // Clear the input field after successful play
         urlInput.value = '';
     } catch (error) {
@@ -938,7 +798,6 @@ function addStream() {
     const url = document.getElementById('url');
     
     if (!name || !url) {
-        showToast('Form elements not found', 'error');
         return;
     }
     
@@ -947,14 +806,12 @@ function addStream() {
     // Trim and validate name
     const trimmedName = name.value.trim();
     if (!trimmedName) {
-        showToast('Please enter a stream name', 'warning');
         name.focus();
         return;
     }
     
     // Validate name length
     if (trimmedName.length > 128) {
-        showToast('Stream name must be 128 characters or less', 'warning');
         name.focus();
         return;
     }
@@ -962,14 +819,12 @@ function addStream() {
     // Trim and validate URL
     const trimmedUrl = url.value.trim();
     if (!trimmedUrl) {
-        showToast('Please enter a stream URL', 'warning');
         url.focus();
         return;
     }
     
     // Validate URL format
     if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
-        showToast('Please enter a valid URL starting with http:// or https://', 'warning');
         url.focus();
         return;
     }
@@ -978,14 +833,12 @@ function addStream() {
     try {
         new URL(trimmedUrl);
     } catch (e) {
-        showToast('Please enter a valid URL', 'warning');
         url.focus();
         return;
     }
     
     // Validate URL length
     if (trimmedUrl.length > 256) {
-        showToast('Stream URL must be 256 characters or less', 'warning');
         url.focus();
         return;
     }
@@ -1001,12 +854,10 @@ function addStream() {
 
 function updateStream(index, field, value) {
     if (index < 0 || index >= streams.length) {
-        showToast('Invalid stream index', 'error');
         return;
     }
     
     if (!streams[index]) {
-        showToast('Stream not found', 'error');
         return;
     }
     
@@ -1015,12 +866,10 @@ function updateStream(index, field, value) {
     // Validate URL format if updating URL field
     if (field === 'url') {
         if (!trimmedValue) {
-            showToast('URL cannot be empty', 'error');
             return;
         }
         
         if (!trimmedValue.startsWith('http://') && !trimmedValue.startsWith('https://')) {
-            showToast('Invalid URL format. Must start with http:// or https://', 'error');
             return;
         }
         
@@ -1028,13 +877,11 @@ function updateStream(index, field, value) {
         try {
             new URL(trimmedValue);
         } catch (e) {
-            showToast('Invalid URL format', 'error');
             return;
         }
         
         // Validate URL length
         if (trimmedValue.length > 256) {
-            showToast('Stream URL must be 256 characters or less', 'error');
             return;
         }
     }
@@ -1042,13 +889,11 @@ function updateStream(index, field, value) {
     // Validate name field
     if (field === 'name') {
         if (!trimmedValue) {
-            showToast('Name cannot be empty', 'error');
             return;
         }
         
         // Validate name length
         if (trimmedValue.length > 128) {
-            showToast('Stream name must be 128 characters or less', 'error');
             return;
         }
     }
@@ -1058,7 +903,6 @@ function updateStream(index, field, value) {
 
 function deleteStream(index) {
     if (index < 0 || index >= streams.length) {
-        showToast('Invalid stream index', 'error');
         return;
     }
     
@@ -1080,29 +924,24 @@ async function savePlaylist() {
     for (let i = 0; i < streams.length; i++) {
         const stream = streams[i];
         if (!stream || typeof stream !== 'object') {
-            showToast(`Invalid stream at position ${i+1}`, 'error');
             return;
         }
         
         if (!stream.name || !stream.name.trim()) {
-            showToast(`Stream at position ${i+1} has an empty name`, 'error');
             return;
         }
         
         if (!stream.url) {
-            showToast(`Stream at position ${i+1} has no URL`, 'error');
             return;
         }
         
         if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
-            showToast(`Stream at position ${i+1} has invalid URL format`, 'error');
             return;
         }
         
         try {
             new URL(stream.url);
         } catch (e) {
-            showToast(`Stream at position ${i+1} has invalid URL`, 'error');
             return;
         }
     }
@@ -1121,7 +960,6 @@ async function savePlaylist() {
         jsonData = JSON.stringify(streams);
     } catch (error) {
         console.error('Error serializing playlist:', error);
-        showToast('Error serializing playlist: ' + error.message, 'error');
         if (saveButton) {
             saveButton.textContent = originalText || 'Save Playlist';
             saveButton.disabled = false;
@@ -1147,7 +985,7 @@ async function savePlaylist() {
             // Handle JSON response
             const result = await response.json();
             if (result.status === 'success') {
-                showToast('Playlist saved successfully!', 'success');
+                // Success - no toast needed
             } else {
                 throw new Error(result.message || 'Unknown error');
             }
@@ -1157,8 +995,6 @@ async function savePlaylist() {
         }
     } catch (error) {
         console.error('Error saving playlist:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error saving playlist: ' + errorMessage + '. Please check your connection and try again.', 'error');
     } finally {
         // Restore button state
         if (saveButton) {
@@ -1175,14 +1011,12 @@ async function uploadJSON() {
     console.log('Uploading JSON playlist file:', file);
     
     if (!file) {
-        showToast('Please select a playlist file', 'warning');
         return;
     }
     
     // Check file extension
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.json')) {
-        showToast('Please select a JSON file', 'warning');
         // Clear file input on error
         fileInput.value = '';
         return;
@@ -1218,19 +1052,15 @@ async function uploadJSON() {
                 // Handle JSON response
                 const result = await response.json();
                 if (result.status === 'success') {
-                    showToast(result.message || 'Playlist uploaded successfully', 'success');
                     // Reload streams after successful upload
                     loadStreams();
-                } else {
-                    showToast(result.message || 'Error uploading playlist', 'error');
                 }
             } else {
                 const error = await response.text();
-                showToast('Error uploading playlist: ' + error, 'error');
+                console.error('Error uploading playlist: ' + error);
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
-            showToast('Error uploading playlist file: ' + error.message, 'error');
         } finally {
             // Clear file input in all cases
             fileInput.value = '';
@@ -1242,7 +1072,6 @@ async function uploadJSON() {
         }
     };
     reader.onerror = function() {
-        showToast('Error reading file. Please make sure the file is not corrupted and try again.', 'error');
         fileInput.value = '';
         // Restore button state
         if (uploadButton) {
@@ -1258,7 +1087,6 @@ async function importRemotePlaylist() {
     const url = urlInput.value.trim();
     
     if (!url) {
-        showToast('Please enter a playlist URL', 'warning');
         return;
     }
     
@@ -1266,7 +1094,6 @@ async function importRemotePlaylist() {
     try {
         new URL(url);
     } catch (e) {
-        showToast('Please enter a valid URL', 'warning');
         return;
     }
     
@@ -1335,14 +1162,10 @@ async function importRemotePlaylist() {
         streams = jsonData;
         renderPlaylist();
         
-        showToast('Playlist imported successfully! Remember to save if you want to keep it.', 'success');
-        
         // Clear the input field
         urlInput.value = '';
     } catch (error) {
         console.error('Error importing remote playlist:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        showToast('Error importing playlist: ' + errorMessage, 'error');
     } finally {
         // Restore button state
         if (importButton) {
@@ -1359,14 +1182,12 @@ async function uploadM3U() {
     console.log('Uploading M3U playlist file:', file);
     
     if (!file) {
-        showToast('Please select a playlist file', 'warning');
         return;
     }
     
     // Check file extension
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
-        showToast('Please select an M3U file', 'warning');
         // Clear file input on error
         fileInput.value = '';
         return;
@@ -1406,19 +1227,15 @@ async function uploadM3U() {
                 // Handle JSON response
                 const result = await response.json();
                 if (result.status === 'success') {
-                    showToast(result.message || 'Playlist uploaded successfully', 'success');
                     // Reload streams after successful upload
                     loadStreams();
-                } else {
-                    showToast(result.message || 'Error uploading playlist', 'error');
                 }
             } else {
                 const error = await response.text();
-                showToast('Error uploading playlist: ' + error, 'error');
+                console.error('Error uploading playlist: ' + error);
             }
         } catch (error) {
             console.error('Error uploading playlist:', error);
-            showToast('Error uploading playlist file: ' + error.message, 'error');
         } finally {
             // Clear file input in all cases
             fileInput.value = '';
@@ -1430,7 +1247,6 @@ async function uploadM3U() {
         }
     };
     reader.onerror = function() {
-        showToast('Error reading file. Please make sure the file is not corrupted and try again.', 'error');
         fileInput.value = '';
         // Restore button state
         if (uploadButton) {
@@ -1470,15 +1286,12 @@ async function downloadJSON() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            showToast('JSON playlist downloaded', 'success');
         } else {
             const error = await response.text();
             console.error('Error downloading JSON:', error);
-            showToast('Error downloading JSON: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error downloading JSON:', error);
-        showToast('Error downloading JSON: ' + error.message, 'error');
     } finally {
         // Restore button state
         if (downloadButton) {
@@ -1518,15 +1331,12 @@ async function downloadM3U() {
             a.click();
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
-            showToast('M3U playlist downloaded', 'success');
         } else {
             const error = await response.text();
             console.error('Error downloading JSON:', error);
-            showToast('Error downloading playlist: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error downloading playlist:', error);
-        showToast('Error downloading playlist: ' + error.message, 'error');
     } finally {
         // Restore button state
         if (downloadButton) {
@@ -1718,7 +1528,6 @@ function loadCurrentConfiguration() {
 
 function addNetworkField() {
     if (networkCount >= 5) {
-        showToast('Maximum of 5 networks allowed', 'warning');
         return;
     }
     
@@ -1736,7 +1545,6 @@ function addNetworkField() {
 
 function removeNetworkField(button) {
     if (document.querySelectorAll('.network-entry').length <= 1) {
-        showToast('At least one network is required', 'warning');
         return;
     }
     
@@ -1761,7 +1569,6 @@ function handleWiFiFormSubmit() {
     });
     
     if (ssids.length === 0) {
-        showToast('At least one SSID is required', 'error');
         return;
     }
     
@@ -1787,14 +1594,11 @@ function handleWiFiFormSubmit() {
     })
     .then(response => {
         if (response.ok) {
-            showToast('WiFi configuration saved successfully', 'success');
-        } else {
-            showToast('Error saving WiFi configuration', 'error');
+            // Success - no toast needed
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('Error saving WiFi configuration: ' + error.message, 'error');
     })
     .finally(() => {
         // Restore button state
