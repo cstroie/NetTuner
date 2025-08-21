@@ -1451,49 +1451,18 @@ function convertJSONToM3U(jsonData) {
 let networkCount = 1;
 let configuredNetworks = [];
 
-function loadConfiguredNetworks() {
-    // Load existing configuration to know which networks are already configured
-    fetch('/api/wifi/config')
+function loadWiFiConfiguration() {
+    // Load WiFi configuration for both network highlighting and form population
+    return fetch('/api/wifi/config')
         .then(response => response.json())
         .then(data => {
             // Handle consistent data structure for configured networks
+            let configNetworks = [];
+            
             if (Array.isArray(data)) {
                 // If array of objects with ssid property (new format)
-                if (data.length > 0 && typeof data[0] === 'object' && data[0].ssid) {
-                    configuredNetworks = data.map(network => network.ssid);
-                }
-                // If array of strings (SSIDs only - old format)
-                else {
-                    configuredNetworks = data;
-                }
-            } else if (data.configured && Array.isArray(data.configured)) {
-                // If object with configured array
-                configuredNetworks = data.configured;
-            } else if (data.networks && Array.isArray(data.networks)) {
-                // If object with networks array containing objects with ssid property
-                configuredNetworks = data.networks.map(network => 
-                    typeof network === 'string' ? network : network.ssid
-                ).filter(ssid => ssid);
-            } else {
-                configuredNetworks = [];
-            }
-        })
-        .catch(error => {
-            console.error('Error loading configured networks:', error);
-            configuredNetworks = [];
-        });
-}
-
-function loadCurrentConfiguration() {
-    // Load current WiFi configuration to populate the form
-    fetch('/api/wifi/config')
-        .then(response => response.json())
-        .then(data => {
-            // Handle consistent data structure for configuration loading
-            let configNetworks = [];
-            if (Array.isArray(data)) {
-                // If array of objects with ssid and password properties (new format)
                 if (data.length > 0 && typeof data[0] === 'object' && data[0].hasOwnProperty('ssid')) {
+                    configuredNetworks = data.map(network => network.ssid);
                     configNetworks = data.map(network => ({
                         ssid: network.ssid || '',
                         password: network.password || ''
@@ -1501,44 +1470,79 @@ function loadCurrentConfiguration() {
                 }
                 // If array of strings (SSIDs only - old format)
                 else {
+                    configuredNetworks = data;
                     configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
                 }
             } else if (data.configured && Array.isArray(data.configured)) {
-                // If object with configured array of strings
+                // If object with configured array
+                configuredNetworks = data.configured;
                 configNetworks = data.configured.map((ssid, index) => ({ ssid, password: '' }));
             } else if (data.networks && Array.isArray(data.networks)) {
-                // If object with networks array containing objects
+                // If object with networks array containing objects with ssid property
+                configuredNetworks = data.networks.map(network => 
+                    typeof network === 'string' ? network : network.ssid
+                ).filter(ssid => ssid);
                 configNetworks = data.networks.map(network => ({
                     ssid: typeof network === 'string' ? network : network.ssid || '',
                     password: network.password || ''
                 }));
+            } else {
+                configuredNetworks = [];
+                configNetworks = [];
             }
             
+            // Also populate the form with configured networks
             // Clear existing fields except the first one
             const networkFields = document.getElementById('networkFields');
-            while (networkFields.children.length > 1) {
-                networkFields.removeChild(networkFields.lastChild);
-            }
-            
-            // Reset network count
-            networkCount = 1;
-            
-            // Populate with configured networks
-            if (configNetworks.length > 0) {
-                // Fill the first entry
-                document.getElementById('ssid0').value = configNetworks[0].ssid || '';
-                
-                // Add additional entries for each configured network
-                for (let i = 1; i < configNetworks.length && i < 5; i++) {
-                    addNetworkField();
-                    document.getElementById(`ssid${i}`).value = configNetworks[i].ssid || '';
+            if (networkFields) {
+                while (networkFields.children.length > 1) {
+                    networkFields.removeChild(networkFields.lastChild);
                 }
-                networkCount = configNetworks.length;
+                
+                // Reset network count
+                networkCount = 1;
+                
+                // Populate with configured networks
+                if (configNetworks.length > 0) {
+                    // Fill the first entry
+                    const firstSSID = document.getElementById('ssid0');
+                    if (firstSSID) {
+                        firstSSID.value = configNetworks[0].ssid || '';
+                    }
+                    
+                    // Add additional entries for each configured network
+                    for (let i = 1; i < configNetworks.length && i < 5; i++) {
+                        addNetworkField();
+                        const ssidElement = document.getElementById(`ssid${i}`);
+                        if (ssidElement) {
+                            ssidElement.value = configNetworks[i].ssid || '';
+                        }
+                    }
+                    networkCount = configNetworks.length;
+                }
             }
+            
+            return data;
         })
         .catch(error => {
-            console.error('Error loading current configuration:', error);
+            console.error('Error loading WiFi configuration:', error);
+            configuredNetworks = [];
+            return [];
         });
+}
+
+// Keep the individual functions for backward compatibility but make them use the unified function
+function loadConfiguredNetworks() {
+    loadWiFiConfiguration().catch(error => {
+        console.error('Error loading configured networks:', error);
+        configuredNetworks = [];
+    });
+}
+
+function loadCurrentConfiguration() {
+    loadWiFiConfiguration().catch(error => {
+        console.error('Error loading current configuration:', error);
+    });
 }
 
 function addNetworkField() {
