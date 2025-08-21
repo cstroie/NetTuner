@@ -1453,7 +1453,7 @@ let configuredNetworks = [];
 
 function loadConfiguredNetworks() {
     // Load existing configuration to know which networks are already configured
-    fetch('/api/wificonfig')
+    fetch('/api/wifi/save')
         .then(response => response.json())
         .then(data => {
             // Handle consistent data structure for configured networks
@@ -1480,7 +1480,7 @@ function loadConfiguredNetworks() {
 
 function loadCurrentConfiguration() {
     // Load current WiFi configuration to populate the form
-    fetch('/api/wificonfig')
+    fetch('/api/wifi/save')
         .then(response => response.json())
         .then(data => {
             // Handle consistent data structure for configuration loading
@@ -1624,7 +1624,7 @@ function scanNetworks() {
         scanButton.disabled = true;
     }
     
-    fetch('/api/wifiscan')
+    fetch('/api/wifi/scan')
         .then(response => response.json())
         .then(data => {
             networksDiv.innerHTML = '';
@@ -1706,7 +1706,7 @@ function loadConnectionStatus() {
     
     statusDiv.innerHTML = '<p aria-busy="true">Loading connection status...</p>';
     
-    fetch('/api/wifistatus')
+    fetch('/api/wifi/status')
         .then(response => response.json())
         .then(data => {
             if (data.connected) {

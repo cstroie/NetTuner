@@ -478,10 +478,10 @@ void setup() {
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/tone", HTTP_POST, handleTone);
   server.on("/api/status", HTTP_GET, handleStatus);
-  server.on("/api/wifiscan", HTTP_GET, handleWiFiScan);
-  server.on("/api/wifisave", HTTP_POST, handleWiFiSave);
-  server.on("/api/wifistatus", HTTP_GET, handleWiFiStatus);
-  server.on("/api/wificonfig", HTTP_GET, handleWiFiConfigAPI);
+  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
+  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
+  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
+  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfigAPI);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
