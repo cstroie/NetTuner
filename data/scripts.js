@@ -1162,10 +1162,21 @@ async function importRemotePlaylist() {
         try {
             response = await fetch(url);
         } catch (fetchError) {
-            // If direct fetch fails due to CORS, try with proxy
-            console.log('Direct fetch failed, trying with CORS proxy');
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            response = await fetch(proxyUrl);
+            // If direct fetch fails due to CORS, try with no-cors mode first
+            console.log('Direct fetch failed, trying with no-cors mode');
+            try {
+                response = await fetch(url, { mode: 'no-cors' });
+                // If no-cors succeeds but we get an opaque response, we can't read the content
+                // So we'll try with a proxy instead
+                if (response.type === 'opaque') {
+                    throw new Error('Opaque response received with no-cors mode');
+                }
+            } catch (noCorsError) {
+                // If no-cors also fails, try with proxy
+                console.log('No-cors fetch failed, trying with CORS proxy');
+                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+                response = await fetch(proxyUrl);
+            }
         }
         
         if (!response.ok) {
