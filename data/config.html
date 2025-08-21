@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <title>NetTuner - Configuration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.jade.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="container">
+    <nav>
+        <ul>
+            <li><strong>NetTuner</strong></li>
+        </ul>
+        <ul>
+            <li><a href="/" class="contrast">Home</a></li>
+            <li><a href="/playlist">Playlist</a></li>
+            <li><a href="/wifi">Wifi</a></li>
+            <li><a href="/config">Config</a></li>
+            <li><a href="/about">About</a></li>
+            <li><button id="themeToggle" class="secondary" aria-label="Toggle theme">◐</button></li>
+        </ul>
+    </nav>
+    <header>
+        <h1>Device Configuration</h1>
+        <p>Configure hardware pins and settings</p>
+    </header>
+    <main>
+        <article>
+            <h2>Hardware Configuration</h2>
+            <form id="configForm">
+                <fieldset>
+                    <legend>I2S Audio Pins</legend>
+                    <label for="i2s_bclk">BCLK Pin
+                        <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required>
+                    </label>
+                    <label for="i2s_lrc">LRC Pin
+                        <input type="number" id="i2s_lrc" name="i2s_lrc" min="0" max="39" required>
+                    </label>
+                    <label for="i2s_dout">DOUT Pin
+                        <input type="number" id="i2s_dout" name="i2s_dout" min="0" max="39" required>
+                    </label>
+                </fieldset>
+                
+                <fieldset>
+                    <legend>Control Pins</legend>
+                    <label for="led_pin">LED Pin
+                        <input type="number" id="led_pin" name="led_pin" min="0" max="39" required>
+                    </label>
+                    <label for="rotary_clk">Rotary CLK Pin
+                        <input type="number" id="rotary_clk" name="rotary_clk" min="0" max="39" required>
+                    </label>
+                    <label for="rotary_dt">Rotary DT Pin
+                        <input type="number" id="rotary_dt" name="rotary_dt" min="0" max="39" required>
+                    </label>
+                    <label for="rotary_sw">Rotary SW Pin
+                        <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required>
+                    </label>
+                    <label for="board_button">Board Button Pin
+                        <input type="number" id="board_button" name="board_button" min="0" max="39" required>
+                    </label>
+                </fieldset>
+                
+                <fieldset>
+                    <legend>Display Settings</legend>
+                    <label for="display_width">Display Width
+                        <input type="number" id="display_width" name="display_width" min="32" max="256" required>
+                    </label>
+                    <label for="display_height">Display Height
+                        <input type="number" id="display_height" name="display_height" min="32" max="256" required>
+                    </label>
+                    <label for="display_address">Display I2C Address
+                        <input type="number" id="display_address" name="display_address" min="0" max="127" required>
+                    </label>
+                </fieldset>
+                
+                <button type="submit">Save Configuration</button>
+            </form>
+        </article>
+    </main>
+    
+    <script src="/scripts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initTheme();
+            loadConfig();
+            
+            document.getElementById('configForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveConfig();
+            });
+        });
+        
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    document.getElementById('i2s_bclk').value = config.i2s_bclk || 27;
+                    document.getElementById('i2s_lrc').value = config.i2s_lrc || 25;
+                    document.getElementById('i2s_dout').value = config.i2s_dout || 26;
+                    document.getElementById('led_pin').value = config.led_pin || 2;
+                    document.getElementById('rotary_clk').value = config.rotary_clk || 18;
+                    document.getElementById('rotary_dt').value = config.rotary_dt || 19;
+                    document.getElementById('rotary_sw').value = config.rotary_sw || 23;
+                    document.getElementById('board_button').value = config.board_button || 0;
+                    document.getElementById('display_width').value = config.display_width || 128;
+                    document.getElementById('display_height').value = config.display_height || 64;
+                    document.getElementById('display_address').value = config.display_address || 60;
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+        
+        async function saveConfig() {
+            const config = {
+                i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
+                i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
+                i2s_dout: parseInt(document.getElementById('i2s_dout').value),
+                led_pin: parseInt(document.getElementById('led_pin').value),
+                rotary_clk: parseInt(document.getElementById('rotary_clk').value),
+                rotary_dt: parseInt(document.getElementById('rotary_dt').value),
+                rotary_sw: parseInt(document.getElementById('rotary_sw').value),
+                board_button: parseInt(document.getElementById('board_button').value),
+                display_width: parseInt(document.getElementById('display_width').value),
+                display_height: parseInt(document.getElementById('display_height').value),
+                display_address: parseInt(document.getElementById('display_address').value)
+            };
+            
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    alert('Configuration saved successfully. Device restart required for changes to take effect.');
+                } else {
+                    alert('Error saving configuration');
+                }
+            } catch (error) {
+                console.error('Error saving config:', error);
+                alert('Error saving configuration');
+            }
+        }
+    </script>
+</body>
+</html>

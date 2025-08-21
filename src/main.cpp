@@ -148,25 +148,57 @@ void audio_bitrate(const char *info) {
  * @brief I2S pin configuration for audio output
  * Defines the pin mapping for I2S audio interface
  */
-#define I2S_DOUT      26  ///< I2S Data Out pin
-#define I2S_BCLK      27  ///< I2S Bit Clock pin
-#define I2S_LRC       25  ///< I2S Left/Right Clock pin
+// Default pin definitions
+#define DEFAULT_I2S_DOUT      26  ///< I2S Data Out pin
+#define DEFAULT_I2S_BCLK      27  ///< I2S Bit Clock pin
+#define DEFAULT_I2S_LRC       25  ///< I2S Left/Right Clock pin
+#define DEFAULT_LED_PIN        2  ///< ESP32 internal LED pin
+#define DEFAULT_ROTARY_CLK    18  ///< Rotary encoder clock pin
+#define DEFAULT_ROTARY_DT     19  ///< Rotary encoder data pin
+#define DEFAULT_ROTARY_SW     23  ///< Rotary encoder switch pin
+#define DEFAULT_BOARD_BUTTON   0  ///< ESP32 board button pin
+#define DEFAULT_DISPLAY_WIDTH 128 ///< OLED display width
+#define DEFAULT_DISPLAY_HEIGHT 64 ///< OLED display height
+#define DEFAULT_DISPLAY_ADDR  0x3C///< OLED display I2C address
+
+/**
+ * @brief Configuration structure
+ * Stores hardware configuration settings
+ */
+struct Config {
+  int i2s_dout;
+  int i2s_bclk;
+  int i2s_lrc;
+  int led_pin;
+  int rotary_clk;
+  int rotary_dt;
+  int rotary_sw;
+  int board_button;
+  int display_width;
+  int display_height;
+  int display_address;
+};
+
+Config config = {
+  DEFAULT_I2S_DOUT,
+  DEFAULT_I2S_BCLK,
+  DEFAULT_I2S_LRC,
+  DEFAULT_LED_PIN,
+  DEFAULT_ROTARY_CLK,
+  DEFAULT_ROTARY_DT,
+  DEFAULT_ROTARY_SW,
+  DEFAULT_BOARD_BUTTON,
+  DEFAULT_DISPLAY_WIDTH,
+  DEFAULT_DISPLAY_HEIGHT,
+  DEFAULT_DISPLAY_ADDR
+};
 
 /**
  * @brief OLED display instance
- * SSD1306 OLED display connected via I2C (address 0x3c, SDA=5, SCL=4)
+ * SSD1306 OLED display connected via I2C
  */
-Adafruit_SSD1306 display(128, 64, &Wire, -1); // 128x64 display, using Wire, no reset pin
+Adafruit_SSD1306 display(DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, &Wire, -1);
 
-/**
- * @brief Rotary encoder pin configuration
- * Defines the pin mapping for the rotary encoder with push button
- */
-#define ROTARY_CLK 18  ///< Rotary encoder clock pin (quadrature signal A)
-#define ROTARY_DT  19  ///< Rotary encoder data pin (quadrature signal B)
-#define ROTARY_SW  23  ///< Rotary encoder switch pin (push button)
-#define BOARD_BUTTON 0 ///< ESP32 board button pin
-#define LED_PIN 2      ///< ESP32 internal LED pin
 
 /**
  * @brief Rotary encoder state variables
@@ -246,7 +278,9 @@ public:
   }
 };
 
-RotaryEncoder rotaryEncoder;  ///< Global rotary encoder instance
+// Function declarations
+void loadConfig();
+void saveConfig();
 
 /**
  * @brief Playlist data structure
@@ -289,6 +323,8 @@ void handleDisplayTimeout();
 void sendStatusToClients();
 void audioTask(void *pvParameters);
 void forceDisplayUpdate();
+void loadConfig();
+void saveConfig();
 
 // MPD functions
 void handleMPDClient();
@@ -299,6 +335,7 @@ void handleMPDCommand(const String& command);
 // Web server handlers
 void handleRoot();
 void handlePlaylistPage();
+void handleConfigPage();
 void handleAboutPage();
 void handleGetStreams();
 void handlePostStreams();
@@ -307,6 +344,8 @@ void handleStop();
 void handleVolume();
 void handleTone();
 void handleStatus();
+void handleGetConfig();
+void handlePostConfig();
 void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
@@ -325,9 +364,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void setup() {
   Serial.begin(115200);
   
+  // Load configuration
+  loadConfig();
+  
   // Initialize LED pin
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);  // Turn off LED initially
+  pinMode(config.led_pin, OUTPUT);
+  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
   
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
@@ -364,7 +406,7 @@ void setup() {
   }
   
   // Initialize OLED display
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -469,6 +511,7 @@ void setup() {
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/playlist", HTTP_GET, handlePlaylistPage);
+  server.on("/config", HTTP_GET, handleConfigPage);
   server.on("/wifi", HTTP_GET, handleWiFiConfig);
   server.on("/about", HTTP_GET, handleAboutPage);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
@@ -478,6 +521,8 @@ void setup() {
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/tone", HTTP_POST, handleTone);
   server.on("/api/status", HTTP_GET, handleStatus);
+  server.on("/api/config", HTTP_GET, handleGetConfig);
+  server.on("/api/config", HTTP_POST, handlePostConfig);
   server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
   server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
@@ -538,7 +583,7 @@ void handleBoardButton() {
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
 
   // Handle board button press for play/stop toggle
-  int buttonReading = digitalRead(BOARD_BUTTON);
+  int buttonReading = digitalRead(config.board_button);
   
   // Check if button state changed (debounce)
   if (buttonReading != lastButtonState) {
@@ -922,6 +967,109 @@ void loadWiFiCredentials() {
 }
 
 /**
+ * @brief Load configuration from SPIFFS
+ * This function reads configuration from config.json in SPIFFS
+ */
+void loadConfig() {
+  if (!SPIFFS.exists("/config.json")) {
+    Serial.println("Config file not found, using defaults");
+    return;
+  }
+  
+  File file = SPIFFS.open("/config.json", "r");
+  if (!file) {
+    Serial.println("Failed to open config file");
+    return;
+  }
+  
+  size_t size = file.size();
+  if (size > 1024) {
+    Serial.println("Config file too large");
+    file.close();
+    return;
+  }
+  
+  if (size == 0) {
+    Serial.println("Config file is empty");
+    file.close();
+    return;
+  }
+  
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (!buf) {
+    Serial.println("Error: Failed to allocate memory for config file");
+    file.close();
+    return;
+  }
+  
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.println("Failed to read config file");
+    file.close();
+    return;
+  }
+  buf[size] = '\0';
+  file.close();
+  
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.print("Failed to parse config JSON: ");
+    Serial.println(error.c_str());
+    return;
+  }
+  
+  // Load configuration values
+  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
+  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
+  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
+  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
+  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
+  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
+  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
+  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
+  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  
+  Serial.println("Loaded configuration from SPIFFS");
+}
+
+/**
+ * @brief Save configuration to SPIFFS
+ * This function saves the current configuration to config.json in SPIFFS
+ */
+void saveConfig() {
+  DynamicJsonDocument doc(1024);
+  doc["i2s_dout"] = config.i2s_dout;
+  doc["i2s_bclk"] = config.i2s_bclk;
+  doc["i2s_lrc"] = config.i2s_lrc;
+  doc["led_pin"] = config.led_pin;
+  doc["rotary_clk"] = config.rotary_clk;
+  doc["rotary_dt"] = config.rotary_dt;
+  doc["rotary_sw"] = config.rotary_sw;
+  doc["board_button"] = config.board_button;
+  doc["display_width"] = config.display_width;
+  doc["display_height"] = config.display_height;
+  doc["display_address"] = config.display_address;
+  
+  File file = SPIFFS.open("/config.json", "w");
+  if (!file) {
+    Serial.println("Failed to open config file for writing");
+    return;
+  }
+  
+  size_t bytesWritten = serializeJson(doc, file);
+  if (bytesWritten == 0) {
+    Serial.println("Failed to write config to file");
+    file.close();
+    return;
+  }
+  file.close();
+  
+  Serial.println("Saved configuration to SPIFFS");
+}
+
+/**
  * @brief Save WiFi credentials to SPIFFS
  * This function saves the current WiFi credentials to wifi.json in SPIFFS.
  * It stores networks in the new JSON array format.
@@ -966,7 +1114,7 @@ void saveWiFiCredentials() {
 void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
-  audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+  audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   audio->setVolume(volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
@@ -1036,7 +1184,7 @@ void startStream(const char* url, const char* name) {
   isPlaying = true;
   
   // Turn on LED when playing
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(config.led_pin, HIGH);
   
   // Use ESP32-audioI2S to play the stream
   if (audio) {
@@ -1075,7 +1223,7 @@ void stopStream() {
   bitrate = 0;                   // Clear bitrate
   
   // Turn off LED when stopped
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(config.led_pin, LOW);
   
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
@@ -1315,16 +1463,16 @@ void savePlaylist() {
  */
 void setupRotaryEncoder() {
   // Configure rotary encoder pins with internal pull-up resistors
-  pinMode(ROTARY_CLK, INPUT_PULLUP);  // Enable internal pull-up resistor
-  pinMode(ROTARY_DT, INPUT_PULLUP);   // Enable internal pull-up resistor
-  pinMode(ROTARY_SW, INPUT_PULLUP);   // Enable internal pull-up resistor
-  pinMode(BOARD_BUTTON, INPUT_PULLUP); // Enable internal pull-up resistor for board button
+  pinMode(config.rotary_clk, INPUT_PULLUP);  // Enable internal pull-up resistor
+  pinMode(config.rotary_dt, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.rotary_sw, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.board_button, INPUT_PULLUP); // Enable internal pull-up resistor for board button
   
   // Attach interrupt handler for rotary encoder rotation
-  attachInterrupt(digitalPinToInterrupt(ROTARY_CLK), rotaryISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
   
   // Attach interrupt handler for rotary encoder button press
-  attachInterrupt(digitalPinToInterrupt(ROTARY_SW), []() {
+  attachInterrupt(digitalPinToInterrupt(config.rotary_sw), []() {
     rotaryEncoder.handleButtonPress();
   }, FALLING);
 }
@@ -1469,6 +1617,21 @@ void handleRoot() {
  */
 void handlePlaylistPage() {
   File file = SPIFFS.open("/playlist.html", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+}
+
+/**
+ * @brief Handle configuration page request
+ * Serves the config.html file
+ * This function reads the config.html file from SPIFFS and sends it to the client
+ */
+void handleConfigPage() {
+  File file = SPIFFS.open("/config.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
     return;
@@ -1841,6 +2004,67 @@ void handleStatus() {
   status += "\"volume\":" + String(volume);
   status += "}";
   server.send(200, "application/json", status);
+}
+
+/**
+ * @brief Handle GET request for configuration
+ * Returns the current configuration as JSON
+ * This function serves the current configuration in JSON format.
+ */
+void handleGetConfig() {
+  String json = "{";
+  json += "\"i2s_dout\":" + String(config.i2s_dout) + ",";
+  json += "\"i2s_bclk\":" + String(config.i2s_bclk) + ",";
+  json += "\"i2s_lrc\":" + String(config.i2s_lrc) + ",";
+  json += "\"led_pin\":" + String(config.led_pin) + ",";
+  json += "\"rotary_clk\":" + String(config.rotary_clk) + ",";
+  json += "\"rotary_dt\":" + String(config.rotary_dt) + ",";
+  json += "\"rotary_sw\":" + String(config.rotary_sw) + ",";
+  json += "\"board_button\":" + String(config.board_button) + ",";
+  json += "\"display_width\":" + String(config.display_width) + ",";
+  json += "\"display_height\":" + String(config.display_height) + ",";
+  json += "\"display_address\":" + String(config.display_address);
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
+/**
+ * @brief Handle POST request for configuration
+ * Updates the configuration with new JSON data and saves to SPIFFS
+ * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
+ */
+void handlePostConfig() {
+  if (!server.hasArg("plain")) {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
+    return;
+  }
+  
+  String jsonData = server.arg("plain");
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, jsonData);
+  
+  if (error) {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+    return;
+  }
+  
+  // Update configuration values
+  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
+  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
+  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
+  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
+  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
+  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
+  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
+  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
+  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  
+  // Save to SPIFFS
+  saveConfig();
+  
+  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration updated successfully\"}");
 }
 
 /**
