@@ -1158,10 +1158,11 @@ async function importRemotePlaylist() {
     
     try {
         // Try direct fetch first
-        let response = await fetch(url);
-        
-        // If CORS error, try with proxy
-        if (response.status === 0) {
+        let response;
+        try {
+            response = await fetch(url);
+        } catch (fetchError) {
+            // If direct fetch fails due to CORS, try with proxy
             console.log('Direct fetch failed, trying with CORS proxy');
             const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
             response = await fetch(proxyUrl);
