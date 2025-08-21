@@ -37,19 +37,19 @@
                     <label for="bass">Bass:
                         <span id="bassValue">0dB</span>
                     </label>
-                    <input type="range" id="bass" min="-40" max="6" value="0" oninput="handleToneChange('bass', this.value)">
+                    <input type="range" id="bass" min="-6" max="6" value="0" step="1" oninput="handleToneChange('bass', this.value)">
                 </div>
                 <div class="tone-control">
                     <label for="midrange">Midrange:
                         <span id="midrangeValue">0dB</span>
                     </label>
-                    <input type="range" id="midrange" min="-40" max="6" value="0" oninput="handleToneChange('midrange', this.value)">
+                    <input type="range" id="midrange" min="-6" max="6" value="0" step="1" oninput="handleToneChange('midrange', this.value)">
                 </div>
                 <div class="tone-control">
                     <label for="treble">Treble:
                         <span id="trebleValue">0dB</span>
                     </label>
-                    <input type="range" id="treble" min="-40" max="6" value="0" oninput="handleToneChange('treble', this.value)">
+                    <input type="range" id="treble" min="-6" max="6" value="0" step="1" oninput="handleToneChange('treble', this.value)">
                 </div>
             </card>
         </hgroup>
