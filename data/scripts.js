@@ -1571,7 +1571,10 @@ function removeNetworkField(button) {
     networkCount = document.querySelectorAll('.network-entry').length;
 }
 
-function handleWiFiFormSubmit() {
+function handleWiFiFormSubmit(event) {
+    // Prevent default form submission
+    event.preventDefault();
+    
     const networks = [];
     
     // Collect all network entries
@@ -1628,6 +1631,14 @@ function handleWiFiFormSubmit() {
         }
     });
 }
+
+// Attach event listener to WiFi form when page loads
+window.addEventListener('load', function() {
+    const wifiForm = document.getElementById('wifiForm');
+    if (wifiForm) {
+        wifiForm.addEventListener('submit', handleWiFiFormSubmit);
+    }
+});
 
 // Override the scanNetworks function to highlight configured networks
 function scanNetworks() {
