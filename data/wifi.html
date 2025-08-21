@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>WiFi Configuration</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.jade.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="container">
@@ -21,17 +21,21 @@
         </ul>
     </nav>
     <main>
-        <section>
-            <h2>Available Networks</h2>
-            <p>Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
-            <div id="networks">Scanning for networks...</div>
-            <button type="submit" onclick="scanNetworks()">Refresh networks</button>
-        </section>
-        
-        <section>
-            <h2>Configure WiFi Networks</h2>
-            <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
-            <small>Tip: Add your most reliable networks first. The device will connect to the first available network in the list.</small>
+        <article>
+            <hgroup>
+                <h2>Available Networks</h2>
+                <p>Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
+            </hgroup>
+            <div id="networks"><p>Press «Refresh networks» to start scanning for WiFi networks</p></div>
+            <footer>
+                <button type="submit" onclick="scanNetworks()">Refresh networks</button>
+            </footer>
+        </article>
+        <article>
+            <hgroup>
+                <h2>Configure WiFi Networks</h2>
+                <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
+            </hgroup>
             <form id="wifiForm">
                 <fieldset id="networkFields">
                     <div role="group">
@@ -40,27 +44,27 @@
                         <button type="button" id="addNetwork" onclick="addNetworkField()">Add</button>
                     </div>
                 </fieldset>
-                <button type="submit">Save configuration</button>
             </form>
-        </section>
+            <footer>
+                <button type="submit" onclick="handleWiFiFormSubmit()">Save configuration</button>
+            </footer>
+        </article>
     </main>
     <footer>
         <hgroup>
             <h2>Connection status</h2>
             <p>Current network connection information</p>
-            <div id="connection-status">
-                <p>Loading connection status...</p>
-            </div>
         </hgroup>
+        <div id="connection-status">
+            <p aria-busy="true">Loading connection status...</p>
+        </div>
     </footer>
-
     <script src="/scripts.js"></script>
     <script>
         // Initialize the WiFi page and load connection status
         document.addEventListener('DOMContentLoaded', function() {
             initWiFiPage();
             loadConnectionStatus();
-            // Don't automatically scan networks - user must click Refresh Networks button
         });
     </script>
 </body>
