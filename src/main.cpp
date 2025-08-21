@@ -157,6 +157,8 @@ void audio_bitrate(const char *info) {
 #define DEFAULT_ROTARY_DT     19  ///< Rotary encoder data pin
 #define DEFAULT_ROTARY_SW     23  ///< Rotary encoder switch pin
 #define DEFAULT_BOARD_BUTTON   0  ///< ESP32 board button pin
+#define DEFAULT_DISPLAY_SDA    5  ///< OLED display SDA pin
+#define DEFAULT_DISPLAY_SCL    4  ///< OLED display SCL pin
 #define DEFAULT_DISPLAY_WIDTH 128 ///< OLED display width
 #define DEFAULT_DISPLAY_HEIGHT 64 ///< OLED display height
 #define DEFAULT_DISPLAY_ADDR  0x3C///< OLED display I2C address
@@ -174,6 +176,8 @@ struct Config {
   int rotary_dt;
   int rotary_sw;
   int board_button;
+  int display_sda;
+  int display_scl;
   int display_width;
   int display_height;
   int display_address;
@@ -188,6 +192,8 @@ Config config = {
   DEFAULT_ROTARY_DT,
   DEFAULT_ROTARY_SW,
   DEFAULT_BOARD_BUTTON,
+  DEFAULT_DISPLAY_SDA,
+  DEFAULT_DISPLAY_SCL,
   DEFAULT_DISPLAY_WIDTH,
   DEFAULT_DISPLAY_HEIGHT,
   DEFAULT_DISPLAY_ADDR
@@ -409,6 +415,8 @@ void setup() {
   }
   
   // Initialize OLED display
+  // Configure I2C pins
+  Wire.begin(config.display_sda, config.display_scl);
   display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
   display.setTextSize(1);
@@ -1030,6 +1038,8 @@ void loadConfig() {
   if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
   if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
   if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
+  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
   if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
   if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
   if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
@@ -1051,6 +1061,8 @@ void saveConfig() {
   doc["rotary_dt"] = config.rotary_dt;
   doc["rotary_sw"] = config.rotary_sw;
   doc["board_button"] = config.board_button;
+  doc["display_sda"] = config.display_sda;
+  doc["display_scl"] = config.display_scl;
   doc["display_width"] = config.display_width;
   doc["display_height"] = config.display_height;
   doc["display_address"] = config.display_address;
@@ -2024,6 +2036,8 @@ void handleGetConfig() {
   json += "\"rotary_dt\":" + String(config.rotary_dt) + ",";
   json += "\"rotary_sw\":" + String(config.rotary_sw) + ",";
   json += "\"board_button\":" + String(config.board_button) + ",";
+  json += "\"display_sda\":" + String(config.display_sda) + ",";
+  json += "\"display_scl\":" + String(config.display_scl) + ",";
   json += "\"display_width\":" + String(config.display_width) + ",";
   json += "\"display_height\":" + String(config.display_height) + ",";
   json += "\"display_address\":" + String(config.display_address);
@@ -2060,6 +2074,8 @@ void handlePostConfig() {
   if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
   if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
   if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
+  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
   if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
   if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
   if (doc.containsKey("display_address")) config.display_address = doc["display_address"];

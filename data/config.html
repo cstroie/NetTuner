@@ -63,6 +63,12 @@
                 
                 <fieldset>
                     <legend>Display Settings</legend>
+                    <label for="display_sda">Display SDA Pin
+                        <input type="number" id="display_sda" name="display_sda" min="0" max="39" required>
+                    </label>
+                    <label for="display_scl">Display SCL Pin
+                        <input type="number" id="display_scl" name="display_scl" min="0" max="39" required>
+                    </label>
                     <label for="display_width">Display Width
                         <input type="number" id="display_width" name="display_width" min="32" max="256" required>
                     </label>
@@ -104,6 +110,8 @@
                     document.getElementById('rotary_dt').value = config.rotary_dt || 19;
                     document.getElementById('rotary_sw').value = config.rotary_sw || 23;
                     document.getElementById('board_button').value = config.board_button || 0;
+                    document.getElementById('display_sda').value = config.display_sda || 5;
+                    document.getElementById('display_scl').value = config.display_scl || 4;
                     document.getElementById('display_width').value = config.display_width || 128;
                     document.getElementById('display_height').value = config.display_height || 64;
                     document.getElementById('display_address').value = config.display_address || 60;
@@ -123,6 +131,8 @@
                 rotary_dt: parseInt(document.getElementById('rotary_dt').value),
                 rotary_sw: parseInt(document.getElementById('rotary_sw').value),
                 board_button: parseInt(document.getElementById('board_button').value),
+                display_sda: parseInt(document.getElementById('display_sda').value),
+                display_scl: parseInt(document.getElementById('display_scl').value),
                 display_width: parseInt(document.getElementById('display_width').value),
                 display_height: parseInt(document.getElementById('display_height').value),
                 display_address: parseInt(document.getElementById('display_address').value)
