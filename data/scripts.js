@@ -54,7 +54,16 @@ function initMainPage() {
 }
 
 function initPlaylistPage() {
+    // Load existing playlist when page loads
     loadStreams();
+}
+
+function initWiFiPage() {
+    // Load existing WiFi configuration when page loads
+    window.addEventListener('load', function() {
+        loadConfiguredNetworks();
+        loadCurrentConfiguration();
+    });
 }
 
 /**
@@ -72,7 +81,7 @@ async function loadStreams() {
     
     const playlistBody = document.getElementById('playlistBody');
     if (playlistBody) {
-        playlistBody.innerHTML = '<tr><td colspan="4">Loading streams...</td></tr>';
+        playlistBody.innerHTML = '<span aria-busy="true">Loading streams...</span>';
     }
     
     try {
@@ -93,7 +102,8 @@ async function loadStreams() {
         console.log('Loaded streams:', streams);
         
         if (select) {
-            select.innerHTML = '<option value="">Select a stream...</option>';
+            // FIXME
+            //select.innerHTML = '<option value="">Select a stream...</option>';
             streams.forEach(stream => {
                 // Validate stream object
                 if (!stream || typeof stream !== 'object' || !stream.url || !stream.name) {
@@ -118,10 +128,10 @@ async function loadStreams() {
         const errorMessage = error.message || 'Unknown error occurred';
         if (select) {
             select.innerHTML = '<option value="">Error loading streams</option>';
-            select.disabled = false;
+            select.disabled = true;
         }
         if (playlistBody) {
-            playlistBody.innerHTML = `<tr><td colspan="4">Error loading streams: ${errorMessage}</td></tr>`;
+            playlistBody.innerHTML = `<span>Error loading streams: ${errorMessage}</span>`;
         }
         showToast(`Error loading streams: ${errorMessage}. Please refresh the page or check your connection.`, 'error');
     }
@@ -395,7 +405,7 @@ function connectWebSocket() {
                 }
                 
                 if (volumeValue) {
-                    volumeValue.textContent = status.volume + '%';
+                    volumeValue.textContent = status.volume;
                 }
                 
                 // Update tone controls
@@ -886,32 +896,30 @@ async function playInstantStream() {
 
 // Playlist functions
 function renderPlaylist() {
-    const tbody = document.getElementById('playlistBody');
-    if (!tbody) {
-        console.warn('Playlist body not found');
+    const playlistBody = document.getElementById('playlistBody');
+    if (!playlistBody) {
+        console.warn('Playlist element not found');
         return;
     }
     
-    tbody.innerHTML = '';
+    playlistBody.innerHTML = '';
     
     if (streams.length === 0) {
-        const row = document.createElement('tr');
-        row.innerHTML = '<td colspan="4" class="empty-playlist">No streams in playlist. Add some streams to get started!</td>';
-        tbody.appendChild(row);
+        const item = document.createElement('div');
+        item.innerHTML = '<span class="empty-playlist">No streams in playlist. Add some streams to get started!</span>';
+        playlistBody.appendChild(item);
         return;
     }
     
     streams.forEach((stream, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td data-label="Order">${index + 1}</td>
-            <td data-label="Name"><input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)"></td>
-            <td data-label="URL"><input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)"></td>
-            <td data-label="Actions" class="actions">
-                <button class="secondary" onclick="deleteStream(${index})">Delete</button>
-            </td>
+        const item = document.createElement('div');
+        item.role = "group";
+        item.innerHTML = `
+            <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
+            <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
+            <button class="secondary" onclick="deleteStream(${index})">Delete</button>
         `;
-        tbody.appendChild(row);
+        playlistBody.appendChild(item);
     });
 }
 
@@ -1634,24 +1642,6 @@ function convertJSONToM3U(jsonData) {
 let networkCount = 1;
 let configuredNetworks = [];
 
-function initWiFiPage() {
-    // Load existing WiFi configuration when page loads
-    window.addEventListener('load', function() {
-        loadConfiguredNetworks();
-        loadCurrentConfiguration();
-        // Don't automatically scan networks - user must click Refresh Networks button
-    });
-    
-    // Setup form submit handler
-    const wifiForm = document.getElementById('wifiForm');
-    if (wifiForm) {
-        wifiForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            handleWiFiFormSubmit();
-        });
-    }
-}
-
 function loadConfiguredNetworks() {
     // Load existing configuration to know which networks are already configured
     fetch('/api/wificonfig')
@@ -1821,7 +1811,7 @@ function scanNetworks() {
     const networksDiv = document.getElementById('networks');
     if (!networksDiv) return;
     
-    networksDiv.innerHTML = '<p class="scanning">Scanning for networks...</p>';
+    networksDiv.innerHTML = '<p class="scanning" aria-busy="true">Scanning for networks...</p>';
     
     // Disable scan button during scan
     const scanButton = document.querySelector('button[onclick="scanNetworks()"]');
@@ -1859,7 +1849,7 @@ function scanNetworks() {
                 if (!network || !network.ssid) return;
                 
                 const networkDiv = document.createElement('div');
-                networkDiv.className = 'network-item';
+                networkDiv.className = 'network-item grid';
                 
                 // Check if this network is already configured
                 const isConfigured = data.configured && Array.isArray(data.configured) && data.configured.includes(network.ssid);
@@ -1911,7 +1901,7 @@ function loadConnectionStatus() {
     const statusDiv = document.getElementById('connection-status');
     if (!statusDiv) return;
     
-    statusDiv.innerHTML = '<p>Loading connection status...</p>';
+    statusDiv.innerHTML = '<p aria-busy="true">Loading connection status...</p>';
     
     fetch('/api/wifistatus')
         .then(response => response.json())
