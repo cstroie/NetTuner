@@ -203,7 +203,7 @@ Config config = {
  * @brief OLED display instance
  * SSD1306 OLED display connected via I2C
  */
-Adafruit_SSD1306 display(DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT, &Wire, -1);
+Adafruit_SSD1306 display(config.display_width, config.display_height, &Wire, -1);
 
 
 /**
