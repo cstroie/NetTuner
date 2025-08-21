@@ -102,8 +102,7 @@ async function loadStreams() {
         console.log('Loaded streams:', streams);
         
         if (select) {
-            // FIXME
-            //select.innerHTML = '<option value="">Select a stream...</option>';
+            select.innerHTML = '<option value="">Select a stream...</option>';
             streams.forEach(stream => {
                 // Validate stream object
                 if (!stream || typeof stream !== 'object' || !stream.url || !stream.name) {
