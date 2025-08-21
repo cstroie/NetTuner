@@ -64,9 +64,9 @@ char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
 int volume = 50;                   ///< Volume level (0-100)
-int bass = 0;                      ///< Bass level (-40 to 6 dB)
-int midrange = 0;                  ///< Midrange level (-40 to 6 dB)
-int treble = 0;                    ///< Treble level (-40 to 6 dB)
+int bass = 0;                      ///< Bass level (-6 to 6 dB)
+int midrange = 0;                  ///< Midrange level (-6 to 6 dB)
+int treble = 0;                    ///< Treble level (-6 to 6 dB)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
 
@@ -1824,8 +1824,8 @@ void handleTone() {
     // Handle bass setting
     if (doc.containsKey("bass")) {
       int newBass = doc["bass"];
-      if (newBass < -40 || newBass > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -40 and 6\"}");
+      if (newBass < -6 || newBass > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -6 and 6\"}");
         return;
       }
       bass = newBass;
@@ -1835,8 +1835,8 @@ void handleTone() {
     // Handle midrange setting
     if (doc.containsKey("midrange")) {
       int newMidrange = doc["midrange"];
-      if (newMidrange < -40 || newMidrange > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Midrange must be between -40 and 6\"}");
+      if (newMidrange < -6 || newMidrange > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Midrange must be between -6 and 6\"}");
         return;
       }
       midrange = newMidrange;
@@ -1846,8 +1846,8 @@ void handleTone() {
     // Handle treble setting
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
-      if (newTreble < -40 || newTreble > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -40 and 6\"}");
+      if (newTreble < -6 || newTreble > 6) {
+        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -6 and 6\"}");
         return;
       }
       treble = newTreble;
