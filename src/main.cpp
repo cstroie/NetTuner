@@ -998,6 +998,9 @@ void loadConfig() {
     config.display_width = DEFAULT_DISPLAY_WIDTH;
     config.display_height = DEFAULT_DISPLAY_HEIGHT;
     config.display_address = DEFAULT_DISPLAY_ADDR;
+    
+    // Save the default configuration to file
+    saveConfig();
     return;
   }
   
