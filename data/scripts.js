@@ -1246,6 +1246,105 @@ async function uploadJSON() {
     reader.readAsText(file);
 }
 
+async function importRemotePlaylist() {
+    const urlInput = document.getElementById('remotePlaylistUrl');
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showToast('Please enter a playlist URL', 'warning');
+        return;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        showToast('Please enter a valid URL', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    const importButton = document.querySelector('button[onclick="importRemotePlaylist()"]');
+    const originalText = importButton ? importButton.textContent : null;
+    if (importButton) {
+        importButton.textContent = 'Importing...';
+        importButton.disabled = true;
+    }
+    
+    try {
+        // Fetch the remote playlist
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch playlist: ${response.status} ${response.statusText}`);
+        }
+        
+        // Check content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // Try to parse as JSON anyway, in case server doesn't set proper content type
+            const text = await response.text();
+            try {
+                JSON.parse(text);
+            } catch (e) {
+                throw new Error('Remote file is not valid JSON');
+            }
+        }
+        
+        const jsonData = await response.json();
+        
+        // Validate the JSON structure
+        if (!Array.isArray(jsonData)) {
+            throw new Error('Invalid playlist format: expected array of streams');
+        }
+        
+        // Validate each stream in the playlist
+        for (let i = 0; i < jsonData.length; i++) {
+            const stream = jsonData[i];
+            if (!stream || typeof stream !== 'object') {
+                throw new Error(`Invalid stream at position ${i+1}`);
+            }
+            
+            if (!stream.name || !stream.name.trim()) {
+                throw new Error(`Stream at position ${i+1} has an empty name`);
+            }
+            
+            if (!stream.url) {
+                throw new Error(`Stream at position ${i+1} has no URL`);
+            }
+            
+            if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+                throw new Error(`Stream at position ${i+1} has invalid URL format`);
+            }
+            
+            try {
+                new URL(stream.url);
+            } catch (e) {
+                throw new Error(`Stream at position ${i+1} has invalid URL`);
+            }
+        }
+        
+        // Replace current playlist with the new one (but don't save yet)
+        streams = jsonData;
+        renderPlaylist();
+        
+        showToast('Playlist imported successfully! Remember to save if you want to keep it.', 'success');
+        
+        // Clear the input field
+        urlInput.value = '';
+    } catch (error) {
+        console.error('Error importing remote playlist:', error);
+        const errorMessage = error.message || 'Unknown error occurred';
+        showToast('Error importing playlist: ' + errorMessage, 'error');
+    } finally {
+        // Restore button state
+        if (importButton) {
+            importButton.textContent = originalText || 'Import';
+            importButton.disabled = false;
+        }
+    }
+}
+
 async function uploadM3U() {
     const fileInput = document.getElementById('playlistFile');
     const file = fileInput.files[0];
