@@ -794,68 +794,7 @@ void handleWiFiSave() {
         wifiNetworkCount++;
       }
     }
-  } else {
-    // Handle backward compatibility with old format
-    if (doc.containsKey("ssid")) {
-      // Handle both single network and multiple networks in old format
-      if (doc["ssid"].is<JsonArray>()) {
-        JsonArray ssidArray = doc["ssid"];
-        JsonArray passwordArray = doc["password"].as<JsonArray>();
-          
-        for (int i = 0; i < (int)ssidArray.size() && i < MAX_WIFI_NETWORKS; i++) {
-          String newSSID = ssidArray[i].as<String>();
-          if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid[i])) {
-            server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid SSID length\"}");
-            return;
-          }
-            
-          strncpy(ssid[i], newSSID.c_str(), sizeof(ssid[i]) - 1);
-          ssid[i][sizeof(ssid[i]) - 1] = '\0';
-            
-          if (i < (int)passwordArray.size()) {
-            String newPassword = passwordArray[i].as<String>();
-            if (newPassword.length() >= sizeof(password[i])) {
-              server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Password too long\"}");
-              return;
-            }
-            strncpy(password[i], newPassword.c_str(), sizeof(password[i]) - 1);
-            password[i][sizeof(password[i]) - 1] = '\0';
-          } else {
-            password[i][0] = '\0';
-          }
-            
-          wifiNetworkCount++;
-        }
-      } else {
-        // Single network for backward compatibility
-        String newSSID = doc["ssid"].as<String>();
-        if (newSSID.length() == 0 || newSSID.length() >= sizeof(ssid[0])) {
-          server.send(400, "text/plain", "Invalid SSID length");
-          return;
-        }
-          
-        strncpy(ssid[0], newSSID.c_str(), sizeof(ssid[0]) - 1);
-        ssid[0][sizeof(ssid[0]) - 1] = '\0';
-        wifiNetworkCount = 1;
-          
-        if (doc.containsKey("password")) {
-          String newPassword = doc["password"].as<String>();
-          // Validate password length
-          if (newPassword.length() >= sizeof(password[0])) {
-            server.send(400, "text/plain", "Password too long");
-            return;
-          }
-          strncpy(password[0], newPassword.c_str(), sizeof(password[0]) - 1);
-          password[0][sizeof(password[0]) - 1] = '\0';
-        } else {
-          password[0][0] = '\0';
-        }
-      }
-    } else {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing SSID\"}");
-      return;
-    }
-  }
+  };
   
   saveWiFiCredentials();
   server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"WiFi configuration saved\"}");
@@ -966,58 +905,6 @@ void loadWiFiCredentials() {
         }
         
         wifiNetworkCount++;
-      }
-    }
-  }
-  // Handle backward compatibility with old format
-  else if (doc.containsKey("ssid")) {
-    // Handle both single SSID and array of SSIDs
-    if (doc["ssid"].is<JsonArray>()) {
-      JsonArray ssidArray = doc["ssid"];
-      wifiNetworkCount = 0;
-      for (JsonVariant value : ssidArray) {
-        if (wifiNetworkCount >= MAX_WIFI_NETWORKS) break;
-        strncpy(ssid[wifiNetworkCount], value.as<const char*>(), sizeof(ssid[wifiNetworkCount]) - 1);
-        ssid[wifiNetworkCount][sizeof(ssid[wifiNetworkCount]) - 1] = '\0';
-        wifiNetworkCount++;
-      }
-    } else {
-      // Single SSID for backward compatibility
-      strncpy(ssid[0], doc["ssid"], sizeof(ssid[0]) - 1);
-      ssid[0][sizeof(ssid[0]) - 1] = '\0';
-      wifiNetworkCount = 1;
-    }
-    
-    if (doc.containsKey("password")) {
-      // Handle both single password and array of passwords
-      if (doc["password"].is<JsonArray>()) {
-        JsonArray passwordArray = doc["password"];
-        for (int i = 0; i < wifiNetworkCount && i < MAX_WIFI_NETWORKS; i++) {
-          if (i < (int)passwordArray.size()) {
-            const char* pwd = passwordArray[i];
-            if (pwd) {
-              strncpy(password[i], pwd, sizeof(password[i]) - 1);
-              password[i][sizeof(password[i]) - 1] = '\0';
-            } else {
-              password[i][0] = '\0';
-            }
-          } else {
-            password[i][0] = '\0';
-          }
-        }
-      } else {
-        // Single password for backward compatibility
-        const char* pwd = doc["password"];
-        if (pwd) {
-          strncpy(password[0], pwd, sizeof(password[0]) - 1);
-          password[0][sizeof(password[0]) - 1] = '\0';
-        } else {
-          password[0][0] = '\0';
-        }
-        // Clear other passwords
-        for (int i = 1; i < MAX_WIFI_NETWORKS; i++) {
-          password[i][0] = '\0';
-        }
       }
     }
   }
