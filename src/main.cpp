@@ -63,7 +63,7 @@ char currentStreamName[128] = "";  ///< Name of currently playing stream
 char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
-int volume = 50;                   ///< Volume level (0-100)
+int volume = 11;                   ///< Volume level (0-22)
 int bass = 0;                      ///< Bass level (-6 to 6 dB)
 int midrange = 0;                  ///< Midrange level (-6 to 6 dB)
 int treble = 0;                    ///< Treble level (-6 to 6 dB)
@@ -1014,7 +1014,7 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
-  audio->setVolume(volume * 21 / 100); // Convert 0-100 to 0-21 scale
+  audio->setVolume(volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
@@ -1405,10 +1405,10 @@ void handleRotary() {
     if (diff > 0) {
       // Rotate clockwise - volume up or next item
       if (isPlaying) {
-        // If playing, increase volume by 5% (capped at 100%)
-        volume = min(100, volume + 5);
+        // If playing, increase volume by 1 (capped at 22)
+        volume = min(22, volume + 1);
         if (audio) {
-          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -1421,10 +1421,10 @@ void handleRotary() {
       // Process counter-clockwise rotation
       // Rotate counter-clockwise - volume down or previous item
       if (isPlaying) {
-        // If playing, decrease volume by 5% (capped at 0%)
-        volume = max(0, volume - 5);
+        // If playing, decrease volume by 1 (capped at 0)
+        volume = max(0, volume - 1);
         if (audio) {
-          audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
+          audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
       } else {
@@ -1766,14 +1766,14 @@ void handleVolume() {
     
     int newVolume = doc["volume"];
     
-    if (newVolume < 0 || newVolume > 100) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 100\"}");
+    if (newVolume < 0 || newVolume > 22) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
       return;
     }
     
     volume = newVolume;
     if (audio) {
-      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
+      audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
     }
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
@@ -1783,14 +1783,14 @@ void handleVolume() {
     String vol = server.arg("volume");
     int newVolume = vol.toInt();
     
-    if (newVolume < 0 || newVolume > 100) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 100\"}");
+    if (newVolume < 0 || newVolume > 22) {
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
       return;
     }
     
     volume = newVolume;
     if (audio) {
-      audio->setVolume(volume * 21 / 100);  // ESP32-audioI2S uses 0-21 scale
+      audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
     }
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change

@@ -700,9 +700,9 @@ function handleToneChange(type, value) {
 async function setVolume(volume) {
     // Validate volume parameter
     const volumeNum = parseInt(volume, 10);
-    if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 100) {
+    if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 22) {
         console.error('Invalid volume value:', volume);
-        showToast('Invalid volume value. Must be between 0 and 100.', 'error');
+        showToast('Invalid volume value. Must be between 0 and 22.', 'error');
         return;
     }
     
@@ -733,9 +733,9 @@ async function setVolume(volume) {
             const result = await response.json();
             if (result.status === 'success') {
                 if (volumeValue) {
-                    volumeValue.textContent = volumeNum + '%';
+                    volumeValue.textContent = volumeNum;
                 }
-                showToast(result.message || 'Volume set to ' + volumeNum + '%', 'info');
+                showToast(result.message || 'Volume set to ' + volumeNum, 'info');
             } else {
                 throw new Error(result.message || 'Failed to set volume');
             }
@@ -751,7 +751,7 @@ async function setVolume(volume) {
             volumeControl.value = originalVolume;
         }
         if (volumeValue) {
-            volumeValue.textContent = originalVolume + '%';
+            volumeValue.textContent = originalVolume;
         }
         throw error; // Re-throw to allow caller to handle
     } finally {
