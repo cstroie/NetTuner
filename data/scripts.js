@@ -905,19 +905,72 @@ function deleteStream(index) {
         return;
     }
     
-    if (confirm('Are you sure you want to delete this stream?')) {
-        streams.splice(index, 1);
-        renderPlaylist();
+    // Create modal for confirmation
+    const modal = document.createElement('dialog');
+    modal.id = 'deleteModal';
+    modal.innerHTML = `
+        <article>
+            <h2>Confirm Deletion</h2>
+            <p>Are you sure you want to delete this stream?</p>
+            <footer>
+                <button class="secondary" onclick="document.getElementById('deleteModal').remove()">Cancel</button>
+                <button onclick="confirmDeleteStream(${index})">Delete</button>
+            </footer>
+        </article>
+    `;
+    document.body.appendChild(modal);
+    modal.showModal();
+}
+
+function confirmDeleteStream(index) {
+    // Close and remove modal
+    const modal = document.getElementById('deleteModal');
+    if (modal) {
+        modal.remove();
     }
+    
+    // Perform deletion
+    streams.splice(index, 1);
+    renderPlaylist();
 }
 
 async function savePlaylist() {
     // Validate playlist before saving
     if (streams.length === 0) {
-        if (!confirm('Playlist is empty. Do you want to save an empty playlist?')) {
-            return;
-        }
+        // Create modal for confirmation
+        const modal = document.createElement('dialog');
+        modal.id = 'emptyPlaylistModal';
+        modal.innerHTML = `
+            <article>
+                <h2>Empty Playlist</h2>
+                <p>Playlist is empty. Do you want to save an empty playlist?</p>
+                <footer>
+                    <button class="secondary" onclick="document.getElementById('emptyPlaylistModal').remove()">Cancel</button>
+                    <button onclick="confirmSaveEmptyPlaylist()">Save</button>
+                </footer>
+            </article>
+        `;
+        document.body.appendChild(modal);
+        modal.showModal();
+        return;
     }
+    
+    // If playlist is not empty, proceed with saving
+    savePlaylistInternal();
+}
+
+function confirmSaveEmptyPlaylist() {
+    // Close and remove modal
+    const modal = document.getElementById('emptyPlaylistModal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Proceed with saving
+    savePlaylistInternal();
+}
+
+function savePlaylistInternal() {
     
     // Validate each stream in the playlist
     for (let i = 0; i < streams.length; i++) {
