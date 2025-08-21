@@ -85,6 +85,21 @@
     }
 }
 
+/* Configuration form styles */
+fieldset {
+    margin-bottom: 1rem;
+}
+
+fieldset legend {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+fieldset label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
 /* Various customizations */
 #instantUrl {
     width: 80%;
