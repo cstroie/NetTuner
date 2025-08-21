@@ -1453,7 +1453,7 @@ let configuredNetworks = [];
 
 function loadConfiguredNetworks() {
     // Load existing configuration to know which networks are already configured
-    fetch('/api/wifi/save')
+    fetch('/api/wifi/config')
         .then(response => response.json())
         .then(data => {
             // Handle consistent data structure for configured networks
@@ -1486,7 +1486,7 @@ function loadConfiguredNetworks() {
 
 function loadCurrentConfiguration() {
     // Load current WiFi configuration to populate the form
-    fetch('/api/wifi/save')
+    fetch('/api/wifi/config')
         .then(response => response.json())
         .then(data => {
             // Handle consistent data structure for configuration loading
@@ -1601,7 +1601,7 @@ function handleWiFiFormSubmit() {
         saveButton.disabled = true;
     }
     
-    fetch('/api/wifisave', {
+    fetch('/api/wifi/save', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
