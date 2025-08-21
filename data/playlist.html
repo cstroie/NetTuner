@@ -63,6 +63,12 @@
             <h2>Playlist management</h2>
             <p>Import or export your playlist in different formats.</p>
             
+            <label for="remotePlaylistUrl">Import remote playlist:
+                <input type="url" id="remotePlaylistUrl" placeholder="Enter playlist URL (http://...)" />
+                <small>Enter the URL of a remote JSON playlist file</small>
+            </label>
+            <button onclick="importRemotePlaylist()">Import</button>
+            
             <label for="playlistFile">Upload playlist file:
                 <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8">
                 <small>Supported formats: JSON, M3U, M3U8</small>
