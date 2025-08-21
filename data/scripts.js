@@ -62,7 +62,6 @@ function initWiFiPage() {
     // Load existing WiFi configuration when page loads
     window.addEventListener('load', function() {
         loadConfiguredNetworks();
-        loadCurrentConfiguration();
     });
 }
 
@@ -1539,12 +1538,6 @@ function loadConfiguredNetworks() {
     });
 }
 
-function loadCurrentConfiguration() {
-    loadWiFiConfiguration().catch(error => {
-        console.error('Error loading current configuration:', error);
-    });
-}
-
 function addNetworkField() {
     if (networkCount >= 5) {
         return;
@@ -1552,6 +1545,7 @@ function addNetworkField() {
     
     const networkFields = document.getElementById('networkFields');
     const newEntry = document.createElement('div');
+    newEntry.className = "network-entry"
     newEntry.role = "group"
     newEntry.innerHTML = `
         <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
