@@ -1685,7 +1685,8 @@ void handleSimpleWebPage() {
   }
   
   // Serve the HTML page
-  String html = "<!DOCTYPE html><html><head><title>NetTuner</title></head><body>";
+  String html = "<!DOCTYPE html><html>";
+  html += "<head><title>NetTuner</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\"></head><body>";
   html += "<header><h1>NetTuner</h1></header>";
   
   html += "<main>";
