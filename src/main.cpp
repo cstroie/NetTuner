@@ -413,6 +413,9 @@ void setup() {
   // Initialize LED pin
   pinMode(config.led_pin, OUTPUT);
   digitalWrite(config.led_pin, LOW);  // Turn off LED initially
+  
+  // Initialize board button with pull-up resistor
+  pinMode(config.board_button, INPUT_PULLUP);
 
   // Initialize OLED display
   // Configure I2C pins
