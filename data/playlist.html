@@ -13,10 +13,18 @@
             <li><strong>NetTuner</strong></li>
         </ul>
         <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/playlist" class="contrast">Playlist</a></li>
-            <li><a href="/wifi">Wifi</a></li>
-            <li><a href="/about">About</a></li>
+            <li>
+                <details class="dropdown">
+                    <summary>Playlist</summary>
+                    <ul dir="rtl">
+                        <li><a href="/" dir="ltr">Home</a></li>
+                        <li><a href="/playlist" aria-current="page">Playlist</a></li>
+                        <li><a href="/wifi">Wifi</a></li>
+                        <li><a href="/config">Config</a></li>
+                        <li><a href="/about">About</a></li>
+                    </ul>
+                </details>
+            </li>
             <li><button id="themeToggle" class="secondary" aria-label="Toggle theme">◐</button></li>
         </ul>
     </nav>
@@ -85,6 +93,7 @@
         // Initialize the playlist page
         document.addEventListener('DOMContentLoaded', function() {
             if (document.getElementById('playlistBody')) {
+                initTheme();
                 initPlaylistPage();
             }
         });

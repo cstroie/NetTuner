@@ -28,15 +28,6 @@ function updateThemeToggle() {
     }
 }
 
-// Add event listener for theme toggle
-document.addEventListener('DOMContentLoaded', function() {
-    const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', toggleTheme);
-    }
-    initTheme();
-});
-
 function initMainPage() {
     loadStreams();
     connectWebSocket();

@@ -13,10 +13,18 @@
             <li><strong>NetTuner</strong></li>
         </ul>
         <ul>
-            <li><a href="/">Home</a></li>
-            <li><a href="/playlist">Playlist</a></li>
-            <li><a href="/wifi">Wifi</a></li>
-            <li><a href="/about" class="contrast">About</a></li>
+            <li>
+                <details class="dropdown">
+                    <summary>About</summary>
+                    <ul dir="rtl">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/playlist">Playlist</a></li>
+                        <li><a href="/wifi">Wifi</a></li>
+                        <li><a href="/config">Config</a></li>
+                        <li><a href="/about" aria-current="page">About</a></li>
+                    </ul>
+                </details>
+            </li>
             <li><button id="themeToggle" class="secondary" aria-label="Toggle theme">◐</button></li>
         </ul>
     </nav>
