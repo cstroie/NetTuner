@@ -1501,9 +1501,9 @@ void savePlaylist() {
  */
 void setupRotaryEncoder() {
   // Configure rotary encoder pins with internal pull-up resistors
-  pinMode(config.rotary_clk, INPUT_PULLUP);  // Enable internal pull-up resistor
-  pinMode(config.rotary_dt, INPUT_PULLUP);   // Enable internal pull-up resistor
-  pinMode(config.rotary_sw, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.rotary_clk, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.rotary_dt, INPUT_PULLUP);    // Enable internal pull-up resistor
+  pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
   pinMode(config.board_button, INPUT_PULLUP); // Enable internal pull-up resistor for board button
   
   // Attach interrupt handler for rotary encoder rotation
