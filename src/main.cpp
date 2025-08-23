@@ -1693,9 +1693,14 @@ void handleSimpleWebPage() {
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
   
-  if (isPlaying) {
+  // Show current stream name
+  if (isPlaying && currentStreamName[0]) {
     html += "<p><b>Current Stream:</b> ";
-    html += currentStreamName[0] ? currentStreamName : "Unknown";
+    html += currentStreamName;
+    html += "</p>";
+  } else if (!isPlaying && playlistCount > 0 && currentSelection < playlistCount) {
+    html += "<p><b>Selected Stream:</b> ";
+    html += playlist[currentSelection].name;
     html += "</p>";
   }
   
