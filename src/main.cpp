@@ -346,6 +346,7 @@ void handleRoot();
 void handlePlaylistPage();
 void handleConfigPage();
 void handleAboutPage();
+void handleSimpleWebPage();
 void handleGetStreams();
 void handlePostStreams();
 void handlePlay();
@@ -541,6 +542,8 @@ void setup() {
   server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
   server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
   server.on("/api/wifi/config", HTTP_GET, handleWiFiConfigAPI);
+  server.on("/w", HTTP_GET, handleSimpleWebPage);
+  server.on("/w", HTTP_POST, handleSimpleWebPage);
    
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
@@ -1645,6 +1648,86 @@ void handleRoot() {
   }
   server.streamFile(file, "text/html");
   file.close();
+}
+
+/**
+ * @brief Handle simple web page request
+ * Serves a minimal HTML page for controlling the radio
+ * This function provides a simple interface with play/stop controls
+ * and stream selection without CSS or JavaScript
+ */
+void handleSimpleWebPage() {
+  if (server.method() == HTTP_POST) {
+    // Handle form submission
+    if (server.hasArg("action")) {
+      String action = server.arg("action");
+      
+      if (action == "play") {
+        // Play selected stream
+        if (server.hasArg("stream") && playlistCount > 0) {
+          int streamIndex = server.arg("stream").toInt();
+          if (streamIndex >= 0 && streamIndex < playlistCount) {
+            currentSelection = streamIndex;
+            startStream(playlist[streamIndex].url, playlist[streamIndex].name);
+          }
+        } else if (strlen(currentStream) > 0) {
+          // Resume current stream
+          startStream();
+        } else if (playlistCount > 0 && currentSelection < playlistCount) {
+          // Play currently selected stream
+          startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        }
+      } else if (action == "stop") {
+        // Stop playback
+        stopStream();
+      }
+    }
+  }
+  
+  // Serve the HTML page
+  String html = "<!DOCTYPE html><html><head><title>NetTuner</title></head><body>";
+  html += "<h1>NetTuner</h1>";
+  
+  // Show current status
+  html += "<p><b>Status:</b> ";
+  html += isPlaying ? "Playing" : "Stopped";
+  html += "</p>";
+  
+  if (isPlaying) {
+    html += "<p><b>Current Stream:</b> ";
+    html += currentStreamName[0] ? currentStreamName : "Unknown";
+    html += "</p>";
+  }
+  
+  // Play/Stop buttons
+  html += "<form method='post'>";
+  html += "<button name='action' value='play' type='submit'>Play</button> ";
+  html += "<button name='action' value='stop' type='submit'>Stop</button>";
+  html += "</form>";
+  
+  // Stream selection
+  if (playlistCount > 0) {
+    html += "<form method='post'>";
+    html += "<p><b>Select Stream:</b></p>";
+    html += "<select name='stream'>";
+    
+    for (int i = 0; i < playlistCount; i++) {
+      html += "<option value='" + String(i) + "'";
+      if (i == currentSelection) {
+        html += " selected";
+      }
+      html += ">" + String(playlist[i].name) + "</option>";
+    }
+    
+    html += "</select>";
+    html += "<button name='action' value='play' type='submit'>Play Selected</button>";
+    html += "</form>";
+  } else {
+    html += "<p>No streams available</p>";
+  }
+  
+  html += "</body></html>";
+  server.send(200, "text/html", html);
 }
 
 /**
