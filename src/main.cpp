@@ -1685,10 +1685,13 @@ void handleSimpleWebPage() {
   }
   
   // Serve the HTML page
-  String html = "<!DOCTYPE html><html><head><title>NetTuner</title></head><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"><body>";
-  html += "<h1>NetTuner</h1>";
+  String html = "<!DOCTYPE html><html><head><title>NetTuner</title></head><body>";
+  html += "<header><h1>NetTuner</h1></header>";
   
+  html += "<main>";
   // Show current status
+  html += "<section>";
+  html += "<h2>Status</h2>";
   html += "<p><b>Status:</b> ";
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
@@ -1703,18 +1706,24 @@ void handleSimpleWebPage() {
     html += playlist[currentSelection].name;
     html += "</p>";
   }
+  html += "</section>";
   
   // Play/Stop buttons
+  html += "<section>";
+  html += "<h2>Controls</h2>";
   html += "<form method='post'>";
   html += "<button name='action' value='play' type='submit'>Play</button> ";
   html += "<button name='action' value='stop' type='submit'>Stop</button>";
   html += "</form>";
+  html += "</section>";
   
   // Stream selection
+  html += "<section>";
+  html += "<h2>Playlist</h2>";
   if (playlistCount > 0) {
     html += "<form method='post'>";
-    html += "<p><b>Select Stream:</b></p>";
-    html += "<select name='stream'>";
+    html += "<label for='stream'>Select Stream:</label>";
+    html += "<select name='stream' id='stream'>";
     
     for (int i = 0; i < playlistCount; i++) {
       html += "<option value='" + String(i) + "'";
@@ -1730,7 +1739,10 @@ void handleSimpleWebPage() {
   } else {
     html += "<p>No streams available</p>";
   }
+  html += "</section>";
+  html += "</main>";
   
+  html += "<footer><p>NetTuner Simple Interface</p></footer>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
