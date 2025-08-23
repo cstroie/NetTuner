@@ -373,13 +373,6 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void setup() {
   Serial.begin(115200);
   
-  // Load configuration
-  loadConfig();
-  
-  // Initialize LED pin
-  pinMode(config.led_pin, OUTPUT);
-  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
-  
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
@@ -413,7 +406,14 @@ void setup() {
   } else {
     Serial.println("SPIFFS write test file already exists - SPIFFS is working");
   }
+    
+  // Load configuration
+  loadConfig();
   
+  // Initialize LED pin
+  pinMode(config.led_pin, OUTPUT);
+  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
+
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);
@@ -1037,6 +1037,9 @@ void loadConfig() {
   }
   buf[size] = '\0';
   file.close();
+  // DEBUG
+  Serial.print("Config JSON: ");
+  Serial.println(String(buf.get()));
   
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, buf.get());
