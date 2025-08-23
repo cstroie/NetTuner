@@ -65,6 +65,67 @@ function initWiFiPage() {
     });
 }
 
+async function loadConfig() {
+    try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+            const config = await response.json();
+            document.getElementById('i2s_bclk').value = config.i2s_bclk || 27;
+            document.getElementById('i2s_lrc').value = config.i2s_lrc || 25;
+            document.getElementById('i2s_dout').value = config.i2s_dout || 26;
+            document.getElementById('led_pin').value = config.led_pin || 2;
+            document.getElementById('rotary_clk').value = config.rotary_clk || 18;
+            document.getElementById('rotary_dt').value = config.rotary_dt || 19;
+            document.getElementById('rotary_sw').value = config.rotary_sw || 23;
+            document.getElementById('board_button').value = config.board_button || 0;
+            document.getElementById('display_sda').value = config.display_sda || 5;
+            document.getElementById('display_scl').value = config.display_scl || 4;
+            document.getElementById('display_width').value = config.display_width || 128;
+            document.getElementById('display_height').value = config.display_height || 64;
+            document.getElementById('display_address').value = config.display_address || 60;
+        }
+    } catch (error) {
+        console.error('Error loading config:', error);
+    }
+}
+
+async function saveConfig() {
+    const config = {
+        i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
+        i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
+        i2s_dout: parseInt(document.getElementById('i2s_dout').value),
+        led_pin: parseInt(document.getElementById('led_pin').value),
+        rotary_clk: parseInt(document.getElementById('rotary_clk').value),
+        rotary_dt: parseInt(document.getElementById('rotary_dt').value),
+        rotary_sw: parseInt(document.getElementById('rotary_sw').value),
+        board_button: parseInt(document.getElementById('board_button').value),
+        display_sda: parseInt(document.getElementById('display_sda').value),
+        display_scl: parseInt(document.getElementById('display_scl').value),
+        display_width: parseInt(document.getElementById('display_width').value),
+        display_height: parseInt(document.getElementById('display_height').value),
+        display_address: parseInt(document.getElementById('display_address').value)
+    };
+    
+    try {
+        const response = await fetch('/api/config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(config)
+        });
+        
+        if (response.ok) {
+            alert('Configuration saved successfully. Device restart required for changes to take effect.');
+        } else {
+            alert('Error saving configuration');
+        }
+    } catch (error) {
+        console.error('Error saving config:', error);
+        alert('Error saving configuration');
+    }
+}
+
 /**
  * @brief Load streams from the server
  * Fetches the playlist from the server and updates the UI
