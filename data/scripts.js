@@ -126,6 +126,20 @@ async function saveConfig() {
     }
 }
 
+function initConfigPage() {
+    // Load existing configuration when page loads
+    loadConfig();
+    
+    // Set up form submit handler
+    const configForm = document.getElementById('configForm');
+    if (configForm) {
+        configForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveConfig();
+        });
+    }
+}
+
 /**
  * @brief Load streams from the server
  * Fetches the playlist from the server and updates the UI

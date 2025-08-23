@@ -96,12 +96,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
-            loadConfig();
-            
-            document.getElementById('configForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                saveConfig();
-            });
+            initConfigPage();
         });
     </script>
 </body>
