@@ -156,7 +156,7 @@ void audio_bitrate(const char *info) {
 #define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
 #define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
 #define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
-#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin
+#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
 #define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
 #define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
@@ -414,6 +414,7 @@ void setup() {
   pinMode(config.led_pin, OUTPUT);
   digitalWrite(config.led_pin, LOW);  // Turn off LED initially
   
+  // Initialize board button with pull-up resistor
   // Initialize board button with pull-up resistor
   pinMode(config.board_button, INPUT_PULLUP);
 
