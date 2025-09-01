@@ -2141,6 +2141,26 @@ void handlePostConfig() {
 }
 
 /**
+ * @brief Generate JSON status string
+ * Creates a JSON string with current player status information
+ * @return JSON formatted status string
+ */
+String generateStatusJSON() {
+  String status = "{";
+  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
+  status += "\"streamURL\":\"" + String(streamURL) + "\",";
+  status += "\"streamName\":\"" + String(streamName) + "\",";
+  status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+  status += "\"bitrate\":" + String(bitrate / 1000) + ",";
+  status += "\"volume\":" + String(volume) + ",";
+  status += "\"bass\":" + String(bass) + ",";
+  status += "\"midrange\":" + String(midrange) + ",";
+  status += "\"treble\":" + String(treble);
+  status += "}";
+  return status;
+}
+
+/**
  * @brief Send status to all connected WebSocket clients
  * This function broadcasts the current player status to all connected WebSocket clients.
  * The status includes playback state, stream information, bitrate, and volume.
@@ -2149,18 +2169,7 @@ void sendStatusToClients() {
   // Only broadcast if WebSocket server has clients
   if (webSocket.connectedClients() > 0) {
     // Get current status
-    // FIXME Duplicate code
-    String status = "{";
-    status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-    status += "\"streamURL\":\"" + String(streamURL) + "\",";
-    status += "\"streamName\":\"" + String(streamName) + "\",";
-    status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-    status += "\"bitrate\":" + String(bitrate / 1000) + ",";
-    status += "\"volume\":" + String(volume) + ",";
-    status += "\"bass\":" + String(bass) + ",";
-    status += "\"midrange\":" + String(midrange) + ",";
-    status += "\"treble\":" + String(treble);
-    status += "}";
+    String status = generateStatusJSON();
     // Broadcast status to all connected clients
     webSocket.broadcastTXT(status);
   }
@@ -2185,18 +2194,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       // Send current status to newly connected client
       {
         // Get current status
-        // FIXME Duplicate code
-        String status = "{";
-        status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-        status += "\"streamURL\":\"" + String(streamURL) + "\",";
-        status += "\"streamName\":\"" + String(streamName) + "\",";
-        status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-        status += "\"bitrate\":" + String(bitrate / 1000) + ",";
-        status += "\"volume\":" + String(volume) + ",";
-        status += "\"bass\":" + String(bass) + ",";
-        status += "\"midrange\":" + String(midrange) + ",";
-        status += "\"treble\":" + String(treble);
-        status += "}";
+        String status = generateStatusJSON();
         // Send status to newly connected client
         webSocket.sendTXT(num, status);
       }
@@ -3027,7 +3025,7 @@ if (command.startsWith("stop")) {
   } else if (command.startsWith("plchanges")) {
     // Playlist changes command
     // For simplicity, we'll return the entire playlist (as if all entries changed)
-    sendPlaylistInfo();
+    sendPlaylistInfo(2);
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
     // Idle command - enter idle mode and wait for changes
