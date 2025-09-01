@@ -80,7 +80,7 @@ void audio_bitrate(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Bitrate: ");
     Serial.println(info);
-    // Convert string to integer
+    // Convert string to integer bitrate in kbps
     int newBitrate = atoi(info) / 1000;
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
@@ -1990,7 +1990,8 @@ void updateDisplay() {
     displayOn = true;
   }
   
-  display.clearDisplay();  // Clear the display buffer
+  // Clear the display buffer
+  display.clearDisplay();
   
   if (isPlaying) {
     // Display when playing
@@ -2162,27 +2163,33 @@ void updateDisplay() {
     // Display when stopped
     if (config.display_height >= 64) {
       // 128x64 display - full information
-      display.setTextSize(2);  // Larger font for status
-      display.setCursor(0, 0);
-      display.println("   STOP   ");
-      display.setTextSize(1);  // Normal font for other text
+      // Larger font for status
+      display.setTextSize(2);
+      display.setCursor(15, 0);
+      display.println("STOP");
+      // Normal font for other text
+      display.setTextSize(1);
       // Display current stream name (second line)
       display.setCursor(0, 18);
       if (strlen(streamName) > 0) {
         String currentStream = String(streamName);
-        if (currentStream.length() > 21) {  // ~21 chars fit on a 128px display
+        // ~21 chars fit on a 128px display
+        if (currentStream.length() > 21) {
           display.println(currentStream.substring(0, 21));
         } else {
           display.println(currentStream);
         }
       } else if (playlistCount > 0 && currentSelection < playlistCount) {
         String playlistName = String(playlist[currentSelection].name);
-        if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
+        // ~21 chars fit on a 128px display
+        if (playlistName.length() > 21) {
           display.println(playlistName.substring(0, 21));
         } else {
           display.println(playlistName);
         }
       } else {
+        // No stream is currently found in playlist
+        display.setCursor(27, 18);
         display.println("No streams");
       }
       
@@ -2233,6 +2240,8 @@ void updateDisplay() {
           display.println(playlistName);
         }
       } else {
+        // No stream is currently found in playlist
+        display.setCursor(27, 18);
         display.println("No streams");
       }
       
@@ -2242,6 +2251,6 @@ void updateDisplay() {
       display.println(volume);
     }
   }
-  
-  display.display();  // Send buffer to display
+  // Send buffer to display
+  display.display();
 }
