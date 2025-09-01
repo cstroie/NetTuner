@@ -20,7 +20,7 @@
 #include "main.h"  // For global function declarations
 
 extern void stopStream();
-extern void startStream(const char* url = nullptr, const char* name = nullptr);
+extern void startStream(const char* url, const char* name);
 extern void updateDisplay();
 extern void sendStatusToClients();
 extern const char* BUILD_TIME;
