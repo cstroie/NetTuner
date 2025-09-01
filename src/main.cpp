@@ -2236,170 +2236,106 @@ void updateDisplay() {
     // Display when playing
     display.setTextSize(2);  // Larger font for status
     display.setCursor(0, 0);
-    display.println("PLAYING");
-    display.setTextSize(1);  // Normal font for stream info
+    display.print(">");  // Fixed '>' character
     
-    // Display station name (first line) with scrolling
-    display.setCursor(0, 18);
-    String stationName = String(streamName);
-    if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
-      static unsigned long lastScrollTime = 0;
-      static int scrollOffset = 0;
-      static String scrollText = "";
+    // Display stream title (first line) with scrolling
+    String title = String(streamTitle);
+    if (title.length() == 0) {
+      title = String(streamName);
+    }
+    
+    // Scroll title if too long for display (excluding the '>' character)
+    if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
+      static unsigned long lastTitleScrollTime = 0;
+      static int titleScrollOffset = 0;
+      static String titleScrollText = "";
       
       // Reset scroll if text changed
-      if (scrollText != stationName) {
-        scrollText = stationName;
-        scrollOffset = 0;
+      if (titleScrollText != title) {
+        titleScrollText = title;
+        titleScrollOffset = 0;
       }
       
       // Scroll every 500ms
-      if (millis() - lastScrollTime > 500) {
-        scrollOffset++;
-        if (scrollOffset > (int)stationName.length()) {
-          scrollOffset = 0;  // Reset scroll
+      if (millis() - lastTitleScrollTime > 500) {
+        titleScrollOffset++;
+        if (titleScrollOffset > (int)title.length()) {
+          titleScrollOffset = 0;  // Reset scroll
         }
-        lastScrollTime = millis();
+        lastTitleScrollTime = millis();
       }
       
-      // Display scrolled text
-      String displayText = stationName + " *** ";
-      if (scrollOffset < (int)displayText.length()) {
-        displayText = displayText.substring(scrollOffset) + displayText.substring(0, scrollOffset);
+      // Display scrolled text (starting from position after '>')
+      display.setCursor(16, 0);  // Position after the '>' character
+      String displayText = title + " *** ";
+      if (titleScrollOffset < (int)displayText.length()) {
+        displayText = displayText.substring(titleScrollOffset);
       }
-      display.println(displayText.substring(0, 21));
+      display.println(displayText.substring(0, 15));
+    } else {
+      display.setCursor(16, 0);  // Position after the '>' character
+      display.println(title);
+    }
+    
+    display.setTextSize(1);  // Normal font for stream info
+    // Display stream name (second line)
+    display.setCursor(0, 18);
+    String stationName = String(streamName);
+    if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
+      display.println(stationName.substring(0, 21));
     } else {
       display.println(stationName);
     }
     
-    // Display stream title (second line) if available with scrolling
-    if (strlen(streamTitle) > 0) {
-      display.setCursor(0, 30);
-      // Scroll title if too long for display
-      String title = String(streamTitle);
-      if (title.length() > 21) {  // ~21 chars fit on a 128px display
-        static unsigned long lastTitleScrollTime = 0;
-        static int titleScrollOffset = 0;
-        static String titleScrollText = "";
-        
-        // Reset scroll if text changed
-        if (titleScrollText != title) {
-          titleScrollText = title;
-          titleScrollOffset = 0;
-        }
-        
-        // Scroll every 500ms
-        if (millis() - lastTitleScrollTime > 500) {
-          titleScrollOffset++;
-          if (titleScrollOffset > (int)title.length()) {
-            titleScrollOffset = 0;  // Reset scroll
-          }
-          lastTitleScrollTime = millis();
-        }
-        
-        // Display scrolled text
-        String displayText = title + " *** ";
-        if (titleScrollOffset < (int)displayText.length()) {
-          displayText = displayText.substring(titleScrollOffset) + displayText.substring(0, titleScrollOffset);
-        }
-        display.println(displayText.substring(0, 21));
-      } else {
-        display.println(title);
-      }
-      
-      // Display bitrate and volume on third line if available
-      if (bitrate > 0) {
-        display.setCursor(0, 42);
-        display.print(bitrate / 1000);
-        display.print(" kbps | ");
-        display.print(volume);
-        display.println("%");
-      } else {
-        display.setCursor(0, 42);
-        display.print("Volume: ");
-        display.print(volume);
-      }
-    } else {
-      // Display bitrate and volume on second line if no title and bitrate available
-      if (bitrate > 0) {
-        display.setCursor(0, 30);
-        display.print(bitrate / 1000);
-        display.print(" kbps | ");
-        display.print(volume);
-        display.println("%");
-      } else {
-        display.setCursor(0, 30);
-        display.print("Volume: ");
-        display.print(volume);
-      }
-    }
+    // Display volume on third line
+    display.setCursor(0, 30);
+    display.print("VOL ");
+    display.println(volume);
     
-    // Display IP address on the last line
-    display.setCursor(0, 54);
-    if (WiFi.status() == WL_CONNECTED) {
-      display.println(WiFi.localIP().toString());
-    } else {
-      display.println("No IP");
-    }
   } else {
     // Display when stopped
     display.setTextSize(2);  // Larger font for status
     display.setCursor(0, 0);
-    display.println("STOPPED");
+    display.println("[] STOP");
     display.setTextSize(1);  // Normal font for other text
+    
+    // Display selected playlist item name (second line)
+    display.setCursor(0, 18);
     if (playlistCount > 0 && currentSelection < playlistCount) {
-      // Show selected playlist item with scrolling
-      display.setCursor(0, 18);
       String playlistName = String(playlist[currentSelection].name);
       if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
-        static unsigned long lastPlaylistScrollTime = 0;
-        static int playlistScrollOffset = 0;
-        static String playlistScrollText = "";
-        
-        // Reset scroll if text changed
-        if (playlistScrollText != playlistName) {
-          playlistScrollText = playlistName;
-          playlistScrollOffset = 0;
-        }
-        
-        // Scroll every 500ms
-        if (millis() - lastPlaylistScrollTime > 500) {
-          playlistScrollOffset++;
-          if (playlistScrollOffset > (int)playlistName.length()) {
-            playlistScrollOffset = 0;  // Reset scroll
-          }
-          lastPlaylistScrollTime = millis();
-        }
-        
-        // Display scrolled text
-        String displayText = playlistName + " *** ";
-        if (playlistScrollOffset < (int)displayText.length()) {
-          displayText = displayText.substring(playlistScrollOffset) + displayText.substring(0, playlistScrollOffset);
-        }
-        display.println(displayText.substring(0, 21));
+        display.println(playlistName.substring(0, 21));
       } else {
         display.println(playlistName);
       }
     } else {
-      // Show message when no streams available
-      display.setCursor(0, 18);
       display.println("No streams");
     }
     
-    // Display volume and IP on the last lines
-    display.setCursor(0, 42);
-    display.print("Volume: ");
-    display.print(volume);
-    display.println("%");
-    
-    // Display IP address on the last line
-    display.setCursor(0, 54);
-    if (WiFi.status() == WL_CONNECTED) {
-      display.println(WiFi.localIP().toString());
-    } else {
-      display.println("No IP");
-    }
+    // Display volume on third line
+    display.setCursor(0, 30);
+    display.print("VOL ");
+    display.println(volume);
   }
+  
+  // Display IP address on the last line, centered
+  display.setCursor(0, 54);
+  String ipString;
+  if (WiFi.status() == WL_CONNECTED) {
+    ipString = WiFi.localIP().toString();
+  } else {
+    ipString = "No IP";
+  }
+  
+  // Calculate center position
+  int16_t x1, y1;
+  uint16_t w, h;
+  display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
+  int x = (display.width() - w) / 2;
+  if (x < 0) x = 0;
+  
+  display.setCursor(x, 54);
+  display.println(ipString);
   
   display.display();  // Send buffer to display
 }
