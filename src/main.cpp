@@ -58,8 +58,8 @@ WiFiClient mpdClient;
  * @brief Player state variables
  * Track current playback status, stream information, and volume level
  */
-char currentStream[256] = "";      ///< URL of currently playing stream
-char currentStreamName[128] = "";  ///< Name of currently playing stream
+char streamURL[256] = "";          ///< URL of currently playing stream
+char streamName[128] = "";         ///< Name of currently playing stream
 char streamTitle[128] = "";        ///< Current stream title
 int bitrate = 0;                   ///< Current stream bitrate
 volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
@@ -113,9 +113,9 @@ void audio_showstation(const char *info) {
     Serial.println(info);
     
     // Update current stream name if it has changed and we're not already using a custom name
-    if (strcmp(currentStreamName, info) != 0) {
-      strncpy(currentStreamName, info, sizeof(currentStreamName) - 1);
-      currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+    if (strcmp(streamName, info) != 0) {
+      strncpy(streamName, info, sizeof(streamName) - 1);
+      streamName[sizeof(streamName) - 1] = '\0';
       updateDisplay();
       sendStatusToClients();  // Notify clients of station name change
     }
@@ -616,7 +616,7 @@ void handleBoardButton() {
         stopStream();
       } else {
         // If we have a current stream, resume it
-        if (strlen(currentStream) > 0) {
+        if (strlen(streamURL) > 0) {
           startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
@@ -657,7 +657,7 @@ void loop() {
       if (!audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
-        if (strlen(currentStream) > 0) {
+        if (strlen(streamURL) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
           if (streamStoppedTime == 0) {
             // First time detecting the stream has stopped
@@ -1163,7 +1163,7 @@ void setupAudioOutput() {
 /**
  * @brief Start streaming an audio stream
  * Stops any currently playing stream and begins playing a new one
- * If called without parameters, resumes playback of currentStream if available
+ * If called without parameters, resumes playback of streamURL if available
  * @param url URL of the audio stream to play (optional)
  * @param name Human-readable name of the stream (optional)
  */
@@ -1177,12 +1177,12 @@ void startStream(const char* url, const char* name) {
 
   // If no URL provided, check if we have a current stream to resume
   if (!url || strlen(url) == 0) {
-    if (strlen(currentStream) > 0) {
+    if (strlen(streamURL) > 0) {
       // Resume playback of current stream
-      url = currentStream;
+      url = streamURL;
       // Use current name if available, otherwise use a default
       if (!name || strlen(name) == 0) {
-        name = (strlen(currentStreamName) > 0) ? currentStreamName : "Unknown Station";
+        name = (strlen(streamName) > 0) ? streamName : "Unknown Station";
       }
       // We are resuming playback
       resume = true;
@@ -1215,10 +1215,10 @@ void startStream(const char* url, const char* name) {
   
   // Keep the stream url and name if they are new
   if (not resume) {
-    strncpy(currentStream, url, sizeof(currentStream) - 1);
-    currentStream[sizeof(currentStream) - 1] = '\0';
-    strncpy(currentStreamName, name, sizeof(currentStreamName) - 1);
-    currentStreamName[sizeof(currentStreamName) - 1] = '\0';
+    strncpy(streamURL, url, sizeof(streamURL) - 1);
+    streamURL[sizeof(streamURL) - 1] = '\0';
+    strncpy(streamName, name, sizeof(streamName) - 1);
+    streamName[sizeof(streamName) - 1] = '\0';
   };
 
   // Set playback status to playing
@@ -1258,8 +1258,8 @@ void stopStream() {
   audioConnected = false;
   
   isPlaying = false;             // Set playback status to stopped
-  currentStream[0] = '\0';       // Clear current stream URL
-  currentStreamName[0] = '\0';   // Clear current stream name
+  streamURL[0] = '\0';       // Clear current stream URL
+  streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
   bitrate = 0;                   // Clear bitrate
   
@@ -1670,7 +1670,7 @@ void handleSimpleWebPage() {
             currentSelection = streamIndex;
             startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
-        } else if (strlen(currentStream) > 0) {
+        } else if (strlen(streamURL) > 0) {
           // Resume current stream
           startStream();
         } else if (playlistCount > 0 && currentSelection < playlistCount) {
@@ -1698,9 +1698,9 @@ void handleSimpleWebPage() {
   html += "</p>";
   
   // Show current stream name
-  if (isPlaying && currentStreamName[0]) {
+  if (isPlaying && streamName[0]) {
     html += "<p><b>Current Stream:</b> ";
-    html += currentStreamName;
+    html += streamName;
     html += "</p>";
   } else if (!isPlaying && playlistCount > 0 && currentSelection < playlistCount) {
     html += "<p><b>Selected Stream:</b> ";
@@ -2137,8 +2137,8 @@ void handleTone() {
 void handleStatus() {
   String status = "{";
   status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-  status += "\"currentStream\":\"" + String(currentStream) + "\",";
-  status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+  status += "\"streamURL\":\"" + String(streamURL) + "\",";
+  status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"volume\":" + String(volume);
   status += "}";
   server.send(200, "application/json", status);
@@ -2217,8 +2217,8 @@ void handlePostConfig() {
 void sendStatusToClients() {
   String status = "{";
   status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-  status += "\"currentStream\":\"" + String(currentStream) + "\",";
-  status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+  status += "\"streamURL\":\"" + String(streamURL) + "\",";
+  status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
   status += "\"bitrate\":" + String(bitrate / 1000) + ",";
   status += "\"volume\":" + String(volume) + ",";
@@ -2251,8 +2251,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       {
         String status = "{";
         status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-        status += "\"currentStream\":\"" + String(currentStream) + "\",";
-        status += "\"currentStreamName\":\"" + String(currentStreamName) + "\",";
+        status += "\"streamURL\":\"" + String(streamURL) + "\",";
+        status += "\"streamName\":\"" + String(streamName) + "\",";
         status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
         status += "\"bitrate\":" + String(bitrate / 1000) + ",";
         status += "\"volume\":" + String(volume) + ",";
@@ -2303,7 +2303,7 @@ void updateDisplay() {
     
     // Display station name (first line) with scrolling
     display.setCursor(0, 18);
-    String stationName = String(currentStreamName);
+    String stationName = String(streamName);
     if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
       static unsigned long lastScrollTime = 0;
       static int scrollOffset = 0;
@@ -2531,25 +2531,7 @@ String mpdResponseError(const String& message) {
  * playlist management, and status queries.
  */
 void handleMPDCommand(const String& command) {
-  if (command.startsWith("play")) {
-    // Play command
-    if (playlistCount > 0) {
-      int index = -1;
-      if (command.length() > 5) {
-        index = command.substring(5).toInt();
-      }
-      
-      if (index >= 0 && index < playlistCount) {
-        currentSelection = index;
-        startStream(playlist[index].url, playlist[index].name);
-      } else if (playlistCount > 0 && currentSelection < playlistCount) {
-        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
-      }
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("No playlist"));
-    }
-  } else if (command.startsWith("stop")) {
+if (command.startsWith("stop")) {
     // Stop command
     stopStream();
     mpdClient.print(mpdResponseOK());
@@ -2568,7 +2550,7 @@ void handleMPDCommand(const String& command) {
     mpdClient.print("playlistlength: " + String(playlistCount) + "\n");
     mpdClient.print("mixrampdb: 0.000000\n");
     mpdClient.print("state: " + String(isPlaying ? "play" : "stop") + "\n");
-    if (isPlaying && strlen(currentStreamName) > 0) {
+    if (isPlaying && strlen(streamName) > 0) {
       mpdClient.print("song: " + String(currentSelection) + "\n");
       mpdClient.print("songid: " + String(currentSelection) + "\n");
       mpdClient.print("time: 0:0\n");
@@ -2581,9 +2563,9 @@ void handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("currentsong")) {
     // Current song command
-    if (isPlaying && strlen(currentStreamName) > 0) {
-      mpdClient.print("file: " + String(currentStream) + "\n");
-      mpdClient.print("Title: " + String(currentStreamName) + "\n");
+    if (isPlaying && strlen(streamName) > 0) {
+      mpdClient.print("file: " + String(streamURL) + "\n");
+      mpdClient.print("Title: " + String(streamName) + " - " + String(streamTitle) + "\n");
       mpdClient.print("Id: " + String(currentSelection) + "\n");
       mpdClient.print("Pos: " + String(currentSelection) + "\n");
     }
@@ -2630,6 +2612,24 @@ void handleMPDCommand(const String& command) {
       mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
     }
     mpdClient.print(mpdResponseOK());
+  } else  if (command.startsWith("play")) {
+    // Play command
+    if (playlistCount > 0) {
+      int index = -1;
+      if (command.length() > 5) {
+        index = command.substring(5).toInt();
+      }
+      
+      if (index >= 0 && index < playlistCount) {
+        currentSelection = index;
+        startStream(playlist[index].url, playlist[index].name);
+      } else if (playlistCount > 0 && currentSelection < playlistCount) {
+        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      }
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("No playlist"));
+    }
   } else if (command.startsWith("setvol")) {
     // Set volume command
     if (command.length() > 7) {
