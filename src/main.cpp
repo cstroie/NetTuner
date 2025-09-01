@@ -2472,6 +2472,12 @@ void updateDisplay() {
  * This function handles connections from MPD clients and processes MPD protocol commands.
  * It manages one client connection at a time and processes commands as they arrive.
  */
+// MPD command list state variables
+bool inCommandList = false;
+bool commandListOK = false;
+String commandList[50];  // Buffer for command list (max 50 commands)
+int commandListCount = 0;
+
 void handleMPDClient() {
   if (mpdServer.hasClient()) {
     if (!mpdClient || !mpdClient.connected()) {
@@ -2483,6 +2489,10 @@ void handleMPDClient() {
       if (mpdClient && mpdClient.connected()) {
         mpdClient.print("OK MPD 0.23.0\n");
       }
+      // Reset command list state when new client connects
+      inCommandList = false;
+      commandListOK = false;
+      commandListCount = 0;
     } else {
       // Reject connection if we already have a client
       WiFiClient rejectedClient = mpdServer.available();
@@ -2493,6 +2503,10 @@ void handleMPDClient() {
   // Check if client disconnected unexpectedly
   if (mpdClient && !mpdClient.connected()) {
     mpdClient.stop();
+    // Reset command list state when client disconnects
+    inCommandList = false;
+    commandListOK = false;
+    commandListCount = 0;
   }
   
   if (mpdClient && mpdClient.connected()) {
@@ -2500,7 +2514,40 @@ void handleMPDClient() {
       String command = mpdClient.readStringUntil('\n');
       command.trim();
       Serial.println("MPD Command: " + command);
-      handleMPDCommand(command);
+      
+      // Handle command list mode
+      if (inCommandList) {
+        if (command == "command_list_end") {
+          // Execute all buffered commands
+          for (int i = 0; i < commandListCount; i++) {
+            handleMPDCommand(commandList[i]);
+          }
+          // Reset command list state
+          inCommandList = false;
+          commandListOK = false;
+          commandListCount = 0;
+          mpdClient.print(mpdResponseOK());
+        } else {
+          // Buffer the command
+          if (commandListCount < 50) {
+            commandList[commandListCount] = command;
+            commandListCount++;
+            // Send OK for each command if in command_list_ok_begin mode
+            if (commandListOK) {
+              mpdClient.print(mpdResponseOK());
+            }
+          } else {
+            // Command list too long, send error
+            inCommandList = false;
+            commandListOK = false;
+            commandListCount = 0;
+            mpdClient.print(mpdResponseError("Command list too long"));
+          }
+        }
+      } else {
+        // Normal command processing
+        handleMPDCommand(command);
+      }
     }
   }
 }
@@ -2891,6 +2938,21 @@ if (command.startsWith("stop")) {
     // Close command
     mpdClient.print(mpdResponseOK());
     mpdClient.stop();
+  } else if (command.startsWith("command_list_begin")) {
+    // Start command list mode
+    inCommandList = true;
+    commandListOK = false;
+    commandListCount = 0;
+    // Don't send OK yet, wait for command_list_end
+  } else if (command.startsWith("command_list_ok_begin")) {
+    // Start command list mode with OK responses
+    inCommandList = true;
+    commandListOK = true;
+    commandListCount = 0;
+    // Don't send OK yet, wait for command_list_end
+  } else if (command.startsWith("command_list_end")) {
+    // This should not happen outside of command list mode
+    mpdClient.print(mpdResponseError("Not in command list mode"));
   } else if (command.length() == 0) {
     // Empty command
     mpdClient.print(mpdResponseOK());
