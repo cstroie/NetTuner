@@ -19,6 +19,8 @@
 
 #include "main.h"
 #include "mpd.h"
+#include <Fonts/FreeSans9pt7b.h>
+
 
 // MPD Interface instance
 extern WiFiClient mpdClient;  // Declare the missing mpdClient
@@ -194,6 +196,7 @@ void setup() {
   Wire.begin(config.display_sda, config.display_scl);
   display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
+  //display.setFont(&FreeSans9pt7b);
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0);
@@ -2004,7 +2007,7 @@ void updateDisplay() {
       }
       
       // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
+      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
         static unsigned long lastTitleScrollTime = 0;
         static int titleScrollOffset = 0;
         static String titleScrollText = "";
@@ -2030,7 +2033,7 @@ void updateDisplay() {
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
-        display.println(displayText.substring(0, 15));
+        display.println(displayText.substring(0, 9));
       } else {
         display.setCursor(16, 0);  // Position after the '>' character
         display.println(title);
@@ -2082,7 +2085,7 @@ void updateDisplay() {
       }
       
       // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
+      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
         static unsigned long lastTitleScrollTime = 0;
         static int titleScrollOffset = 0;
         static String titleScrollText = "";
@@ -2108,7 +2111,7 @@ void updateDisplay() {
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
-        display.println(displayText.substring(0, 15));
+        display.println(displayText.substring(0, 9));
       } else {
         display.setCursor(16, 0);  // Position after the '>' character
         display.println(title);
@@ -2135,7 +2138,7 @@ void updateDisplay() {
       // 128x64 display - full information
       display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
-      display.println("[] STOP");
+      display.println("   STOP   ");
       display.setTextSize(1);  // Normal font for other text
       
       // Display selected playlist item name (second line)
