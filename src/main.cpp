@@ -2050,10 +2050,22 @@ void updateDisplay() {
         display.println(stationName);
       }
       
-      // Display volume on third line
+      // Display volume and bitrate on third line
       display.setCursor(0, 30);
       display.print("VOL ");
-      display.println(volume);
+      display.print(volume);
+      
+      // Display bitrate right-aligned
+      if (bitrate > 0) {
+        String bitrateStr = String(bitrate) + " kbps";
+        int16_t x1, y1;
+        uint16_t w, h;
+        display.getTextBounds(bitrateStr, 0, 30, &x1, &y1, &w, &h);
+        display.setCursor(display.width() - w, 30);
+        display.println(bitrateStr);
+      } else {
+        display.println();
+      }
       
       // Display IP address on the last line, centered
       display.setCursor(0, 54);
@@ -2129,10 +2141,22 @@ void updateDisplay() {
         display.println(stationName);
       }
       
-      // Display volume (third line)
+      // Display volume and bitrate (third line)
       display.setCursor(0, 26);
       display.print("VOL ");
-      display.println(volume);
+      display.print(volume);
+      
+      // Display bitrate right-aligned
+      if (bitrate > 0) {
+        String bitrateStr = String(bitrate) + " kbps";
+        int16_t x1, y1;
+        uint16_t w, h;
+        display.getTextBounds(bitrateStr, 0, 26, &x1, &y1, &w, &h);
+        display.setCursor(display.width() - w, 26);
+        display.println(bitrateStr);
+      } else {
+        display.println();
+      }
     }
   } else {
     // Display when stopped
