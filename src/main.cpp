@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player
+ * NetTuner - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -30,9 +30,8 @@
 
 /**
  * @brief WiFi network credentials
- * These should be updated with your actual network credentials
+ * These are stored in SPIFFS and can be configured through the web interface
  */
-// WiFi credentials will be stored in SPIFFS
 #define MAX_WIFI_NETWORKS 5
 char ssid[MAX_WIFI_NETWORKS][64] = {""};
 char password[MAX_WIFI_NETWORKS][64] = {""};
@@ -40,23 +39,26 @@ int wifiNetworkCount = 0;
 
 /**
  * @brief Web server instance running on port 80
+ * Handles HTTP requests for the web interface and API endpoints
  */
 WebServer server(80);
+
+/**
+ * @brief WebSocket server instance running on port 81
+ * Provides real-time status updates to web clients
+ */
 WebSocketsServer webSocket(81);
 
 /**
  * @brief MPD server instance running on port 6600
+ * Implements Music Player Daemon protocol version 0.23.0 for external control
  */
 WiFiServer mpdServer(6600);
 WiFiClient mpdClient;
 
 /**
- * @brief Audio processing components
- * These pointers manage the audio streaming pipeline
- */
-/**
  * @brief Player state variables
- * Track current playback status, stream information, and volume level
+ * Track current playback status, stream information, volume level, and tone controls
  */
 char streamURL[256] = "";          ///< URL of currently playing stream
 char streamName[128] = "";         ///< Name of currently playing stream
@@ -82,12 +84,11 @@ const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
  */
-Audio *audio = nullptr;                     ///< Audio instance for ESP32-audioI2S
-bool audioConnected = false;                ///< Audio connection status flag
+Audio *audio = nullptr;            ///< Audio instance for ESP32-audioI2S
+bool audioConnected = false;       ///< Audio connection status flag
 
-// Forward declaration of sendStatusToClients function
+// Forward declarations
 void sendStatusToClients();
-// Forward declaration of updateDisplay function
 void updateDisplay();
 
 /**
@@ -151,10 +152,6 @@ void audio_bitrate(const char *info) {
   }
 }
 
-/**
- * @brief I2S pin configuration for audio output
- * Defines the pin mapping for I2S audio interface
- */
 // Default pin definitions
 #define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
 #define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
@@ -172,22 +169,22 @@ void audio_bitrate(const char *info) {
 
 /**
  * @brief Configuration structure
- * Stores hardware configuration settings
+ * Stores hardware configuration settings that can be modified through the web interface
  */
 struct Config {
-  int i2s_dout;
-  int i2s_bclk;
-  int i2s_lrc;
-  int led_pin;
-  int rotary_clk;
-  int rotary_dt;
-  int rotary_sw;
-  int board_button;
-  int display_sda;
-  int display_scl;
-  int display_width;
-  int display_height;
-  int display_address;
+  int i2s_dout;        ///< I2S Data Out pin
+  int i2s_bclk;        ///< I2S Bit Clock pin
+  int i2s_lrc;         ///< I2S Left/Right Clock pin
+  int led_pin;         ///< LED indicator pin
+  int rotary_clk;      ///< Rotary encoder clock pin
+  int rotary_dt;       ///< Rotary encoder data pin
+  int rotary_sw;       ///< Rotary encoder switch pin
+  int board_button;    ///< Board button pin
+  int display_sda;     ///< OLED display SDA pin
+  int display_scl;     ///< OLED display SCL pin
+  int display_width;   ///< OLED display width
+  int display_height;  ///< OLED display height
+  int display_address; ///< OLED display I2C address
 };
 
 Config config = {
@@ -208,7 +205,7 @@ Config config = {
 
 /**
  * @brief OLED display instance
- * SSD1306 OLED display connected via I2C
+ * SSD1306 OLED display connected via I2C with configurable pins and dimensions
  */
 Adafruit_SSD1306 display(config.display_width, config.display_height, &Wire, -1);
 
@@ -315,9 +312,9 @@ struct StreamInfo {
  * @brief Playlist storage and management variables
  * Array to store playlist entries and tracking variables
  */
-StreamInfo playlist[MAX_PLAYLIST_SIZE];    ///< Array of stream information (max 20 entries)
-int playlistCount = 0;      ///< Number of valid entries in the playlist
-int currentSelection = 0;   ///< Currently selected item in the playlist
+StreamInfo playlist[MAX_PLAYLIST_SIZE];  ///< Array of stream information (max 20 entries)
+int playlistCount = 0;                   ///< Number of valid entries in the playlist
+int currentSelection = 0;                ///< Currently selected item in the playlist
 
 /**
  * @brief Task management handles
@@ -338,21 +335,23 @@ void handleRotary();
 void handleDisplayTimeout();
 void sendStatusToClients();
 void audioTask(void *pvParameters);
-void forceDisplayUpdate();
 void loadConfig();
 void saveConfig();
 
-// MPD functions
+// MPD protocol functions
 void handleMPDClient();
 String mpdResponseOK();
 String mpdResponseError(const String& message);
 void handleMPDCommand(const String& command);
+void handleMPDSearchCommand(const String& command, bool exactMatch);
+void sendPlaylistInfo(int detailLevel = 2);
 
 // Web server handlers
 void handleRoot();
 void handlePlaylistPage();
 void handleConfigPage();
 void handleAboutPage();
+void handleWiFiConfig();
 void handleSimpleWebPage();
 void handleGetStreams();
 void handlePostStreams();
@@ -363,7 +362,6 @@ void handleTone();
 void handleStatus();
 void handleGetConfig();
 void handlePostConfig();
-void handleWiFiConfig();
 void handleWiFiScan();
 void handleWiFiSave();
 void handleWiFiStatus();
@@ -376,7 +374,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 /**
  * @brief Arduino setup function
- * Initializes all system components and starts the web server
+ * Initializes all system components including WiFi, audio, display, and servers
+ * This function is called once at startup to configure the hardware and software components.
  */
 void setup() {
   Serial.begin(115200);
@@ -594,9 +593,9 @@ void audioTask(void *pvParameters) {
 }
 
 /**
- * @brief Arduino main loop function
- * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
- * This is the main application loop that runs continuously after setup()
+ * @brief Handle board button input
+ * Processes the built-in button (GPIO 0) for play/stop toggle functionality
+ * This function implements debouncing and toggles playback state when pressed.
  */
 void handleBoardButton() {
   static bool lastButtonState = HIGH;  // Keep track of button state
@@ -633,6 +632,11 @@ void handleBoardButton() {
   lastButtonState = buttonReading;
 }
 
+/**
+ * @brief Arduino main loop function
+ * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
+ * This is the main application loop that runs continuously after setup()
+ */
 void loop() {
   static unsigned long streamStoppedTime = 0;
   handleRotary();          // Process rotary encoder input
@@ -640,6 +644,7 @@ void loop() {
   webSocket.loop();        // Process WebSocket events
   handleMPDClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
+  
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
@@ -648,6 +653,7 @@ void loop() {
     }
     lastDisplayUpdate = millis();
   }
+  
   // Check audio connection status with improved error recovery
   if (audio) {
     // Check if audio is still connected
@@ -724,8 +730,10 @@ void loop() {
       }
     }
   }
+  
   // Handle display timeout
   handleDisplayTimeout();
+  
   // Small delay to prevent busy waiting
   delay(10);
 }
@@ -2400,20 +2408,26 @@ void updateDisplay() {
 
 /**
  * @brief Handle MPD client connections and commands
- * Processes commands from MPD clients
+ * Processes commands from MPD clients with support for command lists and idle mode
  * This function handles connections from MPD clients and processes MPD protocol commands.
  * It manages one client connection at a time and processes commands as they arrive.
+ * Implements MPD protocol version 0.23.0 with command list and idle mode support.
  */
 // MPD command list state variables
-bool inCommandList = false;
-bool commandListOK = false;
-String commandList[50];  // Buffer for command list (max 50 commands)
-int commandListCount = 0;
+bool inCommandList = false;        ///< Flag indicating if we're in command list mode
+bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
+String commandList[50];            ///< Buffer for command list (max 50 commands)
+int commandListCount = 0;          ///< Number of commands in the current command list
+
 // MPD idle state variables
-bool inIdleMode = false;
-unsigned long lastTitleHash = 0;
-unsigned long lastStatusHash = 0;
-// Handle MPD client
+bool inIdleMode = false;           ///< Flag indicating if we're in idle mode
+unsigned long lastTitleHash = 0;   ///< Hash of last stream title for change detection
+unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
+
+/**
+ * @brief Handle MPD client connections and process commands
+ * Manages the MPD protocol connection state and command processing
+ */
 void handleMPDClient() {
   if (mpdServer.hasClient()) {
     if (!mpdClient || !mpdClient.connected()) {
@@ -2532,10 +2546,16 @@ void handleMPDClient() {
 }
 
 /**
- * @brief Generate MPD OK response
- * @return OK response string
+ * @brief Generate appropriate MPD response based on context
+ * @param isError Whether this is an error response
+ * @param message Error message (only used for error responses)
+ * @return Response string
  */
-String mpdResponseOK() {
+String mpdResponse(bool isError = false, const String& message = "") {
+  if (isError) {
+    return "ACK [5@0] {} " + message + "\n";
+  }
+  
   // Check if in command list mode
   if (inCommandList) {
     // Send OK for each command if in command_list_ok_begin mode
@@ -2550,12 +2570,20 @@ String mpdResponseOK() {
 }
 
 /**
+ * @brief Generate MPD OK response
+ * @return OK response string
+ */
+String mpdResponseOK() {
+  return mpdResponse(false, "");
+}
+
+/**
  * @brief Generate MPD error response
  * @param message Error message
  * @return Error response string
  */
 String mpdResponseError(const String& message) {
-  return "ACK [5@0] {} " + message + "\n";
+  return mpdResponse(true, message);
 }
 
 /**
@@ -2565,14 +2593,15 @@ String mpdResponseError(const String& message) {
  */
 void sendPlaylistInfo(int detailLevel = 2) {
   for (int i = 0; i < playlistCount; i++) {
-    // For detailLevel 0, only file and title are sent (minimal)
     mpdClient.print("file: " + String(playlist[i].url) + "\n");
     mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    
     if (detailLevel >= 2) {
       // Full detail level
       mpdClient.print("Id: " + String(i) + "\n");
       mpdClient.print("Pos: " + String(i) + "\n");
     }
+
     if (detailLevel >= 1) {
       // Simple detail level
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
@@ -2582,27 +2611,30 @@ void sendPlaylistInfo(int detailLevel = 2) {
 
 /**
  * @brief Handle MPD search/find commands
- * Processes search and find commands with partial or exact matching
+ * Processes search and find commands with partial or exact matching in stream names
  * @param command The full command string
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
  */
 void handleMPDSearchCommand(const String& command, bool exactMatch) {
   // Determine command prefix length (search=6, find=4)
   int prefixLength = command.startsWith("search") ? 6 : 4;
-  // Check if command is valid
+  
   if (command.length() > prefixLength + 1) {
     String searchTerm = command.substring(prefixLength + 1);
     searchTerm.trim();
+    
     // Extract search string (everything after the first space)
     int firstSpace = searchTerm.indexOf(' ');
     if (firstSpace != -1) {
       searchTerm = searchTerm.substring(firstSpace + 1);
       searchTerm.trim();
     }
+    
     // Remove quotes if present
     if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
       searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
     }
+    
     // Search in playlist names
     for (int i = 0; i < playlistCount; i++) {
       String playlistName = String(playlist[i].name);
@@ -2611,7 +2643,7 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
       lowerName.toLowerCase();
       String lowerSearch = searchTerm;
       lowerSearch.toLowerCase();
-      // Determine match type
+      
       bool match = false;
       if (exactMatch) {
         // Exact match for find command
@@ -2620,7 +2652,7 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
         // Partial match for search command
         match = (lowerName.indexOf(lowerSearch) != -1);
       }
-      // If a match is found, send the playlist information
+      
       if (match) {
         mpdClient.print("file: " + String(playlist[i].url) + "\n");
         mpdClient.print("Title: " + String(playlist[i].name) + "\n");
@@ -2632,11 +2664,11 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
 
 /**
  * @brief Handle MPD commands
- * Processes MPD protocol commands
+ * Processes MPD protocol commands with support for MPD protocol version 0.23.0
  * @param command The command string to process
  * This function processes MPD protocol commands and controls the player accordingly.
  * It supports a subset of MPD commands including playback control, volume control,
- * playlist management, and status queries.
+ * playlist management, status queries, and search functionality.
  */
 void handleMPDCommand(const String& command) {
 if (command.startsWith("stop")) {
