@@ -2521,10 +2521,6 @@ void handleMPDClient() {
           // Execute all buffered commands
           for (int i = 0; i < commandListCount; i++) {
             handleMPDCommand(commandList[i]);
-            // Send OK for each command if in command_list_ok_begin mode
-            if (commandListOK) {
-              mpdClient.print(mpdResponseOK());
-            }
           }
           // Reset command list state
           inCommandList = false;
@@ -2557,6 +2553,16 @@ void handleMPDClient() {
  * @return OK response string
  */
 String mpdResponseOK() {
+  // Check if in command list mode
+  if (inCommandList) {
+    // Send OK for each command if in command_list_ok_begin mode
+    if (commandListOK) {
+      return "list_OK\n";
+    }
+    else 
+      return "";
+  }
+  // Standard OK response
   return "OK\n";
 }
 
