@@ -254,12 +254,7 @@ let reconnectTimeout = null;
 let isConnecting = false;
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
-let heartbeatInterval = null;
-let connectionStartTime = 0;
 const connectionTimeout = 10000; // 10 seconds timeout for connection
-
-// Add a connection lock to prevent race conditions
-let connectionLock = false;
 
 function connectWebSocket() {
     // Clear any existing reconnection timeout
@@ -268,18 +263,12 @@ function connectWebSocket() {
         reconnectTimeout = null;
     }
     
-    // Clear any existing heartbeat interval
-    if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
-    }
-    
-    // Prevent multiple connection attempts with atomic check
-    if (connectionLock || isConnecting) {
+    // Prevent multiple connection attempts
+    if (isConnecting) {
         return;
     }
     
-    // More comprehensive state check
+    // Check connection state
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
         return;
     }
@@ -290,10 +279,7 @@ function connectWebSocket() {
         return;
     }
     
-    // Acquire connection lock
-    connectionLock = true;
     isConnecting = true;
-    connectionStartTime = Date.now();
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // WebSocket server runs on port 81, not the same port as HTTP server
@@ -315,47 +301,19 @@ function connectWebSocket() {
     try {
         ws = new WebSocket(wsUrl);
         
-        // Set up connection timeout with proper cleanup
-        let connectionTimer = null;
-        const setupConnectionTimeout = () => {
-            connectionTimer = setTimeout(() => {
-                if (ws && ws.readyState === WebSocket.CONNECTING) {
-                    console.log('WebSocket connection timeout');
-                    // Force close to trigger onclose handler
-                    if (ws) {
-                        ws.onclose = null; // Prevent reconnection trigger
-                        ws.close();
-                        ws = null;
-                    }
-                    // Schedule reconnection
-                    reconnectAttempts++;
-                    isConnecting = false;
-                    connectionLock = false;
-                    if (reconnectAttempts < maxReconnectAttempts) {
-                        const timeout = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                        console.log(`Reconnecting in ${timeout}ms`);
-                        reconnectTimeout = setTimeout(connectWebSocket, timeout);
-                    } else {
-                        console.log('Max reconnect attempts reached. Stopping reconnection.');
-                    }
-                }
-                // Always clear timer reference
-                connectionTimer = null;
-            }, connectionTimeout);
-        };
-        
-        setupConnectionTimeout();
+        // Set up connection timeout
+        const connectionTimer = setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.CONNECTING) {
+                console.log('WebSocket connection timeout');
+                ws.close();
+            }
+        }, connectionTimeout);
         
         ws.onopen = function() {
-            if (connectionTimer) {
-                clearTimeout(connectionTimer);
-                connectionTimer = null;
-            }
+            clearTimeout(connectionTimer);
             isConnecting = false;
-            connectionLock = false;
             reconnectAttempts = 0; // Reset reconnect attempts on successful connection
             console.log('WebSocket connected');
-            
         };
         
         ws.onmessage = function(event) {
@@ -371,7 +329,6 @@ function connectWebSocket() {
                 if (statusElement) {
                     statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
                     statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
-                    
                 }
                 
                 // Update stream name element
@@ -447,16 +404,7 @@ function connectWebSocket() {
         };
         
         ws.onclose = function(event) {
-            if (connectionTimer) {
-                clearTimeout(connectionTimer);
-                connectionTimer = null;
-            }
-            
-            // Clear heartbeat interval on close
-            if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = null;
-            }
+            clearTimeout(connectionTimer);
             
             // Check if this was a clean close or an error
             if (event.wasClean) {
@@ -468,9 +416,7 @@ function connectWebSocket() {
             
             console.log('WebSocket disconnected. Attempt ' + reconnectAttempts + ' of ' + maxReconnectAttempts);
             
-            // Release connection lock and reset connecting flag
             isConnecting = false;
-            connectionLock = false;
             
             // Try to reconnect with exponential backoff, but reset counter on successful connection
             if (reconnectAttempts < maxReconnectAttempts) {
@@ -483,24 +429,15 @@ function connectWebSocket() {
         };
         
         ws.onerror = function(error) {
-            if (connectionTimer) {
-                clearTimeout(connectionTimer);
-                connectionTimer = null;
-            }
+            clearTimeout(connectionTimer);
             console.error('WebSocket error:', error);
-            // Don't set isConnecting to false here, let onclose handle it
-            // This ensures we don't try to reconnect while still connecting
         };
     } catch (error) {
-        if (connectionTimer) {
-            clearTimeout(connectionTimer);
-        }
+        clearTimeout(connectionTimer);
         reconnectAttempts++;
         console.error('Error creating WebSocket:', error);
         
-        // Release connection lock and reset connecting flag
         isConnecting = false;
-        connectionLock = false;
         
         // Try to reconnect with exponential backoff
         if (reconnectAttempts < maxReconnectAttempts) {
@@ -1269,41 +1206,17 @@ async function importRemotePlaylist() {
     
     try {
         // Try direct fetch first
-        let response;
-        try {
-            response = await fetch(url);
-        } catch (fetchError) {
-            // If direct fetch fails due to CORS, try with no-cors mode first
-            console.log('Direct fetch failed, trying with no-cors mode');
-            try {
-                response = await fetch(url, { mode: 'no-cors' });
-                // If no-cors succeeds but we get an opaque response, we can't read the content
-                // So we'll try with a proxy instead
-                if (response.type === 'opaque') {
-                    throw new Error('Opaque response received with no-cors mode');
-                }
-            } catch (noCorsError) {
-                // If no-cors also fails, try with proxy
-                console.log('No-cors fetch failed, trying with CORS proxy');
-                const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-                response = await fetch(proxyUrl);
-            }
+        let response = await fetch(url);
+        
+        // If direct fetch fails due to CORS, try with a proxy
+        if (!response.ok) {
+            console.log('Direct fetch failed, trying with CORS proxy');
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            response = await fetch(proxyUrl);
         }
         
         if (!response.ok) {
             throw new Error(`Failed to fetch playlist: ${response.status} ${response.statusText}`);
-        }
-        
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            // Try to parse as JSON anyway, in case server doesn't set proper content type
-            const text = await response.text();
-            try {
-                JSON.parse(text);
-            } catch (e) {
-                throw new Error('Remote file is not valid JSON');
-            }
         }
         
         const jsonData = await response.json();
@@ -1632,92 +1545,93 @@ function convertJSONToM3U(jsonData) {
 let networkCount = 1;
 let configuredNetworks = [];
 
-function loadWiFiConfiguration() {
-    // Load WiFi configuration for both network highlighting and form population
-    return fetch('/api/wifi/config')
-        .then(response => response.json())
-        .then(data => {
-            // Handle consistent data structure for configured networks
-            let configNetworks = [];
-            
-            if (Array.isArray(data)) {
-                // If array of objects with ssid property (new format)
-                if (data.length > 0 && typeof data[0] === 'object' && data[0].hasOwnProperty('ssid')) {
-                    configuredNetworks = data.map(network => network.ssid);
-                    configNetworks = data.map(network => ({
-                        ssid: network.ssid || '',
-                        password: network.password || ''
-                    }));
-                }
-                // If array of strings (SSIDs only - old format)
-                else {
-                    configuredNetworks = data;
-                    configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
-                }
-            } else if (data.configured && Array.isArray(data.configured)) {
-                // If object with configured array
-                configuredNetworks = data.configured;
-                configNetworks = data.configured.map((ssid, index) => ({ ssid, password: '' }));
-            } else if (data.networks && Array.isArray(data.networks)) {
-                // If object with networks array containing objects with ssid property
-                configuredNetworks = data.networks.map(network => 
-                    typeof network === 'string' ? network : network.ssid
-                ).filter(ssid => ssid);
-                configNetworks = data.networks.map(network => ({
-                    ssid: typeof network === 'string' ? network : network.ssid || '',
+async function loadWiFiConfiguration() {
+    try {
+        const response = await fetch('/api/wifi/config');
+        const data = await response.json();
+        
+        // Handle consistent data structure for configured networks
+        let configNetworks = [];
+        
+        if (Array.isArray(data)) {
+            // If array of objects with ssid property (new format)
+            if (data.length > 0 && typeof data[0] === 'object' && data[0].hasOwnProperty('ssid')) {
+                configuredNetworks = data.map(network => network.ssid);
+                configNetworks = data.map(network => ({
+                    ssid: network.ssid || '',
                     password: network.password || ''
                 }));
-            } else {
-                configuredNetworks = [];
-                configNetworks = [];
             }
-            
-            // Also populate the form with configured networks
-            // Clear existing fields except the first one
-            const networkFields = document.getElementById('networkFields');
-            if (networkFields) {
-                while (networkFields.children.length > 1) {
-                    networkFields.removeChild(networkFields.lastChild);
-                }
-                
-                // Reset network count
-                networkCount = 1;
-                
-                // Populate with configured networks
-                if (configNetworks.length > 0) {
-                    // Fill the first entry
-                    const firstSSID = document.getElementById('ssid0');
-                    if (firstSSID) {
-                        firstSSID.value = configNetworks[0].ssid || '';
-                    }
-                    
-                    // Add additional entries for each configured network
-                    for (let i = 1; i < configNetworks.length && i < 5; i++) {
-                        addNetworkField();
-                        const ssidElement = document.getElementById(`ssid${i}`);
-                        if (ssidElement) {
-                            ssidElement.value = configNetworks[i].ssid || '';
-                        }
-                    }
-                    networkCount = configNetworks.length;
-                }
+            // If array of strings (SSIDs only - old format)
+            else {
+                configuredNetworks = data;
+                configNetworks = data.map((ssid, index) => ({ ssid, password: '' }));
             }
-            
-            return data;
-        })
-        .catch(error => {
-            console.error('Error loading WiFi configuration:', error);
+        } else if (data.configured && Array.isArray(data.configured)) {
+            // If object with configured array
+            configuredNetworks = data.configured;
+            configNetworks = data.configured.map((ssid, index) => ({ ssid, password: '' }));
+        } else if (data.networks && Array.isArray(data.networks)) {
+            // If object with networks array containing objects with ssid property
+            configuredNetworks = data.networks.map(network => 
+                typeof network === 'string' ? network : network.ssid
+            ).filter(ssid => ssid);
+            configNetworks = data.networks.map(network => ({
+                ssid: typeof network === 'string' ? network : network.ssid || '',
+                password: network.password || ''
+            }));
+        } else {
             configuredNetworks = [];
-            return [];
-        });
+            configNetworks = [];
+        }
+        
+        // Also populate the form with configured networks
+        // Clear existing fields except the first one
+        const networkFields = document.getElementById('networkFields');
+        if (networkFields) {
+            while (networkFields.children.length > 1) {
+                networkFields.removeChild(networkFields.lastChild);
+            }
+            
+            // Reset network count
+            networkCount = 1;
+            
+            // Populate with configured networks
+            if (configNetworks.length > 0) {
+                // Fill the first entry
+                const firstSSID = document.getElementById('ssid0');
+                if (firstSSID) {
+                    firstSSID.value = configNetworks[0].ssid || '';
+                }
+                
+                // Add additional entries for each configured network
+                for (let i = 1; i < configNetworks.length && i < 5; i++) {
+                    addNetworkField();
+                    const ssidElement = document.getElementById(`ssid${i}`);
+                    if (ssidElement) {
+                        ssidElement.value = configNetworks[i].ssid || '';
+                    }
+                }
+                networkCount = configNetworks.length;
+            }
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Error loading WiFi configuration:', error);
+        configuredNetworks = [];
+        return [];
+    }
 }
 
 // Keep the individual functions for backward compatibility but make them use the unified function
-function loadConfiguredNetworks() {
-    loadWiFiConfiguration().catch(error => {
+async function loadConfiguredNetworks() {
+    try {
+        await loadWiFiConfiguration();
+    } catch (error) {
         console.error('Error loading configured networks:', error);
         configuredNetworks = [];
-    });
+    }
 }
 
 function addNetworkField() {
