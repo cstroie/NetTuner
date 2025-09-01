@@ -301,15 +301,6 @@ RotaryEncoder rotaryEncoder;
 void loadConfig();
 void saveConfig();
 
-/**
- * @brief Playlist data structure
- * Stores information about available audio streams
- */
-struct StreamInfo {
-  char name[128];  ///< Human-readable name of the stream
-  char url[256];   ///< URL of the audio stream
-};
-
 // Constants
 #define MAX_PLAYLIST_SIZE 20
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
