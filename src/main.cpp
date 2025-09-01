@@ -81,7 +81,7 @@ void audio_bitrate(const char *info) {
     Serial.print("Bitrate: ");
     Serial.println(info);
     // Convert string to integer
-    int newBitrate = atoi(info);
+    int newBitrate = atoi(info) / 1000;
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
@@ -1911,7 +1911,7 @@ String generateStatusJSON() {
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"bitrate\":" + String(bitrate / 1000) + ",";
+  status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";
   status += "\"midrange\":" + String(midrange) + ",";
