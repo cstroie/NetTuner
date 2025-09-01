@@ -56,10 +56,4 @@ public:
   bool wasButtonPressed();
 };
 
-// External reference to rotary encoder instance
-extern RotaryEncoder rotaryEncoder;
-
-// Interrupt service routine for rotary encoder
-void rotaryISR();
-
 #endif

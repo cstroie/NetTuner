@@ -1231,6 +1231,15 @@ void savePlaylist() {
   Serial.println("Saved playlist to file");
 }
 
+
+/**
+ * @brief Interrupt service routine for rotary encoder
+ * Handles rotary encoder rotation events
+ */
+void rotaryISR() {
+  rotaryEncoder.handleRotation();
+}
+
 /**
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder

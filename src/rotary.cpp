@@ -19,9 +19,6 @@
 #include "rotary.h"
 #include "main.h"
 
-// Global rotary encoder instance
-RotaryEncoder rotaryEncoder;
-
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
   
@@ -69,9 +66,4 @@ bool RotaryEncoder::wasButtonPressed() {
   bool result = buttonPressedFlag;
   buttonPressedFlag = false;
   return result;
-}
-
-// Interrupt service routine for rotary encoder
-void rotaryISR() {
-  rotaryEncoder.handleRotation();
 }
