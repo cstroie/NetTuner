@@ -106,14 +106,61 @@ async function saveConfig() {
             body: JSON.stringify(config)
         });
         
+        // Remove any existing modal
+        const existingModal = document.getElementById('configModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create modal element
+        const modal = document.createElement('dialog');
+        modal.id = 'configModal';
+        modal.innerHTML = `
+            <article>
+                <header>
+                    <h2>Configuration Saved</h2>
+                </header>
+                <p>Configuration saved successfully. Device restart required for changes to take effect.</p>
+                <footer>
+                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                </footer>
+            </article>
+        `;
+        
         if (response.ok) {
-            alert('Configuration saved successfully. Device restart required for changes to take effect.');
+            document.body.appendChild(modal);
+            modal.showModal();
         } else {
-            alert('Error saving configuration');
+            modal.querySelector('h2').textContent = 'Error';
+            modal.querySelector('p').textContent = 'Error saving configuration';
+            document.body.appendChild(modal);
+            modal.showModal();
         }
     } catch (error) {
         console.error('Error saving config:', error);
-        alert('Error saving configuration');
+        
+        // Remove any existing modal
+        const existingModal = document.getElementById('configModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create error modal
+        const modal = document.createElement('dialog');
+        modal.id = 'configModal';
+        modal.innerHTML = `
+            <article>
+                <header>
+                    <h2>Error</h2>
+                </header>
+                <p>Error saving configuration</p>
+                <footer>
+                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                </footer>
+            </article>
+        `;
+        document.body.appendChild(modal);
+        modal.showModal();
     }
 }
 
