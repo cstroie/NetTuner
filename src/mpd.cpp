@@ -164,7 +164,7 @@ void MPDInterface::handleClient() {
    * @param message Error message (only used for error responses)
    * @return Response string
    */
-  String MPDInterface::mpdResponse(bool isError = false, const String& message = "") {
+  String MPDInterface::mpdResponse(bool isError, const String& message) {
     if (isError) {
       return "ACK [5@0] {} " + message + "\n";
     }
