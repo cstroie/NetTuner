@@ -82,49 +82,6 @@ struct Config {
   int display_address; ///< OLED display I2C address
 };
 
-class RotaryEncoder {
-private:
-  volatile int position = 0;
-  int lastCLK = 0;
-  volatile unsigned long lastRotaryTime = 0;
-  bool buttonPressedFlag = false;
-
-public:
-  /**
-   * @brief Handle rotary encoder rotation
-   * This replaces the previous ISR with a cleaner approach
-   */
-  void handleRotation();
-  
-  /**
-   * @brief Handle button press
-   */
-  void handleButtonPress();
-  
-  /**
-   * @brief Get current position
-   */
-  int getPosition() const {
-    return position;
-  }
-  
-  /**
-   * @brief Set position
-   */
-  void setPosition(int pos) {
-    position = pos;
-  }
-  
-  /**
-   * @brief Check if button was pressed
-   */
-  bool wasButtonPressed() {
-    bool result = buttonPressedFlag;
-    buttonPressedFlag = false;
-    return result;
-  }
-};
-
 // Global variables
 extern char streamTitle[128];
 extern char streamName[128];
@@ -149,7 +106,6 @@ extern WiFiServer mpdServer;
 extern WiFiClient mpdClient;
 extern Config config;
 extern Adafruit_SSD1306 display;
-extern RotaryEncoder rotaryEncoder;
 extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
 extern int currentSelection;
@@ -167,7 +123,6 @@ void setupAudioOutput();
 void loadPlaylist();
 void savePlaylist();
 void setupRotaryEncoder();
-void rotaryISR();
 void handleRotary();
 void handleDisplayTimeout();
 void audioTask(void *pvParameters);
