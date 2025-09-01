@@ -1673,7 +1673,7 @@ void handlePlay() {
   // Update currentSelection based on index
   if (index > 0) {
     // If index is valid, update currentSelection
-    currentSelection = index;
+    currentSelection = index - 1;
   } else {
     // Find the stream in the playlist and update currentSelection
     for (int i = 0; i < playlistCount; i++) {
@@ -2039,15 +2039,15 @@ void updateDisplay() {
       // Scroll every 500ms
       if (millis() - lastTitleScrollTime > 500) {
         titleScrollOffset++;
-        // Reset scroll when we've shown the entire text plus " *** "
-        if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
+        // Reset scroll when we've shown the entire text plus " ~~~ "
+        if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " ~~~ "
           titleScrollOffset = 0;
         }
         lastTitleScrollTime = millis();
       }
       // Display scrolled text (starting from position after '>')
       display.setCursor(16, 0);
-      String displayText = title + " *** " + title;
+      String displayText = title + " ~~~ " + title;
       if (titleScrollOffset < (int)displayText.length()) {
         displayText = displayText.substring(titleScrollOffset);
       }
@@ -2107,8 +2107,8 @@ void updateDisplay() {
     // Display when stopped
     // Larger font for status
     display.setTextSize(2);
-    display.setCursor(30, 0);
-    display.println("STOP");
+    display.setCursor(16, 0);
+    display.println("NetTuner");
     // Normal font for other text
     display.setTextSize(1);
     // Display current stream name (second line)
@@ -2131,7 +2131,7 @@ void updateDisplay() {
       }
     } else {
       // No stream is currently found in playlist
-      display.setCursor(27, 18);
+      display.setCursor(34, 18);
       display.println("No streams");
     }
     // Display volume on third line

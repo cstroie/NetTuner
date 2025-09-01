@@ -495,7 +495,7 @@ async function playStream() {
     }
     
     try {
-        await sendPlayRequest(url, name);
+        await sendPlayRequest(url, name, select.selectedIndex);
     } catch (error) {
         handlePlayError(error);
     } finally {
@@ -536,14 +536,14 @@ function validateStreamSelection(url) {
     return true;
 }
 
-async function sendPlayRequest(url, name) {
+async function sendPlayRequest(url, name, index) {
     const response = await fetch('/api/play', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ url: url, name: name })
+        body: JSON.stringify({ url: url, name: name, index: index })
     });
     console.log('Play response status:', response.status);
     if (!response.ok) {
@@ -573,7 +573,7 @@ function playSelectedStream() {
     }
     console.log('Playing selected stream:', { url, name });
     // Play the selected stream without showing toast
-    sendPlayRequest(url, name)
+    sendPlayRequest(url, name, select.selectedIndex)
         .catch(error => {
             console.error('Error playing stream:', error);
         });
@@ -802,7 +802,7 @@ async function playInstantStream() {
     }
     
     try {
-        await sendPlayRequest(url, 'Instant Stream');
+        await sendPlayRequest(url, 'Instant Stream', 0);
         // Clear the input field after successful play
         urlInput.value = '';
     } catch (error) {
