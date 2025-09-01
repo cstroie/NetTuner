@@ -20,6 +20,16 @@
 #define MAIN_H
 
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <SPIFFS.h>
+#include <ArduinoJson.h>
+#include <HTTPClient.h>
+#include <driver/i2s.h>
+#include "Audio.h"
+#include <Adafruit_SSD1306.h>
+#include <Adafruit_GFX.h>
+#include <WebSocketsServer.h>
 
 // Forward declarations
 class Audio;
@@ -107,7 +117,7 @@ extern int wifiNetworkCount;
 
 // Forward declarations for global functions
 void stopStream();
-void startStream(const char* url, const char* name);
+void startStream(const char* url = nullptr, const char* name = nullptr); 
 void updateDisplay();
 void sendStatusToClients();
 void setupAudioOutput();
