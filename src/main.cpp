@@ -2234,108 +2234,213 @@ void updateDisplay() {
   
   if (isPlaying) {
     // Display when playing
-    display.setTextSize(2);  // Larger font for status
-    display.setCursor(0, 0);
-    display.print(">");  // Fixed '>' character
-    
-    // Display stream title (first line) with scrolling
-    String title = String(streamTitle);
-    if (title.length() == 0) {
-      title = String(streamName);
-    }
-    
-    // Scroll title if too long for display (excluding the '>' character)
-    if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
-      static unsigned long lastTitleScrollTime = 0;
-      static int titleScrollOffset = 0;
-      static String titleScrollText = "";
+    if (config.display_height >= 64) {
+      // 128x64 display - full information
+      display.setTextSize(2);  // Larger font for status
+      display.setCursor(0, 0);
+      display.print(">");  // Fixed '>' character
       
-      // Reset scroll if text changed
-      if (titleScrollText != title) {
-        titleScrollText = title;
-        titleScrollOffset = 0;
+      // Display stream title (first line) with scrolling
+      String title = String(streamTitle);
+      if (title.length() == 0) {
+        title = String(streamName);
       }
       
-      // Scroll every 500ms
-      if (millis() - lastTitleScrollTime > 500) {
-        titleScrollOffset++;
-        if (titleScrollOffset > (int)title.length()) {
-          titleScrollOffset = 0;  // Reset scroll
+      // Scroll title if too long for display (excluding the '>' character)
+      if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
+        static unsigned long lastTitleScrollTime = 0;
+        static int titleScrollOffset = 0;
+        static String titleScrollText = "";
+        
+        // Reset scroll if text changed
+        if (titleScrollText != title) {
+          titleScrollText = title;
+          titleScrollOffset = 0;
         }
-        lastTitleScrollTime = millis();
+        
+        // Scroll every 500ms
+        if (millis() - lastTitleScrollTime > 500) {
+          titleScrollOffset++;
+          if (titleScrollOffset > (int)title.length()) {
+            titleScrollOffset = 0;  // Reset scroll
+          }
+          lastTitleScrollTime = millis();
+        }
+        
+        // Display scrolled text (starting from position after '>')
+        display.setCursor(16, 0);  // Position after the '>' character
+        String displayText = title + " *** ";
+        if (titleScrollOffset < (int)displayText.length()) {
+          displayText = displayText.substring(titleScrollOffset);
+        }
+        display.println(displayText.substring(0, 15));
+      } else {
+        display.setCursor(16, 0);  // Position after the '>' character
+        display.println(title);
       }
       
-      // Display scrolled text (starting from position after '>')
-      display.setCursor(16, 0);  // Position after the '>' character
-      String displayText = title + " *** ";
-      if (titleScrollOffset < (int)displayText.length()) {
-        displayText = displayText.substring(titleScrollOffset);
+      display.setTextSize(1);  // Normal font for stream info
+      // Display stream name (second line)
+      display.setCursor(0, 18);
+      String stationName = String(streamName);
+      if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
+        display.println(stationName.substring(0, 21));
+      } else {
+        display.println(stationName);
       }
-      display.println(displayText.substring(0, 15));
+      
+      // Display volume on third line
+      display.setCursor(0, 30);
+      display.print("VOL ");
+      display.println(volume);
+      
+      // Display IP address on the last line, centered
+      display.setCursor(0, 54);
+      String ipString;
+      if (WiFi.status() == WL_CONNECTED) {
+        ipString = WiFi.localIP().toString();
+      } else {
+        ipString = "No IP";
+      }
+      
+      // Calculate center position
+      int16_t x1, y1;
+      uint16_t w, h;
+      display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
+      int x = (display.width() - w) / 2;
+      if (x < 0) x = 0;
+      
+      display.setCursor(x, 54);
+      display.println(ipString);
     } else {
-      display.setCursor(16, 0);  // Position after the '>' character
-      display.println(title);
+      // 128x32 display - limited information
+      display.setTextSize(1);
+      
+      // Display stream title (first line) with scrolling
+      String title = String(streamTitle);
+      if (title.length() == 0) {
+        title = String(streamName);
+      }
+      
+      // Scroll title if too long for display
+      if (title.length() > 21) {  // ~21 chars fit on a 128px display
+        static unsigned long lastTitleScrollTime = 0;
+        static int titleScrollOffset = 0;
+        static String titleScrollText = "";
+        
+        // Reset scroll if text changed
+        if (titleScrollText != title) {
+          titleScrollText = title;
+          titleScrollOffset = 0;
+        }
+        
+        // Scroll every 500ms
+        if (millis() - lastTitleScrollTime > 500) {
+          titleScrollOffset++;
+          if (titleScrollOffset > (int)title.length()) {
+            titleScrollOffset = 0;  // Reset scroll
+          }
+          lastTitleScrollTime = millis();
+        }
+        
+        // Display scrolled text
+        display.setCursor(0, 0);
+        String displayText = title + " *** ";
+        if (titleScrollOffset < (int)displayText.length()) {
+          displayText = displayText.substring(titleScrollOffset);
+        }
+        display.println(displayText.substring(0, 21));
+      } else {
+        display.setCursor(0, 0);
+        display.println(title);
+      }
+      
+      // Display stream name (second line)
+      display.setCursor(0, 10);
+      String stationName = String(streamName);
+      if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
+        display.println(stationName.substring(0, 21));
+      } else {
+        display.println(stationName);
+      }
+      
+      // Display volume (third line)
+      display.setCursor(0, 20);
+      display.print("VOL ");
+      display.println(volume);
     }
-    
-    display.setTextSize(1);  // Normal font for stream info
-    // Display stream name (second line)
-    display.setCursor(0, 18);
-    String stationName = String(streamName);
-    if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
-      display.println(stationName.substring(0, 21));
-    } else {
-      display.println(stationName);
-    }
-    
-    // Display volume on third line
-    display.setCursor(0, 30);
-    display.print("VOL ");
-    display.println(volume);
-    
   } else {
     // Display when stopped
-    display.setTextSize(2);  // Larger font for status
-    display.setCursor(0, 0);
-    display.println("[] STOP");
-    display.setTextSize(1);  // Normal font for other text
-    
-    // Display selected playlist item name (second line)
-    display.setCursor(0, 18);
-    if (playlistCount > 0 && currentSelection < playlistCount) {
-      String playlistName = String(playlist[currentSelection].name);
-      if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
-        display.println(playlistName.substring(0, 21));
+    if (config.display_height >= 64) {
+      // 128x64 display - full information
+      display.setTextSize(2);  // Larger font for status
+      display.setCursor(0, 0);
+      display.println("[] STOP");
+      display.setTextSize(1);  // Normal font for other text
+      
+      // Display selected playlist item name (second line)
+      display.setCursor(0, 18);
+      if (playlistCount > 0 && currentSelection < playlistCount) {
+        String playlistName = String(playlist[currentSelection].name);
+        if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
+          display.println(playlistName.substring(0, 21));
+        } else {
+          display.println(playlistName);
+        }
       } else {
-        display.println(playlistName);
+        display.println("No streams");
       }
+      
+      // Display volume on third line
+      display.setCursor(0, 30);
+      display.print("VOL ");
+      display.println(volume);
+      
+      // Display IP address on the last line, centered
+      display.setCursor(0, 54);
+      String ipString;
+      if (WiFi.status() == WL_CONNECTED) {
+        ipString = WiFi.localIP().toString();
+      } else {
+        ipString = "No IP";
+      }
+      
+      // Calculate center position
+      int16_t x1, y1;
+      uint16_t w, h;
+      display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
+      int x = (display.width() - w) / 2;
+      if (x < 0) x = 0;
+      
+      display.setCursor(x, 54);
+      display.println(ipString);
     } else {
-      display.println("No streams");
+      // 128x32 display - limited information
+      display.setTextSize(1);
+      
+      // Display stopped status
+      display.setCursor(0, 0);
+      display.println("[] STOP");
+      
+      // Display selected playlist item name (second line)
+      display.setCursor(0, 10);
+      if (playlistCount > 0 && currentSelection < playlistCount) {
+        String playlistName = String(playlist[currentSelection].name);
+        if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
+          display.println(playlistName.substring(0, 21));
+        } else {
+          display.println(playlistName);
+        }
+      } else {
+        display.println("No streams");
+      }
+      
+      // Display volume (third line)
+      display.setCursor(0, 20);
+      display.print("VOL ");
+      display.println(volume);
     }
-    
-    // Display volume on third line
-    display.setCursor(0, 30);
-    display.print("VOL ");
-    display.println(volume);
   }
-  
-  // Display IP address on the last line, centered
-  display.setCursor(0, 54);
-  String ipString;
-  if (WiFi.status() == WL_CONNECTED) {
-    ipString = WiFi.localIP().toString();
-  } else {
-    ipString = "No IP";
-  }
-  
-  // Calculate center position
-  int16_t x1, y1;
-  uint16_t w, h;
-  display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
-  int x = (display.width() - w) / 2;
-  if (x < 0) x = 0;
-  
-  display.setCursor(x, 54);
-  display.println(ipString);
   
   display.display();  // Send buffer to display
 }
