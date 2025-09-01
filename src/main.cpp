@@ -31,67 +31,9 @@
 #include "main.h"
 #include "mpd.h"
 
-/**
- * @brief WiFi network credentials
- * These are stored in SPIFFS and can be configured through the web interface
- */
-#define MAX_WIFI_NETWORKS 5
-char ssid[MAX_WIFI_NETWORKS][64] = {""};
-char password[MAX_WIFI_NETWORKS][64] = {""};
-int wifiNetworkCount = 0;
-
-/**
- * @brief Web server instance running on port 80
- * Handles HTTP requests for the web interface and API endpoints
- */
-WebServer server(80);
-
-/**
- * @brief WebSocket server instance running on port 81
- * Provides real-time status updates to web clients
- */
-WebSocketsServer webSocket(81);
-
-/**
- * @brief MPD server instance running on port 6600
- * Implements Music Player Daemon protocol version 0.23.0 for external control
- */
-WiFiServer mpdServer(6600);
-
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
                           playlistCount, currentSelection, playlist, audio);
-
-/**
- * @brief Player state variables
- * Track current playback status, stream information, volume level, and tone controls
- */
-char streamURL[256] = "";          ///< URL of currently playing stream
-char streamName[128] = "";         ///< Name of currently playing stream
-char streamTitle[128] = "";        ///< Current stream title
-int bitrate = 0;                   ///< Current stream bitrate
-volatile bool isPlaying = false;   ///< Playback status flag (volatile for core synchronization)
-int volume = 11;                   ///< Volume level (0-22)
-int bass = 0;                      ///< Bass level (-6 to 6 dB)
-int midrange = 0;                  ///< Midrange level (-6 to 6 dB)
-int treble = 0;                    ///< Treble level (-6 to 6 dB)
-unsigned long lastActivityTime = 0; ///< Last activity timestamp
-bool displayOn = true;             ///< Display on/off status
-
-// Statistics tracking
-unsigned long startTime = 0;       ///< System start time (millis)
-unsigned long playStartTime = 0;   ///< When playback started (millis)
-unsigned long totalPlayTime = 0;   ///< Total play time in seconds
-
-// Build time for MPD Last-Modified timestamps
-const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
-
-/**
- * @brief Audio processing components
- * These pointers manage the audio streaming pipeline
- */
-Audio *audio = nullptr;            ///< Audio instance for ESP32-audioI2S
-bool audioConnected = false;       ///< Audio connection status flag
 
 // Forward declarations
 void sendStatusToClients();
@@ -158,41 +100,30 @@ void audio_bitrate(const char *info) {
   }
 }
 
-// Default pin definitions
-#define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
-#define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
-#define DEFAULT_I2S_LRC          25  ///< I2S Left/Right Clock pin
-#define DEFAULT_LED_PIN           2  ///< ESP32 internal LED pin
-#define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
-#define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
-#define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
-#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
-#define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
-#define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
-#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
-#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
-#define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
-
-/**
- * @brief Configuration structure
- * Stores hardware configuration settings that can be modified through the web interface
- */
-struct Config {
-  int i2s_dout;        ///< I2S Data Out pin
-  int i2s_bclk;        ///< I2S Bit Clock pin
-  int i2s_lrc;         ///< I2S Left/Right Clock pin
-  int led_pin;         ///< LED indicator pin
-  int rotary_clk;      ///< Rotary encoder clock pin
-  int rotary_dt;       ///< Rotary encoder data pin
-  int rotary_sw;       ///< Rotary encoder switch pin
-  int board_button;    ///< Board button pin
-  int display_sda;     ///< OLED display SDA pin
-  int display_scl;     ///< OLED display SCL pin
-  int display_width;   ///< OLED display width
-  int display_height;  ///< OLED display height
-  int display_address; ///< OLED display I2C address
-};
-
+// Global variables definitions
+char ssid[MAX_WIFI_NETWORKS][64] = {""};
+char password[MAX_WIFI_NETWORKS][64] = {""};
+int wifiNetworkCount = 0;
+WebServer server(80);
+WebSocketsServer webSocket(81);
+WiFiServer mpdServer(6600);
+char streamURL[256] = "";
+char streamName[128] = "";
+char streamTitle[128] = "";
+int bitrate = 0;
+volatile bool isPlaying = false;
+int volume = 11;
+int bass = 0;
+int midrange = 0;
+int treble = 0;
+unsigned long lastActivityTime = 0;
+bool displayOn = true;
+unsigned long startTime = 0;
+unsigned long playStartTime = 0;
+unsigned long totalPlayTime = 0;
+const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
+Audio *audio = nullptr;
+bool audioConnected = false;
 Config config = {
   DEFAULT_I2S_DOUT,
   DEFAULT_I2S_BCLK,
@@ -208,159 +139,12 @@ Config config = {
   DEFAULT_DISPLAY_HEIGHT,
   DEFAULT_DISPLAY_ADDR
 };
-
-/**
- * @brief OLED display instance
- * SSD1306 OLED display connected via I2C with configurable pins and dimensions
- */
 Adafruit_SSD1306 display(config.display_width, config.display_height, &Wire, -1);
-
-
-/**
- * @brief Rotary encoder state variables
- * Track position, direction, timing, and button state for the rotary encoder
- */
-class RotaryEncoder {
-private:
-  volatile int position = 0;
-  int lastCLK = 0;
-  volatile unsigned long lastRotaryTime = 0;
-  bool buttonPressedFlag = false;
-
-public:
-  /**
-   * @brief Handle rotary encoder rotation
-   * This replaces the previous ISR with a cleaner approach
-   */
-  void handleRotation() {
-    unsigned long currentTime = millis();
-    
-    // Debounce rotary encoder (ignore if less than 5ms since last event)
-    if (currentTime - lastRotaryTime < 5) {
-      return;
-    }
-    
-    int CLK = digitalRead(config.rotary_clk);  // Read clock signal
-    int DT = digitalRead(config.rotary_dt);    // Read data signal
-    
-    // Only process when CLK transitions from LOW to HIGH
-    if (CLK == HIGH && lastCLK == LOW) {
-      // Determine rotation direction based on DT state
-      if (DT == LOW) {
-        position++;      // Clockwise rotation
-      } else {
-        position--;      // Counter-clockwise rotation
-      }
-      lastRotaryTime = currentTime;  // Update last event time
-    }
-    lastCLK = CLK;
-  }
-  
-  /**
-   * @brief Handle button press
-   */
-  void handleButtonPress() {
-    static unsigned long lastInterruptTime = 0;
-    unsigned long interruptTime = millis();
-    
-    // Debounce the button press (ignore if less than 50ms since last press)
-    if (interruptTime - lastInterruptTime > 50) {
-      buttonPressedFlag = true;
-    }
-    lastInterruptTime = interruptTime;
-  }
-  
-  /**
-   * @brief Get current position
-   */
-  int getPosition() const {
-    return position;
-  }
-  
-  /**
-   * @brief Set position
-   */
-  void setPosition(int pos) {
-    position = pos;
-  }
-  
-  /**
-   * @brief Check if button was pressed
-   */
-  bool wasButtonPressed() {
-    bool result = buttonPressedFlag;
-    buttonPressedFlag = false;
-    return result;
-  }
-};
-
-// Global rotary encoder instance
 RotaryEncoder rotaryEncoder;
-
-// Function declarations
-void loadConfig();
-void saveConfig();
-
-// Constants
-#define MAX_PLAYLIST_SIZE 20
-#define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
-
-/**
- * @brief Playlist storage and management variables
- * Array to store playlist entries and tracking variables
- */
-StreamInfo playlist[MAX_PLAYLIST_SIZE];  ///< Array of stream information (max 20 entries)
-int playlistCount = 0;                   ///< Number of valid entries in the playlist
-int currentSelection = 0;                ///< Currently selected item in the playlist
-
-/**
- * @brief Task management handles
- * Used to manage and reference created FreeRTOS tasks
- */
-TaskHandle_t audioTaskHandle = NULL;  ///< Handle for the audio processing task
-
-// Function declarations
-void setupAudioOutput();
-void startStream(const char* url = nullptr, const char* name = nullptr);
-void stopStream();
-void loadPlaylist();
-void savePlaylist();
-void setupRotaryEncoder();
-void rotaryISR();
-void updateDisplay();
-void handleRotary();
-void handleDisplayTimeout();
-void sendStatusToClients();
-void audioTask(void *pvParameters);
-void loadConfig();
-void saveConfig();
-
-
-// Web server handlers
-void handleRoot();
-void handlePlaylistPage();
-void handleConfigPage();
-void handleAboutPage();
-void handleWiFiConfig();
-void handleSimpleWebPage();
-void handleGetStreams();
-void handlePostStreams();
-void handlePlay();
-void handleStop();
-void handleVolume();
-void handleTone();
-void handleStatus();
-void handleGetConfig();
-void handlePostConfig();
-void handleWiFiScan();
-void handleWiFiSave();
-void handleWiFiStatus();
-void handleWiFiConfigAPI();
-void loadWiFiCredentials();
-void saveWiFiCredentials();
-
-// WebSocket handlers
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
+StreamInfo playlist[MAX_PLAYLIST_SIZE];
+int playlistCount = 0;
+int currentSelection = 0;
+TaskHandle_t audioTaskHandle = NULL;
 
 /**
  * @brief Arduino setup function

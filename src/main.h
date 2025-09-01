@@ -21,17 +21,13 @@
 
 #include <Arduino.h>
 
-// Forward declarations for global variables
-extern char streamTitle[];
-extern char streamName[];
-extern char streamURL[];
-extern int bitrate;
-extern volatile bool isPlaying;
-extern int volume;
-extern unsigned long startTime;
-extern unsigned long totalPlayTime;
-extern unsigned long playStartTime;
-extern const char* BUILD_TIME;
+// Forward declarations
+class Audio;
+class WebServer;
+class WebSocketsServer;
+class WiFiServer;
+class Adafruit_SSD1306;
+class MPDInterface;
 
 // Structure declarations
 struct StreamInfo {
@@ -39,13 +35,124 @@ struct StreamInfo {
   char url[256];
 };
 
-// Forward declarations for global functions
-class Audio;
-extern Audio* audio;
+struct Config {
+  int i2s_dout;        ///< I2S Data Out pin
+  int i2s_bclk;        ///< I2S Bit Clock pin
+  int i2s_lrc;         ///< I2S Left/Right Clock pin
+  int led_pin;         ///< LED indicator pin
+  int rotary_clk;      ///< Rotary encoder clock pin
+  int rotary_dt;       ///< Rotary encoder data pin
+  int rotary_sw;       ///< Rotary encoder switch pin
+  int board_button;    ///< Board button pin
+  int display_sda;     ///< OLED display SDA pin
+  int display_scl;     ///< OLED display SCL pin
+  int display_width;   ///< OLED display width
+  int display_height;  ///< OLED display height
+  int display_address; ///< OLED display I2C address
+};
 
+class RotaryEncoder;
+
+// Global variables
+extern char streamTitle[];
+extern char streamName[];
+extern char streamURL[];
+extern int bitrate;
+extern volatile bool isPlaying;
+extern int volume;
+extern int bass;
+extern int midrange;
+extern int treble;
+extern unsigned long lastActivityTime;
+extern bool displayOn;
+extern unsigned long startTime;
+extern unsigned long playStartTime;
+extern unsigned long totalPlayTime;
+extern const char* BUILD_TIME;
+extern Audio* audio;
+extern bool audioConnected;
+extern WebServer server;
+extern WebSocketsServer webSocket;
+extern WiFiServer mpdServer;
+extern Config config;
+extern Adafruit_SSD1306 display;
+extern RotaryEncoder rotaryEncoder;
+extern StreamInfo playlist[];
+extern int playlistCount;
+extern int currentSelection;
+extern TaskHandle_t audioTaskHandle;
+extern char ssid[][64];
+extern char password[][64];
+extern int wifiNetworkCount;
+
+// Constants
+#define MAX_WIFI_NETWORKS 5
+#define MAX_PLAYLIST_SIZE 20
+#define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
+
+// Default pin definitions
+#define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
+#define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
+#define DEFAULT_I2S_LRC          25  ///< I2S Left/Right Clock pin
+#define DEFAULT_LED_PIN           2  ///< ESP32 internal LED pin
+#define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
+#define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
+#define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
+#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
+#define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
+#define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
+#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
+#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
+#define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
+
+// Forward declarations for global functions
 void stopStream();
 void startStream(const char* url = nullptr, const char* name = nullptr);
 void updateDisplay();
 void sendStatusToClients();
+void setupAudioOutput();
+void loadPlaylist();
+void savePlaylist();
+void setupRotaryEncoder();
+void rotaryISR();
+void handleRotary();
+void handleDisplayTimeout();
+void audioTask(void *pvParameters);
+void loadConfig();
+void saveConfig();
+void loadWiFiCredentials();
+void saveWiFiCredentials();
+
+// Web server handlers
+void handleRoot();
+void handlePlaylistPage();
+void handleConfigPage();
+void handleAboutPage();
+void handleWiFiConfig();
+void handleSimpleWebPage();
+void handleGetStreams();
+void handlePostStreams();
+void handlePlay();
+void handleStop();
+void handleVolume();
+void handleTone();
+void handleStatus();
+void handleGetConfig();
+void handlePostConfig();
+void handleWiFiScan();
+void handleWiFiSave();
+void handleWiFiStatus();
+void handleWiFiConfigAPI();
+
+// WebSocket handlers
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
+
+// Audio callbacks
+void audio_showstreamtitle(const char *info);
+void audio_showstation(const char *info);
+void audio_bitrate(const char *info);
+
+// Utility functions
+String generateStatusJSON();
 
 #endif // MAIN_H
