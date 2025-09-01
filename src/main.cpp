@@ -2005,8 +2005,25 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * the selected playlist item and volume. It also implements scrolling text for long strings.
  */
 void updateDisplay() {
-  // Update last activity time
-  lastActivityTime = millis();
+  // Update last activity time only when display is actually being updated for user feedback
+  // This prevents the display from staying on indefinitely when periodically updated
+  // Only update activity time if we're not in a periodic update (when playing)
+  static unsigned long lastManualActivity = 0;
+  unsigned long currentTime = millis();
+  
+  // If we're playing, only update activity time periodically to allow timeout
+  if (isPlaying) {
+    // Update activity time every 5 seconds during playback to prevent immediate timeout
+    if (currentTime - lastManualActivity > 5000) {
+      lastActivityTime = currentTime;
+      lastManualActivity = currentTime;
+    }
+  } else {
+    // When not playing, update activity time on every display update (user interaction)
+    lastActivityTime = currentTime;
+    lastManualActivity = currentTime;
+  }
+  
   // If display is off, turn it on
   if (!displayOn) {
     displayOn = true;
