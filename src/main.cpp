@@ -2845,43 +2845,54 @@ if (command.startsWith("stop")) {
     }
   } else if (command.startsWith("commands")) {
     // Commands command
-    mpdClient.print("command: add\n");
-    mpdClient.print("command: clear\n");
-    mpdClient.print("command: close\n");
-    mpdClient.print("command: currentsong\n");
-    mpdClient.print("command: delete\n");
-    mpdClient.print("command: disableoutput\n");
-    mpdClient.print("command: enableoutput\n");
-    mpdClient.print("command: find\n");
-    mpdClient.print("command: idle\n");
-    mpdClient.print("command: kill\n");
-    mpdClient.print("command: list\n");
-    mpdClient.print("command: listallinfo\n");
-    mpdClient.print("command: listplaylistinfo\n");
-    mpdClient.print("command: load\n");
-    mpdClient.print("command: lsinfo\n");
-    mpdClient.print("command: next\n");
-    mpdClient.print("command: notcommands\n");
-    mpdClient.print("command: outputs\n");
-    mpdClient.print("command: password\n");
-    mpdClient.print("command: pause\n");
-    mpdClient.print("command: ping\n");
-    mpdClient.print("command: play\n");
-    mpdClient.print("command: playid\n");
-    mpdClient.print("command: playlistid\n");
-    mpdClient.print("command: playlistinfo\n");
-    mpdClient.print("command: plchanges\n");
-    mpdClient.print("command: previous\n");
-    mpdClient.print("command: save\n");
-    mpdClient.print("command: search\n");
-    mpdClient.print("command: seek\n");
-    mpdClient.print("command: seekid\n");
-    mpdClient.print("command: setvol\n");
-    mpdClient.print("command: stats\n");
-    mpdClient.print("command: status\n");
-    mpdClient.print("command: stop\n");
-    mpdClient.print("command: tagtypes\n");
-    mpdClient.print("command: update\n");
+    const char* supportedCommands[] = {
+      "add",
+      "clear",
+      "close",
+      "currentsong",
+      "delete",
+      "disableoutput",
+      "enableoutput",
+      "find",
+      "idle",
+      "kill",
+      "list",
+      "listallinfo",
+      "listplaylistinfo",
+      "load",
+      "lsinfo",
+      "next",
+      "notcommands",
+      "outputs",
+      "password",
+      "pause",
+      "ping",
+      "play",
+      "playid",
+      "playlistid",
+      "playlistinfo",
+      "plchanges",
+      "previous",
+      "save",
+      "search",
+      "seek",
+      "seekid",
+      "setvol",
+      "stats",
+      "status",
+      "stop",
+      "tagtypes",
+      "update"
+    };
+    
+    const int commandCount = sizeof(supportedCommands) / sizeof(supportedCommands[0]);
+    
+    for (int i = 0; i < commandCount; i++) {
+      mpdClient.print("command: ");
+      mpdClient.print(supportedCommands[i]);
+      mpdClient.print("\n");
+    }
+    
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("notcommands")) {
     // Not commands command
