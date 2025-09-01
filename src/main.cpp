@@ -362,16 +362,21 @@ void handleBoardButton() {
   static bool lastButtonState = HIGH;  // Keep track of button state
   static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
+  static bool buttonPressHandled = false;  // Track if we've handled this press
+  
   // Handle board button press for play/stop toggle
   int buttonReading = digitalRead(config.board_button);
+  
   // Check if button state changed (debounce)
   if (buttonReading != lastButtonState) {
     lastDebounceTime = millis();
+    buttonPressHandled = false;  // Reset handled flag when state changes
   }
+  
   // If button state has been stable for debounce delay
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    // If button is pressed (LOW due to pull-up)
-    if (buttonReading == LOW && lastButtonState == HIGH) {
+    // If button is pressed (LOW due to pull-up) and we haven't handled this press yet
+    if (buttonReading == LOW && lastButtonState == HIGH && !buttonPressHandled) {
       // Toggle play/stop
       if (isPlaying) {
         stopStream();
@@ -387,6 +392,11 @@ void handleBoardButton() {
       }
       updateDisplay();
       sendStatusToClients();
+      buttonPressHandled = true;  // Mark this press as handled
+    }
+    // If button is released, reset handled flag
+    else if (buttonReading == HIGH && lastButtonState == LOW) {
+      buttonPressHandled = false;
     }
   }
   
@@ -1309,6 +1319,10 @@ void handleRotary() {
       }
     }
     lastRotaryPosition = currentPosition;  // Update last position
+    lastActivityTime = millis(); // Update activity time on user interaction
+    if (!displayOn) {
+      displayOn = true;
+    }
     updateDisplay();                      // Refresh display with new values
   }
   // Process button press if detected
@@ -1347,15 +1361,27 @@ void handleRotary() {
 void handleDisplayTimeout() {
   const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
   unsigned long currentTime = millis();
+  
+  // Handle potential millis() overflow
+  if (currentTime < lastActivityTime) {
+    lastActivityTime = currentTime; // Reset on overflow
+  }
+  
   // If we're playing, keep the display on
   if (isPlaying) {
-    lastActivityTime = currentTime;
+    // Update activity time periodically during playback to prevent timeout
+    static unsigned long lastPlaybackActivityUpdate = 0;
+    if (currentTime - lastPlaybackActivityUpdate > 5000) { // Every 5 seconds
+      lastActivityTime = currentTime;
+      lastPlaybackActivityUpdate = currentTime;
+    }
     if (!displayOn) {
       displayOn = true;
       display.display(); // Turn display back on
     }
     return;
   }
+  
   // If we're not playing, check for timeout
   if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
     if (displayOn) {
@@ -2006,35 +2032,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * This function updates the OLED display with the current player status. When playing,
  * it shows the station name, stream title, bitrate, and volume. When stopped, it shows
  * the selected playlist item and volume. It also implements scrolling text for long strings.
- * 
- * The function also manages display activity time to control timeout behavior.
- * During playback, activity time is updated periodically to prevent immediate timeout.
- * When stopped, activity time is updated on every display update (user interaction).
  */
 void updateDisplay() {
-  // Update last activity time only when display is actually being updated for user feedback
-  // This prevents the display from staying on indefinitely when periodically updated
-  // Only update activity time if we're not in a periodic update (when playing)
-  static unsigned long lastManualActivity = 0;
-  unsigned long currentTime = millis();
-  
-  // If we're playing, only update activity time periodically to allow timeout
-  if (isPlaying) {
-    // Update activity time every 5 seconds during playback to prevent immediate timeout
-    if (currentTime - lastManualActivity > 5000) {
-      lastActivityTime = currentTime;
-      lastManualActivity = currentTime;
-    }
-  } else {
-    // When not playing, update activity time on every display update (user interaction)
-    lastActivityTime = currentTime;
-    lastManualActivity = currentTime;
-  }
-  
-  // If display is off, turn it on
+  // If display is off, don't update
   if (!displayOn) {
-    displayOn = true;
+    return;
   }
+  
   // Clear the display buffer
   display.clearDisplay();
   if (isPlaying) {

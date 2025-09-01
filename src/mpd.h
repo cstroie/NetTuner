@@ -71,6 +71,19 @@ public:
 
 private:
   /**
+   * @brief Handle idle mode monitoring and notifications
+   * Monitors for changes in playback status and stream information
+   */
+  void handleIdleMode();
+
+  /**
+   * @brief Handle command list processing
+   * Processes commands in command list mode
+   * @param command The command to process
+   */
+  void handleCommandList(const String& command);
+
+  /**
    * @brief Generate appropriate MPD response based on context
    * @param isError Whether this is an error response
    * @param message Error message (only used for error responses)

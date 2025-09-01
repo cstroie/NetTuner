@@ -51,6 +51,7 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
  * information, sending notifications to clients when changes occur.
  */
 void MPDInterface::handleClient() {
+    // Handle new client connections
     if (mpdServer.hasClient()) {
       if (!mpdClient || !mpdClient.connected()) {
         if (mpdClient) {
@@ -72,6 +73,7 @@ void MPDInterface::handleClient() {
         rejectedClient.stop();  // Properly close rejected connection
       }
     }
+    
     // Check if client disconnected unexpectedly
     if (mpdClient && !mpdClient.connected()) {
       mpdClient.stop();
@@ -80,91 +82,119 @@ void MPDInterface::handleClient() {
       commandListOK = false;
       commandListCount = 0;
       inIdleMode = false;
+      return;
     }
+    
+    // Process client if connected
     if (mpdClient && mpdClient.connected()) {
-      // Check for idle mode events
+      // Handle idle mode
       if (inIdleMode) {
-        // Check for title changes
-        unsigned long currentTitleHash = 0;
-        for (int i = 0; streamTitleRef[i]; i++) {
-          currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
-        }
-        // Check for status changes
-        unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
-        currentStatusHash = currentStatusHash * 31 + volumeRef;
-        bool sendIdleResponse = false;
-        String idleChanges = "";
-        // Check for title change
-        if (currentTitleHash != lastTitleHash) {
-          idleChanges += "changed: playlist\n";
-          lastTitleHash = currentTitleHash;
-          sendIdleResponse = true;
-        }
-        // Check for status change
-        if (currentStatusHash != lastStatusHash) {
-          idleChanges += "changed: player\n";
-          idleChanges += "changed: mixer\n";
-          lastStatusHash = currentStatusHash;
-          sendIdleResponse = true;
-        }
-        // Send idle response if there are changes
-        if (sendIdleResponse) {
-          mpdClient.print(idleChanges);
-          mpdClient.print(mpdResponseOK());
-          inIdleMode = false;
-        }
-        // Check if there's data available (for noidle command)
-        if (mpdClient.available()) {
-          String command = mpdClient.readStringUntil('\n');
-          command.trim();
-          Serial.println("MPD Command: " + command);
-          // Handle noidle command to exit idle mode
-          if (command == "noidle") {
-            inIdleMode = false;
-            mpdClient.print(mpdResponseOK());
-            return;
-          }
-        } else {
-          // Stay in idle mode and return early
-          return;
-        }
+        // Check for changes that would trigger idle notifications
+        handleIdleMode();
+        return;
       }
+      
       // Handle incoming commands
       if (mpdClient.available()) {
         String command = mpdClient.readStringUntil('\n');
         command.trim();
         Serial.println("MPD Command: " + command);
+        
         // Handle command list mode
         if (inCommandList) {
-          if (command == "command_list_end") {
-            // Execute all buffered commands
-            for (int i = 0; i < commandListCount; i++) {
-              handleMPDCommand(commandList[i]);
-            }
-            // Reset command list state
-            inCommandList = false;
-            commandListOK = false;
-            commandListCount = 0;
-            mpdClient.print(mpdResponseOK());
-          } else {
-            // Buffer the command
-            if (commandListCount < 50) {
-              commandList[commandListCount] = command;
-              commandListCount++;
-            } else {
-              // Command list too long, send error
-              inCommandList = false;
-              commandListOK = false;
-              commandListCount = 0;
-              mpdClient.print(mpdResponseError("Command list too long"));
-            }
-          }
+          handleCommandList(command);
         } else {
           // Normal command processing
           handleMPDCommand(command);
         }
       }
     }
+}
+
+/**
+ * @brief Handle idle mode monitoring and notifications
+ * Monitors for changes in playback status and stream information
+ */
+void MPDInterface::handleIdleMode() {
+  // Check for title changes
+  unsigned long currentTitleHash = 0;
+  for (int i = 0; streamTitleRef[i]; i++) {
+    currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
+  }
+  
+  // Check for status changes
+  unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
+  currentStatusHash = currentStatusHash * 31 + volumeRef;
+  currentStatusHash = currentStatusHash * 31 + bitrateRef;
+  
+  bool sendIdleResponse = false;
+  String idleChanges = "";
+  
+  // Check for title change
+  if (currentTitleHash != lastTitleHash) {
+    idleChanges += "changed: playlist\n";
+    lastTitleHash = currentTitleHash;
+    sendIdleResponse = true;
+  }
+  
+  // Check for status change
+  if (currentStatusHash != lastStatusHash) {
+    idleChanges += "changed: player\n";
+    idleChanges += "changed: mixer\n";
+    lastStatusHash = currentStatusHash;
+    sendIdleResponse = true;
+  }
+  
+  // Send idle response if there are changes
+  if (sendIdleResponse) {
+    mpdClient.print(idleChanges);
+    mpdClient.print(mpdResponseOK());
+    inIdleMode = false;
+    return;
+  }
+  
+  // Check if there's data available (for noidle command)
+  if (mpdClient.available()) {
+    String command = mpdClient.readStringUntil('\n');
+    command.trim();
+    Serial.println("MPD Command: " + command);
+    // Handle noidle command to exit idle mode
+    if (command == "noidle") {
+      inIdleMode = false;
+      mpdClient.print(mpdResponseOK());
+    }
+  }
+}
+
+/**
+ * @brief Handle command list processing
+ * Processes commands in command list mode
+ * @param command The command to process
+ */
+void MPDInterface::handleCommandList(const String& command) {
+  if (command == "command_list_end") {
+    // Execute all buffered commands
+    for (int i = 0; i < commandListCount; i++) {
+      handleMPDCommand(commandList[i]);
+    }
+    // Reset command list state
+    inCommandList = false;
+    commandListOK = false;
+    commandListCount = 0;
+    mpdClient.print(mpdResponseOK());
+  } else {
+    // Buffer the command
+    if (commandListCount < 50) {
+      commandList[commandListCount] = command;
+      commandListCount++;
+    } else {
+      // Command list too long, send error
+      inCommandList = false;
+      commandListOK = false;
+      commandListCount = 0;
+      mpdClient.print(mpdResponseError("Command list too long"));
+    }
+  }
 }
 
 
