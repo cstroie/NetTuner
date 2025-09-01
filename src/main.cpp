@@ -2955,20 +2955,58 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("search")) {
     // Search command
-    // For simplicity, return all playlist items (no actual search implemented)
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    if (command.length() > 7) {
+      String searchTerm = command.substring(7);
+      searchTerm.trim();
+      
+      // Remove quotes if present
+      if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
+        searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+      }
+      
+      // Search in playlist names (case insensitive)
+      for (int i = 0; i < playlistCount; i++) {
+        String playlistName = String(playlist[i].name);
+        // Convert both to lowercase for case-insensitive comparison
+        String lowerName = playlistName;
+        lowerName.toLowerCase();
+        String lowerSearch = searchTerm;
+        lowerSearch.toLowerCase();
+        
+        if (lowerName.indexOf(lowerSearch) != -1) {
+          mpdClient.print("file: " + String(playlist[i].url) + "\n");
+          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+          mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+        }
+      }
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("find")) {
-    // Find command
-    // For simplicity, return all playlist items (no actual search implemented)
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    // Find command (exact match)
+    if (command.length() > 5) {
+      String searchTerm = command.substring(5);
+      searchTerm.trim();
+      
+      // Remove quotes if present
+      if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
+        searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+      }
+      
+      // Find exact matches in playlist names (case insensitive)
+      for (int i = 0; i < playlistCount; i++) {
+        String playlistName = String(playlist[i].name);
+        // Convert both to lowercase for case-insensitive comparison
+        String lowerName = playlistName;
+        lowerName.toLowerCase();
+        String lowerSearch = searchTerm;
+        lowerSearch.toLowerCase();
+        
+        if (lowerName == lowerSearch) {
+          mpdClient.print("file: " + String(playlist[i].url) + "\n");
+          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+          mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+        }
+      }
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playid")) {
