@@ -441,7 +441,7 @@ void loop() {
         // Stream is running, reset the stopped time
         streamStoppedTime = 0;
         // Update bitrate if it has changed
-        int newBitrate = audio->getBitRate();
+        int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
         if (newBitrate > 0 && newBitrate != bitrate) {
           bitrate = newBitrate;
           // Update the bitrate on display
