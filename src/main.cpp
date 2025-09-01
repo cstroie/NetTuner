@@ -21,6 +21,7 @@
 #include "mpd.h"
 
 // MPD Interface instance
+extern WiFiClient mpdClient;  // Declare the missing mpdClient
 MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
                           playlistCount, currentSelection, playlist, audio);
 

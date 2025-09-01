@@ -31,6 +31,26 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 
+// Constants
+#define MAX_WIFI_NETWORKS 5
+#define MAX_PLAYLIST_SIZE 20
+#define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
+
+// Default pin definitions
+#define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
+#define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
+#define DEFAULT_I2S_LRC          25  ///< I2S Left/Right Clock pin
+#define DEFAULT_LED_PIN           2  ///< ESP32 internal LED pin
+#define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
+#define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
+#define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
+#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
+#define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
+#define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
+#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
+#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
+#define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
+
 // Forward declarations
 class Audio;
 class WebServer;
@@ -94,26 +114,6 @@ extern TaskHandle_t audioTaskHandle;
 extern char ssid[MAX_WIFI_NETWORKS][64];
 extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
-
-// Constants
-#define MAX_WIFI_NETWORKS 5
-#define MAX_PLAYLIST_SIZE 20
-#define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
-
-// Default pin definitions
-#define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
-#define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
-#define DEFAULT_I2S_LRC          25  ///< I2S Left/Right Clock pin
-#define DEFAULT_LED_PIN           2  ///< ESP32 internal LED pin
-#define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
-#define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
-#define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
-#define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
-#define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
-#define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
-#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
-#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
-#define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
 
 // Forward declarations for global functions
 void stopStream();
