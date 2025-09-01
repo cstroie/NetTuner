@@ -81,7 +81,7 @@ void audio_bitrate(const char *info) {
     Serial.print("Bitrate: ");
     Serial.println(info);
     // Convert string to integer bitrate in kbps
-    int newBitrate = atoi(info) / 1000;
+    int newBitrate = atoi(info);
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
@@ -1629,6 +1629,7 @@ void handlePostStreams() {
  */
 void handlePlay() {
   String url, name;
+  int index = -1;
   // Check for JSON payload
   if (server.hasArg("plain")) {
     // Handle JSON payload
@@ -1648,6 +1649,7 @@ void handlePlay() {
     // Extract URL and name
     url = doc["url"].as<String>();
     name = doc["name"].as<String>();
+    index = doc["index"].as<int>();
   } else if (server.hasArg("url") && server.hasArg("name")) {
     // Handle form data for the simple web page
     url = server.arg("url");
@@ -1668,22 +1670,26 @@ void handlePlay() {
   }
   // Stop any currently playing stream
   stopStream();
-  
-  // Find the stream in the playlist and update currentSelection
-  for (int i = 0; i < playlistCount; i++) {
-    if (strcmp(playlist[i].url, url.c_str()) == 0) {
-      currentSelection = i;
-      break;
+  // Update currentSelection based on index
+  if (index > 0) {
+    // If index is valid, update currentSelection
+    currentSelection = index;
+  } else {
+    // Find the stream in the playlist and update currentSelection
+    for (int i = 0; i < playlistCount; i++) {
+      if (strcmp(playlist[i].url, url.c_str()) == 0) {
+        currentSelection = i;
+        break;
+      }
     }
   }
-  
   // Start the stream
   startStream(url.c_str(), name.c_str());
+  // Update display and notify clients
   updateDisplay();
-  sendStatusToClients();  // Notify clients of status change
+  sendStatusToClients();
   // Send success response
-  String responseMessage = "{\"status\":\"success\",\"message\":\"Stream started successfully\"}";
-  server.send(200, "application/json", responseMessage);
+  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
 }
 
 /**
@@ -1692,9 +1698,12 @@ void handlePlay() {
  * This function handles HTTP requests to stop the currently playing stream.
  */
 void handleStop() {
+  // Stop any currently playing stream
   stopStream();
+  // Update display and notify clients
   updateDisplay();
-  sendStatusToClients();  // Notify clients of status change
+  sendStatusToClients();
+  // Send success response
   server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
 }
 
@@ -1732,8 +1741,10 @@ void handleVolume() {
     if (audio) {
       audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
     }
+    // Update display and notify clients
     updateDisplay();
-    sendStatusToClients();  // Notify clients of status change
+    sendStatusToClients();
+    // Send success response
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
   } else if (server.hasArg("volume")) {
     // Handle form data
@@ -1749,10 +1760,13 @@ void handleVolume() {
     if (audio) {
       audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
     }
+    // Update display and notify clients
     updateDisplay();
-    sendStatusToClients();  // Notify clients of status change
+    sendStatusToClients();
+    // Send success response
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
   } else {
+    // Missing required parameter
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
     return;
   }
@@ -1993,90 +2007,84 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void updateDisplay() {
   // Update last activity time
   lastActivityTime = millis();
-  
   // If display is off, turn it on
   if (!displayOn) {
     displayOn = true;
   }
-  
   // Clear the display buffer
   display.clearDisplay();
-  
   if (isPlaying) {
     // Display when playing
-    if (config.display_height >= 64) {
-      // 128x64 display - full information
-      display.setTextSize(2);  // Larger font for status
-      display.setCursor(0, 0);
-      display.print(">");  // Fixed '>' character
-      
-      // Display stream title (first line) with scrolling
-      String title = String(streamTitle);
-      if (title.length() == 0) {
-        title = String(streamName);
+    // Larger font for title
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+    // Fixed '>' character
+    display.print(">");
+    // Display stream title (first line) with scrolling
+    String title = String(streamTitle);
+    if (title.length() == 0) {
+      title = String(streamName);
+    }
+    // Scroll title if too long for display (excluding the '>' character)
+    // ~9 chars fit on a 128px display with '>' and some margin
+    if (title.length() > 9) {
+      static unsigned long lastTitleScrollTime = 0;
+      static int titleScrollOffset = 0;
+      static String titleScrollText = "";
+      // Reset scroll if text changed
+      if (titleScrollText != title) {
+        titleScrollText = title;
+        titleScrollOffset = 0;
       }
-      
-      // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
-        static unsigned long lastTitleScrollTime = 0;
-        static int titleScrollOffset = 0;
-        static String titleScrollText = "";
-        
-        // Reset scroll if text changed
-        if (titleScrollText != title) {
-          titleScrollText = title;
+      // Scroll every 500ms
+      if (millis() - lastTitleScrollTime > 500) {
+        titleScrollOffset++;
+        // Reset scroll when we've shown the entire text plus " *** "
+        if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
           titleScrollOffset = 0;
         }
-        
-        // Scroll every 500ms
-        if (millis() - lastTitleScrollTime > 500) {
-          titleScrollOffset++;
-          // Reset scroll when we've shown the entire text plus " *** "
-          if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
-            titleScrollOffset = 0;
-          }
-          lastTitleScrollTime = millis();
-        }
-        
-        // Display scrolled text (starting from position after '>')
-        display.setCursor(16, 0);  // Position after the '>' character
-        String displayText = title + " *** " + title;
-        if (titleScrollOffset < (int)displayText.length()) {
-          displayText = displayText.substring(titleScrollOffset);
-        }
-        display.println(displayText.substring(0, 9));
-      } else {
-        display.setCursor(16, 0);  // Position after the '>' character
-        display.println(title);
+        lastTitleScrollTime = millis();
       }
-      
-      display.setTextSize(1);  // Normal font for stream info
-      // Display stream name (second line)
-      display.setCursor(0, 18);
-      String stationName = String(streamName);
-      if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
-        display.println(stationName.substring(0, 21));
-      } else {
-        display.println(stationName);
+      // Display scrolled text (starting from position after '>')
+      display.setCursor(16, 0);
+      String displayText = title + " *** " + title;
+      if (titleScrollOffset < (int)displayText.length()) {
+        displayText = displayText.substring(titleScrollOffset);
       }
-      
-      // Display volume and bitrate on third line
+      display.println(displayText.substring(0, 9));
+    } else {
+      // Display title without scrolling
+      display.setCursor(16, 0);
+      display.println(title);
+    }
+    // Normal font for stream info
+    display.setTextSize(1);  
+    // Display stream name (second line)
+    display.setCursor(0, 18);
+    String stationName = String(streamName);
+    // ~21 chars fit on a 128px display
+    if (stationName.length() > 21) {
+      display.println(stationName.substring(0, 21));
+    } else {
+      display.println(stationName);
+    }
+    // Display volume and bitrate on third line
+    if (config.display_height >= 64)
       display.setCursor(0, 30);
-      display.print("VOL ");
-      display.print(volume);
-      
-      // Display bitrate right-aligned
-      if (bitrate > 0) {
-        String bitrateStr = String(bitrate) + " kbps";
-        int16_t x1, y1;
-        uint16_t w, h;
-        display.getTextBounds(bitrateStr, 0, 30, &x1, &y1, &w, &h);
-        display.setCursor(display.width() - w, 30);
-        display.println(bitrateStr);
-      } else {
-        display.println();
-      }
-      
+    else
+      display.setCursor(0, 26);
+    display.print("Vol ");
+    display.print(volume);
+    // Display bitrate right-aligned
+    if (bitrate > 0) {
+      String bitrateStr = String(bitrate) + " kbps";
+      int16_t x1, y1;
+      uint16_t w, h;
+      display.getTextBounds(bitrateStr, 0, 30, &x1, &y1, &w, &h);
+      display.setCursor(display.width() - w, 30);
+      display.println(bitrateStr);
+    }
+    if (config.display_height >= 64) {
       // Display IP address on the last line, centered
       display.setCursor(0, 54);
       String ipString;
@@ -2085,128 +2093,55 @@ void updateDisplay() {
       } else {
         ipString = "No IP";
       }
-      
       // Calculate center position
       int16_t x1, y1;
       uint16_t w, h;
       display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
       int x = (display.width() - w) / 2;
       if (x < 0) x = 0;
-      
+      // Center the IP address
       display.setCursor(x, 54);
       display.println(ipString);
-    } else {
-      // 128x32 display - limited information
-      display.setTextSize(2);  // Larger font for status
-      display.setCursor(0, 0);
-      display.print(">");  // Fixed '>' character
-      
-      // Display stream title (first line) with scrolling
-      String title = String(streamTitle);
-      if (title.length() == 0) {
-        title = String(streamName);
-      }
-      
-      // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
-        static unsigned long lastTitleScrollTime = 0;
-        static int titleScrollOffset = 0;
-        static String titleScrollText = "";
-        
-        // Reset scroll if text changed
-        if (titleScrollText != title) {
-          titleScrollText = title;
-          titleScrollOffset = 0;
-        }
-        
-        // Scroll every 500ms
-        if (millis() - lastTitleScrollTime > 500) {
-          titleScrollOffset++;
-          // Reset scroll when we've shown the entire text plus " *** "
-          if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
-            titleScrollOffset = 0;
-          }
-          lastTitleScrollTime = millis();
-        }
-        
-        // Display scrolled text (starting from position after '>')
-        display.setCursor(16, 0);  // Position after the '>' character
-        String displayText = title + " *** " + title;
-        if (titleScrollOffset < (int)displayText.length()) {
-          displayText = displayText.substring(titleScrollOffset);
-        }
-        display.println(displayText.substring(0, 9));
-      } else {
-        display.setCursor(16, 0);  // Position after the '>' character
-        display.println(title);
-      }
-      
-      display.setTextSize(1);  // Normal font for stream info
-      // Display stream name (second line)
-      display.setCursor(0, 18);
-      String stationName = String(streamName);
-      if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
-        display.println(stationName.substring(0, 21));
-      } else {
-        display.println(stationName);
-      }
-      
-      // Display volume and bitrate (third line)
-      display.setCursor(0, 26);
-      display.print("VOL ");
-      display.print(volume);
-      
-      // Display bitrate right-aligned
-      if (bitrate > 0) {
-        String bitrateStr = String(bitrate) + " kbps";
-        int16_t x1, y1;
-        uint16_t w, h;
-        display.getTextBounds(bitrateStr, 0, 26, &x1, &y1, &w, &h);
-        display.setCursor(display.width() - w, 26);
-        display.println(bitrateStr);
-      } else {
-        display.println();
-      }
     }
   } else {
     // Display when stopped
-    if (config.display_height >= 64) {
-      // 128x64 display - full information
-      // Larger font for status
-      display.setTextSize(2);
-      display.setCursor(15, 0);
-      display.println("STOP");
-      // Normal font for other text
-      display.setTextSize(1);
-      // Display current stream name (second line)
-      display.setCursor(0, 18);
-      if (strlen(streamName) > 0) {
-        String currentStream = String(streamName);
-        // ~21 chars fit on a 128px display
-        if (currentStream.length() > 21) {
-          display.println(currentStream.substring(0, 21));
-        } else {
-          display.println(currentStream);
-        }
-      } else if (playlistCount > 0 && currentSelection < playlistCount) {
-        String playlistName = String(playlist[currentSelection].name);
-        // ~21 chars fit on a 128px display
-        if (playlistName.length() > 21) {
-          display.println(playlistName.substring(0, 21));
-        } else {
-          display.println(playlistName);
-        }
+    // Larger font for status
+    display.setTextSize(2);
+    display.setCursor(30, 0);
+    display.println("STOP");
+    // Normal font for other text
+    display.setTextSize(1);
+    // Display current stream name (second line)
+    display.setCursor(0, 18);
+    if (strlen(streamName) > 0) {
+      String currentStream = String(streamName);
+      // ~21 chars fit on a 128px display
+      if (currentStream.length() > 21) {
+        display.println(currentStream.substring(0, 21));
       } else {
-        // No stream is currently found in playlist
-        display.setCursor(27, 18);
-        display.println("No streams");
+        display.println(currentStream);
       }
-      
-      // Display volume on third line
+    } else if (playlistCount > 0 && currentSelection < playlistCount) {
+      String playlistName = String(playlist[currentSelection].name);
+      // ~21 chars fit on a 128px display
+      if (playlistName.length() > 21) {
+        display.println(playlistName.substring(0, 21));
+      } else {
+        display.println(playlistName);
+      }
+    } else {
+      // No stream is currently found in playlist
+      display.setCursor(27, 18);
+      display.println("No streams");
+    }
+    // Display volume on third line
+    if (config.display_height >= 64)
       display.setCursor(0, 30);
-      display.print("VOL ");
-      display.println(volume);
-      
+    else
+      display.setCursor(0, 26);
+    display.print("Vol ");
+    display.println(volume);
+    if (config.display_height >= 64) {
       // Display IP address on the last line, centered
       display.setCursor(0, 54);
       String ipString;
@@ -2215,49 +2150,15 @@ void updateDisplay() {
       } else {
         ipString = "No IP";
       }
-      
       // Calculate center position
       int16_t x1, y1;
       uint16_t w, h;
       display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
       int x = (display.width() - w) / 2;
       if (x < 0) x = 0;
-      
+      // Center the IP address
       display.setCursor(x, 54);
       display.println(ipString);
-    } else {
-      // 128x32 display - limited information
-      display.setTextSize(2);  // Larger font for status
-      display.setCursor(0, 0);
-      display.println("   STOP   ");
-      display.setTextSize(1);  // Normal font for other text
-      
-      // Display current stream name (second line)
-      display.setCursor(0, 18);
-      if (strlen(streamName) > 0) {
-        String currentStream = String(streamName);
-        if (currentStream.length() > 21) {  // ~21 chars fit on a 128px display
-          display.println(currentStream.substring(0, 21));
-        } else {
-          display.println(currentStream);
-        }
-      } else if (playlistCount > 0 && currentSelection < playlistCount) {
-        String playlistName = String(playlist[currentSelection].name);
-        if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
-          display.println(playlistName.substring(0, 21));
-        } else {
-          display.println(playlistName);
-        }
-      } else {
-        // No stream is currently found in playlist
-        display.setCursor(27, 18);
-        display.println("No streams");
-      }
-      
-      // Display volume (third line)
-      display.setCursor(0, 26);
-      display.print("VOL ");
-      display.println(volume);
     }
   }
   // Send buffer to display
