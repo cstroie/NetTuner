@@ -1262,6 +1262,48 @@ void rotaryISR() {
 }
 
 /**
+ * @brief Handle rotary encoder rotation
+ * This replaces the previous ISR with a cleaner approach
+ */
+void RotaryEncoder::handleRotation() {
+  unsigned long currentTime = millis();
+  
+  // Debounce rotary encoder (ignore if less than 5ms since last event)
+  if (currentTime - lastRotaryTime < 5) {
+    return;
+  }
+  
+  int CLK = digitalRead(config.rotary_clk);  // Read clock signal
+  int DT = digitalRead(config.rotary_dt);    // Read data signal
+  
+  // Only process when CLK transitions from LOW to HIGH
+  if (CLK == HIGH && lastCLK == LOW) {
+    // Determine rotation direction based on DT state
+    if (DT == LOW) {
+      position++;      // Clockwise rotation
+    } else {
+      position--;      // Counter-clockwise rotation
+    }
+    lastRotaryTime = currentTime;  // Update last event time
+  }
+  lastCLK = CLK;
+}
+
+/**
+ * @brief Handle button press
+ */
+void RotaryEncoder::handleButtonPress() {
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+  
+  // Debounce the button press (ignore if less than 50ms since last press)
+  if (interruptTime - lastInterruptTime > 50) {
+    buttonPressedFlag = true;
+  }
+  lastInterruptTime = interruptTime;
+}
+
+/**
  * @brief Handle rotary encoder input
  * Processes rotation and button press events from the rotary encoder
  * This function processes rotary encoder events and controls volume when playing
