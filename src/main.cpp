@@ -2754,7 +2754,15 @@ if (command.startsWith("stop")) {
   } else if (command.startsWith("setvol")) {
     // Set volume command
     if (command.length() > 7) {
-      int newVolume = command.substring(7).toInt();
+      String volumeStr = command.substring(7);
+      volumeStr.trim();
+      
+      // Remove quotes if present
+      if (volumeStr.startsWith("\"") && volumeStr.endsWith("\"") && volumeStr.length() >= 2) {
+        volumeStr = volumeStr.substring(1, volumeStr.length() - 1);
+      }
+      
+      int newVolume = volumeStr.toInt();
       if (newVolume >= 0 && newVolume <= 100) {
         volume = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audio) {
