@@ -55,6 +55,9 @@ WebSocketsServer webSocket(81);
  */
 WiFiServer mpdServer(6600);
 
+// MPD Interface instance
+MPDInterface mpdInterface(mpdServer);
+
 /**
  * @brief Player state variables
  * Track current playback status, stream information, volume level, and tone controls
@@ -549,8 +552,6 @@ void setup() {
   mpdServer.begin();
   Serial.println("MPD server started");
   
-  // Create MPD interface instance
-  static MPDInterface mpdInterface(mpdServer);
   
   // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
