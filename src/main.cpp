@@ -2676,6 +2676,59 @@ void sendPlaylistInfo(int detailLevel = 2) {
 }
 
 /**
+ * @brief Handle MPD search/find commands
+ * Processes search and find commands with partial or exact matching
+ * @param command The full command string
+ * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
+ */
+void handleMPDSearchCommand(const String& command, bool exactMatch) {
+  // Determine command prefix length (search=6, find=4)
+  int prefixLength = command.startsWith("search") ? 6 : 4;
+  
+  if (command.length() > prefixLength + 1) {
+    String searchTerm = command.substring(prefixLength + 1);
+    searchTerm.trim();
+    
+    // Extract search string (everything after the first space)
+    int firstSpace = searchTerm.indexOf(' ');
+    if (firstSpace != -1) {
+      searchTerm = searchTerm.substring(firstSpace + 1);
+      searchTerm.trim();
+    }
+    
+    // Remove quotes if present
+    if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
+      searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+    }
+    
+    // Search in playlist names
+    for (int i = 0; i < playlistCount; i++) {
+      String playlistName = String(playlist[i].name);
+      // Convert both to lowercase for case-insensitive comparison
+      String lowerName = playlistName;
+      lowerName.toLowerCase();
+      String lowerSearch = searchTerm;
+      lowerSearch.toLowerCase();
+      
+      bool match = false;
+      if (exactMatch) {
+        // Exact match for find command
+        match = (lowerName == lowerSearch);
+      } else {
+        // Partial match for search command
+        match = (lowerName.indexOf(lowerSearch) != -1);
+      }
+      
+      if (match) {
+        mpdClient.print("file: " + String(playlist[i].url) + "\n");
+        mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+        mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+      }
+    }
+  }
+}
+
+/**
  * @brief Handle MPD commands
  * Processes MPD protocol commands
  * @param command The command string to process
@@ -2968,74 +3021,12 @@ if (command.startsWith("stop")) {
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("search")) {
-    // Search command
-    if (command.length() > 7) {
-      String searchTerm = command.substring(7);
-      searchTerm.trim();
-      
-      // Extract search string (everything after the first space)
-      int firstSpace = searchTerm.indexOf(' ');
-      if (firstSpace != -1) {
-        searchTerm = searchTerm.substring(firstSpace + 1);
-        searchTerm.trim();
-      }
-      
-      // Remove quotes if present
-      if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
-        searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
-      }
-      
-      // Search in playlist names (case insensitive)
-      for (int i = 0; i < playlistCount; i++) {
-        String playlistName = String(playlist[i].name);
-        // Convert both to lowercase for case-insensitive comparison
-        String lowerName = playlistName;
-        lowerName.toLowerCase();
-        String lowerSearch = searchTerm;
-        lowerSearch.toLowerCase();
-        
-        if (lowerName.indexOf(lowerSearch) != -1) {
-          mpdClient.print("file: " + String(playlist[i].url) + "\n");
-          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-          mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-        }
-      }
-    }
+    // Search command (partial match)
+    handleMPDSearchCommand(command, false);
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("find")) {
     // Find command (exact match)
-    if (command.length() > 5) {
-      String searchTerm = command.substring(5);
-      searchTerm.trim();
-      
-      // Extract search string (everything after the first space)
-      int firstSpace = searchTerm.indexOf(' ');
-      if (firstSpace != -1) {
-        searchTerm = searchTerm.substring(firstSpace + 1);
-        searchTerm.trim();
-      }
-      
-      // Remove quotes if present
-      if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
-        searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
-      }
-      
-      // Find exact matches in playlist names (case insensitive)
-      for (int i = 0; i < playlistCount; i++) {
-        String playlistName = String(playlist[i].name);
-        // Convert both to lowercase for case-insensitive comparison
-        String lowerName = playlistName;
-        lowerName.toLowerCase();
-        String lowerSearch = searchTerm;
-        lowerSearch.toLowerCase();
-        
-        if (lowerName == lowerSearch) {
-          mpdClient.print("file: " + String(playlist[i].url) + "\n");
-          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-          mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-        }
-      }
-    }
+    handleMPDSearchCommand(command, true);
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playid")) {
     // Play ID command
