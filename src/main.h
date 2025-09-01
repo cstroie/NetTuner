@@ -44,7 +44,7 @@ class Audio;
 extern Audio* audio;
 
 void stopStream();
-void startStream(const char* url, const char* name);
+void startStream(const char* url = nullptr, const char* name = nullptr);
 void updateDisplay();
 void sendStatusToClients();
 
