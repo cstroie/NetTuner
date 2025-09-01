@@ -2656,7 +2656,8 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("status")) {
     // Status command
-    mpdClient.print("volume: " + String(volume) + "\n");
+    int volPercent = map(volume, 0, 22, 0, 100);
+    mpdClient.print("volume: " + String(volPercent) + "\n");
     mpdClient.print("repeat: 0\n");
     mpdClient.print("random: 0\n");
     mpdClient.print("single: 0\n");
@@ -2671,7 +2672,7 @@ if (command.startsWith("stop")) {
       mpdClient.print("time: 0:0\n");
       mpdClient.print("elapsed: 0.000\n");
       mpdClient.print("bitrate: " + String(bitrate / 1000) + "\n");
-      mpdClient.print("audio: 44100:f:2\n");
+      mpdClient.print("audio: 44100:16:2\n");
       mpdClient.print("nextsong: " + String((currentSelection + 1) % playlistCount) + "\n");
       mpdClient.print("nextsongid: " + String((currentSelection + 1) % playlistCount) + "\n");
     }
@@ -2681,7 +2682,11 @@ if (command.startsWith("stop")) {
     // Current song command
     if (isPlaying && strlen(streamName) > 0) {
       mpdClient.print("file: " + String(streamURL) + "\n");
-      mpdClient.print("Title: " + String(streamName) + " - " + String(streamTitle) + "\n");
+      if (strlen(streamTitle) > 0) {
+        mpdClient.print("Title: " + String(streamTitle) + "\n");
+      } else {
+        mpdClient.print("Title: " + String(streamName) + "\n");
+      }
       mpdClient.print("Id: " + String(currentSelection) + "\n");
       mpdClient.print("Pos: " + String(currentSelection) + "\n");
     }
