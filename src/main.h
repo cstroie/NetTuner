@@ -81,7 +81,79 @@ struct Config {
   int display_address; ///< OLED display I2C address
 };
 
-class RotaryEncoder;
+class RotaryEncoder {
+private:
+  volatile int position = 0;
+  int lastCLK = 0;
+  volatile unsigned long lastRotaryTime = 0;
+  bool buttonPressedFlag = false;
+
+public:
+  /**
+   * @brief Handle rotary encoder rotation
+   * This replaces the previous ISR with a cleaner approach
+   */
+  void handleRotation() {
+    unsigned long currentTime = millis();
+    
+    // Debounce rotary encoder (ignore if less than 5ms since last event)
+    if (currentTime - lastRotaryTime < 5) {
+      return;
+    }
+    
+    int CLK = digitalRead(config.rotary_clk);  // Read clock signal
+    int DT = digitalRead(config.rotary_dt);    // Read data signal
+    
+    // Only process when CLK transitions from LOW to HIGH
+    if (CLK == HIGH && lastCLK == LOW) {
+      // Determine rotation direction based on DT state
+      if (DT == LOW) {
+        position++;      // Clockwise rotation
+      } else {
+        position--;      // Counter-clockwise rotation
+      }
+      lastRotaryTime = currentTime;  // Update last event time
+    }
+    lastCLK = CLK;
+  }
+  
+  /**
+   * @brief Handle button press
+   */
+  void handleButtonPress() {
+    static unsigned long lastInterruptTime = 0;
+    unsigned long interruptTime = millis();
+    
+    // Debounce the button press (ignore if less than 50ms since last press)
+    if (interruptTime - lastInterruptTime > 50) {
+      buttonPressedFlag = true;
+    }
+    lastInterruptTime = interruptTime;
+  }
+  
+  /**
+   * @brief Get current position
+   */
+  int getPosition() const {
+    return position;
+  }
+  
+  /**
+   * @brief Set position
+   */
+  void setPosition(int pos) {
+    position = pos;
+  }
+  
+  /**
+   * @brief Check if button was pressed
+   */
+  bool wasButtonPressed() {
+    bool result = buttonPressedFlag;
+    buttonPressedFlag = false;
+    return result;
+  }
+};
 
 // Global variables
 extern char streamTitle[128];
