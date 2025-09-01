@@ -2230,7 +2230,7 @@ void updateDisplay() {
     displayOn = true;
   }
   
-  display.clearDisplay();  // Clear the display
+  display.clearDisplay();  // Clear the display buffer
   
   if (isPlaying) {
     // Display when playing
