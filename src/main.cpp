@@ -16,17 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <Arduino.h>
-#include <WiFi.h>
-#include <WebServer.h>
-#include <SPIFFS.h>
-#include <ArduinoJson.h>
-#include <HTTPClient.h>
-#include <driver/i2s.h>
-#include "Audio.h"
-#include <Adafruit_SSD1306.h>
-#include <Adafruit_GFX.h>
-#include <WebSocketsServer.h>
 
 #include "main.h"
 #include "mpd.h"
