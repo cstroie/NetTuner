@@ -30,6 +30,7 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
+#include "rotary.h"
 
 // Constants
 #define MAX_WIFI_NETWORKS 5
