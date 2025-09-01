@@ -56,7 +56,8 @@ WebSocketsServer webSocket(81);
 WiFiServer mpdServer(6600);
 
 // MPD Interface instance
-MPDInterface mpdInterface(mpdServer);
+MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
+                          playlistCount, currentSelection, playlist, audio);
 
 /**
  * @brief Player state variables
@@ -2452,6 +2453,18 @@ private:
   WiFiClient mpdClient;
   WiFiServer& mpdServer;
   
+  // References to global variables
+  char* streamTitleRef;
+  char* streamNameRef;
+  char* streamURLRef;
+  volatile bool& isPlayingRef;
+  int& volumeRef;
+  int& bitrateRef;
+  int& playlistCountRef;
+  int& currentSelectionRef;
+  StreamInfo* playlistRef;
+  Audio*& audioRef;
+  
   // MPD command list state variables
   bool inCommandList = false;        ///< Flag indicating if we're in command list mode
   bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
@@ -2464,7 +2477,13 @@ private:
   unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
 
 public:
-  MPDInterface(WiFiServer& server) : mpdServer(server) {}
+  MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL, 
+               volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount, 
+               int& currentSelection, StreamInfo* playlist, Audio*& audio) 
+    : mpdServer(server), streamTitleRef(streamTitle), streamNameRef(streamName), 
+      streamURLRef(streamURL), isPlayingRef(isPlaying), volumeRef(volume), bitrateRef(bitrate),
+      playlistCountRef(playlistCount), currentSelectionRef(currentSelection), 
+      playlistRef(playlist), audioRef(audio) {}
   
   /**
    * @brief Handle MPD client connections and process commands
@@ -2506,12 +2525,12 @@ public:
       if (inIdleMode) {
         // Check for title changes
         unsigned long currentTitleHash = 0;
-        for (int i = 0; streamTitle[i]; i++) {
-          currentTitleHash = currentTitleHash * 31 + streamTitle[i];
+        for (int i = 0; streamTitleRef[i]; i++) {
+          currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
         }
         // Check for status changes
-        unsigned long currentStatusHash = isPlaying ? 1 : 0;
-        currentStatusHash = currentStatusHash * 31 + volume;
+        unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
+        currentStatusHash = currentStatusHash * 31 + volumeRef;
         bool sendIdleResponse = false;
         String idleChanges = "";
         // Check for title change
@@ -2635,9 +2654,9 @@ private:
    * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
    */
   void sendPlaylistInfo(int detailLevel) {
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    for (int i = 0; i < playlistCountRef; i++) {
+      mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
       
       if (detailLevel >= 2) {
         // Full detail level
@@ -2679,8 +2698,8 @@ private:
       }
       
       // Search in playlist names
-      for (int i = 0; i < playlistCount; i++) {
-        String playlistName = String(playlist[i].name);
+      for (int i = 0; i < playlistCountRef; i++) {
+        String playlistName = String(playlistRef[i].name);
         // Convert both to lowercase for case-insensitive comparison
         String lowerName = playlistName;
         lowerName.toLowerCase();
@@ -2697,8 +2716,8 @@ private:
         }
         
         if (match) {
-          mpdClient.print("file: " + String(playlist[i].url) + "\n");
-          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+          mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
+          mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
           mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
         }
       }
@@ -2724,39 +2743,39 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("status")) {
     // Status command
-    int volPercent = map(volume, 0, 22, 0, 100);
+    int volPercent = map(volumeRef, 0, 22, 0, 100);
     mpdClient.print("volume: " + String(volPercent) + "\n");
     mpdClient.print("repeat: 0\n");
     mpdClient.print("random: 0\n");
     mpdClient.print("single: 0\n");
     mpdClient.print("consume: 0\n");
     mpdClient.print("playlist: 1\n");
-    mpdClient.print("playlistlength: " + String(playlistCount) + "\n");
+    mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
     mpdClient.print("mixrampdb: 0.000000\n");
-    mpdClient.print("state: " + String(isPlaying ? "play" : "stop") + "\n");
-    if (isPlaying && strlen(streamName) > 0) {
-      mpdClient.print("song: " + String(currentSelection) + "\n");
-      mpdClient.print("songid: " + String(currentSelection) + "\n");
+    mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
+    if (isPlayingRef && strlen(streamNameRef) > 0) {
+      mpdClient.print("song: " + String(currentSelectionRef) + "\n");
+      mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
       mpdClient.print("time: 0:0\n");
       mpdClient.print("elapsed: 0.000\n");
-      mpdClient.print("bitrate: " + String(bitrate / 1000) + "\n");
+      mpdClient.print("bitrate: " + String(bitrateRef / 1000) + "\n");
       mpdClient.print("audio: 44100:16:2\n");
-      mpdClient.print("nextsong: " + String((currentSelection + 1) % playlistCount) + "\n");
-      mpdClient.print("nextsongid: " + String((currentSelection + 1) % playlistCount) + "\n");
+      mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
+      mpdClient.print("nextsongid: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
     }
     mpdClient.print("updating_db: 0\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("currentsong")) {
     // Current song command
-    if (isPlaying && strlen(streamName) > 0) {
-      mpdClient.print("file: " + String(streamURL) + "\n");
-      if (strlen(streamTitle) > 0) {
-        mpdClient.print("Title: " + String(streamTitle) + "\n");
+    if (isPlayingRef && strlen(streamNameRef) > 0) {
+      mpdClient.print("file: " + String(streamURLRef) + "\n");
+      if (strlen(streamTitleRef) > 0) {
+        mpdClient.print("Title: " + String(streamTitleRef) + "\n");
       } else {
-        mpdClient.print("Title: " + String(streamName) + "\n");
+        mpdClient.print("Title: " + String(streamNameRef) + "\n");
       }
-      mpdClient.print("Id: " + String(currentSelection) + "\n");
-      mpdClient.print("Pos: " + String(currentSelection) + "\n");
+      mpdClient.print("Id: " + String(currentSelectionRef) + "\n");
+      mpdClient.print("Pos: " + String(currentSelectionRef) + "\n");
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistinfo")) {
@@ -2770,9 +2789,9 @@ if (command.startsWith("stop")) {
       id = command.substring(11).toInt();
     }
     
-    if (id >= 0 && id < playlistCount) {
-      mpdClient.print("file: " + String(playlist[id].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[id].name) + "\n");
+    if (id >= 0 && id < playlistCountRef) {
+      mpdClient.print("file: " + String(playlistRef[id].url) + "\n");
+      mpdClient.print("Title: " + String(playlistRef[id].name) + "\n");
       mpdClient.print("Id: " + String(id) + "\n");
       mpdClient.print("Pos: " + String(id) + "\n");
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
@@ -2787,17 +2806,17 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else  if (command.startsWith("play")) {
     // Play command
-    if (playlistCount > 0) {
+    if (playlistCountRef > 0) {
       int index = -1;
       if (command.length() > 5) {
         index = command.substring(5).toInt();
       }
       
-      if (index >= 0 && index < playlistCount) {
-        currentSelection = index;
-        startStream(playlist[index].url, playlist[index].name);
-      } else if (playlistCount > 0 && currentSelection < playlistCount) {
-        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      if (index >= 0 && index < playlistCountRef) {
+        currentSelectionRef = index;
+        startStream(playlistRef[index].url, playlistRef[index].name);
+      } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
+        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
       }
       mpdClient.print(mpdResponseOK());
     } else {
@@ -2816,9 +2835,9 @@ if (command.startsWith("stop")) {
       
       int newVolume = volumeStr.toInt();
       if (newVolume >= 0 && newVolume <= 100) {
-        volume = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
-        if (audio) {
-          audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
+        volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
+        if (audioRef) {
+          audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
         }
         updateDisplay();
         sendStatusToClients();  // Notify WebSocket clients
@@ -2831,10 +2850,10 @@ if (command.startsWith("stop")) {
     }
   } else if (command.startsWith("next")) {
     // Next command
-    if (playlistCount > 0) {
-      currentSelection = (currentSelection + 1) % playlistCount;
-      if (isPlaying) {
-        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+    if (playlistCountRef > 0) {
+      currentSelectionRef = (currentSelectionRef + 1) % playlistCountRef;
+      if (isPlayingRef) {
+        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
       }
       mpdClient.print(mpdResponseOK());
     } else {
@@ -2842,10 +2861,10 @@ if (command.startsWith("stop")) {
     }
   } else if (command.startsWith("previous")) {
     // Previous command
-    if (playlistCount > 0) {
-      currentSelection = (currentSelection - 1 + playlistCount) % playlistCount;
-      if (isPlaying) {
-        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+    if (playlistCountRef > 0) {
+      currentSelectionRef = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
+      if (isPlayingRef) {
+        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
       }
       mpdClient.print(mpdResponseOK());
     } else {
@@ -2953,13 +2972,13 @@ if (command.startsWith("stop")) {
     // Stats command
     unsigned long uptime = (millis() / 1000) - startTime;
     unsigned long playtime = totalPlayTime;
-    if (isPlaying && playStartTime > 0) {
+    if (isPlayingRef && playStartTime > 0) {
       playtime += (millis() / 1000) - playStartTime;
     }
     
     mpdClient.print("artists: 0\n");
     mpdClient.print("albums: 0\n");
-    mpdClient.print("songs: " + String(playlistCount) + "\n");
+    mpdClient.print("songs: " + String(playlistCountRef) + "\n");
     mpdClient.print("uptime: " + String(uptime) + "\n");
     mpdClient.print("playtime: " + String(playtime) + "\n");
     mpdClient.print("db_playtime: " + String(playtime) + "\n");
@@ -2997,8 +3016,8 @@ if (command.startsWith("stop")) {
         // Return empty list for album (no local database)
       } else if (tagType == "title") {
         // Return playlist titles
-        for (int i = 0; i < playlistCount; i++) {
-          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+        for (int i = 0; i < playlistCountRef; i++) {
+          mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
           mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
         }
       }
@@ -3016,15 +3035,15 @@ if (command.startsWith("stop")) {
     // Play ID command
     if (command.length() > 7) {
       int id = command.substring(7).toInt();
-      if (id >= 0 && id < playlistCount) {
-        currentSelection = id;
-        startStream(playlist[id].url, playlist[id].name);
+      if (id >= 0 && id < playlistCountRef) {
+        currentSelectionRef = id;
+        startStream(playlistRef[id].url, playlistRef[id].name);
         mpdClient.print(mpdResponseOK());
       } else {
         mpdClient.print(mpdResponseError("No such song"));
       }
-    } else if (playlistCount > 0 && currentSelection < playlistCount) {
-      startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
+      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("No playlist"));
@@ -3077,11 +3096,11 @@ if (command.startsWith("stop")) {
     inIdleMode = true;
     // Initialize hashes for tracking changes
     lastTitleHash = 0;
-    for (int i = 0; streamTitle[i]; i++) {
-      lastTitleHash = lastTitleHash * 31 + streamTitle[i];
+    for (int i = 0; streamTitleRef[i]; i++) {
+      lastTitleHash = lastTitleHash * 31 + streamTitleRef[i];
     }
-    lastStatusHash = isPlaying ? 1 : 0;
-    lastStatusHash = lastStatusHash * 31 + volume;
+    lastStatusHash = isPlayingRef ? 1 : 0;
+    lastStatusHash = lastStatusHash * 31 + volumeRef;
     // Don't send immediate response - wait for changes
     return;
   } else if (command.startsWith("noidle")) {
