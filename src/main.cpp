@@ -2638,6 +2638,43 @@ String mpdResponseError(const String& message) {
 }
 
 /**
+ * @brief Send detailed playlist information
+ * Sends playlist information with full metadata including ID, position, and last modified
+ */
+void sendPlaylistInfo() {
+  for (int i = 0; i < playlistCount; i++) {
+    mpdClient.print("file: " + String(playlist[i].url) + "\n");
+    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    mpdClient.print("Id: " + String(i) + "\n");
+    mpdClient.print("Pos: " + String(i) + "\n");
+    mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+  }
+}
+
+/**
+ * @brief Send simple playlist information
+ * Sends playlist information with basic metadata
+ */
+void sendPlaylistInfoSimple() {
+  for (int i = 0; i < playlistCount; i++) {
+    mpdClient.print("file: " + String(playlist[i].url) + "\n");
+    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+  }
+}
+
+/**
+ * @brief Send minimal playlist information
+ * Sends playlist information with only file and title
+ */
+void sendPlaylistInfoMinimal() {
+  for (int i = 0; i < playlistCount; i++) {
+    mpdClient.print("file: " + String(playlist[i].url) + "\n");
+    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+  }
+}
+
+/**
  * @brief Handle MPD commands
  * Processes MPD protocol commands
  * @param command The command string to process
@@ -2693,13 +2730,7 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistinfo")) {
     // Playlist info command
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Id: " + String(i) + "\n");
-      mpdClient.print("Pos: " + String(i) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-    }
+    sendPlaylistInfo();
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistid")) {
     // Playlist ID command
@@ -2727,11 +2758,7 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("lsinfo")) {
     // List info command
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-    }
+    sendPlaylistInfoSimple();
     mpdClient.print(mpdResponseOK());
   } else  if (command.startsWith("play")) {
     // Play command
@@ -2922,18 +2949,11 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("listallinfo")) {
     // List all info command
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-    }
+    sendPlaylistInfoSimple();
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("listplaylistinfo")) {
     // List playlist info command
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-    }
+    sendPlaylistInfoMinimal();
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("list")) {
     // List command
@@ -3030,13 +3050,7 @@ if (command.startsWith("stop")) {
   } else if (command.startsWith("plchanges")) {
     // Playlist changes command
     // For simplicity, we'll return the entire playlist (as if all entries changed)
-    for (int i = 0; i < playlistCount; i++) {
-      mpdClient.print("file: " + String(playlist[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-      mpdClient.print("Id: " + String(i) + "\n");
-      mpdClient.print("Pos: " + String(i) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-    }
+    sendPlaylistInfo();
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
     // Idle command - enter idle mode and wait for changes
