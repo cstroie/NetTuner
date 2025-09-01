@@ -312,7 +312,7 @@ if (command.startsWith("stop")) {
       mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
       mpdClient.print("time: 0:0\n");
       mpdClient.print("elapsed: 0.000\n");
-      mpdClient.print("bitrate: " + String(bitrateRef / 1000) + "\n");
+      mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
       mpdClient.print("audio: 44100:16:2\n");
       mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
       mpdClient.print("nextsongid: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
