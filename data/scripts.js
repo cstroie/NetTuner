@@ -182,6 +182,10 @@ function initConfigPage() {
  * @brief Load streams from the server
  * Fetches the playlist from the server and updates the UI
  * Shows loading states and handles errors appropriately
+ * 
+ * This function retrieves the current playlist from the server via the /api/streams endpoint.
+ * It updates both the main page stream selector and the playlist management page.
+ * The function handles loading states, error conditions, and data validation.
  */
 async function loadStreams() {
     // Show loading state
@@ -256,6 +260,20 @@ let reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
 const connectionTimeout = 10000; // 10 seconds timeout for connection
 
+/**
+ * @brief Establish WebSocket connection to server
+ * Manages WebSocket connection lifecycle with automatic reconnection and error handling
+ * 
+ * This function creates a WebSocket connection to the server for real-time status updates.
+ * It implements robust connection management including:
+ * - Automatic reconnection with exponential backoff
+ * - Connection timeout handling
+ * - Proper cleanup of previous connections
+ * - State synchronization with UI elements
+ * 
+ * The WebSocket connects to port 81 (different from HTTP server port) and handles
+ * various events including open, message, close, and error conditions.
+ */
 function connectWebSocket() {
     // Clear any existing reconnection timeout
     if (reconnectTimeout) {
@@ -801,6 +819,14 @@ async function playInstantStream() {
 }
 
 // Playlist functions
+/**
+ * @brief Render the playlist in the UI
+ * Updates the playlist display with current streams and provides editing controls
+ * 
+ * This function populates the playlist management interface with the current streams.
+ * For each stream, it creates editable input fields for name and URL, along with
+ * a delete button. It also handles the empty playlist case with a helpful message.
+ */
 function renderPlaylist() {
     const playlistBody = document.getElementById('playlistBody');
     if (!playlistBody) {
@@ -840,6 +866,19 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+/**
+ * @brief Add a new stream to the playlist
+ * Validates user input and adds a new stream to the playlist
+ * 
+ * This function handles the addition of a new stream to the playlist. It performs
+ * comprehensive validation on both the stream name and URL including:
+ * - Non-empty validation
+ * - Length limits (128 chars for name, 256 chars for URL)
+ * - URL format validation (must start with http:// or https://)
+ * - Proper URL structure validation
+ * 
+ * After successful validation, the stream is added to the playlist and the UI is updated.
+ */
 function addStream() {
     const name = document.getElementById('name');
     const url = document.getElementById('url');
@@ -899,6 +938,19 @@ function addStream() {
     name.focus(); // Focus back to name field for next entry
 }
 
+/**
+ * @brief Update a stream field in the playlist
+ * Validates and updates a specific field (name or URL) of a stream
+ * 
+ * This function updates either the name or URL field of a stream at the specified index.
+ * It performs appropriate validation based on the field being updated:
+ * - For URLs: Validates format, structure, and length (max 256 chars)
+ * - For names: Validates non-empty and length (max 128 chars)
+ * 
+ * @param {number} index - The index of the stream to update
+ * @param {string} field - The field to update ('name' or 'url')
+ * @param {string} value - The new value for the field
+ */
 function updateStream(index, field, value) {
     if (index < 0 || index >= streams.length) {
         return;
@@ -1441,6 +1493,22 @@ async function downloadM3U() {
 }
 
 // Convert M3U content to JSON
+/**
+ * @brief Convert M3U playlist content to JSON format
+ * Parses M3U format and converts it to the application's JSON stream format
+ * 
+ * This function parses M3U playlist content and converts it to the JSON format
+ * used by the application. It handles the #EXTM3U header, #EXTINF metadata lines,
+ * and URL lines. For each valid stream entry, it creates a JSON object with
+ * name and URL properties.
+ * 
+ * The function performs validation on both names (max 128 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 256 chars).
+ * 
+ * @param {string} m3uContent - The raw M3U file content as a string
+ * @returns {string} - JSON string representation of the playlist
+ * @throws {Error} - If conversion fails due to parsing errors
+ */
 function convertM3UToJSON(m3uContent) {
     try {
         const lines = m3uContent.split('\n');
@@ -1499,6 +1567,21 @@ function convertM3UToJSON(m3uContent) {
 }
 
 // Convert JSON content to M3U
+/**
+ * @brief Convert JSON playlist to M3U format
+ * Converts the application's JSON stream format to M3U playlist format
+ * 
+ * This function converts the application's JSON playlist format to M3U format
+ * for export. It generates a proper M3U header (#EXTM3U) and creates
+ * #EXTINF metadata lines for each stream followed by the URL.
+ * 
+ * The function performs validation on both names (max 128 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 256 chars) and skips invalid entries.
+ * 
+ * @param {Array} jsonData - Array of stream objects with name and url properties
+ * @returns {string} - M3U formatted playlist as a string
+ * @throws {Error} - If conversion fails due to invalid data format
+ */
 function convertJSONToM3U(jsonData) {
     try {
         let m3uContent = '#EXTM3U\n';
