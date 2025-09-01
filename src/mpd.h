@@ -32,8 +32,8 @@ struct StreamInfo;
  */
 class MPDInterface {
 private:
-  WiFiClient mpdClient;
   WiFiServer& mpdServer;
+  WiFiClient mpdClient;
 
   // References to global variables
   char* streamTitleRef;
