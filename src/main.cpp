@@ -1668,6 +1668,15 @@ void handlePlay() {
   }
   // Stop any currently playing stream
   stopStream();
+  
+  // Find the stream in the playlist and update currentSelection
+  for (int i = 0; i < playlistCount; i++) {
+    if (strcmp(playlist[i].url, url.c_str()) == 0) {
+      currentSelection = i;
+      break;
+    }
+  }
+  
   // Start the stream
   startStream(url.c_str(), name.c_str());
   updateDisplay();
