@@ -2959,6 +2959,13 @@ if (command.startsWith("stop")) {
       String searchTerm = command.substring(7);
       searchTerm.trim();
       
+      // Extract search string (everything after the first space)
+      int firstSpace = searchTerm.indexOf(' ');
+      if (firstSpace != -1) {
+        searchTerm = searchTerm.substring(firstSpace + 1);
+        searchTerm.trim();
+      }
+      
       // Remove quotes if present
       if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
         searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
@@ -2986,6 +2993,13 @@ if (command.startsWith("stop")) {
     if (command.length() > 5) {
       String searchTerm = command.substring(5);
       searchTerm.trim();
+      
+      // Extract search string (everything after the first space)
+      int firstSpace = searchTerm.indexOf(' ');
+      if (firstSpace != -1) {
+        searchTerm = searchTerm.substring(firstSpace + 1);
+        searchTerm.trim();
+      }
       
       // Remove quotes if present
       if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
