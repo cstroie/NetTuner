@@ -80,8 +80,8 @@ void audio_bitrate(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Bitrate: ");
     Serial.println(info);
-    // Convert string to integer bitrate in kbps
-    int newBitrate = atoi(info);
+    // Convert string to integer bitrate and convert to kbps (divide by 1000)
+    int newBitrate = atoi(info) / 1000;
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
