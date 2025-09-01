@@ -76,7 +76,7 @@ unsigned long playStartTime = 0;   ///< When playback started (millis)
 unsigned long totalPlayTime = 0;   ///< Total play time in seconds
 
 // Build time for MPD Last-Modified timestamps
-const char* BUILD_TIME = __DATE__ " " __TIME__;
+const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 
 /**
  * @brief Audio processing components
@@ -99,13 +99,13 @@ void audio_showstreamtitle(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Stream title: ");
     Serial.println(info);
-    
     // Update stream title if it has changed
     if (strcmp(streamTitle, info) != 0) {
       strncpy(streamTitle, info, sizeof(streamTitle) - 1);
       streamTitle[sizeof(streamTitle) - 1] = '\0';
       updateDisplay();
-      sendStatusToClients();  // Notify clients of title change
+      // Notify clients of stream title change
+      sendStatusToClients();
     }
   }
 }
@@ -119,13 +119,13 @@ void audio_showstation(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Station name: ");
     Serial.println(info);
-    
     // Update current stream name if it has changed and we're not already using a custom name
     if (strcmp(streamName, info) != 0) {
       strncpy(streamName, info, sizeof(streamName) - 1);
       streamName[sizeof(streamName) - 1] = '\0';
       updateDisplay();
-      sendStatusToClients();  // Notify clients of station name change
+      // Notify clients of station name change
+      sendStatusToClients();
     }
   }
 }
@@ -139,15 +139,14 @@ void audio_bitrate(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Bitrate: ");
     Serial.println(info);
-    
     // Convert string to integer
     int newBitrate = atoi(info);
-    
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
       updateDisplay();
-      sendStatusToClients();  // Notify clients of bitrate change
+      // Notify clients of bitrate change
+      sendStatusToClients();
     }
   }
 }
@@ -381,10 +380,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  */
 void setup() {
   Serial.begin(115200);
-  
   // Initialize start time for uptime tracking
   startTime = millis() / 1000;  // Store in seconds
-  
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
@@ -447,7 +444,6 @@ void setup() {
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
-    
     // Try each configured network
     for (int i = 0; i < wifiNetworkCount; i++) {
       if (strlen(ssid[i]) > 0) {
@@ -460,7 +456,6 @@ void setup() {
           Serial.print(".");
           wifiAttempts++;
         }
-        
         if (WiFi.status() == WL_CONNECTED) {
           Serial.printf("Connected to %s\n", ssid[i]);
           connected = true;
@@ -528,11 +523,9 @@ void setup() {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
     playlistCount = 0;
   }
-  
   if (currentSelection < 0 || currentSelection >= playlistCount) {
     currentSelection = 0;
   }
-  
   
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
@@ -609,15 +602,12 @@ void handleBoardButton() {
   static bool lastButtonState = HIGH;  // Keep track of button state
   static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
-
   // Handle board button press for play/stop toggle
   int buttonReading = digitalRead(config.board_button);
-  
   // Check if button state changed (debounce)
   if (buttonReading != lastButtonState) {
     lastDebounceTime = millis();
   }
-  
   // If button state has been stable for debounce delay
   if ((millis() - lastDebounceTime) > debounceDelay) {
     // If button is pressed (LOW due to pull-up)
@@ -645,13 +635,11 @@ void handleBoardButton() {
 
 void loop() {
   static unsigned long streamStoppedTime = 0;
-
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   handleMPDClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
-  
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
@@ -660,7 +648,6 @@ void loop() {
     }
     lastDisplayUpdate = millis();
   }
-  
   // Check audio connection status with improved error recovery
   if (audio) {
     // Check if audio is still connected
@@ -721,7 +708,6 @@ void loop() {
             delay(500);
             wifiAttempts++;
           }
-          
           if (WiFi.status() == WL_CONNECTED) {
             Serial.printf("Reconnected to %s\n", ssid[i]);
             // Update display with new IP
@@ -759,8 +745,6 @@ void handleWiFiConfig() {
   file.close();
 }
 
-
-
 /**
  * @brief Handle WiFi configuration API request
  * Returns the current WiFi configuration as JSON
@@ -768,17 +752,13 @@ void handleWiFiConfig() {
  */
 void handleWiFiConfigAPI() {
   String json = "[";
-  
   for (int i = 0; i < wifiNetworkCount; i++) {
     if (i > 0) json += ",";
     json += "\"" + String(ssid[i]) + "\"";
   }
-  
   json += "]";
   server.send(200, "application/json", json);
 }
-
-
 
 /**
  * @brief Handle WiFi network scan
@@ -789,8 +769,8 @@ void handleWiFiConfigAPI() {
 void handleWiFiScan() {
   int n = WiFi.scanNetworks();
   String json = "{";
+  // Add available networks
   json += "\"networks\":[";
-  
   for (int i = 0; i < n; ++i) {
     if (i > 0) json += ",";
     json += "{";
@@ -799,7 +779,6 @@ void handleWiFiScan() {
     json += "}";
   }
   json += "],";
-  
   // Add configured networks
   json += "\"configured\":[";
   for (int i = 0; i < wifiNetworkCount; i++) {
@@ -808,7 +787,7 @@ void handleWiFiScan() {
   }
   json += "]";
   json += "}";
-  
+  // Send the JSON response
   server.send(200, "application/json", json);
 }
 
@@ -881,7 +860,7 @@ void handleWiFiSave() {
  */
 void handleWiFiStatus() {
   String json = "{";
-  
+  // Add connection status
   if (WiFi.status() == WL_CONNECTED) {
     json += "\"connected\":true,";
     json += "\"ssid\":\"" + WiFi.SSID() + "\",";
@@ -890,8 +869,8 @@ void handleWiFiStatus() {
   } else {
     json += "\"connected\":false";
   }
-  
   json += "}";
+  // Send the JSON response
   server.send(200, "application/json", json);
 }
 
@@ -901,37 +880,38 @@ void handleWiFiStatus() {
  * the ssid and password arrays. It supports the new JSON array format.
  */
 void loadWiFiCredentials() {
+  // Check if the WiFi config file exists
   if (!SPIFFS.exists("/wifi.json")) {
     Serial.println("WiFi config file not found");
     return;
   }
-  
+  // Open the WiFi config file
   File file = SPIFFS.open("/wifi.json", "r");
   if (!file) {
     Serial.println("Failed to open WiFi config file");
     return;
   }
-  
+  // Get the size of the file
   size_t size = file.size();
   if (size > 2048) {  // Increased size for array format
     Serial.println("WiFi config file too large");
     file.close();
     return;
   }
-  
+  // Check if the file is empty
   if (size == 0) {
     Serial.println("WiFi config file is empty");
     file.close();
     return;
   }
-  
+  // Allocate buffer for file content
   std::unique_ptr<char[]> buf(new char[size + 1]);
   if (!buf) {
     Serial.println("Error: Failed to allocate memory for WiFi config file");
     file.close();
     return;
   }
-  
+  // Read the file content
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Failed to read WiFi config file");
     file.close();
@@ -939,7 +919,7 @@ void loadWiFiCredentials() {
   }
   buf[size] = '\0';
   file.close();
-  
+  // Parse the JSON document
   DynamicJsonDocument doc(2048);  // Increased size for array format
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
@@ -947,15 +927,14 @@ void loadWiFiCredentials() {
     Serial.println(error.c_str());
     return;
   }
-  
-  // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
+  // Handle the JSON array format [{"ssid": "name", "password": "pass"}, ...]
   if (doc.is<JsonArray>()) {
     JsonArray networks = doc.as<JsonArray>();
     wifiNetworkCount = 0;
-    
+    // Iterate through each network object
     for (JsonObject network : networks) {
       if (wifiNetworkCount >= MAX_WIFI_NETWORKS) break;
-      
+      // Check if SSID exists
       if (network.containsKey("ssid")) {
         const char* ssidValue = network["ssid"];
         if (ssidValue) {
@@ -964,7 +943,7 @@ void loadWiFiCredentials() {
         } else {
           ssid[wifiNetworkCount][0] = '\0';
         }
-        
+        // Check if password exists
         if (network.containsKey("password")) {
           const char* pwdValue = network["password"];
           if (pwdValue) {
@@ -976,12 +955,12 @@ void loadWiFiCredentials() {
         } else {
           password[wifiNetworkCount][0] = '\0';
         }
-        
+        // Increment the network count
         wifiNetworkCount++;
       }
     }
   }
-  
+  // Print loaded WiFi credentials
   Serial.println("Loaded WiFi credentials from SPIFFS");
   for (int i = 0; i < wifiNetworkCount; i++) {
     Serial.printf("SSID[%d]: %s\n", i, ssid[i]);
@@ -1015,38 +994,37 @@ void loadConfig() {
     config.display_width = DEFAULT_DISPLAY_WIDTH;
     config.display_height = DEFAULT_DISPLAY_HEIGHT;
     config.display_address = DEFAULT_DISPLAY_ADDR;
-    
     // Save the default configuration to file
     saveConfig();
     return;
   }
-  
+  // Open the config file
   File file = SPIFFS.open("/config.json", "r");
   if (!file) {
     Serial.println("Failed to open config file");
     return;
   }
-  
+  // Get the size of the file
   size_t size = file.size();
   if (size > 1024) {
     Serial.println("Config file too large");
     file.close();
     return;
   }
-  
+  // Check if the file is empty
   if (size == 0) {
     Serial.println("Config file is empty");
     file.close();
     return;
   }
-  
+  // Allocate buffer for file content
   std::unique_ptr<char[]> buf(new char[size + 1]);
   if (!buf) {
     Serial.println("Error: Failed to allocate memory for config file");
     file.close();
     return;
   }
-  
+  // Read the file content
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Failed to read config file");
     file.close();
@@ -1054,10 +1032,7 @@ void loadConfig() {
   }
   buf[size] = '\0';
   file.close();
-  // DEBUG
-  Serial.print("Config JSON: ");
-  Serial.println(String(buf.get()));
-  
+  // Parse the JSON document
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
@@ -1065,7 +1040,6 @@ void loadConfig() {
     Serial.println(error.c_str());
     return;
   }
-  
   // Load configuration values, using defaults for missing values
   config.i2s_dout = doc.containsKey("i2s_dout") ? doc["i2s_dout"] : DEFAULT_I2S_DOUT;
   config.i2s_bclk = doc.containsKey("i2s_bclk") ? doc["i2s_bclk"] : DEFAULT_I2S_BCLK;
@@ -1080,7 +1054,7 @@ void loadConfig() {
   config.display_width = doc.containsKey("display_width") ? doc["display_width"] : DEFAULT_DISPLAY_WIDTH;
   config.display_height = doc.containsKey("display_height") ? doc["display_height"] : DEFAULT_DISPLAY_HEIGHT;
   config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
-  
+  // Print loaded configuration
   Serial.println("Loaded configuration from SPIFFS");
 }
 
@@ -1089,6 +1063,7 @@ void loadConfig() {
  * This function saves the current configuration to config.json in SPIFFS
  */
 void saveConfig() {
+  // Create a JSON document
   DynamicJsonDocument doc(1024);
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
@@ -1103,13 +1078,13 @@ void saveConfig() {
   doc["display_width"] = config.display_width;
   doc["display_height"] = config.display_height;
   doc["display_address"] = config.display_address;
-  
+  // Save the JSON document to SPIFFS
   File file = SPIFFS.open("/config.json", "w");
   if (!file) {
     Serial.println("Failed to open config file for writing");
     return;
   }
-  
+  // Serialize the JSON document to the file
   size_t bytesWritten = serializeJson(doc, file);
   if (bytesWritten == 0) {
     Serial.println("Failed to write config to file");
@@ -1117,7 +1092,7 @@ void saveConfig() {
     return;
   }
   file.close();
-  
+  // Print success message
   Serial.println("Saved configuration to SPIFFS");
 }
 
@@ -1129,8 +1104,7 @@ void saveConfig() {
 void saveWiFiCredentials() {
   DynamicJsonDocument doc(2048); // Increased size for array format
   JsonArray networks = doc.to<JsonArray>();
-  
-  // Save networks in the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
+  // Save networks in the JSON array format [{"ssid": "name", "password": "pass"}, ...]
   for (int i = 0; i < wifiNetworkCount; i++) {
     JsonObject network = networks.createNestedObject();
     network["ssid"] = ssid[i];
@@ -1138,13 +1112,15 @@ void saveWiFiCredentials() {
       network["password"] = password[i];
     }
   }
-  
+  // Print saved WiFi credentials
+  Serial.println("Saved WiFi credentials to SPIFFS");
+  // Open the WiFi config file
   File file = SPIFFS.open("/wifi.json", "w");
   if (!file) {
     Serial.println("Failed to open WiFi config file for writing");
     return;
   }
-  
+  // Serialize the JSON document to the file
   size_t bytesWritten = serializeJson(doc, file);
   if (bytesWritten == 0) {
     Serial.println("Failed to write WiFi config to file");
@@ -1152,7 +1128,7 @@ void saveWiFiCredentials() {
     return;
   }
   file.close();
-  
+  // Print success message
   Serial.println("Saved WiFi credentials to SPIFFS");
 }
 
@@ -1185,7 +1161,6 @@ void startStream(const char* url, const char* name) {
     // Stop first
     audio->stopSong();
   }
-
   // If no URL provided, check if we have a current stream to resume
   if (!url || strlen(url) == 0) {
     if (strlen(streamURL) > 0) {
@@ -1203,27 +1178,24 @@ void startStream(const char* url, const char* name) {
       return;
     }
   }
-
   // Validate inputs
   if (!url || !name) {
     Serial.println("Error: NULL pointer passed to startStream");
     updateDisplay();
     return;
   }
-  
+  // Check for empty strings
   if (strlen(url) == 0 || strlen(name) == 0) {
     Serial.println("Error: Empty URL or name passed to startStream");
     updateDisplay();
     return;
   }
-  
   // Validate URL format
   if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
     Serial.println("Error: Invalid URL format");
     updateDisplay();
     return;
   }
-  
   // Keep the stream url and name if they are new
   if (not resume) {
     strncpy(streamURL, url, sizeof(streamURL) - 1);
@@ -1231,16 +1203,12 @@ void startStream(const char* url, const char* name) {
     strncpy(streamName, name, sizeof(streamName) - 1);
     streamName[sizeof(streamName) - 1] = '\0';
   };
-
   // Set playback status to playing
   isPlaying = true;
-  
   // Track play time
   playStartTime = millis() / 1000;  // Store in seconds
-  
   // Turn on LED when playing
   digitalWrite(config.led_pin, HIGH);
-  
   // Use ESP32-audioI2S to play the stream
   if (audio) {
     audioConnected = audio->connecttohost(url);
@@ -1253,7 +1221,6 @@ void startStream(const char* url, const char* name) {
       Serial.println("Successfully connected to audio stream");
     }
   }
-  
   updateDisplay();  // Refresh the display with new playback info
   sendStatusToClients();  // Notify clients of status change
 }
@@ -1270,22 +1237,18 @@ void stopStream() {
     audio->stopSong();
   }
   audioConnected = false;
-  
   isPlaying = false;             // Set playback status to stopped
   streamURL[0] = '\0';       // Clear current stream URL
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
   bitrate = 0;                   // Clear bitrate
-  
   // Update total play time when stopping
   if (playStartTime > 0) {
     totalPlayTime += (millis() / 1000) - playStartTime;
     playStartTime = 0;
   }
-  
   // Turn off LED when stopped
   digitalWrite(config.led_pin, LOW);
-  
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
 }
@@ -1298,7 +1261,6 @@ void stopStream() {
  */
 void loadPlaylist() {
   playlistCount = 0;  // Reset playlist count
-  
   // If playlist file doesn't exist, create a default empty one
   if (!SPIFFS.exists("/playlist.json")) {
     // Create default playlist
@@ -1312,14 +1274,12 @@ void loadPlaylist() {
     }
     return;
   }
-  
   // Open the playlist file for reading
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     Serial.println("Error: Failed to open playlist file for reading");
     return;  // Return if file couldn't be opened
   }
-  
   // Check file size
   size_t size = file.size();
   if (size == 0) {
@@ -1327,13 +1287,11 @@ void loadPlaylist() {
     file.close();
     return;
   }
-  
   if (size > 4096) {
     Serial.println("Error: Playlist file too large");
     file.close();
     return;
   }
-  
   // Allocate buffer for file content
   std::unique_ptr<char[]> buf(new char[size + 1]);
   if (!buf) {
@@ -1341,7 +1299,7 @@ void loadPlaylist() {
     file.close();
     return;
   }
-  
+  // Read the file content into the buffer
   if (file.readBytes(buf.get(), size) != size) {
     Serial.println("Error: Failed to read playlist file");
     file.close();
@@ -1349,15 +1307,13 @@ void loadPlaylist() {
   }
   buf[size] = '\0';
   file.close();
-  
   // Parse the JSON content
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, buf.get());
-  
+  // Check for JSON parsing errors
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
-    
     // Try to recover by creating a backup and a new empty playlist
     Serial.println("Attempting to recover by creating backup and new playlist");
     if (SPIFFS.exists("/playlist.json.bak")) {
@@ -1366,7 +1322,6 @@ void loadPlaylist() {
     if (SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
       Serial.println("Created backup of playlist file");
     }
-    
     // Create a new empty playlist
     File newFile = SPIFFS.open("/playlist.json", "w");
     if (newFile) {
@@ -1378,17 +1333,15 @@ void loadPlaylist() {
     }
     return;
   }
-  
+  // Check if the JSON document is an array
   if (!doc.is<JsonArray>()) {
     Serial.println("Error: Playlist JSON is not an array");
-    
     // Try to recover by creating a backup and a new empty playlist
     Serial.println("Attempting to recover by creating backup and new playlist");
     if (SPIFFS.exists("/playlist.json.bak")) {
       SPIFFS.remove("/playlist.json.bak");
     }
     SPIFFS.rename("/playlist.json", "/playlist.json.bak");
-    
     // Create a new empty playlist
     File newFile = SPIFFS.open("/playlist.json", "w");
     if (newFile) {
@@ -1400,20 +1353,19 @@ void loadPlaylist() {
     }
     return;
   }
-  
+  // Populate the playlist array
   JsonArray array = doc.as<JsonArray>();
   playlistCount = 0;
-  
+  // Iterate through the JSON array
   for (JsonObject item : array) {
     if (playlistCount >= 20) {
       Serial.println("Warning: Playlist limit reached (20 entries)");
       break;
     }
-    
+    // Check if the item has the required keys
     if (item.containsKey("name") && item.containsKey("url")) {
       const char* name = item["name"];
       const char* url = item["url"];
-      
       // Validate name and URL
       if (name && url && strlen(name) > 0 && strlen(url) > 0) {
         // Validate URL format
@@ -1431,10 +1383,14 @@ void loadPlaylist() {
       }
     }
   }
-  
-  Serial.print("Loaded ");
-  Serial.print(playlistCount);
-  Serial.println(" streams from playlist");
+  // Check if any valid streams were loaded
+  if (playlistCount == 0) {
+    Serial.println("Error: No valid streams found in playlist");
+  } else {
+    Serial.print("Loaded ");
+    Serial.print(playlistCount);
+    Serial.println(" streams from playlist");
+  }
 }
 
 /**
@@ -1447,7 +1403,6 @@ void savePlaylist() {
   // Create JSON array
   DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
-  
   // Add playlist entries
   for (int i = 0; i < playlistCount; i++) {
     // Validate URL format before saving
@@ -1456,12 +1411,11 @@ void savePlaylist() {
       Serial.println("Warning: Skipping stream with invalid URL format during save");
       continue;
     }
-    
+    // Create JSON object for the playlist entry
     JsonObject item = array.createNestedObject();
     item["name"] = playlist[i].name;
     item["url"] = playlist[i].url;
   }
-  
   // Create backup of existing playlist file
   if (SPIFFS.exists("/playlist.json")) {
     if (SPIFFS.exists("/playlist.json.bak")) {
@@ -1471,12 +1425,10 @@ void savePlaylist() {
       Serial.println("Warning: Failed to create backup of playlist file");
     }
   }
-  
   // Save to file
   File file = SPIFFS.open("/playlist.json", "w");
   if (!file) {
     Serial.println("Error: Failed to open playlist file for writing");
-    
     // Try to restore from backup
     if (SPIFFS.exists("/playlist.json.bak")) {
       if (SPIFFS.rename("/playlist.json.bak", "/playlist.json")) {
@@ -1487,13 +1439,11 @@ void savePlaylist() {
     }
     return;
   }
-  
   // Write JSON to file with better error handling
   size_t bytesWritten = serializeJson(array, file);
   if (bytesWritten == 0) {
     Serial.println("Error: Failed to write playlist to file");
     file.close();
-    
     // Try to restore from backup
     if (SPIFFS.exists("/playlist.json.bak")) {
       SPIFFS.remove("/playlist.json"); // Remove the failed file
@@ -1505,14 +1455,13 @@ void savePlaylist() {
     }
     return;
   }
+  // Successfully wrote playlist to file
   file.close();
-  file.close();
-  
   // Remove backup file after successful save
   if (SPIFFS.exists("/playlist.json.bak")) {
     SPIFFS.remove("/playlist.json.bak");
   }
-  
+  // Print success message
   Serial.println("Saved playlist to file");
 }
 
@@ -1527,10 +1476,8 @@ void setupRotaryEncoder() {
   pinMode(config.rotary_clk, INPUT_PULLUP);   // Enable internal pull-up resistor
   pinMode(config.rotary_dt, INPUT_PULLUP);    // Enable internal pull-up resistor
   pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
-  
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
-  
   // Attach interrupt handler for rotary encoder button press
   attachInterrupt(digitalPinToInterrupt(config.rotary_sw), []() {
     rotaryEncoder.handleButtonPress();
@@ -1556,12 +1503,10 @@ void rotaryISR() {
  */
 void handleRotary() {
   static int lastRotaryPosition = 0;
-  
   // Check if rotary encoder position has changed
   int currentPosition = rotaryEncoder.getPosition();
   if (currentPosition != lastRotaryPosition) {
     int diff = currentPosition - lastRotaryPosition;
-    
     // Process clockwise rotation
     if (diff > 0) {
       // Rotate clockwise - volume up or next item
@@ -1595,11 +1540,9 @@ void handleRotary() {
         }
       }
     }
-    
     lastRotaryPosition = currentPosition;  // Update last position
     updateDisplay();                      // Refresh display with new values
   }
-  
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
     lastActivityTime = millis(); // Update activity time
@@ -1607,7 +1550,6 @@ void handleRotary() {
       displayOn = true;
       updateDisplay(); // Turn display back on and update
     }
-    
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
@@ -1634,7 +1576,6 @@ void handleRotary() {
 void handleDisplayTimeout() {
   const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
   unsigned long currentTime = millis();
-  
   // If we're playing, keep the display on
   if (isPlaying) {
     lastActivityTime = currentTime;
@@ -1644,7 +1585,6 @@ void handleDisplayTimeout() {
     }
     return;
   }
-  
   // If we're not playing, check for timeout
   if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
     if (displayOn) {
@@ -1681,7 +1621,7 @@ void handleSimpleWebPage() {
     // Handle form submission
     if (server.hasArg("action")) {
       String action = server.arg("action");
-      
+      // Perform action based on form input
       if (action == "play") {
         // Play selected stream
         if (server.hasArg("stream") && playlistCount > 0) {
@@ -1703,12 +1643,10 @@ void handleSimpleWebPage() {
       }
     }
   }
-  
   // Serve the HTML page
   String html = "<!DOCTYPE html><html>";
   html += "<head><title>NetTuner</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\"></head><body>";
   html += "<header><h1>NetTuner</h1></header>";
-  
   html += "<main>";
   // Show current status
   html += "<section>";
@@ -1716,7 +1654,6 @@ void handleSimpleWebPage() {
   html += "<p><b>Status:</b> ";
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
-  
   // Show current stream name
   if (isPlaying && streamName[0]) {
     html += "<p><b>Current Stream:</b> ";
@@ -1728,7 +1665,6 @@ void handleSimpleWebPage() {
     html += "</p>";
   }
   html += "</section>";
-  
   // Play/Stop buttons
   html += "<section>";
   html += "<h2>Controls</h2>";
@@ -1737,7 +1673,6 @@ void handleSimpleWebPage() {
   html += "<button name='action' value='stop' type='submit'>Stop</button>";
   html += "</form>";
   html += "</section>";
-  
   // Stream selection
   html += "<section>";
   html += "<h2>Playlist</h2>";
@@ -1745,7 +1680,7 @@ void handleSimpleWebPage() {
     html += "<form method='post'>";
     html += "<label for='stream'>Select Stream:</label>";
     html += "<select name='stream' id='stream'>";
-    
+    // Populate the dropdown with available streams
     for (int i = 0; i < playlistCount; i++) {
       html += "<option value='" + String(i) + "'";
       if (i == currentSelection) {
@@ -1753,7 +1688,6 @@ void handleSimpleWebPage() {
       }
       html += ">" + String(playlist[i].name) + "</option>";
     }
-    
     html += "</select>";
     html += "<button name='action' value='play' type='submit'>Play Selected</button>";
     html += "</form>";
@@ -1762,7 +1696,6 @@ void handleSimpleWebPage() {
   }
   html += "</section>";
   html += "</main>";
-  
   html += "<footer><p>NetTuner Simple Interface</p></footer>";
   html += "</body></html>";
   server.send(200, "text/html", html);
@@ -1828,18 +1761,16 @@ void handleGetStreams() {
       file.close();
     }
   }
-  
   // Return JSON format (default)
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     server.send(200, "application/json", "[]");
     return;
   }
-  
+  // Stream the file contents
   server.streamFile(file, "application/json");
   file.close();
 }
-
 
 /**
  * @brief Handle POST request for streams
@@ -1850,75 +1781,64 @@ void handleGetStreams() {
 void handlePostStreams() {
   // Get the JSON data from the request
   String jsonData = server.arg("plain");
-  
   // Validate that we received data
   if (jsonData.length() == 0) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
     return;
   }
-  
   // Validate JSON format (should be an array)
   jsonData.trim();
   if (!jsonData.startsWith("[") || !jsonData.endsWith("]")) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format - expected array\"}");
     return;
   }
-  
   // Parse the JSON data
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, jsonData);
-  
+  // Check for JSON parsing errors
   if (error) {
     Serial.print("JSON parsing error: ");
     Serial.println(error.c_str());
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
     return;
   }
-  
   // Ensure it's an array
   if (!doc.is<JsonArray>()) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"JSON root must be an array\"}");
     return;
   }
-  
+  // Get the array
   JsonArray array = doc.as<JsonArray>();
-  
   // Validate array size
   if (array.size() > MAX_PLAYLIST_SIZE) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Playlist exceeds maximum size\"}");
     return;
   }
-  
   // Clear existing playlist
   playlistCount = 0;
-  
   // Process each item in the array
   for (JsonObject item : array) {
     if (playlistCount >= MAX_PLAYLIST_SIZE) {
       break;
     }
-    
     // Validate required fields
     if (!item.containsKey("name") || !item.containsKey("url")) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Each item must have 'name' and 'url' fields\"}");
       return;
     }
-    
+    // Extract name and url
     const char* name = item["name"];
     const char* url = item["url"];
-    
     // Validate data
     if (!name || !url || strlen(name) == 0 || strlen(url) == 0) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Name and URL cannot be empty\"}");
       return;
     }
-    
     // Validate URL format
     if (!VALIDATE_URL(url)) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format\"}");
       return;
     }
-    
     // Add to playlist
     strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
     playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
@@ -1926,15 +1846,12 @@ void handlePostStreams() {
     playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
     playlistCount++;
   }
-  
   // Save to SPIFFS
   savePlaylist();
-  
   // Send success response as JSON
   String response = "{\"status\":\"success\",\"message\":\"Playlist updated successfully\"}";
   server.send(200, "application/json", response);
 }
-
 
 /**
  * @brief Handle play request
@@ -1948,51 +1865,49 @@ void handlePlay() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
-    
+    // Check for JSON parsing errors
     if (error) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
       return;
     }
-    
+    // Check for required parameters
     if (!doc.containsKey("url") || !doc.containsKey("name")) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters: url and name\"}");
       return;
     }
-    
+    // Extract URL and name
     String url = doc["url"].as<String>();
     String name = doc["name"].as<String>();
-    
+    // Validate extracted values
     if (url.length() == 0 || name.length() == 0) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
       return;
     }
-    
     // Validate URL format
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
       return;
     }
-    
+    // Start the stream
     startStream(url.c_str(), name.c_str());
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
   } else if (server.hasArg("url") && server.hasArg("name")) {
-    // Handle form data
+    // Handle form data for the simple web page
     String url = server.arg("url");
     String name = server.arg("name");
-    
+    // Validate extracted values
     if (url.length() == 0 || name.length() == 0) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
       return;
     }
-    
     // Validate URL format
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
       return;
     }
-    
+    // Start the stream
     startStream(url.c_str(), name.c_str());
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
