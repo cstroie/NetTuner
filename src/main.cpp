@@ -2481,7 +2481,7 @@ void handleMPDClient() {
       mpdClient = mpdServer.available();
       // Send MPD welcome message
       if (mpdClient && mpdClient.connected()) {
-        mpdClient.print("OK MPD 0.20.0\n");
+        mpdClient.print("OK MPD 0.21.0\n");
       }
     } else {
       // Reject connection if we already have a client
@@ -2519,7 +2519,7 @@ String mpdResponseOK() {
  * @return Error response string
  */
 String mpdResponseError(const String& message) {
-  return "ACK [0@0] {" + message + "}\n";
+  return "ACK [5@0] {} " + message + "\n";
 }
 
 /**
@@ -2690,7 +2690,7 @@ if (command.startsWith("stop")) {
     mpdClient.print("outputid: 0\n");
     mpdClient.print("outputname: I2S (External DAC)\n");
     mpdClient.print("outputenabled: 1\n");
-    mpdClient.print("attribute: allowed_formats=\n");
+    //mpdClient.print("attribute: allowed_formats=\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("disableoutput")) {
     // Disable output command
