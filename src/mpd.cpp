@@ -40,9 +40,16 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
       playlistRef(playlist), audioRef(audio) {}
 
 /**
-  * @brief Handle MPD client connections and process commands
-  * Manages the MPD protocol connection state and command processing
-  */
+ * @brief Handle MPD client connections and process commands
+ * Manages the MPD protocol connection state and command processing
+ * 
+ * This function handles new client connections, processes incoming MPD commands,
+ * and manages special modes like command lists and idle mode. It also handles
+ * client disconnections and ensures proper cleanup.
+ * 
+ * In idle mode, the function monitors for changes in playback status and stream
+ * information, sending notifications to clients when changes occur.
+ */
 void MPDInterface::handleClient() {
     if (mpdServer.hasClient()) {
       if (!mpdClient || !mpdClient.connected()) {
@@ -282,9 +289,19 @@ void MPDInterface::handleClient() {
    * @brief Handle MPD commands
    * Processes MPD protocol commands with support for MPD protocol version 0.23.0
    * @param command The command string to process
+   * 
    * This function processes MPD protocol commands and controls the player accordingly.
    * It supports a subset of MPD commands including playback control, volume control,
    * playlist management, status queries, and search functionality.
+   * 
+   * Supported commands include:
+   * - Playback: play, stop, pause, next, previous
+   * - Volume: setvol
+   * - Status: status, currentsong, stats
+   * - Playlist: playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo
+   * - Search: search, find
+   * - System: ping, commands, notcommands, tagtypes, outputs
+   * - Special modes: idle, noidle, command lists
    */
   void MPDInterface::handleMPDCommand(const String& command) {
 if (command.startsWith("stop")) {

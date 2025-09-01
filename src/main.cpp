@@ -1340,6 +1340,9 @@ void handleRotary() {
  * This function manages the OLED display timeout to conserve power. When not playing,
  * the display turns off after 30 seconds of inactivity. The display turns back on
  * when there's activity or when playback starts.
+ * 
+ * When playing, the display stays on but activity time is updated periodically
+ * to prevent immediate timeout after playback stops.
  */
 void handleDisplayTimeout() {
   const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
@@ -2003,6 +2006,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * This function updates the OLED display with the current player status. When playing,
  * it shows the station name, stream title, bitrate, and volume. When stopped, it shows
  * the selected playlist item and volume. It also implements scrolling text for long strings.
+ * 
+ * The function also manages display activity time to control timeout behavior.
+ * During playback, activity time is updated periodically to prevent immediate timeout.
+ * When stopped, activity time is updated on every display update (user interaction).
  */
 void updateDisplay() {
   // Update last activity time only when display is actually being updated for user feedback
