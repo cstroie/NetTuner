@@ -54,7 +54,6 @@ WebSocketsServer webSocket(81);
  * Implements Music Player Daemon protocol version 0.23.0 for external control
  */
 WiFiServer mpdServer(6600);
-WiFiClient mpdClient;
 
 /**
  * @brief Player state variables
@@ -338,13 +337,6 @@ void audioTask(void *pvParameters);
 void loadConfig();
 void saveConfig();
 
-// MPD protocol functions
-void handleMPDClient();
-String mpdResponseOK();
-String mpdResponseError(const String& message);
-void handleMPDCommand(const String& command);
-void handleMPDSearchCommand(const String& command, bool exactMatch);
-void sendPlaylistInfo(int detailLevel = 2);
 
 // Web server handlers
 void handleRoot();
@@ -557,6 +549,9 @@ void setup() {
   mpdServer.begin();
   Serial.println("MPD server started");
   
+  // Create MPD interface instance
+  static MPDInterface mpdInterface(mpdServer);
+  
   // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
   if (result != pdPASS) {
@@ -635,7 +630,7 @@ void loop() {
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
-  handleMPDClient();       // Process MPD commands
+  mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
   
   // Periodically update display for scrolling text animation
