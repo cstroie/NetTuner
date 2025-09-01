@@ -70,6 +70,11 @@ int treble = 0;                    ///< Treble level (-6 to 6 dB)
 unsigned long lastActivityTime = 0; ///< Last activity timestamp
 bool displayOn = true;             ///< Display on/off status
 
+// Statistics tracking
+unsigned long startTime = 0;       ///< System start time (millis)
+unsigned long playStartTime = 0;   ///< When playback started (millis)
+unsigned long totalPlayTime = 0;   ///< Total play time in seconds
+
 /**
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
@@ -373,6 +378,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  */
 void setup() {
   Serial.begin(115200);
+  
+  // Initialize start time for uptime tracking
+  startTime = millis() / 1000;  // Store in seconds
   
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
@@ -1224,6 +1232,9 @@ void startStream(const char* url, const char* name) {
   // Set playback status to playing
   isPlaying = true;
   
+  // Track play time
+  playStartTime = millis() / 1000;  // Store in seconds
+  
   // Turn on LED when playing
   digitalWrite(config.led_pin, HIGH);
   
@@ -1262,6 +1273,12 @@ void stopStream() {
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
   bitrate = 0;                   // Clear bitrate
+  
+  // Update total play time when stopping
+  if (playStartTime > 0) {
+    totalPlayTime += (millis() / 1000) - playStartTime;
+    playStartTime = 0;
+  }
   
   // Turn off LED when stopped
   digitalWrite(config.led_pin, LOW);
@@ -2960,12 +2977,18 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("stats")) {
     // Stats command
+    unsigned long uptime = (millis() / 1000) - startTime;
+    unsigned long playtime = totalPlayTime;
+    if (isPlaying && playStartTime > 0) {
+      playtime += (millis() / 1000) - playStartTime;
+    }
+    
     mpdClient.print("artists: 0\n");
     mpdClient.print("albums: 0\n");
     mpdClient.print("songs: " + String(playlistCount) + "\n");
-    mpdClient.print("uptime: 0\n");
-    mpdClient.print("playtime: 0\n");
-    mpdClient.print("db_playtime: 0\n");
+    mpdClient.print("uptime: " + String(uptime) + "\n");
+    mpdClient.print("playtime: " + String(playtime) + "\n");
+    mpdClient.print("db_playtime: " + String(playtime) + "\n");
     mpdClient.print("db_update: 0\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("ping")) {
