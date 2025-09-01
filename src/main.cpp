@@ -2644,6 +2644,7 @@ String mpdResponseError(const String& message) {
  */
 void sendPlaylistInfo(int detailLevel = 2) {
   for (int i = 0; i < playlistCount; i++) {
+    // For detailLevel 0, only file and title are sent (minimal)
     mpdClient.print("file: " + String(playlist[i].url) + "\n");
     mpdClient.print("Title: " + String(playlist[i].name) + "\n");
     
@@ -2651,12 +2652,12 @@ void sendPlaylistInfo(int detailLevel = 2) {
       // Full detail level
       mpdClient.print("Id: " + String(i) + "\n");
       mpdClient.print("Pos: " + String(i) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-    } else if (detailLevel >= 1) {
+    }
+
+    if (detailLevel >= 1) {
       // Simple detail level
       mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
     }
-    // For detailLevel 0, only file and title are sent (minimal)
   }
 }
 
