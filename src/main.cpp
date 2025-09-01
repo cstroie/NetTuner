@@ -2638,39 +2638,25 @@ String mpdResponseError(const String& message) {
 }
 
 /**
- * @brief Send detailed playlist information
- * Sends playlist information with full metadata including ID, position, and last modified
+ * @brief Send playlist information with configurable detail level
+ * Sends playlist information with different levels of metadata
+ * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
  */
-void sendPlaylistInfo() {
+void sendPlaylistInfo(int detailLevel = 2) {
   for (int i = 0; i < playlistCount; i++) {
     mpdClient.print("file: " + String(playlist[i].url) + "\n");
     mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-    mpdClient.print("Id: " + String(i) + "\n");
-    mpdClient.print("Pos: " + String(i) + "\n");
-    mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-  }
-}
-
-/**
- * @brief Send simple playlist information
- * Sends playlist information with basic metadata
- */
-void sendPlaylistInfoSimple() {
-  for (int i = 0; i < playlistCount; i++) {
-    mpdClient.print("file: " + String(playlist[i].url) + "\n");
-    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-    mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-  }
-}
-
-/**
- * @brief Send minimal playlist information
- * Sends playlist information with only file and title
- */
-void sendPlaylistInfoMinimal() {
-  for (int i = 0; i < playlistCount; i++) {
-    mpdClient.print("file: " + String(playlist[i].url) + "\n");
-    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    
+    if (detailLevel >= 2) {
+      // Full detail level
+      mpdClient.print("Id: " + String(i) + "\n");
+      mpdClient.print("Pos: " + String(i) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    } else if (detailLevel >= 1) {
+      // Simple detail level
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    }
+    // For detailLevel 0, only file and title are sent (minimal)
   }
 }
 
@@ -2730,7 +2716,7 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistinfo")) {
     // Playlist info command
-    sendPlaylistInfo();
+    sendPlaylistInfo(2); // Full detail
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistid")) {
     // Playlist ID command
@@ -2747,18 +2733,12 @@ if (command.startsWith("stop")) {
       mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
     } else {
       // Return all if no specific ID
-      for (int i = 0; i < playlistCount; i++) {
-        mpdClient.print("file: " + String(playlist[i].url) + "\n");
-        mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-        mpdClient.print("Id: " + String(i) + "\n");
-        mpdClient.print("Pos: " + String(i) + "\n");
-        mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
-      }
+      sendPlaylistInfo(2); // Full detail
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("lsinfo")) {
     // List info command
-    sendPlaylistInfoSimple();
+    sendPlaylistInfo(1); // Simple detail
     mpdClient.print(mpdResponseOK());
   } else  if (command.startsWith("play")) {
     // Play command
@@ -2949,11 +2929,11 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("listallinfo")) {
     // List all info command
-    sendPlaylistInfoSimple();
+    sendPlaylistInfo(1); // Simple detail
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("listplaylistinfo")) {
     // List playlist info command
-    sendPlaylistInfoMinimal();
+    sendPlaylistInfo(0); // Minimal detail
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("list")) {
     // List command
