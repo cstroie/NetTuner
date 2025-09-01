@@ -75,6 +75,9 @@ unsigned long startTime = 0;       ///< System start time (millis)
 unsigned long playStartTime = 0;   ///< When playback started (millis)
 unsigned long totalPlayTime = 0;   ///< Total play time in seconds
 
+// Build time for MPD Last-Modified timestamps
+const char* BUILD_TIME = __DATE__ " " __TIME__;
+
 /**
  * @brief Audio processing components
  * These pointers manage the audio streaming pipeline
@@ -2673,7 +2676,7 @@ void sendPlaylistInfo(int detailLevel = 2) {
 
     if (detailLevel >= 1) {
       // Simple detail level
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     }
   }
 }
@@ -2725,7 +2728,7 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
       if (match) {
         mpdClient.print("file: " + String(playlist[i].url) + "\n");
         mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-        mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+        mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
       }
     }
   }
@@ -2801,7 +2804,7 @@ if (command.startsWith("stop")) {
       mpdClient.print("Title: " + String(playlist[id].name) + "\n");
       mpdClient.print("Id: " + String(id) + "\n");
       mpdClient.print("Pos: " + String(id) + "\n");
-      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     } else {
       // Return all if no specific ID
       sendPlaylistInfo(2); // Full detail
@@ -2989,7 +2992,7 @@ if (command.startsWith("stop")) {
     mpdClient.print("uptime: " + String(uptime) + "\n");
     mpdClient.print("playtime: " + String(playtime) + "\n");
     mpdClient.print("db_playtime: " + String(playtime) + "\n");
-    mpdClient.print("db_update: 0\n");
+    mpdClient.print("db_update: " + String(BUILD_TIME) + "\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("ping")) {
     // Ping command
@@ -3025,6 +3028,7 @@ if (command.startsWith("stop")) {
         // Return playlist titles
         for (int i = 0; i < playlistCount; i++) {
           mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+          mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
         }
       }
     }
