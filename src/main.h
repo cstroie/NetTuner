@@ -64,9 +64,9 @@ struct Config {
 class RotaryEncoder;
 
 // Global variables
-extern char streamTitle[];
-extern char streamName[];
-extern char streamURL[];
+extern char streamTitle[128];
+extern char streamName[128];
+extern char streamURL[256];
 extern int bitrate;
 extern volatile bool isPlaying;
 extern int volume;
@@ -87,12 +87,12 @@ extern WiFiServer mpdServer;
 extern Config config;
 extern Adafruit_SSD1306 display;
 extern RotaryEncoder rotaryEncoder;
-extern StreamInfo playlist[];
+extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
 extern int currentSelection;
 extern TaskHandle_t audioTaskHandle;
-extern char ssid[][64];
-extern char password[][64];
+extern char ssid[MAX_WIFI_NETWORKS][64];
+extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
 
 // Constants
