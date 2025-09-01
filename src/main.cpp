@@ -2481,7 +2481,7 @@ void handleMPDClient() {
       mpdClient = mpdServer.available();
       // Send MPD welcome message
       if (mpdClient && mpdClient.connected()) {
-        mpdClient.print("OK MPD 0.21.0\n");
+        mpdClient.print("OK MPD 0.23.0\n");
       }
     } else {
       // Reject connection if we already have a client
@@ -2560,6 +2560,7 @@ if (command.startsWith("stop")) {
       mpdClient.print("nextsong: " + String((currentSelection + 1) % playlistCount) + "\n");
       mpdClient.print("nextsongid: " + String((currentSelection + 1) % playlistCount) + "\n");
     }
+    mpdClient.print("updating_db: 0\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("currentsong")) {
     // Current song command
@@ -2718,26 +2719,139 @@ if (command.startsWith("stop")) {
     // Commands command
     mpdClient.print("command: add\n");
     mpdClient.print("command: clear\n");
+    mpdClient.print("command: close\n");
     mpdClient.print("command: currentsong\n");
     mpdClient.print("command: delete\n");
     mpdClient.print("command: disableoutput\n");
     mpdClient.print("command: enableoutput\n");
+    mpdClient.print("command: find\n");
+    mpdClient.print("command: idle\n");
+    mpdClient.print("command: kill\n");
+    mpdClient.print("command: list\n");
+    mpdClient.print("command: listallinfo\n");
+    mpdClient.print("command: listplaylistinfo\n");
     mpdClient.print("command: load\n");
     mpdClient.print("command: lsinfo\n");
     mpdClient.print("command: next\n");
+    mpdClient.print("command: notcommands\n");
     mpdClient.print("command: outputs\n");
+    mpdClient.print("command: password\n");
     mpdClient.print("command: pause\n");
+    mpdClient.print("command: ping\n");
     mpdClient.print("command: play\n");
+    mpdClient.print("command: playid\n");
     mpdClient.print("command: playlistid\n");
     mpdClient.print("command: playlistinfo\n");
     mpdClient.print("command: previous\n");
     mpdClient.print("command: save\n");
+    mpdClient.print("command: search\n");
+    mpdClient.print("command: seek\n");
+    mpdClient.print("command: seekid\n");
     mpdClient.print("command: setvol\n");
+    mpdClient.print("command: stats\n");
     mpdClient.print("command: status\n");
     mpdClient.print("command: stop\n");
+    mpdClient.print("command: tagtypes\n");
+    mpdClient.print("command: update\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("notcommands")) {
     // Not commands command
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("stats")) {
+    // Stats command
+    mpdClient.print("artists: 0\n");
+    mpdClient.print("albums: 0\n");
+    mpdClient.print("songs: " + String(playlistCount) + "\n");
+    mpdClient.print("uptime: 0\n");
+    mpdClient.print("playtime: 0\n");
+    mpdClient.print("db_playtime: 0\n");
+    mpdClient.print("db_update: 0\n");
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("ping")) {
+    // Ping command
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("password")) {
+    // Password command (not implemented)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("kill")) {
+    // Kill command (not implemented for this player)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("update")) {
+    // Update command (not implemented for this player)
+    mpdClient.print("updating_db: 1\n");
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("listallinfo")) {
+    // List all info command
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("listplaylistinfo")) {
+    // List playlist info command
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("list")) {
+    // List command
+    if (command.length() > 5) {
+      String tagType = command.substring(5);
+      tagType.trim();
+      if (tagType == "artist") {
+        // Return empty list for artist (no local database)
+      } else if (tagType == "album") {
+        // Return empty list for album (no local database)
+      } else if (tagType == "title") {
+        // Return playlist titles
+        for (int i = 0; i < playlistCount; i++) {
+          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+        }
+      }
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("search")) {
+    // Search command
+    // For simplicity, return all playlist items (no actual search implemented)
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("find")) {
+    // Find command
+    // For simplicity, return all playlist items (no actual search implemented)
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    }
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("playid")) {
+    // Play ID command
+    if (command.length() > 7) {
+      int id = command.substring(7).toInt();
+      if (id >= 0 && id < playlistCount) {
+        currentSelection = id;
+        startStream(playlist[id].url, playlist[id].name);
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("No such song"));
+      }
+    } else if (playlistCount > 0 && currentSelection < playlistCount) {
+      startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("No playlist"));
+    }
+  } else if (command.startsWith("seek")) {
+    // Seek command (not implemented for streaming)
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("seekid")) {
+    // Seek ID command (not implemented for streaming)
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("tagtypes")) {
     // Tag types command
