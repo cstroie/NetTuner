@@ -2521,6 +2521,10 @@ void handleMPDClient() {
           // Execute all buffered commands
           for (int i = 0; i < commandListCount; i++) {
             handleMPDCommand(commandList[i]);
+            // Send OK for each command if in command_list_ok_begin mode
+            if (commandListOK) {
+              mpdClient.print(mpdResponseOK());
+            }
           }
           // Reset command list state
           inCommandList = false;
@@ -2532,10 +2536,6 @@ void handleMPDClient() {
           if (commandListCount < 50) {
             commandList[commandListCount] = command;
             commandListCount++;
-            // Send OK for each command if in command_list_ok_begin mode
-            if (commandListOK) {
-              mpdClient.print(mpdResponseOK());
-            }
           } else {
             // Command list too long, send error
             inCommandList = false;
