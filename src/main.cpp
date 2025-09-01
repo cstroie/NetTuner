@@ -2741,22 +2741,28 @@ if (command.startsWith("stop")) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("tagtypes")) {
     // Tag types command
-    mpdClient.print("tagtype: Artist\n");
-    mpdClient.print("tagtype: Album\n");
-    mpdClient.print("tagtype: Title\n");
-    mpdClient.print("tagtype: Track\n");
-    mpdClient.print("tagtype: Name\n");
-    mpdClient.print("tagtype: Genre\n");
-    mpdClient.print("tagtype: Date\n");
-    mpdClient.print("tagtype: Composer\n");
-    mpdClient.print("tagtype: Performer\n");
-    mpdClient.print("tagtype: Comment\n");
-    mpdClient.print("tagtype: Disc\n");
-    mpdClient.print("tagtype: MUSICBRAINZ_ARTISTID\n");
-    mpdClient.print("tagtype: MUSICBRAINZ_ALBUMID\n");
-    mpdClient.print("tagtype: MUSICBRAINZ_ALBUMARTISTID\n");
-    mpdClient.print("tagtype: MUSICBRAINZ_TRACKID\n");
-    mpdClient.print(mpdResponseOK());
+    if (command.equals("tagtypes \"all\"") || command.equals("tagtypes \"clear\"")) {
+      // These commands simply return OK
+      mpdClient.print(mpdResponseOK());
+    } else {
+      // Default tagtypes response
+      mpdClient.print("tagtype: Artist\n");
+      mpdClient.print("tagtype: Album\n");
+      mpdClient.print("tagtype: Title\n");
+      mpdClient.print("tagtype: Track\n");
+      mpdClient.print("tagtype: Name\n");
+      mpdClient.print("tagtype: Genre\n");
+      mpdClient.print("tagtype: Date\n");
+      mpdClient.print("tagtype: Composer\n");
+      mpdClient.print("tagtype: Performer\n");
+      mpdClient.print("tagtype: Comment\n");
+      mpdClient.print("tagtype: Disc\n");
+      mpdClient.print("tagtype: MUSICBRAINZ_ARTISTID\n");
+      mpdClient.print("tagtype: MUSICBRAINZ_ALBUMID\n");
+      mpdClient.print("tagtype: MUSICBRAINZ_ALBUMARTISTID\n");
+      mpdClient.print("tagtype: MUSICBRAINZ_TRACKID\n");
+      mpdClient.print(mpdResponseOK());
+    }
   } else if (command.startsWith("idle")) {
     // Idle command
     mpdClient.print("changed: playlist\n");
