@@ -58,6 +58,7 @@ class WebSocketsServer;
 class WiFiServer;
 class Adafruit_SSD1306;
 class MPDInterface;
+class WiFiClient;
 
 // Structure declarations
 struct StreamInfo {
@@ -145,6 +146,7 @@ extern bool audioConnected;
 extern WebServer server;
 extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
+extern WiFiClient mpdClient;
 extern Config config;
 extern Adafruit_SSD1306 display;
 extern RotaryEncoder rotaryEncoder;

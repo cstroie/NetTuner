@@ -28,6 +28,9 @@ extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
 
+// Define mpdClient as a global variable
+WiFiClient mpdClient;
+
 MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
                volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
                int& currentSelection, StreamInfo* playlist, Audio*& audio)
