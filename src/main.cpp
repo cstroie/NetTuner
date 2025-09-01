@@ -20,7 +20,6 @@
 #include "main.h"
 #include "mpd.h"
 #include <Fonts/FreeSans9pt7b.h>
-#include <Fonts/Adafruit7x13.h>
 
 
 // MPD Interface instance
@@ -1997,7 +1996,7 @@ void updateDisplay() {
     // Display when playing
     if (config.display_height >= 64) {
       // 128x64 display - full information
-      display.setFont(&Adafruit7x13);  // Use Adafruit7x13 font for first line
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.print(">");  // Fixed '>' character
       
@@ -2008,7 +2007,7 @@ void updateDisplay() {
       }
       
       // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 16) {  // ~16 chars fit on a 128px display with Adafruit7x13 font
+      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
         static unsigned long lastTitleScrollTime = 0;
         static int titleScrollOffset = 0;
         static String titleScrollText = "";
@@ -2034,12 +2033,11 @@ void updateDisplay() {
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
-        display.println(displayText.substring(0, 16));
+        display.println(displayText.substring(0, 9));
       } else {
         display.setCursor(16, 0);  // Position after the '>' character
         display.println(title);
       }
-      display.setFont();  // Reset to default font
       
       display.setTextSize(1);  // Normal font for stream info
       // Display stream name (second line)
@@ -2076,7 +2074,7 @@ void updateDisplay() {
       display.println(ipString);
     } else {
       // 128x32 display - limited information
-      display.setFont(&Adafruit7x13);  // Use Adafruit7x13 font for first line
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.print(">");  // Fixed '>' character
       
@@ -2087,7 +2085,7 @@ void updateDisplay() {
       }
       
       // Scroll title if too long for display (excluding the '>' character)
-      if (title.length() > 16) {  // ~16 chars fit on a 128px display with Adafruit7x13 font
+      if (title.length() > 9) {  // ~9 chars fit on a 128px display with '>' and some margin
         static unsigned long lastTitleScrollTime = 0;
         static int titleScrollOffset = 0;
         static String titleScrollText = "";
@@ -2113,12 +2111,11 @@ void updateDisplay() {
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
-        display.println(displayText.substring(0, 16));
+        display.println(displayText.substring(0, 9));
       } else {
         display.setCursor(16, 0);  // Position after the '>' character
         display.println(title);
       }
-      display.setFont();  // Reset to default font
       
       display.setTextSize(1);  // Normal font for stream info
       // Display stream name (second line)
@@ -2139,10 +2136,9 @@ void updateDisplay() {
     // Display when stopped
     if (config.display_height >= 64) {
       // 128x64 display - full information
-      display.setFont(&Adafruit7x13);  // Use Adafruit7x13 font for first line
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.println("   STOP   ");
-      display.setFont();  // Reset to default font
       display.setTextSize(1);  // Normal font for other text
       
       // Display selected playlist item name (second line)
@@ -2183,10 +2179,9 @@ void updateDisplay() {
       display.println(ipString);
     } else {
       // 128x32 display - limited information
-      display.setFont(&Adafruit7x13);  // Use Adafruit7x13 font for first line
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.println("[] STOP");
-      display.setFont();  // Reset to default font
       display.setTextSize(1);  // Normal font for other text
       
       // Display selected playlist item name (second line)
