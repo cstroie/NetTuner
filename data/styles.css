@@ -126,7 +126,7 @@ fieldset input[type="number"]:focus {
     width: 80%;
 }
 
-#currentStream {
+#streamURL {
     font-weight: 700;
 }
 

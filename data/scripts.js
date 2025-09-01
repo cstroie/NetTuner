@@ -328,13 +328,13 @@ function connectWebSocket() {
                 }
                 
                 // Update stream name element
-                const streamNameElement = document.getElementById('currentStreamName');
+                const streamNameElement = document.getElementById('streamName');
                 if (streamNameElement) {
-                    streamNameElement.textContent = status.currentStreamName || 'No station selected';
+                    streamNameElement.textContent = status.streamName || 'No station selected';
                 }
                 
                 // Update stream info element
-                const currentElement = document.getElementById('currentStream');
+                const currentElement = document.getElementById('streamURL');
                 if (currentElement) {
                     if (status.playing) {
                         // Show stream title when playing
@@ -567,13 +567,11 @@ function playSelectedStream() {
     if (!select || select.selectedIndex === 0) {
         return; // No stream selected or it's the placeholder option
     }
-    
+    // Validate stream selection
     if (!validateStreamSelection(url)) {
         return;
     }
-    
     console.log('Playing selected stream:', { url, name });
-    
     // Play the selected stream without showing toast
     sendPlayRequest(url, name)
         .catch(error => {
