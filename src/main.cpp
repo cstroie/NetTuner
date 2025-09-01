@@ -2611,10 +2611,16 @@ void handleMPDClient() {
 }
 
 /**
- * @brief Generate MPD OK response
- * @return OK response string
+ * @brief Generate MPD response
+ * @param isError Whether this is an error response
+ * @param message Error message (only used for error responses)
+ * @return Response string
  */
-String mpdResponseOK() {
+String mpdResponse(bool isError = false, const String& message = "") {
+  if (isError) {
+    return "ACK [5@0] {} " + message + "\n";
+  }
+  
   // Check if in command list mode
   if (inCommandList) {
     // Send OK for each command if in command_list_ok_begin mode
@@ -2629,12 +2635,20 @@ String mpdResponseOK() {
 }
 
 /**
+ * @brief Generate MPD OK response
+ * @return OK response string
+ */
+String mpdResponseOK() {
+  return mpdResponse(false, "");
+}
+
+/**
  * @brief Generate MPD error response
  * @param message Error message
  * @return Error response string
  */
 String mpdResponseError(const String& message) {
-  return "ACK [5@0] {} " + message + "\n";
+  return mpdResponse(true, message);
 }
 
 /**
