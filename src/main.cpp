@@ -2136,12 +2136,10 @@ void updateDisplay() {
     // Display when stopped
     if (config.display_height >= 64) {
       // 128x64 display - full information
-      //display.setTextSize(2);  // Larger font for status
-      display.setFont(&Adafruit7x13bold); // Use a bold font for "STOP"
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.println("   STOP   ");
-      //display.setTextSize(1);  // Normal font for other text
-      display.setFont(); // Reset to default font
+      display.setTextSize(1);  // Normal font for other text
       // Display selected playlist item name (second line)
       display.setCursor(0, 18);
       if (playlistCount > 0 && currentSelection < playlistCount) {
@@ -2182,7 +2180,7 @@ void updateDisplay() {
       // 128x32 display - limited information
       display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
-      display.println("[] STOP");
+      display.println("   STOP   ");
       display.setTextSize(1);  // Normal font for other text
       
       // Display selected playlist item name (second line)
