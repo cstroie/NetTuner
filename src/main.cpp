@@ -1861,7 +1861,7 @@ void handlePostStreams() {
  */
 void handlePlay() {
   String url, name;
-  
+  // Check for JSON payload
   if (server.hasArg("plain")) {
     // Handle JSON payload
     String json = server.arg("plain");
@@ -1888,24 +1888,22 @@ void handlePlay() {
     server.send(400, "text/plain", "Missing required parameters: url and name");
     return;
   }
-  
   // Validate extracted values
   if (url.length() == 0 || name.length() == 0) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
     return;
   }
-  
   // Validate URL format
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
     return;
   }
-  
+  // Stop any currently playing stream
+  stopStream();
   // Start the stream
   startStream(url.c_str(), name.c_str());
   updateDisplay();
   sendStatusToClients();  // Notify clients of status change
-  
   // Send success response
   String responseMessage = "{\"status\":\"success\",\"message\":\"Stream started successfully\"}";
   server.send(200, "application/json", responseMessage);
@@ -1935,24 +1933,24 @@ void handleVolume() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, json);
-    
+    // Check for JSON parsing errors
     if (error) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
       return;
     }
-    
+    // Check for required parameters
     if (!doc.containsKey("volume")) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
       return;
     }
-    
+    // Extract volume value
     int newVolume = doc["volume"];
-    
+    // Validate volume range
     if (newVolume < 0 || newVolume > 22) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
       return;
     }
-    
+    // Update volume
     volume = newVolume;
     if (audio) {
       audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
@@ -1964,12 +1962,12 @@ void handleVolume() {
     // Handle form data
     String vol = server.arg("volume");
     int newVolume = vol.toInt();
-    
+    // Validate volume range
     if (newVolume < 0 || newVolume > 22) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
       return;
     }
-    
+    // Update volume
     volume = newVolume;
     if (audio) {
       audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
@@ -1995,14 +1993,12 @@ void handleTone() {
     String json = server.arg("plain");
     DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, json);
-    
+    // Check for JSON parsing errors
     if (error) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
       return;
     }
-    
     bool updated = false;
-    
     // Handle bass setting
     if (doc.containsKey("bass")) {
       int newBass = doc["bass"];
@@ -2013,7 +2009,6 @@ void handleTone() {
       bass = newBass;
       updated = true;
     }
-    
     // Handle midrange setting
     if (doc.containsKey("midrange")) {
       int newMidrange = doc["midrange"];
@@ -2024,7 +2019,6 @@ void handleTone() {
       midrange = newMidrange;
       updated = true;
     }
-    
     // Handle treble setting
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
@@ -2035,18 +2029,17 @@ void handleTone() {
       treble = newTreble;
       updated = true;
     }
-    
+    // Check for missing parameters
     if (!updated) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: bass, midrange, or treble\"}");
       return;
     }
-    
     // Apply tone settings to audio using the Audio library's setTone function
     if (audio) {
       // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
       audio->setTone(bass, midrange, treble);
     }
-    
+    // Update display and notify clients
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Tone settings updated successfully\"}");
@@ -2069,6 +2062,7 @@ void handleStatus() {
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"volume\":" + String(volume);
   status += "}";
+  // Return status as JSON
   server.send(200, "application/json", status);
 }
 
@@ -2078,6 +2072,7 @@ void handleStatus() {
  * This function serves the current configuration in JSON format.
  */
 void handleGetConfig() {
+  // Get current configuration
   String json = "{";
   json += "\"i2s_dout\":" + String(config.i2s_dout) + ",";
   json += "\"i2s_bclk\":" + String(config.i2s_bclk) + ",";
@@ -2093,6 +2088,7 @@ void handleGetConfig() {
   json += "\"display_height\":" + String(config.display_height) + ",";
   json += "\"display_address\":" + String(config.display_address);
   json += "}";
+  // Return configuration as JSON
   server.send(200, "application/json", json);
 }
 
@@ -2102,20 +2098,20 @@ void handleGetConfig() {
  * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
  */
 void handlePostConfig() {
+  // Check for JSON data
   if (!server.hasArg("plain")) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
     return;
   }
-  
+  // Parse the JSON data
   String jsonData = server.arg("plain");
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, jsonData);
-  
+  // Check for JSON parsing errors
   if (error) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
     return;
   }
-  
   // Update configuration values
   if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
   if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
@@ -2130,10 +2126,9 @@ void handlePostConfig() {
   if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
   if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
   if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
-  
   // Save to SPIFFS
   saveConfig();
-  
+  // Return status as JSON
   server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration updated successfully\"}");
 }
 
@@ -2143,20 +2138,22 @@ void handlePostConfig() {
  * The status includes playback state, stream information, bitrate, and volume.
  */
 void sendStatusToClients() {
-  String status = "{";
-  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-  status += "\"streamURL\":\"" + String(streamURL) + "\",";
-  status += "\"streamName\":\"" + String(streamName) + "\",";
-  status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"bitrate\":" + String(bitrate / 1000) + ",";
-  status += "\"volume\":" + String(volume) + ",";
-  status += "\"bass\":" + String(bass) + ",";
-  status += "\"midrange\":" + String(midrange) + ",";
-  status += "\"treble\":" + String(treble);
-  status += "}";
-  
   // Only broadcast if WebSocket server has clients
   if (webSocket.connectedClients() > 0) {
+    // Get current status
+    // FIXME Duplicate code
+    String status = "{";
+    status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
+    status += "\"streamURL\":\"" + String(streamURL) + "\",";
+    status += "\"streamName\":\"" + String(streamName) + "\",";
+    status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+    status += "\"bitrate\":" + String(bitrate / 1000) + ",";
+    status += "\"volume\":" + String(volume) + ",";
+    status += "\"bass\":" + String(bass) + ",";
+    status += "\"midrange\":" + String(midrange) + ",";
+    status += "\"treble\":" + String(treble);
+    status += "}";
+    // Broadcast status to all connected clients
     webSocket.broadcastTXT(status);
   }
 }
@@ -2170,13 +2167,17 @@ void sendStatusToClients() {
  * @param length Length of the payload
  */
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  // Handle WebSocket events
   switch(type) {
     case WStype_CONNECTED:
+      // Client connected
       Serial.printf("WebSocket client #%u connected from %d.%d.%d.%d\n", num,
                     webSocket.remoteIP(num)[0], webSocket.remoteIP(num)[1],
                     webSocket.remoteIP(num)[2], webSocket.remoteIP(num)[3]);
       // Send current status to newly connected client
       {
+        // Get current status
+        // FIXME Duplicate code
         String status = "{";
         status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
         status += "\"streamURL\":\"" + String(streamURL) + "\",";
@@ -2188,15 +2189,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
         status += "\"midrange\":" + String(midrange) + ",";
         status += "\"treble\":" + String(treble);
         status += "}";
+        // Send status to newly connected client
         webSocket.sendTXT(num, status);
       }
       break;
     case WStype_DISCONNECTED:
+      // Client disconnected
       Serial.printf("WebSocket client #%u disconnected\n", num);
       // Add a small delay to ensure proper cleanup
       delay(10);
       break;
     case WStype_TEXT:
+      // Text message received
       Serial.printf("WebSocket client #%u text: %s\n", num, payload);
       break;
     default:
@@ -2405,12 +2409,11 @@ bool inCommandList = false;
 bool commandListOK = false;
 String commandList[50];  // Buffer for command list (max 50 commands)
 int commandListCount = 0;
-
 // MPD idle state variables
 bool inIdleMode = false;
 unsigned long lastTitleHash = 0;
 unsigned long lastStatusHash = 0;
-
+// Handle MPD client
 void handleMPDClient() {
   if (mpdServer.hasClient()) {
     if (!mpdClient || !mpdClient.connected()) {
@@ -2433,7 +2436,6 @@ void handleMPDClient() {
       rejectedClient.stop();  // Properly close rejected connection
     }
   }
-  
   // Check if client disconnected unexpectedly
   if (mpdClient && !mpdClient.connected()) {
     mpdClient.stop();
@@ -2443,7 +2445,6 @@ void handleMPDClient() {
     commandListCount = 0;
     inIdleMode = false;
   }
-  
   if (mpdClient && mpdClient.connected()) {
     // Check for idle mode events
     if (inIdleMode) {
@@ -2452,21 +2453,17 @@ void handleMPDClient() {
       for (int i = 0; streamTitle[i]; i++) {
         currentTitleHash = currentTitleHash * 31 + streamTitle[i];
       }
-      
       // Check for status changes
       unsigned long currentStatusHash = isPlaying ? 1 : 0;
       currentStatusHash = currentStatusHash * 31 + volume;
-      
       bool sendIdleResponse = false;
       String idleChanges = "";
-      
       // Check for title change
       if (currentTitleHash != lastTitleHash) {
         idleChanges += "changed: playlist\n";
         lastTitleHash = currentTitleHash;
         sendIdleResponse = true;
       }
-      
       // Check for status change
       if (currentStatusHash != lastStatusHash) {
         idleChanges += "changed: player\n";
@@ -2474,20 +2471,17 @@ void handleMPDClient() {
         lastStatusHash = currentStatusHash;
         sendIdleResponse = true;
       }
-      
       // Send idle response if there are changes
       if (sendIdleResponse) {
         mpdClient.print(idleChanges);
         mpdClient.print(mpdResponseOK());
         inIdleMode = false;
       }
-      
       // Check if there's data available (for noidle command)
       if (mpdClient.available()) {
         String command = mpdClient.readStringUntil('\n');
         command.trim();
         Serial.println("MPD Command: " + command);
-        
         // Handle noidle command to exit idle mode
         if (command == "noidle") {
           inIdleMode = false;
@@ -2499,12 +2493,11 @@ void handleMPDClient() {
         return;
       }
     }
-    
+    // Handle incoming commands
     if (mpdClient.available()) {
       String command = mpdClient.readStringUntil('\n');
       command.trim();
       Serial.println("MPD Command: " + command);
-      
       // Handle command list mode
       if (inCommandList) {
         if (command == "command_list_end") {
@@ -2575,13 +2568,11 @@ void sendPlaylistInfo(int detailLevel = 2) {
     // For detailLevel 0, only file and title are sent (minimal)
     mpdClient.print("file: " + String(playlist[i].url) + "\n");
     mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-    
     if (detailLevel >= 2) {
       // Full detail level
       mpdClient.print("Id: " + String(i) + "\n");
       mpdClient.print("Pos: " + String(i) + "\n");
     }
-
     if (detailLevel >= 1) {
       // Simple detail level
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
@@ -2598,23 +2589,20 @@ void sendPlaylistInfo(int detailLevel = 2) {
 void handleMPDSearchCommand(const String& command, bool exactMatch) {
   // Determine command prefix length (search=6, find=4)
   int prefixLength = command.startsWith("search") ? 6 : 4;
-  
+  // Check if command is valid
   if (command.length() > prefixLength + 1) {
     String searchTerm = command.substring(prefixLength + 1);
     searchTerm.trim();
-    
     // Extract search string (everything after the first space)
     int firstSpace = searchTerm.indexOf(' ');
     if (firstSpace != -1) {
       searchTerm = searchTerm.substring(firstSpace + 1);
       searchTerm.trim();
     }
-    
     // Remove quotes if present
     if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
       searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
     }
-    
     // Search in playlist names
     for (int i = 0; i < playlistCount; i++) {
       String playlistName = String(playlist[i].name);
@@ -2623,7 +2611,7 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
       lowerName.toLowerCase();
       String lowerSearch = searchTerm;
       lowerSearch.toLowerCase();
-      
+      // Determine match type
       bool match = false;
       if (exactMatch) {
         // Exact match for find command
@@ -2632,7 +2620,7 @@ void handleMPDSearchCommand(const String& command, bool exactMatch) {
         // Partial match for search command
         match = (lowerName.indexOf(lowerSearch) != -1);
       }
-      
+      // If a match is found, send the playlist information
       if (match) {
         mpdClient.print("file: " + String(playlist[i].url) + "\n");
         mpdClient.print("Title: " + String(playlist[i].name) + "\n");
