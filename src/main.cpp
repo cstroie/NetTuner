@@ -2478,6 +2478,11 @@ bool commandListOK = false;
 String commandList[50];  // Buffer for command list (max 50 commands)
 int commandListCount = 0;
 
+// MPD idle state variables
+bool inIdleMode = false;
+unsigned long lastTitleHash = 0;
+unsigned long lastStatusHash = 0;
+
 void handleMPDClient() {
   if (mpdServer.hasClient()) {
     if (!mpdClient || !mpdClient.connected()) {
@@ -2493,6 +2498,7 @@ void handleMPDClient() {
       inCommandList = false;
       commandListOK = false;
       commandListCount = 0;
+      inIdleMode = false;
     } else {
       // Reject connection if we already have a client
       WiFiClient rejectedClient = mpdServer.available();
@@ -2507,9 +2513,65 @@ void handleMPDClient() {
     inCommandList = false;
     commandListOK = false;
     commandListCount = 0;
+    inIdleMode = false;
   }
   
   if (mpdClient && mpdClient.connected()) {
+    // Check for idle mode events
+    if (inIdleMode) {
+      // Check for title changes
+      unsigned long currentTitleHash = 0;
+      for (int i = 0; streamTitle[i]; i++) {
+        currentTitleHash = currentTitleHash * 31 + streamTitle[i];
+      }
+      
+      // Check for status changes
+      unsigned long currentStatusHash = isPlaying ? 1 : 0;
+      currentStatusHash = currentStatusHash * 31 + volume;
+      
+      bool sendIdleResponse = false;
+      String idleChanges = "";
+      
+      // Check for title change
+      if (currentTitleHash != lastTitleHash) {
+        idleChanges += "changed: playlist\n";
+        lastTitleHash = currentTitleHash;
+        sendIdleResponse = true;
+      }
+      
+      // Check for status change
+      if (currentStatusHash != lastStatusHash) {
+        idleChanges += "changed: player\n";
+        idleChanges += "changed: mixer\n";
+        lastStatusHash = currentStatusHash;
+        sendIdleResponse = true;
+      }
+      
+      // Send idle response if there are changes
+      if (sendIdleResponse) {
+        mpdClient.print(idleChanges);
+        mpdClient.print(mpdResponseOK());
+        inIdleMode = false;
+      }
+      
+      // Check if there's data available (for noidle command)
+      if (mpdClient.available()) {
+        String command = mpdClient.readStringUntil('\n');
+        command.trim();
+        Serial.println("MPD Command: " + command);
+        
+        // Handle noidle command to exit idle mode
+        if (command == "noidle") {
+          inIdleMode = false;
+          mpdClient.print(mpdResponseOK());
+          return;
+        }
+      } else {
+        // Stay in idle mode and return early
+        return;
+      }
+    }
+    
     if (mpdClient.available()) {
       String command = mpdClient.readStringUntil('\n');
       command.trim();
@@ -2943,14 +3005,23 @@ if (command.startsWith("stop")) {
     }
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
-    // Idle command
-    mpdClient.print("changed: playlist\n");
-    mpdClient.print("changed: player\n");
-    mpdClient.print("changed: mixer\n");
-    mpdClient.print("changed: output\n");
-    mpdClient.print(mpdResponseOK());
+    // Idle command - enter idle mode and wait for changes
+    inIdleMode = true;
+    
+    // Initialize hashes for tracking changes
+    lastTitleHash = 0;
+    for (int i = 0; streamTitle[i]; i++) {
+      lastTitleHash = lastTitleHash * 31 + streamTitle[i];
+    }
+    
+    lastStatusHash = isPlaying ? 1 : 0;
+    lastStatusHash = lastStatusHash * 31 + volume;
+    
+    // Don't send immediate response - wait for changes
+    return;
   } else if (command.startsWith("noidle")) {
     // Noidle command
+    inIdleMode = false;
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("close")) {
     // Close command
