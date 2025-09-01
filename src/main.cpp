@@ -2591,7 +2591,7 @@ String mpdResponseError(const String& message) {
  * Sends playlist information with different levels of metadata
  * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
  */
-void sendPlaylistInfo(int detailLevel = 2) {
+void sendPlaylistInfo(int detailLevel) {
   for (int i = 0; i < playlistCount; i++) {
     mpdClient.print("file: " + String(playlist[i].url) + "\n");
     mpdClient.print("Title: " + String(playlist[i].name) + "\n");
