@@ -2021,15 +2021,16 @@ void updateDisplay() {
         // Scroll every 500ms
         if (millis() - lastTitleScrollTime > 500) {
           titleScrollOffset++;
-          if (titleScrollOffset > (int)title.length()) {
-            titleScrollOffset = 0;  // Reset scroll
+          // Reset scroll when we've shown the entire text plus " *** "
+          if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
+            titleScrollOffset = 0;
           }
           lastTitleScrollTime = millis();
         }
         
         // Display scrolled text (starting from position after '>')
         display.setCursor(16, 0);  // Position after the '>' character
-        String displayText = title + " *** ";
+        String displayText = title + " *** " + title;
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
@@ -2099,15 +2100,16 @@ void updateDisplay() {
         // Scroll every 500ms
         if (millis() - lastTitleScrollTime > 500) {
           titleScrollOffset++;
-          if (titleScrollOffset > (int)title.length()) {
-            titleScrollOffset = 0;  // Reset scroll
+          // Reset scroll when we've shown the entire text plus " *** "
+          if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " *** "
+            titleScrollOffset = 0;
           }
           lastTitleScrollTime = millis();
         }
         
         // Display scrolled text (starting from position after '>')
         display.setCursor(16, 0);  // Position after the '>' character
-        String displayText = title + " *** ";
+        String displayText = title + " *** " + title;
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
