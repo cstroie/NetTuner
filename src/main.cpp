@@ -2447,264 +2447,277 @@ void updateDisplay() {
  * It manages one client connection at a time and processes commands as they arrive.
  * Implements MPD protocol version 0.23.0 with command list and idle mode support.
  */
-// MPD command list state variables
-bool inCommandList = false;        ///< Flag indicating if we're in command list mode
-bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
-String commandList[50];            ///< Buffer for command list (max 50 commands)
-int commandListCount = 0;          ///< Number of commands in the current command list
-
-// MPD idle state variables
-bool inIdleMode = false;           ///< Flag indicating if we're in idle mode
-unsigned long lastTitleHash = 0;   ///< Hash of last stream title for change detection
-unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
-
 /**
- * @brief Handle MPD client connections and process commands
- * Manages the MPD protocol connection state and command processing
+ * @brief MPD Interface Class
+ * Encapsulates all MPD protocol functionality
  */
-void handleMPDClient() {
-  if (mpdServer.hasClient()) {
-    if (!mpdClient || !mpdClient.connected()) {
-      if (mpdClient) {
-        mpdClient.stop();  // Ensure previous client is properly closed
+class MPDInterface {
+private:
+  WiFiClient mpdClient;
+  WiFiServer& mpdServer;
+  
+  // MPD command list state variables
+  bool inCommandList = false;        ///< Flag indicating if we're in command list mode
+  bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
+  String commandList[50];            ///< Buffer for command list (max 50 commands)
+  int commandListCount = 0;          ///< Number of commands in the current command list
+
+  // MPD idle state variables
+  bool inIdleMode = false;           ///< Flag indicating if we're in idle mode
+  unsigned long lastTitleHash = 0;   ///< Hash of last stream title for change detection
+  unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
+
+public:
+  MPDInterface(WiFiServer& server) : mpdServer(server) {}
+  
+  /**
+   * @brief Handle MPD client connections and process commands
+   * Manages the MPD protocol connection state and command processing
+   */
+  void handleClient() {
+    if (mpdServer.hasClient()) {
+      if (!mpdClient || !mpdClient.connected()) {
+        if (mpdClient) {
+          mpdClient.stop();  // Ensure previous client is properly closed
+        }
+        mpdClient = mpdServer.available();
+        // Send MPD welcome message
+        if (mpdClient && mpdClient.connected()) {
+          mpdClient.print("OK MPD 0.23.0\n");
+        }
+        // Reset command list state when new client connects
+        inCommandList = false;
+        commandListOK = false;
+        commandListCount = 0;
+        inIdleMode = false;
+      } else {
+        // Reject connection if we already have a client
+        WiFiClient rejectedClient = mpdServer.available();
+        rejectedClient.stop();  // Properly close rejected connection
       }
-      mpdClient = mpdServer.available();
-      // Send MPD welcome message
-      if (mpdClient && mpdClient.connected()) {
-        mpdClient.print("OK MPD 0.23.0\n");
-      }
-      // Reset command list state when new client connects
+    }
+    // Check if client disconnected unexpectedly
+    if (mpdClient && !mpdClient.connected()) {
+      mpdClient.stop();
+      // Reset command list state when client disconnects
       inCommandList = false;
       commandListOK = false;
       commandListCount = 0;
       inIdleMode = false;
-    } else {
-      // Reject connection if we already have a client
-      WiFiClient rejectedClient = mpdServer.available();
-      rejectedClient.stop();  // Properly close rejected connection
     }
-  }
-  // Check if client disconnected unexpectedly
-  if (mpdClient && !mpdClient.connected()) {
-    mpdClient.stop();
-    // Reset command list state when client disconnects
-    inCommandList = false;
-    commandListOK = false;
-    commandListCount = 0;
-    inIdleMode = false;
-  }
-  if (mpdClient && mpdClient.connected()) {
-    // Check for idle mode events
-    if (inIdleMode) {
-      // Check for title changes
-      unsigned long currentTitleHash = 0;
-      for (int i = 0; streamTitle[i]; i++) {
-        currentTitleHash = currentTitleHash * 31 + streamTitle[i];
+    if (mpdClient && mpdClient.connected()) {
+      // Check for idle mode events
+      if (inIdleMode) {
+        // Check for title changes
+        unsigned long currentTitleHash = 0;
+        for (int i = 0; streamTitle[i]; i++) {
+          currentTitleHash = currentTitleHash * 31 + streamTitle[i];
+        }
+        // Check for status changes
+        unsigned long currentStatusHash = isPlaying ? 1 : 0;
+        currentStatusHash = currentStatusHash * 31 + volume;
+        bool sendIdleResponse = false;
+        String idleChanges = "";
+        // Check for title change
+        if (currentTitleHash != lastTitleHash) {
+          idleChanges += "changed: playlist\n";
+          lastTitleHash = currentTitleHash;
+          sendIdleResponse = true;
+        }
+        // Check for status change
+        if (currentStatusHash != lastStatusHash) {
+          idleChanges += "changed: player\n";
+          idleChanges += "changed: mixer\n";
+          lastStatusHash = currentStatusHash;
+          sendIdleResponse = true;
+        }
+        // Send idle response if there are changes
+        if (sendIdleResponse) {
+          mpdClient.print(idleChanges);
+          mpdClient.print(mpdResponseOK());
+          inIdleMode = false;
+        }
+        // Check if there's data available (for noidle command)
+        if (mpdClient.available()) {
+          String command = mpdClient.readStringUntil('\n');
+          command.trim();
+          Serial.println("MPD Command: " + command);
+          // Handle noidle command to exit idle mode
+          if (command == "noidle") {
+            inIdleMode = false;
+            mpdClient.print(mpdResponseOK());
+            return;
+          }
+        } else {
+          // Stay in idle mode and return early
+          return;
+        }
       }
-      // Check for status changes
-      unsigned long currentStatusHash = isPlaying ? 1 : 0;
-      currentStatusHash = currentStatusHash * 31 + volume;
-      bool sendIdleResponse = false;
-      String idleChanges = "";
-      // Check for title change
-      if (currentTitleHash != lastTitleHash) {
-        idleChanges += "changed: playlist\n";
-        lastTitleHash = currentTitleHash;
-        sendIdleResponse = true;
-      }
-      // Check for status change
-      if (currentStatusHash != lastStatusHash) {
-        idleChanges += "changed: player\n";
-        idleChanges += "changed: mixer\n";
-        lastStatusHash = currentStatusHash;
-        sendIdleResponse = true;
-      }
-      // Send idle response if there are changes
-      if (sendIdleResponse) {
-        mpdClient.print(idleChanges);
-        mpdClient.print(mpdResponseOK());
-        inIdleMode = false;
-      }
-      // Check if there's data available (for noidle command)
+      // Handle incoming commands
       if (mpdClient.available()) {
         String command = mpdClient.readStringUntil('\n');
         command.trim();
         Serial.println("MPD Command: " + command);
-        // Handle noidle command to exit idle mode
-        if (command == "noidle") {
-          inIdleMode = false;
-          mpdClient.print(mpdResponseOK());
-          return;
-        }
-      } else {
-        // Stay in idle mode and return early
-        return;
-      }
-    }
-    // Handle incoming commands
-    if (mpdClient.available()) {
-      String command = mpdClient.readStringUntil('\n');
-      command.trim();
-      Serial.println("MPD Command: " + command);
-      // Handle command list mode
-      if (inCommandList) {
-        if (command == "command_list_end") {
-          // Execute all buffered commands
-          for (int i = 0; i < commandListCount; i++) {
-            handleMPDCommand(commandList[i]);
-          }
-          // Reset command list state
-          inCommandList = false;
-          commandListOK = false;
-          commandListCount = 0;
-          mpdClient.print(mpdResponseOK());
-        } else {
-          // Buffer the command
-          if (commandListCount < 50) {
-            commandList[commandListCount] = command;
-            commandListCount++;
-          } else {
-            // Command list too long, send error
+        // Handle command list mode
+        if (inCommandList) {
+          if (command == "command_list_end") {
+            // Execute all buffered commands
+            for (int i = 0; i < commandListCount; i++) {
+              handleMPDCommand(commandList[i]);
+            }
+            // Reset command list state
             inCommandList = false;
             commandListOK = false;
             commandListCount = 0;
-            mpdClient.print(mpdResponseError("Command list too long"));
+            mpdClient.print(mpdResponseOK());
+          } else {
+            // Buffer the command
+            if (commandListCount < 50) {
+              commandList[commandListCount] = command;
+              commandListCount++;
+            } else {
+              // Command list too long, send error
+              inCommandList = false;
+              commandListOK = false;
+              commandListCount = 0;
+              mpdClient.print(mpdResponseError("Command list too long"));
+            }
           }
+        } else {
+          // Normal command processing
+          handleMPDCommand(command);
         }
-      } else {
-        // Normal command processing
-        handleMPDCommand(command);
       }
     }
   }
-}
 
-/**
- * @brief Generate appropriate MPD response based on context
- * @param isError Whether this is an error response
- * @param message Error message (only used for error responses)
- * @return Response string
- */
-String mpdResponse(bool isError = false, const String& message = "") {
-  if (isError) {
-    return "ACK [5@0] {} " + message + "\n";
+private:
+  /**
+   * @brief Generate appropriate MPD response based on context
+   * @param isError Whether this is an error response
+   * @param message Error message (only used for error responses)
+   * @return Response string
+   */
+  String mpdResponse(bool isError = false, const String& message = "") {
+    if (isError) {
+      return "ACK [5@0] {} " + message + "\n";
+    }
+    
+    // Check if in command list mode
+    if (inCommandList) {
+      // Send OK for each command if in command_list_ok_begin mode
+      if (commandListOK) {
+        return "list_OK\n";
+      }
+      else 
+        return "";
+    }
+    // Standard OK response
+    return "OK\n";
   }
-  
-  // Check if in command list mode
-  if (inCommandList) {
-    // Send OK for each command if in command_list_ok_begin mode
-    if (commandListOK) {
-      return "list_OK\n";
-    }
-    else 
-      return "";
+
+  /**
+   * @brief Generate MPD OK response
+   * @return OK response string
+   */
+  String mpdResponseOK() {
+    return mpdResponse(false, "");
   }
-  // Standard OK response
-  return "OK\n";
-}
 
-/**
- * @brief Generate MPD OK response
- * @return OK response string
- */
-String mpdResponseOK() {
-  return mpdResponse(false, "");
-}
-
-/**
- * @brief Generate MPD error response
- * @param message Error message
- * @return Error response string
- */
-String mpdResponseError(const String& message) {
-  return mpdResponse(true, message);
-}
-
-/**
- * @brief Send playlist information with configurable detail level
- * Sends playlist information with different levels of metadata
- * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
- */
-void sendPlaylistInfo(int detailLevel) {
-  for (int i = 0; i < playlistCount; i++) {
-    mpdClient.print("file: " + String(playlist[i].url) + "\n");
-    mpdClient.print("Title: " + String(playlist[i].name) + "\n");
-    
-    if (detailLevel >= 2) {
-      // Full detail level
-      mpdClient.print("Id: " + String(i) + "\n");
-      mpdClient.print("Pos: " + String(i) + "\n");
-    }
-
-    if (detailLevel >= 1) {
-      // Simple detail level
-      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
-    }
+  /**
+   * @brief Generate MPD error response
+   * @param message Error message
+   * @return Error response string
+   */
+  String mpdResponseError(const String& message) {
+    return mpdResponse(true, message);
   }
-}
 
-/**
- * @brief Handle MPD search/find commands
- * Processes search and find commands with partial or exact matching in stream names
- * @param command The full command string
- * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
- */
-void handleMPDSearchCommand(const String& command, bool exactMatch) {
-  // Determine command prefix length (search=6, find=4)
-  int prefixLength = command.startsWith("search") ? 6 : 4;
-  
-  if (command.length() > prefixLength + 1) {
-    String searchTerm = command.substring(prefixLength + 1);
-    searchTerm.trim();
-    
-    // Extract search string (everything after the first space)
-    int firstSpace = searchTerm.indexOf(' ');
-    if (firstSpace != -1) {
-      searchTerm = searchTerm.substring(firstSpace + 1);
-      searchTerm.trim();
-    }
-    
-    // Remove quotes if present
-    if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
-      searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
-    }
-    
-    // Search in playlist names
+  /**
+   * @brief Send playlist information with configurable detail level
+   * Sends playlist information with different levels of metadata
+   * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
+   */
+  void sendPlaylistInfo(int detailLevel) {
     for (int i = 0; i < playlistCount; i++) {
-      String playlistName = String(playlist[i].name);
-      // Convert both to lowercase for case-insensitive comparison
-      String lowerName = playlistName;
-      lowerName.toLowerCase();
-      String lowerSearch = searchTerm;
-      lowerSearch.toLowerCase();
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
       
-      bool match = false;
-      if (exactMatch) {
-        // Exact match for find command
-        match = (lowerName == lowerSearch);
-      } else {
-        // Partial match for search command
-        match = (lowerName.indexOf(lowerSearch) != -1);
+      if (detailLevel >= 2) {
+        // Full detail level
+        mpdClient.print("Id: " + String(i) + "\n");
+        mpdClient.print("Pos: " + String(i) + "\n");
       }
-      
-      if (match) {
-        mpdClient.print("file: " + String(playlist[i].url) + "\n");
-        mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+
+      if (detailLevel >= 1) {
+        // Simple detail level
         mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
       }
     }
   }
-}
 
-/**
- * @brief Handle MPD commands
- * Processes MPD protocol commands with support for MPD protocol version 0.23.0
- * @param command The command string to process
- * This function processes MPD protocol commands and controls the player accordingly.
- * It supports a subset of MPD commands including playback control, volume control,
- * playlist management, status queries, and search functionality.
- */
-void handleMPDCommand(const String& command) {
+  /**
+   * @brief Handle MPD search/find commands
+   * Processes search and find commands with partial or exact matching in stream names
+   * @param command The full command string
+   * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
+   */
+  void handleMPDSearchCommand(const String& command, bool exactMatch) {
+    // Determine command prefix length (search=6, find=4)
+    int prefixLength = command.startsWith("search") ? 6 : 4;
+    
+    if (command.length() > prefixLength + 1) {
+      String searchTerm = command.substring(prefixLength + 1);
+      searchTerm.trim();
+      
+      // Extract search string (everything after the first space)
+      int firstSpace = searchTerm.indexOf(' ');
+      if (firstSpace != -1) {
+        searchTerm = searchTerm.substring(firstSpace + 1);
+        searchTerm.trim();
+      }
+      
+      // Remove quotes if present
+      if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
+        searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+      }
+      
+      // Search in playlist names
+      for (int i = 0; i < playlistCount; i++) {
+        String playlistName = String(playlist[i].name);
+        // Convert both to lowercase for case-insensitive comparison
+        String lowerName = playlistName;
+        lowerName.toLowerCase();
+        String lowerSearch = searchTerm;
+        lowerSearch.toLowerCase();
+        
+        bool match = false;
+        if (exactMatch) {
+          // Exact match for find command
+          match = (lowerName == lowerSearch);
+        } else {
+          // Partial match for search command
+          match = (lowerName.indexOf(lowerSearch) != -1);
+        }
+        
+        if (match) {
+          mpdClient.print("file: " + String(playlist[i].url) + "\n");
+          mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+          mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
+        }
+      }
+    }
+  }
+
+  /**
+   * @brief Handle MPD commands
+   * Processes MPD protocol commands with support for MPD protocol version 0.23.0
+   * @param command The command string to process
+   * This function processes MPD protocol commands and controls the player accordingly.
+   * It supports a subset of MPD commands including playback control, volume control,
+   * playlist management, status queries, and search functionality.
+   */
+  void handleMPDCommand(const String& command) {
 if (command.startsWith("stop")) {
     // Stop command
     stopStream();
