@@ -2611,16 +2611,10 @@ void handleMPDClient() {
 }
 
 /**
- * @brief Generate MPD response
- * @param isError Whether this is an error response
- * @param message Error message (only used for error responses)
- * @return Response string
+ * @brief Generate MPD OK response
+ * @return OK response string
  */
-String mpdResponse(bool isError = false, const String& message = "") {
-  if (isError) {
-    return "ACK [5@0] {} " + message + "\n";
-  }
-  
+String mpdResponseOK() {
   // Check if in command list mode
   if (inCommandList) {
     // Send OK for each command if in command_list_ok_begin mode
@@ -2635,20 +2629,12 @@ String mpdResponse(bool isError = false, const String& message = "") {
 }
 
 /**
- * @brief Generate MPD OK response
- * @return OK response string
- */
-String mpdResponseOK() {
-  return mpdResponse(false, "");
-}
-
-/**
  * @brief Generate MPD error response
  * @param message Error message
  * @return Error response string
  */
 String mpdResponseError(const String& message) {
-  return mpdResponse(true, message);
+  return "ACK [5@0] {} " + message + "\n";
 }
 
 /**
@@ -3075,9 +3061,7 @@ if (command.startsWith("stop")) {
         "MUSICBRAINZ_ALBUMARTISTID",
         "MUSICBRAINZ_TRACKID"
       };
-      
       const int tagTypeCount = sizeof(supportedTagTypes) / sizeof(supportedTagTypes[0]);
-      
       for (int i = 0; i < tagTypeCount; i++) {
         mpdClient.print("tagtype: ");
         mpdClient.print(supportedTagTypes[i]);
@@ -3093,16 +3077,13 @@ if (command.startsWith("stop")) {
   } else if (command.startsWith("idle")) {
     // Idle command - enter idle mode and wait for changes
     inIdleMode = true;
-    
     // Initialize hashes for tracking changes
     lastTitleHash = 0;
     for (int i = 0; streamTitle[i]; i++) {
       lastTitleHash = lastTitleHash * 31 + streamTitle[i];
     }
-    
     lastStatusHash = isPlaying ? 1 : 0;
     lastStatusHash = lastStatusHash * 31 + volume;
-    
     // Don't send immediate response - wait for changes
     return;
   } else if (command.startsWith("noidle")) {
