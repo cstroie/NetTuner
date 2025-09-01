@@ -3000,21 +3000,31 @@ if (command.startsWith("stop")) {
       mpdClient.print(mpdResponseOK());
     } else {
       // Default tagtypes response
-      mpdClient.print("tagtype: Artist\n");
-      mpdClient.print("tagtype: Album\n");
-      mpdClient.print("tagtype: Title\n");
-      mpdClient.print("tagtype: Track\n");
-      mpdClient.print("tagtype: Name\n");
-      mpdClient.print("tagtype: Genre\n");
-      mpdClient.print("tagtype: Date\n");
-      mpdClient.print("tagtype: Composer\n");
-      mpdClient.print("tagtype: Performer\n");
-      mpdClient.print("tagtype: Comment\n");
-      mpdClient.print("tagtype: Disc\n");
-      mpdClient.print("tagtype: MUSICBRAINZ_ARTISTID\n");
-      mpdClient.print("tagtype: MUSICBRAINZ_ALBUMID\n");
-      mpdClient.print("tagtype: MUSICBRAINZ_ALBUMARTISTID\n");
-      mpdClient.print("tagtype: MUSICBRAINZ_TRACKID\n");
+      const char* supportedTagTypes[] = {
+        "Artist",
+        "Album",
+        "Title",
+        "Track",
+        "Name",
+        "Genre",
+        "Date",
+        "Composer",
+        "Performer",
+        "Comment",
+        "Disc",
+        "MUSICBRAINZ_ARTISTID",
+        "MUSICBRAINZ_ALBUMID",
+        "MUSICBRAINZ_ALBUMARTISTID",
+        "MUSICBRAINZ_TRACKID"
+      };
+      
+      const int tagTypeCount = sizeof(supportedTagTypes) / sizeof(supportedTagTypes[0]);
+      
+      for (int i = 0; i < tagTypeCount; i++) {
+        mpdClient.print("tagtype: ");
+        mpdClient.print(supportedTagTypes[i]);
+        mpdClient.print("\n");
+      }
       mpdClient.print(mpdResponseOK());
     }
   } else if (command.startsWith("plchanges")) {
