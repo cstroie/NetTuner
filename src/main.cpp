@@ -467,30 +467,23 @@ void setup() {
         }
       }
     }
-    
-    if (connected) {
-      Serial.println("Connected to WiFi");
-      Serial.print("IP Address: ");
-      Serial.println(WiFi.localIP().toString());
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("WiFi Connected");
-      display.println(WiFi.localIP().toString());
-      display.display();
-    } else {
-      Serial.println("Failed to connect to any configured WiFi network");
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("WiFi Failed");
-      display.println("Configure WiFi");
-      display.display();
-    }
-  } else {
-    Serial.println("No WiFi configured");
+  }
+  
+  if (connected) {
+    Serial.println("Connected to WiFi");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP().toString());
     display.clearDisplay();
     display.setCursor(0, 0);
-    display.println("No WiFi Config");
-    display.println("Configure WiFi");
+    display.println("WiFi Connected");
+    display.println(WiFi.localIP().toString());
+    display.display();
+  } else {
+    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("Starting AP Mode");
+    display.println("NetTuner-Setup");
     display.display();
     
     // Start WiFi access point mode with error handling
@@ -498,7 +491,7 @@ void setup() {
       Serial.println("Access Point Started");
       Serial.print("AP IP Address: ");
       Serial.println(WiFi.softAPIP().toString());
-      display.println("AP: NetTuner-Setup");
+      display.println("IP:");
       display.println(WiFi.softAPIP().toString());
       display.display();
     } else {
