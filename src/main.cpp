@@ -1860,6 +1860,8 @@ void handlePostStreams() {
  * JSON payload and form data, validates the input, and starts the stream.
  */
 void handlePlay() {
+  String url, name;
+  
   if (server.hasArg("plain")) {
     // Handle JSON payload
     String json = server.arg("plain");
@@ -1876,46 +1878,37 @@ void handlePlay() {
       return;
     }
     // Extract URL and name
-    String url = doc["url"].as<String>();
-    String name = doc["name"].as<String>();
-    // Validate extracted values
-    if (url.length() == 0 || name.length() == 0) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
-      return;
-    }
-    // Validate URL format
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
-      return;
-    }
-    // Start the stream
-    startStream(url.c_str(), name.c_str());
-    updateDisplay();
-    sendStatusToClients();  // Notify clients of status change
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
+    url = doc["url"].as<String>();
+    name = doc["name"].as<String>();
   } else if (server.hasArg("url") && server.hasArg("name")) {
     // Handle form data for the simple web page
-    String url = server.arg("url");
-    String name = server.arg("name");
-    // Validate extracted values
-    if (url.length() == 0 || name.length() == 0) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
-      return;
-    }
-    // Validate URL format
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
-      return;
-    }
-    // Start the stream
-    startStream(url.c_str(), name.c_str());
-    updateDisplay();
-    sendStatusToClients();  // Notify clients of status change
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
+    url = server.arg("url");
+    name = server.arg("name");
   } else {
     server.send(400, "text/plain", "Missing required parameters: url and name");
     return;
   }
+  
+  // Validate extracted values
+  if (url.length() == 0 || name.length() == 0) {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
+    return;
+  }
+  
+  // Validate URL format
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
+    return;
+  }
+  
+  // Start the stream
+  startStream(url.c_str(), name.c_str());
+  updateDisplay();
+  sendStatusToClients();  // Notify clients of status change
+  
+  // Send success response
+  String responseMessage = "{\"status\":\"success\",\"message\":\"Stream started successfully\"}";
+  server.send(200, "application/json", responseMessage);
 }
 
 /**
