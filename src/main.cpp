@@ -2314,7 +2314,9 @@ void updateDisplay() {
       display.println(ipString);
     } else {
       // 128x32 display - limited information
-      display.setTextSize(1);
+      display.setTextSize(2);  // Larger font for status
+      display.setCursor(0, 0);
+      display.print(">");  // Fixed '>' character
       
       // Display stream title (first line) with scrolling
       String title = String(streamTitle);
@@ -2322,8 +2324,8 @@ void updateDisplay() {
         title = String(streamName);
       }
       
-      // Scroll title if too long for display
-      if (title.length() > 21) {  // ~21 chars fit on a 128px display
+      // Scroll title if too long for display (excluding the '>' character)
+      if (title.length() > 15) {  // ~15 chars fit on a 128px display with '>' and some margin
         static unsigned long lastTitleScrollTime = 0;
         static int titleScrollOffset = 0;
         static String titleScrollText = "";
@@ -2343,20 +2345,21 @@ void updateDisplay() {
           lastTitleScrollTime = millis();
         }
         
-        // Display scrolled text
-        display.setCursor(0, 0);
+        // Display scrolled text (starting from position after '>')
+        display.setCursor(16, 0);  // Position after the '>' character
         String displayText = title + " *** ";
         if (titleScrollOffset < (int)displayText.length()) {
           displayText = displayText.substring(titleScrollOffset);
         }
-        display.println(displayText.substring(0, 21));
+        display.println(displayText.substring(0, 15));
       } else {
-        display.setCursor(0, 0);
+        display.setCursor(16, 0);  // Position after the '>' character
         display.println(title);
       }
       
+      display.setTextSize(1);  // Normal font for stream info
       // Display stream name (second line)
-      display.setCursor(0, 10);
+      display.setCursor(0, 18);
       String stationName = String(streamName);
       if (stationName.length() > 21) {  // ~21 chars fit on a 128px display
         display.println(stationName.substring(0, 21));
@@ -2365,7 +2368,7 @@ void updateDisplay() {
       }
       
       // Display volume (third line)
-      display.setCursor(0, 20);
+      display.setCursor(0, 26);
       display.print("VOL ");
       display.println(volume);
     }
@@ -2416,14 +2419,13 @@ void updateDisplay() {
       display.println(ipString);
     } else {
       // 128x32 display - limited information
-      display.setTextSize(1);
-      
-      // Display stopped status
+      display.setTextSize(2);  // Larger font for status
       display.setCursor(0, 0);
       display.println("[] STOP");
+      display.setTextSize(1);  // Normal font for other text
       
       // Display selected playlist item name (second line)
-      display.setCursor(0, 10);
+      display.setCursor(0, 18);
       if (playlistCount > 0 && currentSelection < playlistCount) {
         String playlistName = String(playlist[currentSelection].name);
         if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
@@ -2436,7 +2438,7 @@ void updateDisplay() {
       }
       
       // Display volume (third line)
-      display.setCursor(0, 20);
+      display.setCursor(0, 26);
       display.print("VOL ");
       display.println(volume);
     }
