@@ -2795,6 +2795,7 @@ if (command.startsWith("stop")) {
     mpdClient.print("command: playid\n");
     mpdClient.print("command: playlistid\n");
     mpdClient.print("command: playlistinfo\n");
+    mpdClient.print("command: plchanges\n");
     mpdClient.print("command: previous\n");
     mpdClient.print("command: save\n");
     mpdClient.print("command: search\n");
@@ -2930,6 +2931,17 @@ if (command.startsWith("stop")) {
       mpdClient.print("tagtype: MUSICBRAINZ_TRACKID\n");
       mpdClient.print(mpdResponseOK());
     }
+  } else if (command.startsWith("plchanges")) {
+    // Playlist changes command
+    // For simplicity, we'll return the entire playlist (as if all entries changed)
+    for (int i = 0; i < playlistCount; i++) {
+      mpdClient.print("file: " + String(playlist[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlist[i].name) + "\n");
+      mpdClient.print("Id: " + String(i) + "\n");
+      mpdClient.print("Pos: " + String(i) + "\n");
+      mpdClient.print("Last-Modified: 2025-01-01T00:00:00Z\n");
+    }
+    mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
     // Idle command
     mpdClient.print("changed: playlist\n");
