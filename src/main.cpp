@@ -2166,9 +2166,16 @@ void updateDisplay() {
       display.setCursor(0, 0);
       display.println("   STOP   ");
       display.setTextSize(1);  // Normal font for other text
-      // Display selected playlist item name (second line)
+      // Display current stream name (second line)
       display.setCursor(0, 18);
-      if (playlistCount > 0 && currentSelection < playlistCount) {
+      if (strlen(streamName) > 0) {
+        String currentStream = String(streamName);
+        if (currentStream.length() > 21) {  // ~21 chars fit on a 128px display
+          display.println(currentStream.substring(0, 21));
+        } else {
+          display.println(currentStream);
+        }
+      } else if (playlistCount > 0 && currentSelection < playlistCount) {
         String playlistName = String(playlist[currentSelection].name);
         if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
           display.println(playlistName.substring(0, 21));
@@ -2209,9 +2216,16 @@ void updateDisplay() {
       display.println("   STOP   ");
       display.setTextSize(1);  // Normal font for other text
       
-      // Display selected playlist item name (second line)
+      // Display current stream name (second line)
       display.setCursor(0, 18);
-      if (playlistCount > 0 && currentSelection < playlistCount) {
+      if (strlen(streamName) > 0) {
+        String currentStream = String(streamName);
+        if (currentStream.length() > 21) {  // ~21 chars fit on a 128px display
+          display.println(currentStream.substring(0, 21));
+        } else {
+          display.println(currentStream);
+        }
+      } else if (playlistCount > 0 && currentSelection < playlistCount) {
         String playlistName = String(playlist[currentSelection].name);
         if (playlistName.length() > 21) {  // ~21 chars fit on a 128px display
           display.println(playlistName.substring(0, 21));
