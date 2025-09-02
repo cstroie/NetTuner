@@ -935,10 +935,10 @@ void setupAudioOutput() {
  */
 void startStream(const char* url, const char* name) {
   bool resume = false;
-  // Stop any currently playing stream
-  if (audio) {
+  // Stop the currently playing stream if the stream changes
+  if (audio && url && strlen(url) > 0) {
     // Stop first
-    audio->stopSong();
+    stopStream();
   }
   // If no URL provided, check if we have a current stream to resume
   if (!url || strlen(url) == 0) {
@@ -1335,10 +1335,6 @@ void handleRotary() {
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
-        // If currently playing, stop playback
-        stopStream();
-        sendStatusToClients();  // Notify clients of status change
-      } else {
         // If not playing, start playback of selected stream
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         sendStatusToClients();  // Notify clients of status change
@@ -1697,8 +1693,6 @@ void handlePlay() {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
     return;
   }
-  // Stop any currently playing stream
-  stopStream();
   // Update currentSelection based on index
   if (index > 0) {
     // If index is valid, update currentSelection

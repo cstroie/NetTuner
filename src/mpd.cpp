@@ -590,24 +590,16 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("listplaylists")) {
     // List playlists command
     // For this implementation, we only have one playlist (the main playlist)
-    mpdClient.print("playlist: default\n");
+    mpdClient.print("playlist: WebRadio\n");
     mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("list")) {
     // List command
     if (command.length() > 5) {
-      String tagType = command.substring(5);
-      tagType.trim();
-      if (tagType == "artist") {
-        // Return empty list for artist (no local database)
-      } else if (tagType == "album") {
-        // Return empty list for album (no local database)
-      } else if (tagType == "title") {
-        // Return playlist titles
-        for (int i = 0; i < playlistCountRef; i++) {
-          mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
-          mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
-        }
+      // Return all playlist titles
+      for (int i = 0; i < playlistCountRef; i++) {
+        mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+        mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
       }
     }
     mpdClient.print(mpdResponseOK());
