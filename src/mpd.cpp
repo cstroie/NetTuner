@@ -512,6 +512,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       "list",
       "listallinfo",
       "listplaylistinfo",
+      "listplaylists",
       "load",
       "lsinfo",
       "next",
@@ -585,6 +586,12 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("listplaylistinfo")) {
     // List playlist info command
     sendPlaylistInfo(0); // Minimal detail
+    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("listplaylists")) {
+    // List playlists command
+    // For this implementation, we only have one playlist (the main playlist)
+    mpdClient.print("playlist: default\n");
+    mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("list")) {
     // List command
