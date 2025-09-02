@@ -400,10 +400,23 @@ void MPDInterface::handleMPDCommand(const String& command) {
       sendPlaylistInfo(2); // Full detail
     }
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("lsinfo")) {
-    // List info command
-    sendPlaylistInfo(1); // Simple detail
-    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("playid")) {
+    // Play ID command
+    if (command.length() > 7) {
+      int id = parseValue(command.substring(7));
+      if (id >= 0 && id < playlistCountRef) {
+        currentSelectionRef = id;
+        startStream(playlistRef[id].url, playlistRef[id].name);
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("playid", "No such song"));
+      }
+    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
+      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("playid", "No playlist"));
+    }
   } else  if (command.startsWith("play")) {
     // Play command
     if (playlistCountRef > 0) {
@@ -422,6 +435,10 @@ void MPDInterface::handleMPDCommand(const String& command) {
     } else {
       mpdClient.print(mpdResponseError("play", "No playlist"));
     }
+  } else if (command.startsWith("lsinfo")) {
+    // List info command
+    sendPlaylistInfo(1); // Simple detail
+    mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("setvol")) {
     // Set volume command
     if (command.length() > 7) {
@@ -631,23 +648,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Find command (exact match)
     handleMPDSearchCommand(command, true);
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("playid")) {
-    // Play ID command
-    if (command.length() > 7) {
-      int id = parseValue(command.substring(7));
-      if (id >= 0 && id < playlistCountRef) {
-        currentSelectionRef = id;
-        startStream(playlistRef[id].url, playlistRef[id].name);
-        mpdClient.print(mpdResponseOK());
-      } else {
-        mpdClient.print(mpdResponseError("playid", "No such song"));
-      }
-    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
-      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("playid", "No playlist"));
-    }
   } else if (command.startsWith("seek")) {
     // Seek command (not implemented for streaming)
     mpdClient.print(mpdResponseOK());

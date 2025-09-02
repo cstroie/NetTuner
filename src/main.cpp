@@ -583,7 +583,7 @@ void loop() {
   handleDisplayTimeout();
   
   // Small delay to prevent busy waiting
-  delay(10);
+  delay(100);
 }
 
 /**
