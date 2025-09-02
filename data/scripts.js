@@ -21,7 +21,6 @@ async function findFaviconUrl(websiteUrl) {
                 return null;
             }
         }
-        
         // Common favicon locations to check
         const faviconLocations = [
             '/favicon.ico',
@@ -29,7 +28,6 @@ async function findFaviconUrl(websiteUrl) {
             '/apple-touch-icon.png',
             '/apple-touch-icon-precomposed.png'
         ];
-        
         // First, try to get favicon from HTML head by fetching the base URL
         try {
             const response = await fetch(baseUrl, { mode: 'no-cors' });
@@ -38,7 +36,6 @@ async function findFaviconUrl(websiteUrl) {
         } catch (e) {
             console.log('Could not fetch HTML for favicon detection');
         }
-        
         // Check common locations
         for (const location of faviconLocations) {
             try {
@@ -51,7 +48,6 @@ async function findFaviconUrl(websiteUrl) {
                 continue;
             }
         }
-        
         return null;
     } catch (error) {
         console.error('Error finding favicon:', error);

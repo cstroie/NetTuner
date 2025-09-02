@@ -710,6 +710,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     }
     lastStatusHash = isPlayingRef ? 1 : 0;
     lastStatusHash = lastStatusHash * 31 + volumeRef;
+    lastStatusHash = lastStatusHash * 31 + bitrateRef;
     // Don't send immediate response - wait for changes
     return;
   } else if (command.startsWith("noidle")) {
