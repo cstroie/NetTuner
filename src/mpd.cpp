@@ -225,9 +225,7 @@ String MPDInterface::mpdResponseOK() {
  * @return Error response string
  */
 String MPDInterface::mpdResponseError(const String& command, const String& message) {
-  if (isError) {
-    return "ACK [5@0] {" + command + "} " + message + "\n";
-  }
+  return "ACK [5@0] {" + command + "} " + message + "\n";
 }
 
 /**
