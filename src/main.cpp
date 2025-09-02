@@ -2078,30 +2078,23 @@ void handleExportConfig() {
  * it into individual config.json, wifi.json, and playlist.json files.
  */
 void handleImportConfig() {
-  // Check if a file was uploaded
-  HTTPUpload& upload = server.upload();
   // Handle file upload
+  HTTPUpload& upload = server.upload();
+  
   if (upload.status == UPLOAD_FILE_START) {
     Serial.printf("Upload started: %s\n", upload.filename.c_str());
   } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // We're receiving data but we'll process it all at once at the end
+    // We're receiving data chunks - accumulate them
+    // For this implementation, we'll process the complete data at the end
   } else if (upload.status == UPLOAD_FILE_END) {
     Serial.printf("Upload finished: %s, size: %d\n", upload.filename.c_str(), upload.totalSize);
-  } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    Serial.println("Upload aborted");
-    server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload aborted\"}");
-    return;
-  }
-  // Only process when we have the complete file
-  if (server.method() == HTTP_POST && server.hasArg("plain") == false) {
-    // Check if we have upload data
+    
+    // Process the complete uploaded file
     if (upload.totalSize == 0) {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
       return;
     }
-
-    // Need to print the content of the uploaded file, AI!
-    Serial.printf("Uploaded JSON content: %s\n", upload.buf);
+    
     // Parse the uploaded JSON data
     DynamicJsonDocument doc(8192);
     DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
@@ -2110,6 +2103,7 @@ void handleImportConfig() {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
       return;
     }
+    
     // Process each configuration section
     bool success = true;
     const char* configFiles[] = {"config.json", "wifi.json", "playlist.json"};
@@ -2136,14 +2130,16 @@ void handleImportConfig() {
         }
       }
     }
+    
     if (success) {
       server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration imported successfully\"}");
     } else {
       server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Error importing configuration\"}");
     }
-  } else {
-    // Handle the case where the request is just starting
-    server.send(200, "application/json", "{\"status\":\"info\",\"message\":\"Ready to receive file\"}");
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    Serial.println("Upload aborted");
+    server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload aborted\"}");
+    return;
   }
 }
 
