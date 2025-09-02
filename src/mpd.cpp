@@ -332,7 +332,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print("random: 0\n");
     mpdClient.print("single: 0\n");
     mpdClient.print("consume: 0\n");
-    mpdClient.print("playlist: 1\n");
+    mpdClient.print("playlist: WebRadio\n");
     mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
     mpdClient.print("mixrampdb: 0.000000\n");
     mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
