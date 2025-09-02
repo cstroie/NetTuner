@@ -45,7 +45,7 @@
                     </label>
                 </fieldset>
                 
-                <fieldset>
+                <fieldset id="i2s_pins">
                     <legend>I2S Audio Pins</legend>
                     <label for="i2s_bclk">BCLK Pin
                         <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required>
@@ -123,16 +123,22 @@
             
             // Handle audio output type change
             const audioOutputSelect = document.getElementById('audio_output');
+            const i2sPinsFieldset = document.getElementById('i2s_pins');
             const vs1053PinsFieldset = document.getElementById('vs1053_pins');
             
-            if (audioOutputSelect && vs1053PinsFieldset) {
-                audioOutputSelect.addEventListener('change', function() {
-                    if (this.value === 'vs1053') {
+            if (audioOutputSelect && i2sPinsFieldset && vs1053PinsFieldset) {
+                function updatePinVisibility() {
+                    if (audioOutputSelect.value === 'vs1053') {
+                        i2sPinsFieldset.style.display = 'none';
                         vs1053PinsFieldset.style.display = 'block';
                     } else {
+                        i2sPinsFieldset.style.display = 'block';
                         vs1053PinsFieldset.style.display = 'none';
                     }
-                });
+                }
+                
+                audioOutputSelect.addEventListener('change', updatePinVisibility);
+                updatePinVisibility(); // Set initial state
             }
         });
     </script>

@@ -127,17 +127,21 @@ async function loadConfig() {
             
             // Set audio output type
             const audioOutputSelect = document.getElementById('audio_output');
-            if (audioOutputSelect) {
+            const i2sPinsFieldset = document.getElementById('i2s_pins');
+            const vs1053PinsFieldset = document.getElementById('vs1053_pins');
+            
+            if (audioOutputSelect && i2sPinsFieldset && vs1053PinsFieldset) {
                 // Check if VS1053 pins are configured (not using default values)
                 if (config.vs1053_cs !== 5 || config.vs1053_dcs !== 16 || config.vs1053_dreq !== 4) {
                     audioOutputSelect.value = 'vs1053';
-                    // Show VS1053 pins fieldset
-                    const vs1053PinsFieldset = document.getElementById('vs1053_pins');
-                    if (vs1053PinsFieldset) {
-                        vs1053PinsFieldset.style.display = 'block';
-                    }
+                    // Show VS1053 pins fieldset, hide I2S
+                    i2sPinsFieldset.style.display = 'none';
+                    vs1053PinsFieldset.style.display = 'block';
                 } else {
                     audioOutputSelect.value = 'i2s';
+                    // Show I2S pins fieldset, hide VS1053
+                    i2sPinsFieldset.style.display = 'block';
+                    vs1053PinsFieldset.style.display = 'none';
                 }
             }
             
@@ -188,13 +192,13 @@ async function saveConfig() {
         display_address: parseInt(document.getElementById('display_address').value)
     };
     
-    // Add VS1053 pins only if VS1053 is selected
+    // Add VS1053 pins only if VS1053 is selected, otherwise use default values
     if (audioOutput === 'vs1053') {
         config.vs1053_cs = parseInt(document.getElementById('vs1053_cs').value);
         config.vs1053_dcs = parseInt(document.getElementById('vs1053_dcs').value);
         config.vs1053_dreq = parseInt(document.getElementById('vs1053_dreq').value);
     } else {
-        // If I2S is selected, use default VS1053 pin values
+        // If I2S is selected, use default VS1053 pin values to disable VS1053
         config.vs1053_cs = 5;
         config.vs1053_dcs = 16;
         config.vs1053_dreq = 4;
