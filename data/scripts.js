@@ -2046,7 +2046,20 @@ async function exportAllConfiguration() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
         } else {
-            showModal('Error', 'Error exporting configurations: ' + response.status);
+            // Try to parse JSON error response
+            let errorMessage = 'Error exporting configurations: ' + response.status;
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {
+                // If JSON parsing fails, use the status text
+                if (response.statusText) {
+                    errorMessage = 'Error exporting configurations: ' + response.statusText;
+                }
+            }
+            showModal('Error', errorMessage);
         }
     } catch (error) {
         console.error('Error exporting configurations:', error);
@@ -2087,12 +2100,35 @@ async function importAllConfiguration() {
         });
         
         if (response.ok) {
-            showModal('Import Successful', 'Configuration imported successfully. Device restart required for changes to take effect.');
+            // Try to parse JSON success response
+            try {
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showModal('Import Successful', result.message || 'Configuration imported successfully. Device restart required for changes to take effect.');
+                } else {
+                    showModal('Import Error', result.message || 'Error importing configuration');
+                }
+            } catch (e) {
+                // Fallback if JSON parsing fails
+                showModal('Import Successful', 'Configuration imported successfully. Device restart required for changes to take effect.');
+            }
             // Clear the file input
             fileInput.value = '';
         } else {
-            const errorText = await response.text();
-            showModal('Import Error', 'Error importing configuration: ' + errorText);
+            // Try to parse JSON error response
+            let errorMessage = 'Error importing configuration: ' + response.status;
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch (e) {
+                // If JSON parsing fails, use the status text
+                if (response.statusText) {
+                    errorMessage = 'Error importing configuration: ' + response.statusText;
+                }
+            }
+            showModal('Import Error', errorMessage);
         }
     } catch (error) {
         console.error('Error importing configurations:', error);
