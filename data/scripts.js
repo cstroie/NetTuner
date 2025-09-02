@@ -364,9 +364,21 @@ function connectWebSocket() {
                         if (status.bitrate) {
                             displayText += ' (' + status.bitrate + ' kbps)';
                         }
-                        currentElement.textContent = displayText;
+                        // Update text content but preserve the favicon element
+                        const faviconElement = document.getElementById('stationFavicon');
+                        if (faviconElement) {
+                            currentElement.innerHTML = faviconElement.outerHTML + displayText;
+                        } else {
+                            currentElement.textContent = displayText;
+                        }
                     } else {
-                        currentElement.textContent = 'No stream selected';
+                        // Update text content but preserve the favicon element
+                        const faviconElement = document.getElementById('stationFavicon');
+                        if (faviconElement) {
+                            currentElement.innerHTML = faviconElement.outerHTML + 'No stream selected';
+                        } else {
+                            currentElement.textContent = 'No stream selected';
+                        }
                     }
                 }
                 
@@ -377,14 +389,20 @@ function connectWebSocket() {
                     findFaviconUrl(status.streamIcyUrl).then(faviconUrl => {
                         if (faviconUrl) {
                             console.log('Found favicon:', faviconUrl);
-                            // You could store this favicon URL or use it directly in the UI
-                            // For example, you might want to update an image element:
-                            // const faviconElement = document.getElementById('stationFavicon');
-                            // if (faviconElement) {
-                            //     faviconElement.src = faviconUrl;
-                            // }
+                            // Update the favicon image element
+                            const faviconElement = document.getElementById('stationFavicon');
+                            if (faviconElement) {
+                                faviconElement.src = faviconUrl;
+                                faviconElement.style.display = 'inline';
+                            }
                         }
                     });
+                } else {
+                    // Hide favicon if no ICY URL
+                    const faviconElement = document.getElementById('stationFavicon');
+                    if (faviconElement) {
+                        faviconElement.style.display = 'none';
+                    }
                 }
                 
                 // Update volume controls
