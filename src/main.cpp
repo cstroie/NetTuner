@@ -116,11 +116,11 @@ void audio_info(const char *info) {
       }
       
       // Store the stream icon URL
-      strncpy(streamIcon, urlPart.c_str(), sizeof(streamIcon) - 1);
-      streamIcon[sizeof(streamIcon) - 1] = '\0';
+      strncpy(streamIconURL, urlPart.c_str(), sizeof(streamIconURL) - 1);
+      streamIconURL[sizeof(streamIconURL) - 1] = '\0';
       
       Serial.print("Stream Icon URL: ");
-      Serial.println(streamIcon);
+      Serial.println(streamIconURL);
       
       // Notify clients of the new stream icon
       sendStatusToClients();
@@ -178,7 +178,7 @@ char streamURL[256] = "";
 char streamName[128] = "";
 char streamTitle[128] = "";
 char streamIcyUrl[256] = "";
-char streamIcon[256] = "";
+char streamIconURL[256] = "";
 int bitrate = 0;
 volatile bool isPlaying = false;
 int volume = 11;
@@ -1098,7 +1098,7 @@ void stopStream() {
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
   streamIcyUrl[0] = '\0';        // Clear ICY URL
-  streamIcon[0] = '\0';          // Clear stream icon URL
+  streamIconURL[0] = '\0';       // Clear stream icon URL
   bitrate = 0;                   // Clear bitrate
   // Update total play time when stopping
   if (playStartTime > 0) {
@@ -2037,7 +2037,7 @@ String generateStatusJSON() {
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
   status += "\"streamIcyUrl\":\"" + String(streamIcyUrl) + "\",";
-  status += "\"streamIcon\":\"" + String(streamIcon) + "\",";
+  status += "\"streamIcon\":\"" + String(streamIconURL) + "\",";
   status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";
