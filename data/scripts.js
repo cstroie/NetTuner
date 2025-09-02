@@ -4,6 +4,86 @@ let bass = 0;
 let midrange = 0;
 let treble = 0;
 
+// Function to find favicon URL from a website
+async function findFaviconUrl(websiteUrl) {
+    try {
+        // Handle cases where the URL might be a stream URL
+        let baseUrl;
+        try {
+            const urlObj = new URL(websiteUrl);
+            baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+        } catch (e) {
+            // If URL parsing fails, try to extract domain
+            const match = websiteUrl.match(/^(?:https?:\/\/)?([^\/\s]+)/);
+            if (match) {
+                baseUrl = `http://${match[1]}`;
+            } else {
+                return null;
+            }
+        }
+        
+        // Common favicon locations to check
+        const faviconLocations = [
+            '/favicon.ico',
+            '/favicon.png',
+            '/apple-touch-icon.png',
+            '/apple-touch-icon-precomposed.png'
+        ];
+        
+        // First, try to get favicon from HTML head by fetching the base URL
+        try {
+            const response = await fetch(baseUrl);
+            const html = await response.text();
+            
+            // Look for favicon in HTML
+            const linkMatches = html.match(/<link[^>]*rel=["'][^"']*(?:icon|favicon)[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/i);
+            if (linkMatches && linkMatches[1]) {
+                try {
+                    const faviconUrl = new URL(linkMatches[1], baseUrl).href;
+                    if (await checkImageExists(faviconUrl)) {
+                        return faviconUrl;
+                    }
+                } catch (e) {
+                    // If URL construction fails, try direct URL
+                    if (await checkImageExists(linkMatches[1])) {
+                        return linkMatches[1];
+                    }
+                }
+            }
+        } catch (e) {
+            console.log('Could not fetch HTML for favicon detection');
+        }
+        
+        // Check common locations
+        for (const location of faviconLocations) {
+            try {
+                const faviconUrl = new URL(location, baseUrl).href;
+                if (await checkImageExists(faviconUrl)) {
+                    return faviconUrl;
+                }
+            } catch (e) {
+                // Skip if URL construction fails
+                continue;
+            }
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error finding favicon:', error);
+        return null;
+    }
+}
+
+// Helper function to check if image exists
+async function checkImageExists(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+    });
+}
+
 // Theme handling
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
