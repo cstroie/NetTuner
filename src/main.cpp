@@ -37,9 +37,6 @@ void updateDisplay();
  * @param info Pointer to the stream title information
  */
 void audio_showstreamtitle(const char *info) {
-  // Only process for I2S mode
-  if (useVS1053) return;
-  
   if (info && strlen(info) > 0) {
     Serial.print("Stream title: ");
     Serial.println(info);
@@ -60,9 +57,6 @@ void audio_showstreamtitle(const char *info) {
  * @param info Pointer to the station name information
  */
 void audio_showstation(const char *info) {
-  // Only process for I2S mode
-  if (useVS1053) return;
-  
   if (info && strlen(info) > 0) {
     Serial.print("Station name: ");
     Serial.println(info);
@@ -83,9 +77,6 @@ void audio_showstation(const char *info) {
  * @param info Pointer to the bitrate information
  */
 void audio_bitrate(const char *info) {
-  // Only process for I2S mode
-  if (useVS1053) return;
-  
   if (info && strlen(info) > 0) {
     Serial.print("Bitrate: ");
     Serial.println(info);
@@ -124,17 +115,11 @@ unsigned long playStartTime = 0;
 unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
-VS1053 *vs1053 = nullptr;
-bool useVS1053 = false;
 bool audioConnected = false;
 Config config = {
-  DEFAULT_AUDIO_OUTPUT,
   DEFAULT_I2S_DOUT,
   DEFAULT_I2S_BCLK,
   DEFAULT_I2S_LRC,
-  DEFAULT_VS1053_CS,
-  DEFAULT_VS1053_DCS,
-  DEFAULT_VS1053_DREQ,
   DEFAULT_LED_PIN,
   DEFAULT_ROTARY_CLK,
   DEFAULT_ROTARY_DT,
@@ -360,11 +345,7 @@ void setup() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
-    if (useVS1053 && vs1053) {
-      // VS1053 processing would go here
-      // For now, we just yield to prevent busy waiting
-      yield();
-    } else if (audio) {
+    if (audio) {
       audio->loop();
     }
     // Very small delay to prevent busy waiting but allow frequent processing
@@ -938,19 +919,11 @@ void saveWiFiCredentials() {
  * and sets up the audio buffer with an increased size for better performance.
  */
 void setupAudioOutput() {
-  if (useVS1053) {
-    // Initialize VS1053
-    vs1053 = new VS1053(config.vs1053_cs, config.vs1053_dcs, config.vs1053_dreq);
-    vs1053->begin();
-    vs1053->switchToMp3Mode();
-    vs1053->setVolume(volume * 5); // VS1053 volume scale is 0-254, our scale is 0-22
-  } else {
-    // Initialize ESP32-audioI2S
-    audio = new Audio(false); // false = use I2S, true = use DAC
-    audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
-    audio->setVolume(volume); // Use 0-22 scale directly
-    audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
-  }
+  // Initialize ESP32-audioI2S
+  audio = new Audio(false); // false = use I2S, true = use DAC
+  audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
+  audio->setVolume(volume); // Use 0-22 scale directly
+  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
 /**
@@ -963,10 +936,7 @@ void setupAudioOutput() {
 void startStream(const char* url, const char* name) {
   bool resume = false;
   // Stop any currently playing stream
-  if (useVS1053 && vs1053) {
-    // VS1053 stop
-    vs1053->stopSong();
-  } else if (audio) {
+  if (audio) {
     // Stop first
     audio->stopSong();
   }
@@ -1018,16 +988,8 @@ void startStream(const char* url, const char* name) {
   playStartTime = millis() / 1000;  // Store in seconds
   // Turn on LED when playing
   digitalWrite(config.led_pin, HIGH);
-  
-  // Play the stream based on selected audio output
-  if (useVS1053 && vs1053) {
-    // For VS1053, we need to handle streaming differently
-    audioConnected = true; // Assume connection for now
-    Serial.println("Starting VS1053 stream");
-    // Note: VS1053 streaming implementation would go here
-    // This is a simplified implementation
-  } else if (audio) {
-    // Use ESP32-audioI2S to play the stream
+  // Use ESP32-audioI2S to play the stream
+  if (audio) {
     audioConnected = audio->connecttohost(url);
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
@@ -1329,9 +1291,7 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, increase volume by 1 (capped at 22)
         volume = min(22, volume + 1);
-        if (useVS1053 && vs1053) {
-          vs1053->setVolume(volume * 5);  // VS1053 uses 0-254 scale
-        } else if (audio) {
+        if (audio) {
           audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
@@ -1347,9 +1307,7 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, decrease volume by 1 (capped at 0)
         volume = max(0, volume - 1);
-        if (useVS1053 && vs1053) {
-          vs1053->setVolume(volume * 5);  // VS1053 uses 0-254 scale
-        } else if (audio) {
+        if (audio) {
           audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
@@ -1897,8 +1855,7 @@ void handleTone() {
       return;
     }
     // Apply tone settings to audio using the Audio library's setTone function
-    // Note: VS1053 doesn't support tone controls, so this only applies to I2S
-    if (!useVS1053 && audio) {
+    if (audio) {
       // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
       audio->setTone(bass, midrange, treble);
     }

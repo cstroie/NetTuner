@@ -27,7 +27,6 @@
 #include <HTTPClient.h>
 #include <driver/i2s.h>
 #include "Audio.h"
-#include <VS1053.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
@@ -39,13 +38,9 @@
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
 
 // Default pin definitions
-#define DEFAULT_AUDIO_OUTPUT      0  ///< 0 = I2S, 1 = VS1053
 #define DEFAULT_I2S_DOUT         26  ///< I2S Data Out pin
 #define DEFAULT_I2S_BCLK         27  ///< I2S Bit Clock pin
 #define DEFAULT_I2S_LRC          25  ///< I2S Left/Right Clock pin
-#define DEFAULT_VS1053_CS         5  ///< VS1053 Chip Select pin
-#define DEFAULT_VS1053_DCS       16  ///< VS1053 Data Chip Select pin
-#define DEFAULT_VS1053_DREQ       4  ///< VS1053 Data Request pin
 #define DEFAULT_LED_PIN           2  ///< ESP32 internal LED pin
 #define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
 #define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
@@ -73,13 +68,9 @@ struct StreamInfo {
 };
 
 struct Config {
-  int audio_output;    ///< Audio output type (0 = I2S, 1 = VS1053)
   int i2s_dout;        ///< I2S Data Out pin
   int i2s_bclk;        ///< I2S Bit Clock pin
   int i2s_lrc;         ///< I2S Left/Right Clock pin
-  int vs1053_cs;       ///< VS1053 Chip Select pin
-  int vs1053_dcs;      ///< VS1053 Data Chip Select pin
-  int vs1053_dreq;     ///< VS1053 Data Request pin
   int led_pin;         ///< LED indicator pin
   int rotary_clk;      ///< Rotary encoder clock pin
   int rotary_dt;       ///< Rotary encoder data pin
@@ -109,8 +100,6 @@ extern unsigned long playStartTime;
 extern unsigned long totalPlayTime;
 extern const char* BUILD_TIME;
 extern Audio* audio;
-extern VS1053* vs1053;
-extern bool useVS1053;
 extern bool audioConnected;
 extern WebServer server;
 extern WebSocketsServer webSocket;

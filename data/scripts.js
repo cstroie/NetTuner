@@ -61,13 +61,9 @@ async function loadConfig() {
         const response = await fetch('/api/config');
         if (response.ok) {
             const config = await response.json();
-            document.getElementById('audio_output').value = config.audio_output || 0;
             document.getElementById('i2s_bclk').value = config.i2s_bclk || 27;
             document.getElementById('i2s_lrc').value = config.i2s_lrc || 25;
             document.getElementById('i2s_dout').value = config.i2s_dout || 26;
-            document.getElementById('vs1053_cs').value = config.vs1053_cs || 5;
-            document.getElementById('vs1053_dcs').value = config.vs1053_dcs || 16;
-            document.getElementById('vs1053_dreq').value = config.vs1053_dreq || 4;
             document.getElementById('led_pin').value = config.led_pin || 2;
             document.getElementById('rotary_clk').value = config.rotary_clk || 18;
             document.getElementById('rotary_dt').value = config.rotary_dt || 19;
@@ -78,36 +74,17 @@ async function loadConfig() {
             document.getElementById('display_width').value = config.display_width || 128;
             document.getElementById('display_height').value = config.display_height || 64;
             document.getElementById('display_address').value = config.display_address || 60;
-            
-            // Show/hide pin settings based on audio output selection
-            toggleAudioSettings();
         }
     } catch (error) {
         console.error('Error loading config:', error);
     }
 }
 
-function toggleAudioSettings() {
-    const audioOutput = document.getElementById('audio_output');
-    const i2sSettings = document.getElementById('i2sSettings');
-    const vs1053Settings = document.getElementById('vs1053Settings');
-    
-    if (audioOutput && i2sSettings && vs1053Settings) {
-        const isVS1053 = audioOutput.value === '1';
-        i2sSettings.style.display = isVS1053 ? 'none' : 'block';
-        vs1053Settings.style.display = isVS1053 ? 'block' : 'none';
-    }
-}
-
 async function saveConfig() {
     const config = {
-        audio_output: parseInt(document.getElementById('audio_output').value),
         i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
         i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
         i2s_dout: parseInt(document.getElementById('i2s_dout').value),
-        vs1053_cs: parseInt(document.getElementById('vs1053_cs').value),
-        vs1053_dcs: parseInt(document.getElementById('vs1053_dcs').value),
-        vs1053_dreq: parseInt(document.getElementById('vs1053_dreq').value),
         led_pin: parseInt(document.getElementById('led_pin').value),
         rotary_clk: parseInt(document.getElementById('rotary_clk').value),
         rotary_dt: parseInt(document.getElementById('rotary_dt').value),
@@ -198,12 +175,6 @@ function initConfigPage() {
             e.preventDefault();
             saveConfig();
         });
-    }
-    
-    // Set up audio output change handler
-    const audioOutput = document.getElementById('audio_output');
-    if (audioOutput) {
-        audioOutput.addEventListener('change', toggleAudioSettings);
     }
 }
 
