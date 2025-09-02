@@ -356,7 +356,7 @@ function connectWebSocket() {
                 }
                 
                 // Update stream info element
-                const currentElement = document.getElementById('streamURL');
+                const currentElement = document.getElementById('streamTitle');
                 if (currentElement) {
                     if (status.playing) {
                         // Show stream title when playing
