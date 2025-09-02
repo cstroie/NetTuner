@@ -340,7 +340,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("song: " + String(currentSelectionRef) + "\n");
       mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
       mpdClient.print("time: 0:0\n");
-      mpdClient.print("elapsed: 0.000\n");
+      // Calculate elapsed time
+      extern unsigned long playStartTime;
+      unsigned long elapsed = 0;
+      if (playStartTime > 0) {
+        elapsed = (millis() / 1000) - playStartTime;
+      }
+      mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
       mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
       mpdClient.print("audio: 44100:16:2\n");
       mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
