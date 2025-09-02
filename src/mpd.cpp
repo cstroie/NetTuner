@@ -42,9 +42,11 @@ int parseValue(const String& valueStr) {
   return cleanedStr.toInt();
 }
 
+// AI move these to src/mpd.h ...
 extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
+// file, AI!
 
 // Define mpdClient as a global variable
 WiFiClient mpdClient;
