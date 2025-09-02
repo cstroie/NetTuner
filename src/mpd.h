@@ -26,6 +26,11 @@
 // Forward declarations
 struct StreamInfo;
 
+// External global variables
+extern unsigned long startTime;
+extern unsigned long totalPlayTime;
+extern unsigned long playStartTime;
+
 /**
  * @brief MPD Interface Class
  * Encapsulates all MPD protocol functionality
