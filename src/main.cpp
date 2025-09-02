@@ -2099,7 +2099,6 @@ void handleImportConfig() {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
       return;
     }
-    Serial.println(upload.buf.get());
     // Parse the uploaded JSON data
     DynamicJsonDocument doc(8192);
     DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
