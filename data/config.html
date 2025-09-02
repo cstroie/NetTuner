@@ -35,54 +35,56 @@
                 <p>Configure hardware pins and settings</p>
             </hgroup>
             <form id="configForm">
-                <fieldset>
-                    <legend>I2S Audio Pins</legend>
-                    <label for="i2s_bclk">BCLK Pin
+                <fieldset class="grid">
+                    <legend>I2S audio pins</legend>
+                    <span></span>
+                    <label for="i2s_bclk">I2S BCLK
                         <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required>
                     </label>
-                    <label for="i2s_lrc">LRC Pin
+                    <label for="i2s_lrc">I2S LRC
                         <input type="number" id="i2s_lrc" name="i2s_lrc" min="0" max="39" required>
                     </label>
-                    <label for="i2s_dout">DOUT Pin
+                    <label for="i2s_dout">I2S DOUT
                         <input type="number" id="i2s_dout" name="i2s_dout" min="0" max="39" required>
                     </label>
+                    <span></span>
                 </fieldset>
-                
-                <fieldset>
-                    <legend>Control Pins</legend>
-                    <label for="led_pin">LED Pin
+
+                <fieldset class="grid">
+                    <legend>Control pins</legend>
+                    <label for="led_pin">Onboard LED
                         <input type="number" id="led_pin" name="led_pin" min="0" max="39" required>
                     </label>
-                    <label for="rotary_clk">Rotary CLK Pin
-                        <input type="number" id="rotary_clk" name="rotary_clk" min="0" max="39" required>
-                    </label>
-                    <label for="rotary_dt">Rotary DT Pin
-                        <input type="number" id="rotary_dt" name="rotary_dt" min="0" max="39" required>
-                    </label>
-                    <label for="rotary_sw">Rotary SW Pin
-                        <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required>
-                    </label>
-                    <label for="board_button">Board Button Pin
+                    <label for="board_button">Onboard Button
                         <input type="number" id="board_button" name="board_button" min="0" max="39" required>
                     </label>
+                    <label for="rotary_clk">Rotary CLK
+                        <input type="number" id="rotary_clk" name="rotary_clk" min="0" max="39" required>
+                    </label>
+                    <label for="rotary_dt">Rotary DT
+                        <input type="number" id="rotary_dt" name="rotary_dt" min="0" max="39" required>
+                    </label>
+                    <label for="rotary_sw">Rotary SW
+                        <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required>
+                    </label>
                 </fieldset>
-                
-                <fieldset>
-                    <legend>Display Settings</legend>
-                    <label for="display_sda">Display SDA Pin
+
+                <fieldset class="grid">
+                    <legend>Display settings</legend>
+                    <label for="display_sda">I2C SDA
                         <input type="number" id="display_sda" name="display_sda" min="0" max="39" required>
                     </label>
-                    <label for="display_scl">Display SCL Pin
+                    <label for="display_scl">I2C SCL
                         <input type="number" id="display_scl" name="display_scl" min="0" max="39" required>
+                    </label>
+                    <label for="display_address">I2C address (decimal)
+                        <input type="number" id="display_address" name="display_address" min="0" max="127" required>
                     </label>
                     <label for="display_width">Display Width
                         <input type="number" id="display_width" name="display_width" min="32" max="256" required>
                     </label>
                     <label for="display_height">Display Height
                         <input type="number" id="display_height" name="display_height" min="32" max="256" required>
-                    </label>
-                    <label for="display_address">Display I2C Address
-                        <input type="number" id="display_address" name="display_address" min="0" max="127" required>
                     </label>
                 </fieldset>
             </form>
@@ -93,25 +95,15 @@
         
         <article>
             <hgroup>
-                <h2>Configuration Export</h2>
-                <p>Export all configuration files as a single JSON package</p>
+                <h2>Configuration export and import</h2>
+                <p>Export and import all configuration files as a single JSON package</p>
             </hgroup>
-            <p>Export all your NetTuner configuration files (config.json, wifi.json, playlist.json) as a single JSON file for backup or transfer purposes.</p>
-            <footer>
-                <button type="button" onclick="exportAllConfigurations()">Export All Configurations</button>
+            <p>Export or import all your NetTuner configuration files (config.json, wifi.json, playlist.json) as a single JSON file for backup or transfer purposes.</p>
+            <div><input type="file" id="importFile" accept=".json" onchange="handleImportFileSelect()"></div>
+            <footer class="grid">
+                <button type="button" onclick="importAllConfiguration()" id="importButton" disabled>Import configuration</button>
+                <button type="button" onclick="exportAllConfiguration()">Export configuration</button>
             </footer>
-        </article>
-        
-        <article>
-            <hgroup>
-                <h2>Configuration Import</h2>
-                <p>Import all configuration files from a single JSON package</p>
-            </hgroup>
-            <p>Import your NetTuner configuration from a single JSON file containing config.json, wifi.json, and playlist.json.</p>
-            <div class="grid">
-                <input type="file" id="importFile" accept=".json" onchange="handleImportFileSelect()">
-                <button type="button" onclick="importAllConfigurations()" id="importButton" disabled>Import Configuration</button>
-            </div>
         </article>
     </main>
     
@@ -121,102 +113,7 @@
             initTheme();
             initConfigPage();
         });
-        
-        async function exportAllConfigurations() {
-            try {
-                const response = await fetch('/api/config/export');
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'nettuner-config-export.json';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                } else {
-                    showModal('Error', 'Error exporting configurations: ' + response.status);
-                }
-            } catch (error) {
-                console.error('Error exporting configurations:', error);
-                showModal('Error', 'Error exporting configurations: ' + error.message);
-            }
-        }
-        
-        function handleImportFileSelect() {
-            const fileInput = document.getElementById('importFile');
-            const importButton = document.getElementById('importButton');
-            importButton.disabled = !fileInput.files.length;
-        }
-        
-        async function importAllConfigurations() {
-            const fileInput = document.getElementById('importFile');
-            const importButton = document.getElementById('importButton');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                showModal('Import Error', 'Please select a file to import');
-                return;
-            }
-            
-            // Show loading state
-            const originalText = importButton.textContent;
-            importButton.textContent = 'Importing...';
-            importButton.disabled = true;
-            
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                const response = await fetch('/api/config/import', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    showModal('Import Successful', 'Configuration imported successfully. Device restart required for changes to take effect.');
-                    // Clear the file input
-                    fileInput.value = '';
-                } else {
-                    const errorText = await response.text();
-                    showModal('Import Error', 'Error importing configuration: ' + errorText);
-                }
-            } catch (error) {
-                console.error('Error importing configurations:', error);
-                showModal('Import Error', 'Error importing configurations: ' + error.message);
-            } finally {
-                // Restore button state
-                importButton.textContent = originalText;
-                importButton.disabled = false;
-            }
-        }
-        
-        function showModal(title, message) {
-            // Remove any existing modal
-            const existingModal = document.getElementById('configModal');
-            if (existingModal) {
-                existingModal.remove();
-            }
-            
-            // Create modal element
-            const modal = document.createElement('dialog');
-            modal.id = 'configModal';
-            modal.innerHTML = `
-                <article>
-                    <header>
-                        <h2>${title}</h2>
-                    </header>
-                    <p>${message}</p>
-                    <footer>
-                        <button onclick="document.getElementById('configModal').remove()">OK</button>
-                    </footer>
-                </article>
-            `;
-            
-            document.body.appendChild(modal);
-            modal.showModal();
-        }
+
     </script>
 </body>
 </html>

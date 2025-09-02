@@ -440,10 +440,10 @@ function connectWebSocket() {
                 }
                 
                 // Handle ICY URL if available
-                if (status.streamIcyUrl) {
-                    console.log('Received ICY URL:', status.streamIcyUrl);
+                if (status.streamIcyURL) {
+                    console.log('Received ICY URL:', status.streamIcyURL);
                     // Try to get favicon from the ICY URL
-                    findFaviconUrl(status.streamIcyUrl).then(faviconUrl => {
+                    findFaviconUrl(status.streamIcyURL).then(faviconUrl => {
                         if (faviconUrl) {
                             console.log('Found favicon:', faviconUrl);
                             // Update the favicon image element
@@ -2031,3 +2031,102 @@ function selectNetwork(ssid) {
     document.getElementById('ssid0').value = ssid;
 }
 
+// Configuration import/export functions
+async function exportAllConfiguration() {
+    try {
+        const response = await fetch('/api/config/export');
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'nettuner-config-export.json';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            showModal('Error', 'Error exporting configurations: ' + response.status);
+        }
+    } catch (error) {
+        console.error('Error exporting configurations:', error);
+        showModal('Error', 'Error exporting configurations: ' + error.message);
+    }
+}
+
+// Handle import file selection
+function handleImportFileSelect() {
+    const fileInput = document.getElementById('importFile');
+    const importButton = document.getElementById('importButton');
+    importButton.disabled = !fileInput.files.length;
+}
+
+// Import all configuration
+async function importAllConfiguration() {
+    const fileInput = document.getElementById('importFile');
+    const importButton = document.getElementById('importButton');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showModal('Import Error', 'Please select a file to import');
+        return;
+    }
+    
+    // Show loading state
+    const originalText = importButton.textContent;
+    importButton.textContent = 'Importing...';
+    importButton.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch('/api/config/import', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            showModal('Import Successful', 'Configuration imported successfully. Device restart required for changes to take effect.');
+            // Clear the file input
+            fileInput.value = '';
+        } else {
+            const errorText = await response.text();
+            showModal('Import Error', 'Error importing configuration: ' + errorText);
+        }
+    } catch (error) {
+        console.error('Error importing configurations:', error);
+        showModal('Import Error', 'Error importing configurations: ' + error.message);
+    } finally {
+        // Restore button state
+        importButton.textContent = originalText;
+        importButton.disabled = false;
+    }
+}
+
+// Simple modal dialog function
+function showModal(title, message) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('configModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create modal element
+    const modal = document.createElement('dialog');
+    modal.id = 'configModal';
+    modal.innerHTML = `
+        <article>
+            <header>
+                <h2>${title}</h2>
+            </header>
+            <p>${message}</p>
+            <footer>
+                <button onclick="document.getElementById('configModal').remove()">OK</button>
+            </footer>
+        </article>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.showModal();
+}

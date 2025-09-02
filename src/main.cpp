@@ -2034,16 +2034,13 @@ void handlePostConfig() {
  * JSON object where keys are filenames and values are file contents.
  */
 void handleExportConfig() {
-  // Create a JSON document to hold all configurations
-  DynamicJsonDocument doc(8192); // Larger buffer for multiple files
-  
   // List of configuration files to export
   const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json"};
-  
+  // Initialize output string
+  String output = "{";
   // Process each configuration file
   for (int i = 0; i < 3; i++) {
     const char* filename = configFiles[i];
-    
     // Check if file exists
     if (SPIFFS.exists(filename)) {
       // Open the file
@@ -2057,18 +2054,10 @@ void handleExportConfig() {
           if (buf) {
             // Read file content
             if (file.readBytes(buf.get(), size) == size) {
-              buf[size] = '\0';
-              
-              // Parse JSON content
-              DynamicJsonDocument fileDoc(4096);
-              DeserializationError error = deserializeJson(fileDoc, buf.get());
-              if (!error) {
-                // Add to main document with filename as key (without leading slash)
-                String key = String(filename + 1); // Skip the leading '/'
-                doc[key] = fileDoc.as<JsonObject>();
-              } else {
-                Serial.printf("Failed to parse %s: %s\n", filename, error.c_str());
-              }
+              buf[size] = '\0';              
+              // Add to main document with filename as key (without leading slash)
+              output += "\"" + String(filename + 1) + "\":" + String(buf.get());
+              if (i < 2) output += ",";
             }
           }
         }
@@ -2076,10 +2065,9 @@ void handleExportConfig() {
       }
     }
   }
-  
+  // Close the JSON object
+  output += "}";
   // Send the combined JSON as response
-  String output;
-  serializeJson(doc, output);
   server.send(200, "application/json", output);
 }
 
@@ -2092,7 +2080,6 @@ void handleExportConfig() {
 void handleImportConfig() {
   // Check if a file was uploaded
   HTTPUpload& upload = server.upload();
-  
   // Handle file upload
   if (upload.status == UPLOAD_FILE_START) {
     Serial.printf("Upload started: %s\n", upload.filename.c_str());
@@ -2105,7 +2092,6 @@ void handleImportConfig() {
     server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload aborted\"}");
     return;
   }
-  
   // Only process when we have the complete file
   if (server.method() == HTTP_POST && server.hasArg("plain") == false) {
     // Check if we have upload data
@@ -2113,33 +2099,26 @@ void handleImportConfig() {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
       return;
     }
-    
     // Parse the uploaded JSON data
     DynamicJsonDocument doc(8192);
     DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
-    
     if (error) {
       Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
       return;
     }
-    
     // Process each configuration section
     bool success = true;
     const char* configFiles[] = {"config.json", "wifi.json", "playlist.json"};
-    
     for (int i = 0; i < 3; i++) {
       const char* filename = configFiles[i];
-      
       // Check if this section exists in the uploaded data
       if (doc.containsKey(filename)) {
         // Get the JSON object for this section
         JsonObject section = doc[filename];
-        
         // Create a separate document for this section
         DynamicJsonDocument sectionDoc(4096);
         sectionDoc.set(section);
-        
         // Save to SPIFFS
         File file = SPIFFS.open("/" + String(filename), "w");
         if (file) {
@@ -2154,7 +2133,6 @@ void handleImportConfig() {
         }
       }
     }
-    
     if (success) {
       server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration imported successfully\"}");
     } else {
@@ -2177,8 +2155,8 @@ String generateStatusJSON() {
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"streamIcyUrl\":\"" + String(streamIcyURL) + "\",";
-  status += "\"streamIcon\":\"" + String(streamIconURL) + "\",";
+  status += "\"streamIcyURL\":\"" + String(streamIcyURL) + "\",";
+  status += "\"streamIconURL\":\"" + String(streamIconURL) + "\",";
   status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";
