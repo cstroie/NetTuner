@@ -2102,7 +2102,7 @@ void handleImportConfig() {
     Serial.printf("Upload finished: %s, size: %d\n", upload.filename.c_str(), upload.totalSize);
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     Serial.println("Upload aborted");
-    server.send(500, "text/plain", "Upload aborted");
+    server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload aborted\"}");
     return;
   }
   
@@ -2110,7 +2110,7 @@ void handleImportConfig() {
   if (server.method() == HTTP_POST && server.hasArg("plain") == false) {
     // Check if we have upload data
     if (upload.totalSize == 0) {
-      server.send(400, "text/plain", "No file uploaded");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
       return;
     }
     
@@ -2120,7 +2120,7 @@ void handleImportConfig() {
     
     if (error) {
       Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
-      server.send(400, "text/plain", "Invalid JSON format");
+      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
       return;
     }
     
@@ -2156,13 +2156,13 @@ void handleImportConfig() {
     }
     
     if (success) {
-      server.send(200, "text/plain", "Configuration imported successfully");
+      server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration imported successfully\"}");
     } else {
-      server.send(500, "text/plain", "Error importing configuration");
+      server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Error importing configuration\"}");
     }
   } else {
     // Handle the case where the request is just starting
-    server.send(200, "text/plain", "Ready to receive file");
+    server.send(200, "application/json", "{\"status\":\"info\",\"message\":\"Ready to receive file\"}");
   }
 }
 
