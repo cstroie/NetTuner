@@ -419,34 +419,28 @@ function connectWebSocket() {
                 // Update stream name element
                 const streamNameElement = document.getElementById('streamName');
                 if (streamNameElement) {
-                    streamNameElement.textContent = status.streamName || 'No station selected';
+                    // Show stream name when playing
+                    let displayText = status.streamName || 'No station selected';
+                    // Update text content but preserve the favicon element
+                    const faviconElement = document.getElementById('stationFavicon');
+                    if (faviconElement) {
+                        streamNameElement.innerHTML = faviconElement.outerHTML + displayText;
+                    } else {
+                        streamNameElement.textContent = displayText;
+                    }
                 }
-                
-                // Update stream info element
-                const currentElement = document.getElementById('streamTitle');
-                if (currentElement) {
+
+                // Update stream title element
+                const streamTitleElement = document.getElementById('streamTitle');
+                if (streamTitleElement) {
+                    // Show stream title when playing
+                    let displayText = status.streamTitle || 'No stream selected';
                     if (status.playing) {
-                        // Show stream title when playing
-                        let displayText = status.streamTitle || 'Unknown Stream';
                         if (status.bitrate) {
                             displayText += ' (' + status.bitrate + ' kbps)';
                         }
-                        // Update text content but preserve the favicon element
-                        const faviconElement = document.getElementById('stationFavicon');
-                        if (faviconElement) {
-                            currentElement.innerHTML = faviconElement.outerHTML + displayText;
-                        } else {
-                            currentElement.textContent = displayText;
-                        }
-                    } else {
-                        // Update text content but preserve the favicon element
-                        const faviconElement = document.getElementById('stationFavicon');
-                        if (faviconElement) {
-                            currentElement.innerHTML = faviconElement.outerHTML + 'No stream selected';
-                        } else {
-                            currentElement.textContent = 'No stream selected';
-                        }
                     }
+                    streamTitleElement.textContent = displayText;
                 }
                 
                 // Handle ICY URL if available
