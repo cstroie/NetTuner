@@ -138,8 +138,8 @@ void audio_icyurl(const char *info) {
     Serial.print("ICY URL: ");
     Serial.println(info);
     // Store the ICY URL for later use
-    strncpy(streamIcyUrl, info, sizeof(streamIcyUrl) - 1);
-    streamIcyUrl[sizeof(streamIcyUrl) - 1] = '\0';
+    strncpy(streamIcyURL, info, sizeof(streamIcyURL) - 1);
+    streamIcyURL[sizeof(streamIcyURL) - 1] = '\0';
   }
 }
 
@@ -177,7 +177,7 @@ WiFiServer mpdServer(6600);
 char streamURL[256] = "";
 char streamName[128] = "";
 char streamTitle[128] = "";
-char streamIcyUrl[256] = "";
+char streamIcyURL[256] = "";
 char streamIconURL[256] = "";
 int bitrate = 0;
 volatile bool isPlaying = false;
@@ -1097,7 +1097,7 @@ void stopStream() {
   streamURL[0] = '\0';       // Clear current stream URL
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
-  streamIcyUrl[0] = '\0';        // Clear ICY URL
+  streamIcyURL[0] = '\0';        // Clear ICY URL
   streamIconURL[0] = '\0';       // Clear stream icon URL
   bitrate = 0;                   // Clear bitrate
   // Update total play time when stopping
@@ -2036,7 +2036,7 @@ String generateStatusJSON() {
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"streamIcyUrl\":\"" + String(streamIcyUrl) + "\",";
+  status += "\"streamIcyUrl\":\"" + String(streamIcyURL) + "\",";
   status += "\"streamIcon\":\"" + String(streamIconURL) + "\",";
   status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";

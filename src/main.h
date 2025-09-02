@@ -87,7 +87,7 @@ struct Config {
 extern char streamTitle[128];
 extern char streamName[128];
 extern char streamURL[256];
-extern char streamIcyUrl[256];
+extern char streamIcyURL[256];
 extern char streamIconURL[256];
 extern int bitrate;
 extern volatile bool isPlaying;
