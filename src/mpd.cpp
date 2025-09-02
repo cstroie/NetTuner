@@ -24,6 +24,23 @@ extern void startStream(const char* url, const char* name);
 extern void updateDisplay();
 extern void sendStatusToClients();
 extern const char* BUILD_TIME;
+
+/**
+ * @brief Parse volume value from string, handling quotes
+ * @param volumeStr The volume string to parse
+ * @return The parsed volume value (0-100), or -1 if invalid
+ */
+int parseVolumeValue(const String& volumeStr) {
+  String cleanedStr = volumeStr;
+  
+  // Remove quotes if present
+  if (cleanedStr.startsWith("\"") && cleanedStr.endsWith("\"") && cleanedStr.length() >= 2) {
+    cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
+  }
+  
+  // Convert to integer
+  return cleanedStr.toInt();
+}
 extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
@@ -410,14 +427,8 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
       volumeStr.trim();
-      // AI extract this to a function ...
-      // Remove quotes if present
-      if (volumeStr.startsWith("\"") && volumeStr.endsWith("\"") && volumeStr.length() >= 2) {
-        volumeStr = volumeStr.substring(1, volumeStr.length() - 1);
-      }
       // Convert to integer and set volume
-      int newVolume = volumeStr.toInt();
-      // to be used elsewhere too, AI!
+      int newVolume = parseVolumeValue(volumeStr);
       if (newVolume >= 0 && newVolume <= 100) {
         volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audioRef) {
