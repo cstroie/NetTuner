@@ -403,7 +403,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("Title: " + String(playlistRef[id].name) + "\n");
       mpdClient.print("Id: " + String(id) + "\n");
       mpdClient.print("Pos: " + String(id) + "\n");
-      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     } else {
       // Return all if no specific ID
       sendPlaylistInfo(2); // Full detail
