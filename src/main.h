@@ -160,6 +160,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void audio_showstreamtitle(const char *info);
 void audio_showstation(const char *info);
 void audio_bitrate(const char *info);
+void audio_info(const char *info);
+void audio_icyurl(const char *info);
+void audio_icydescription(const char *info);
+void audio_id3data(const char *info);
 
 // Utility functions
 String generateStatusJSON();

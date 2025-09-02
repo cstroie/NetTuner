@@ -92,6 +92,54 @@ void audio_bitrate(const char *info) {
   }
 }
 
+/**
+ * @brief Audio info callback function
+ * This function is called by the Audio library when general audio information is available
+ * @param info Pointer to the audio information
+ */
+void audio_info(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("Audio Info: ");
+    Serial.println(info);
+  }
+}
+
+/**
+ * @brief Audio ICY URL callback function
+ * This function is called by the Audio library when ICY URL information is available
+ * @param info Pointer to the ICY URL information
+ */
+void audio_icyurl(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ICY URL: ");
+    Serial.println(info);
+  }
+}
+
+/**
+ * @brief Audio ICY description callback function
+ * This function is called by the Audio library when ICY description information is available
+ * @param info Pointer to the ICY description information
+ */
+void audio_icydescription(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ICY Description: ");
+    Serial.println(info);
+  }
+}
+
+/**
+ * @brief Audio ID3 data callback function
+ * This function is called by the Audio library when ID3 data is available
+ * @param info Pointer to the ID3 data
+ */
+void audio_id3data(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ID3 Data: ");
+    Serial.println(info);
+  }
+}
+
 // Global variables definitions
 char ssid[MAX_WIFI_NETWORKS][64] = {""};
 char password[MAX_WIFI_NETWORKS][64] = {""};
