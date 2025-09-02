@@ -605,10 +605,18 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("list")) {
     // List command
     if (command.length() > 5) {
-      // Return all playlist titles
+      String tagType = command.substring(5);
+      tagType.toLowerCase();
+      String tag = "Title: ";
+      tagType.trim();
+      if (tagType.startsWith("artist")) {
+        tag = "Artist: ";
+      } else if (tagType.startsWith("album")) {
+        tag = "Album: ";
+      }
+      // Return the playlist anyway
       for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
-        mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
+        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
       }
     }
     mpdClient.print(mpdResponseOK());
