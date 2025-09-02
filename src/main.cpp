@@ -2056,7 +2056,7 @@ void handleExportConfig() {
             if (file.readBytes(buf.get(), size) == size) {
               buf[size] = '\0';              
               // Add to main document with filename as key (without leading slash)
-              output += "\"" + String(filename + 1) + "\":" + String(buf.get());
+              output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 2) output += ",";
             }
           }
@@ -2099,6 +2099,7 @@ void handleImportConfig() {
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
       return;
     }
+    Serial.println(upload.buf.get());
     // Parse the uploaded JSON data
     DynamicJsonDocument doc(8192);
     DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
