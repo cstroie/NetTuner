@@ -32,24 +32,9 @@ async function findFaviconUrl(websiteUrl) {
         
         // First, try to get favicon from HTML head by fetching the base URL
         try {
-            const response = await fetch(baseUrl);
-            const html = await response.text();
-            
-            // Look for favicon in HTML
-            const linkMatches = html.match(/<link[^>]*rel=["'][^"']*(?:icon|favicon)[^"']*["'][^>]*href=["']([^"']+)["'][^>]*>/i);
-            if (linkMatches && linkMatches[1]) {
-                try {
-                    const faviconUrl = new URL(linkMatches[1], baseUrl).href;
-                    if (await checkImageExists(faviconUrl)) {
-                        return faviconUrl;
-                    }
-                } catch (e) {
-                    // If URL construction fails, try direct URL
-                    if (await checkImageExists(linkMatches[1])) {
-                        return linkMatches[1];
-                    }
-                }
-            }
+            const response = await fetch(baseUrl, { mode: 'no-cors' });
+            // For no-cors requests, we can't access the response body
+            // So we'll skip HTML parsing and go directly to favicon locations
         } catch (e) {
             console.log('Could not fetch HTML for favicon detection');
         }
@@ -80,6 +65,8 @@ async function checkImageExists(url) {
         const img = new Image();
         img.onload = () => resolve(true);
         img.onerror = () => resolve(false);
+        // Add crossorigin attribute to handle CORS issues
+        img.crossOrigin = 'anonymous';
         img.src = url;
     });
 }
