@@ -2010,6 +2010,7 @@ String generateStatusJSON() {
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+  status += "\"streamIcyUrl\":\"" + String(streamIcyUrl) + "\",";
   status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";

@@ -370,6 +370,12 @@ function connectWebSocket() {
                     }
                 }
                 
+                // Handle ICY URL if available
+                if (status.streamIcyUrl) {
+                    console.log('Received ICY URL:', status.streamIcyUrl);
+                    // You could add additional handling here if needed
+                }
+                
                 // Update volume controls
                 const volumeControl = document.getElementById('volume');
                 const volumeValue = document.getElementById('volumeValue');
