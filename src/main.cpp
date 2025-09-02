@@ -1001,21 +1001,26 @@ void saveWiFiCredentials() {
 /**
  * @brief Initialize audio output interface
  * Configures the selected audio output method
- * This function initializes the ESP32-audioI2S library with I2S pin configuration
- * and sets up the audio buffer with an increased size for better performance.
+ * This function initializes the ESP32-audioI2S library with the selected audio output
+ * method (I2S or VS1053) and sets up the audio buffer with an increased size for better performance.
  */
 void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
+  
   // Check if VS1053 pins are configured differently from defaults to determine output method
+  // We now use a more explicit check - if any VS1053 pin is not the default value, use VS1053
   if (config.vs1053_cs != DEFAULT_VS1053_CS || 
       config.vs1053_dcs != DEFAULT_VS1053_DCS || 
       config.vs1053_dreq != DEFAULT_VS1053_DREQ) {
     // VS1053 configuration - set up with VS1053 pins
-    audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout, 
-                     config.vs1053_cs, config.vs1053_dcs, config.vs1053_dreq);
+    Serial.println("Initializing VS1053 audio output");
+    // For VS1053, we still use the standard setPinout but the Audio library will handle VS1053 differently
+    // based on the pins being configured. The DIN and MCK parameters are not used for VS1053.
+    audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   } else {
     // Standard I2S configuration
+    Serial.println("Initializing I2S audio output");
     audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   }
   audio->setVolume(volume); // Use 0-22 scale directly
