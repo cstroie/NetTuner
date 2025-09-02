@@ -88,6 +88,7 @@
             </form>
             <footer>
                 <button type="submit" form="configForm">Save configuration</button>
+                <button type="button" onclick="exportAllConfigurations()">Export All Configurations</button>
             </footer>
         </article>
     </main>
@@ -98,6 +99,28 @@
             initTheme();
             initConfigPage();
         });
+        
+        async function exportAllConfigurations() {
+            try {
+                const response = await fetch('/api/config/export');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'nettuner-config-export.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    alert('Error exporting configurations: ' + response.status);
+                }
+            } catch (error) {
+                console.error('Error exporting configurations:', error);
+                alert('Error exporting configurations: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html>

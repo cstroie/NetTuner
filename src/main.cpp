@@ -378,6 +378,7 @@ void setup() {
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
+  server.on("/api/config/export", HTTP_GET, handleExportConfig);
   server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
   server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
@@ -2023,6 +2024,62 @@ void handlePostConfig() {
   saveConfig();
   // Return status as JSON
   server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration updated successfully\"}");
+}
+
+/**
+ * @brief Handle export configuration request
+ * Exports all JSON configuration files from SPIFFS as a single JSON object
+ * This function reads all JSON files from SPIFFS and combines them into a single
+ * JSON object where keys are filenames and values are file contents.
+ */
+void handleExportConfig() {
+  // Create a JSON document to hold all configurations
+  DynamicJsonDocument doc(8192); // Larger buffer for multiple files
+  
+  // List of configuration files to export
+  const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json"};
+  
+  // Process each configuration file
+  for (int i = 0; i < 3; i++) {
+    const char* filename = configFiles[i];
+    
+    // Check if file exists
+    if (SPIFFS.exists(filename)) {
+      // Open the file
+      File file = SPIFFS.open(filename, "r");
+      if (file) {
+        // Get file size
+        size_t size = file.size();
+        if (size > 0 && size < 4096) { // Reasonable size limit
+          // Allocate buffer for file content
+          std::unique_ptr<char[]> buf(new char[size + 1]);
+          if (buf) {
+            // Read file content
+            if (file.readBytes(buf.get(), size) == size) {
+              buf[size] = '\0';
+              
+              // Parse JSON content
+              DynamicJsonDocument fileDoc(4096);
+              DeserializationError error = deserializeJson(fileDoc, buf.get());
+              if (!error) {
+                // Add to main document with filename as key (without leading slash)
+                String key = String(filename + 1); // Skip the leading '/'
+                doc[key] = fileDoc.as<JsonObject>();
+              } else {
+                Serial.printf("Failed to parse %s: %s\n", filename, error.c_str());
+              }
+            }
+          }
+        }
+        file.close();
+      }
+    }
+  }
+  
+  // Send the combined JSON as response
+  String output;
+  serializeJson(doc, output);
+  server.send(200, "application/json", output);
 }
 
 /**
