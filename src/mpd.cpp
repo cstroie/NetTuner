@@ -410,12 +410,14 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
       volumeStr.trim();
+      // AI extract this to a function ...
       // Remove quotes if present
       if (volumeStr.startsWith("\"") && volumeStr.endsWith("\"") && volumeStr.length() >= 2) {
         volumeStr = volumeStr.substring(1, volumeStr.length() - 1);
       }
       // Convert to integer and set volume
       int newVolume = volumeStr.toInt();
+      // to be used elsewhere too, AI!
       if (newVolume >= 0 && newVolume <= 100) {
         volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audioRef) {
