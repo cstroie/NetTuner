@@ -113,6 +113,9 @@ void audio_icyurl(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("ICY URL: ");
     Serial.println(info);
+    // Store the ICY URL for later use
+    strncpy(streamIcyUrl, info, sizeof(streamIcyUrl) - 1);
+    streamIcyUrl[sizeof(streamIcyUrl) - 1] = '\0';
   }
 }
 
@@ -150,6 +153,7 @@ WiFiServer mpdServer(6600);
 char streamURL[256] = "";
 char streamName[128] = "";
 char streamTitle[128] = "";
+char streamIcyUrl[256] = "";
 int bitrate = 0;
 volatile bool isPlaying = false;
 int volume = 11;
@@ -1068,6 +1072,7 @@ void stopStream() {
   streamURL[0] = '\0';       // Clear current stream URL
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
+  streamIcyUrl[0] = '\0';        // Clear ICY URL
   bitrate = 0;                   // Clear bitrate
   // Update total play time when stopping
   if (playStartTime > 0) {
