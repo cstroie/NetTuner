@@ -846,6 +846,13 @@ function renderPlaylist() {
     streams.forEach((stream, index) => {
         const item = document.createElement('div');
         item.role = "group";
+        
+        // Create favicon preview if available
+        let faviconHtml = '';
+        if (stream.favicon) {
+            faviconHtml = `<img src="${stream.favicon}" alt="Favicon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">`;
+        }
+        
         item.innerHTML = `
             <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
             <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
