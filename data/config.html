@@ -36,6 +36,16 @@
             </hgroup>
             <form id="configForm">
                 <fieldset>
+                    <legend>Audio Output</legend>
+                    <label for="audio_output">Output Type
+                        <select id="audio_output" name="audio_output">
+                            <option value="0">I2S</option>
+                            <option value="1">VS1053</option>
+                        </select>
+                    </label>
+                </fieldset>
+                
+                <fieldset id="i2sSettings">
                     <legend>I2S Audio Pins</legend>
                     <label for="i2s_bclk">BCLK Pin
                         <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required>
@@ -45,6 +55,19 @@
                     </label>
                     <label for="i2s_dout">DOUT Pin
                         <input type="number" id="i2s_dout" name="i2s_dout" min="0" max="39" required>
+                    </label>
+                </fieldset>
+                
+                <fieldset id="vs1053Settings">
+                    <legend>VS1053 Audio Pins</legend>
+                    <label for="vs1053_cs">CS Pin
+                        <input type="number" id="vs1053_cs" name="vs1053_cs" min="0" max="39" required>
+                    </label>
+                    <label for="vs1053_dcs">DCS Pin
+                        <input type="number" id="vs1053_dcs" name="vs1053_dcs" min="0" max="39" required>
+                    </label>
+                    <label for="vs1053_dreq">DREQ Pin
+                        <input type="number" id="vs1053_dreq" name="vs1053_dreq" min="0" max="39" required>
                     </label>
                 </fieldset>
                 
