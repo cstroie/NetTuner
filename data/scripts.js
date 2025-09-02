@@ -373,7 +373,18 @@ function connectWebSocket() {
                 // Handle ICY URL if available
                 if (status.streamIcyUrl) {
                     console.log('Received ICY URL:', status.streamIcyUrl);
-                    // You could add additional handling here if needed
+                    // Try to get favicon from the ICY URL
+                    findFaviconUrl(status.streamIcyUrl).then(faviconUrl => {
+                        if (faviconUrl) {
+                            console.log('Found favicon:', faviconUrl);
+                            // You could store this favicon URL or use it directly in the UI
+                            // For example, you might want to update an image element:
+                            // const faviconElement = document.getElementById('stationFavicon');
+                            // if (faviconElement) {
+                            //     faviconElement.src = faviconUrl;
+                            // }
+                        }
+                    });
                 }
                 
                 // Update volume controls
