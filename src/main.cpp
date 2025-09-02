@@ -2083,21 +2083,49 @@ void handleImportConfig() {
   
   if (upload.status == UPLOAD_FILE_START) {
     Serial.printf("Upload started: %s\n", upload.filename.c_str());
+    // Open temporary file for writing
+    File file = SPIFFS.open("/config_import.tmp", "w");
+    if (!file) {
+      Serial.println("Failed to create temporary file for upload");
+      server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to create temporary file\"}");
+      return;
+    }
+    file.close();
   } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // We're receiving data chunks - accumulate them
-    // For this implementation, we'll process the complete data at the end
+    // Write chunk to temporary file
+    File file = SPIFFS.open("/config_import.tmp", "a");
+    if (file) {
+      file.write(upload.buf, upload.currentSize);
+      file.close();
+    } else {
+      Serial.println("Failed to open temporary file for writing");
+    }
   } else if (upload.status == UPLOAD_FILE_END) {
     Serial.printf("Upload finished: %s, size: %d\n", upload.filename.c_str(), upload.totalSize);
     
     // Process the complete uploaded file
     if (upload.totalSize == 0) {
+      SPIFFS.remove("/config_import.tmp");
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
+      return;
+    }
+    
+    // Open the temporary file for reading
+    File file = SPIFFS.open("/config_import.tmp", "r");
+    if (!file) {
+      Serial.println("Failed to open temporary file for reading");
+      server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Failed to read uploaded file\"}");
       return;
     }
     
     // Parse the uploaded JSON data
     DynamicJsonDocument doc(8192);
-    DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
+    DeserializationError error = deserializeJson(doc, file);
+    file.close();
+    
+    // Remove temporary file
+    SPIFFS.remove("/config_import.tmp");
+    
     if (error) {
       Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
       server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
@@ -2117,13 +2145,13 @@ void handleImportConfig() {
         DynamicJsonDocument sectionDoc(4096);
         sectionDoc.set(section);
         // Save to SPIFFS
-        File file = SPIFFS.open("/" + String(filename), "w");
-        if (file) {
-          if (serializeJson(sectionDoc, file) == 0) {
+        File outFile = SPIFFS.open("/" + String(filename), "w");
+        if (outFile) {
+          if (serializeJson(sectionDoc, outFile) == 0) {
             Serial.printf("Failed to write %s to file\n", filename);
             success = false;
           }
-          file.close();
+          outFile.close();
         } else {
           Serial.printf("Failed to open %s for writing\n", filename);
           success = false;
@@ -2138,6 +2166,10 @@ void handleImportConfig() {
     }
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     Serial.println("Upload aborted");
+    // Remove temporary file if it exists
+    if (SPIFFS.exists("/config_import.tmp")) {
+      SPIFFS.remove("/config_import.tmp");
+    }
     server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Upload aborted\"}");
     return;
   }
