@@ -197,6 +197,9 @@ Config config = {
   DEFAULT_I2S_DOUT,
   DEFAULT_I2S_BCLK,
   DEFAULT_I2S_LRC,
+  DEFAULT_VS1053_CS,
+  DEFAULT_VS1053_DCS,
+  DEFAULT_VS1053_DREQ,
   DEFAULT_LED_PIN,
   DEFAULT_ROTARY_CLK,
   DEFAULT_ROTARY_DT,
@@ -279,6 +282,9 @@ void setup() {
   display.setCursor(0, 0);
   display.println("Connecting WiFi...");
   display.display();
+  
+  // Initialize SPI for VS1053 if needed
+  SPI.begin();
   
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
@@ -924,6 +930,9 @@ void saveConfig() {
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
   doc["i2s_lrc"] = config.i2s_lrc;
+  doc["vs1053_cs"] = config.vs1053_cs;
+  doc["vs1053_dcs"] = config.vs1053_dcs;
+  doc["vs1053_dreq"] = config.vs1053_dreq;
   doc["led_pin"] = config.led_pin;
   doc["rotary_clk"] = config.rotary_clk;
   doc["rotary_dt"] = config.rotary_dt;
@@ -998,7 +1007,17 @@ void saveWiFiCredentials() {
 void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
-  audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
+  // Check if VS1053 pins are configured differently from defaults to determine output method
+  if (config.vs1053_cs != DEFAULT_VS1053_CS || 
+      config.vs1053_dcs != DEFAULT_VS1053_DCS || 
+      config.vs1053_dreq != DEFAULT_VS1053_DREQ) {
+    // VS1053 configuration - set up with VS1053 pins
+    audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout, 
+                     config.vs1053_cs, config.vs1053_dcs, config.vs1053_dreq);
+  } else {
+    // Standard I2S configuration
+    audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
+  }
   audio->setVolume(volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
@@ -1970,6 +1989,9 @@ void handleGetConfig() {
   json += "\"i2s_dout\":" + String(config.i2s_dout) + ",";
   json += "\"i2s_bclk\":" + String(config.i2s_bclk) + ",";
   json += "\"i2s_lrc\":" + String(config.i2s_lrc) + ",";
+  json += "\"vs1053_cs\":" + String(config.vs1053_cs) + ",";
+  json += "\"vs1053_dcs\":" + String(config.vs1053_dcs) + ",";
+  json += "\"vs1053_dreq\":" + String(config.vs1053_dreq) + ",";
   json += "\"led_pin\":" + String(config.led_pin) + ",";
   json += "\"rotary_clk\":" + String(config.rotary_clk) + ",";
   json += "\"rotary_dt\":" + String(config.rotary_dt) + ",";
@@ -2009,6 +2031,9 @@ void handlePostConfig() {
   if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
   if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
   if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("vs1053_cs")) config.vs1053_cs = doc["vs1053_cs"];
+  if (doc.containsKey("vs1053_dcs")) config.vs1053_dcs = doc["vs1053_dcs"];
+  if (doc.containsKey("vs1053_dreq")) config.vs1053_dreq = doc["vs1053_dreq"];
   if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
   if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
   if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
