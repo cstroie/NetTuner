@@ -722,6 +722,25 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("command_list_end")) {
     // This should not happen outside of command list mode
     mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
+  } else if (command.startsWith("decoders")) {
+    // Decoders command - return supported audio decoders
+    // ESP32-audioI2S supports these formats
+    mpdClient.print("plugin: flac\n");
+    mpdClient.print("suffix: flac\n");
+    mpdClient.print("plugin: mp3\n");
+    mpdClient.print("suffix: mp3\n");
+    mpdClient.print("mime_type: audio/mpeg\n");
+    mpdClient.print("plugin: aac\n");
+    mpdClient.print("suffix: aac\n");
+    mpdClient.print("suffix: m4a\n");
+    mpdClient.print("mime_type: audio/aac\n");
+    mpdClient.print("plugin: wav\n");
+    mpdClient.print("suffix: wav\n");
+    mpdClient.print("mime_type: audio/wav\n");
+    mpdClient.print("plugin: ogg\n");
+    mpdClient.print("suffix: ogg\n");
+    mpdClient.print("mime_type: audio/ogg\n");
+    mpdClient.print(mpdResponseOK());
   } else if (command.length() == 0) {
     // Empty command
     mpdClient.print(mpdResponseOK());
