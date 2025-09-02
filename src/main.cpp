@@ -2083,32 +2083,26 @@ void handleImportConfig() {
     server.send(405, "application/json", "{\"status\":\"error\",\"message\":\"Method not allowed\"}");
     return;
   }
-  
   // Check if we have data in the request body
   if (!server.hasArg("plain")) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No data received\"}");
     return;
   }
-  
   // Get the JSON data from the request body
   String jsonData = server.arg("plain");
-  
   // Check if data is empty
   if (jsonData.length() == 0) {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
     return;
   }
-  
   // Parse the JSON data
   DynamicJsonDocument doc(8192);
   DeserializationError error = deserializeJson(doc, jsonData);
-  
   if (error) {
     Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
     return;
   }
-  
   // Process each configuration section
   bool success = true;
   const char* configFiles[] = {"config.json", "wifi.json", "playlist.json"};
@@ -2122,7 +2116,6 @@ void handleImportConfig() {
         // Get the raw JSON string for this section
         String sectionContent;
         serializeJson(doc[filename], sectionContent);
-        
         // Write the content directly to the file
         if (outFile.print(sectionContent) == 0) {
           Serial.printf("Failed to write %s to file\n", filename);
@@ -2135,7 +2128,6 @@ void handleImportConfig() {
       }
     }
   }
-  
   if (success) {
     server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration imported successfully\"}");
   } else {
