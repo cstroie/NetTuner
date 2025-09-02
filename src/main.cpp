@@ -37,6 +37,9 @@ void updateDisplay();
  * @param info Pointer to the stream title information
  */
 void audio_showstreamtitle(const char *info) {
+  // Only process for I2S mode
+  if (useVS1053) return;
+  
   if (info && strlen(info) > 0) {
     Serial.print("Stream title: ");
     Serial.println(info);
@@ -57,6 +60,9 @@ void audio_showstreamtitle(const char *info) {
  * @param info Pointer to the station name information
  */
 void audio_showstation(const char *info) {
+  // Only process for I2S mode
+  if (useVS1053) return;
+  
   if (info && strlen(info) > 0) {
     Serial.print("Station name: ");
     Serial.println(info);
@@ -77,6 +83,9 @@ void audio_showstation(const char *info) {
  * @param info Pointer to the bitrate information
  */
 void audio_bitrate(const char *info) {
+  // Only process for I2S mode
+  if (useVS1053) return;
+  
   if (info && strlen(info) > 0) {
     Serial.print("Bitrate: ");
     Serial.println(info);
@@ -345,7 +354,11 @@ void setup() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
-    if (audio) {
+    if (useVS1053 && vs1053) {
+      // VS1053 processing would go here
+      // For now, we just yield to prevent busy waiting
+      yield();
+    } else if (audio) {
       audio->loop();
     }
     // Very small delay to prevent busy waiting but allow frequent processing
@@ -1291,7 +1304,9 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, increase volume by 1 (capped at 22)
         volume = min(22, volume + 1);
-        if (audio) {
+        if (useVS1053 && vs1053) {
+          vs1053->setVolume(volume * 5);  // VS1053 uses 0-254 scale
+        } else if (audio) {
           audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
@@ -1307,7 +1322,9 @@ void handleRotary() {
       if (isPlaying) {
         // If playing, decrease volume by 1 (capped at 0)
         volume = max(0, volume - 1);
-        if (audio) {
+        if (useVS1053 && vs1053) {
+          vs1053->setVolume(volume * 5);  // VS1053 uses 0-254 scale
+        } else if (audio) {
           audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
         sendStatusToClients();  // Notify clients of status change
@@ -1855,7 +1872,8 @@ void handleTone() {
       return;
     }
     // Apply tone settings to audio using the Audio library's setTone function
-    if (audio) {
+    // Note: VS1053 doesn't support tone controls, so this only applies to I2S
+    if (!useVS1053 && audio) {
       // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
       audio->setTone(bass, midrange, treble);
     }
