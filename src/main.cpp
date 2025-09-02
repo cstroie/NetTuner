@@ -379,6 +379,7 @@ void setup() {
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
   server.on("/api/config/export", HTTP_GET, handleExportConfig);
+  server.on("/api/config/import", HTTP_POST, handleImportConfig);
   server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
   server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
@@ -2080,6 +2081,89 @@ void handleExportConfig() {
   String output;
   serializeJson(doc, output);
   server.send(200, "application/json", output);
+}
+
+/**
+ * @brief Handle import configuration request
+ * Imports a combined JSON configuration file and saves individual files to SPIFFS
+ * This function receives a JSON file containing all configurations and decomposes
+ * it into individual config.json, wifi.json, and playlist.json files.
+ */
+void handleImportConfig() {
+  // Check if a file was uploaded
+  HTTPUpload& upload = server.upload();
+  
+  // Handle file upload
+  if (upload.status == UPLOAD_FILE_START) {
+    Serial.printf("Upload started: %s\n", upload.filename.c_str());
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    // We're receiving data but we'll process it all at once at the end
+  } else if (upload.status == UPLOAD_FILE_END) {
+    Serial.printf("Upload finished: %s, size: %d\n", upload.filename.c_str(), upload.totalSize);
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    Serial.println("Upload aborted");
+    server.send(500, "text/plain", "Upload aborted");
+    return;
+  }
+  
+  // Only process when we have the complete file
+  if (server.method() == HTTP_POST && server.hasArg("plain") == false) {
+    // Check if we have upload data
+    if (upload.totalSize == 0) {
+      server.send(400, "text/plain", "No file uploaded");
+      return;
+    }
+    
+    // Parse the uploaded JSON data
+    DynamicJsonDocument doc(8192);
+    DeserializationError error = deserializeJson(doc, upload.buf, upload.totalSize);
+    
+    if (error) {
+      Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
+      server.send(400, "text/plain", "Invalid JSON format");
+      return;
+    }
+    
+    // Process each configuration section
+    bool success = true;
+    const char* configFiles[] = {"config.json", "wifi.json", "playlist.json"};
+    
+    for (int i = 0; i < 3; i++) {
+      const char* filename = configFiles[i];
+      
+      // Check if this section exists in the uploaded data
+      if (doc.containsKey(filename)) {
+        // Get the JSON object for this section
+        JsonObject section = doc[filename];
+        
+        // Create a separate document for this section
+        DynamicJsonDocument sectionDoc(4096);
+        sectionDoc.set(section);
+        
+        // Save to SPIFFS
+        File file = SPIFFS.open("/" + String(filename), "w");
+        if (file) {
+          if (serializeJson(sectionDoc, file) == 0) {
+            Serial.printf("Failed to write %s to file\n", filename);
+            success = false;
+          }
+          file.close();
+        } else {
+          Serial.printf("Failed to open %s for writing\n", filename);
+          success = false;
+        }
+      }
+    }
+    
+    if (success) {
+      server.send(200, "text/plain", "Configuration imported successfully");
+    } else {
+      server.send(500, "text/plain", "Error importing configuration");
+    }
+  } else {
+    // Handle the case where the request is just starting
+    server.send(200, "text/plain", "Ready to receive file");
+  }
 }
 
 /**

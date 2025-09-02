@@ -151,6 +151,7 @@ void handleStatus();
 void handleGetConfig();
 void handlePostConfig();
 void handleExportConfig();
+void handleImportConfig();
 void handleWiFiScan();
 void handleWiFiSave();
 void handleWiFiStatus();

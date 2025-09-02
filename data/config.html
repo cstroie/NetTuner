@@ -101,6 +101,18 @@
                 <button type="button" onclick="exportAllConfigurations()">Export All Configurations</button>
             </footer>
         </article>
+        
+        <article>
+            <hgroup>
+                <h2>Configuration Import</h2>
+                <p>Import all configuration files from a single JSON package</p>
+            </hgroup>
+            <p>Import your NetTuner configuration from a single JSON file containing config.json, wifi.json, and playlist.json.</p>
+            <div class="grid">
+                <input type="file" id="importFile" accept=".json" onchange="handleImportFileSelect()">
+                <button type="button" onclick="importAllConfigurations()" id="importButton" disabled>Import Configuration</button>
+            </div>
+        </article>
     </main>
     
     <script src="/scripts.js"></script>
@@ -129,6 +141,54 @@
             } catch (error) {
                 console.error('Error exporting configurations:', error);
                 alert('Error exporting configurations: ' + error.message);
+            }
+        }
+        
+        function handleImportFileSelect() {
+            const fileInput = document.getElementById('importFile');
+            const importButton = document.getElementById('importButton');
+            importButton.disabled = !fileInput.files.length;
+        }
+        
+        async function importAllConfigurations() {
+            const fileInput = document.getElementById('importFile');
+            const importButton = document.getElementById('importButton');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file to import');
+                return;
+            }
+            
+            // Show loading state
+            const originalText = importButton.textContent;
+            importButton.textContent = 'Importing...';
+            importButton.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch('/api/config/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    alert('Configuration imported successfully. Device restart required for changes to take effect.');
+                    // Clear the file input
+                    fileInput.value = '';
+                } else {
+                    const errorText = await response.text();
+                    alert('Error importing configuration: ' + errorText);
+                }
+            } catch (error) {
+                console.error('Error importing configurations:', error);
+                alert('Error importing configurations: ' + error.message);
+            } finally {
+                // Restore button state
+                importButton.textContent = originalText;
+                importButton.disabled = false;
             }
         }
     </script>
