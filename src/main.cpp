@@ -2116,15 +2116,15 @@ void handleImportConfig() {
     const char* filename = configFiles[i];
     // Check if this section exists in the uploaded data
     if (doc.containsKey(filename)) {
-      // Get the JSON object for this section
-      JsonObject section = doc[filename];
-      // Create a separate document for this section
-      DynamicJsonDocument sectionDoc(4096);
-      sectionDoc.set(section);
-      // Save to SPIFFS
+      // Save the JSON content directly to SPIFFS without parsing
       File outFile = SPIFFS.open("/" + String(filename), "w");
       if (outFile) {
-        if (serializeJson(sectionDoc, outFile) == 0) {
+        // Get the raw JSON string for this section
+        String sectionContent;
+        serializeJson(doc[filename], sectionContent);
+        
+        // Write the content directly to the file
+        if (outFile.print(sectionContent) == 0) {
           Serial.printf("Failed to write %s to file\n", filename);
           success = false;
         }
