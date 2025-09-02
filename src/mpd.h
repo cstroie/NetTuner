@@ -89,14 +89,6 @@ private:
   void handleCommandList(const String& command);
 
   /**
-   * @brief Generate appropriate MPD response based on context
-   * @param isError Whether this is an error response
-   * @param message Error message (only used for error responses)
-   * @return Response string
-   */
-  String mpdResponse(bool isError = false, const String& message = "");
-
-  /**
    * @brief Generate MPD OK response
    * @return OK response string
    */

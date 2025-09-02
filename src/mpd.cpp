@@ -201,17 +201,11 @@ void MPDInterface::handleCommandList(const String& command) {
   }
 }
 
-
 /**
- * @brief Generate appropriate MPD response based on context
- * @param isError Whether this is an error response
- * @param message Error message (only used for error responses)
- * @return Response string
+ * @brief Generate MPD OK response
+ * @return OK response string
  */
-String MPDInterface::mpdResponse(bool isError, const String& message) {
-  if (isError) {
-    return "ACK [5@0] {} " + message + "\n";
-  }
+String MPDInterface::mpdResponseOK() {
   // Check if in command list mode
   if (inCommandList) {
     // Send OK for each command if in command_list_ok_begin mode
@@ -226,20 +220,14 @@ String MPDInterface::mpdResponse(bool isError, const String& message) {
 }
 
 /**
- * @brief Generate MPD OK response
- * @return OK response string
- */
-String MPDInterface::mpdResponseOK() {
-  return mpdResponse(false, "");
-}
-
-/**
  * @brief Generate MPD error response
  * @param message Error message
  * @return Error response string
  */
 String MPDInterface::mpdResponseError(const String& message) {
-  return mpdResponse(true, message);
+  if (isError) {
+    return "ACK [5@0] {} " + message + "\n";
+  }
 }
 
 /**
