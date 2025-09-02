@@ -124,16 +124,41 @@ async function loadConfig() {
         const response = await fetch('/api/config');
         if (response.ok) {
             const config = await response.json();
+            
+            // Set audio output type
+            const audioOutputSelect = document.getElementById('audio_output');
+            if (audioOutputSelect) {
+                // Check if VS1053 pins are configured (not using default values)
+                if (config.vs1053_cs !== 5 || config.vs1053_dcs !== 16 || config.vs1053_dreq !== 4) {
+                    audioOutputSelect.value = 'vs1053';
+                    // Show VS1053 pins fieldset
+                    const vs1053PinsFieldset = document.getElementById('vs1053_pins');
+                    if (vs1053PinsFieldset) {
+                        vs1053PinsFieldset.style.display = 'block';
+                    }
+                } else {
+                    audioOutputSelect.value = 'i2s';
+                }
+            }
+            
+            // Set I2S pins
             document.getElementById('i2s_bclk').value = config.i2s_bclk || 27;
             document.getElementById('i2s_lrc').value = config.i2s_lrc || 25;
             document.getElementById('i2s_dout').value = config.i2s_dout || 26;
+            
+            // Set VS1053 pins
+            document.getElementById('vs1053_cs').value = config.vs1053_cs || 5;
+            document.getElementById('vs1053_dcs').value = config.vs1053_dcs || 16;
+            document.getElementById('vs1053_dreq').value = config.vs1053_dreq || 4;
+            
+            // Set other config values
             document.getElementById('led_pin').value = config.led_pin || 2;
             document.getElementById('rotary_clk').value = config.rotary_clk || 18;
             document.getElementById('rotary_dt').value = config.rotary_dt || 19;
             document.getElementById('rotary_sw').value = config.rotary_sw || 23;
             document.getElementById('board_button').value = config.board_button || 0;
-            document.getElementById('display_sda').value = config.display_sda || 5;
-            document.getElementById('display_scl').value = config.display_scl || 4;
+            document.getElementById('display_sda').value = config.display_sda || 21;
+            document.getElementById('display_scl').value = config.display_scl || 22;
             document.getElementById('display_width').value = config.display_width || 128;
             document.getElementById('display_height').value = config.display_height || 64;
             document.getElementById('display_address').value = config.display_address || 60;
@@ -144,6 +169,9 @@ async function loadConfig() {
 }
 
 async function saveConfig() {
+    // Get audio output type
+    const audioOutput = document.getElementById('audio_output').value;
+    
     const config = {
         i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
         i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
@@ -159,6 +187,18 @@ async function saveConfig() {
         display_height: parseInt(document.getElementById('display_height').value),
         display_address: parseInt(document.getElementById('display_address').value)
     };
+    
+    // Add VS1053 pins only if VS1053 is selected
+    if (audioOutput === 'vs1053') {
+        config.vs1053_cs = parseInt(document.getElementById('vs1053_cs').value);
+        config.vs1053_dcs = parseInt(document.getElementById('vs1053_dcs').value);
+        config.vs1053_dreq = parseInt(document.getElementById('vs1053_dreq').value);
+    } else {
+        // If I2S is selected, use default VS1053 pin values
+        config.vs1053_cs = 5;
+        config.vs1053_dcs = 16;
+        config.vs1053_dreq = 4;
+    }
     
     try {
         const response = await fetch('/api/config', {
