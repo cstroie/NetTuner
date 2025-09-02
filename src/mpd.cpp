@@ -196,7 +196,7 @@ void MPDInterface::handleCommandList(const String& command) {
       inCommandList = false;
       commandListOK = false;
       commandListCount = 0;
-      mpdClient.print(mpdResponseError("Command list too long"));
+      mpdClient.print(mpdResponseError("command_list", "Command list too long"));
     }
   }
 }
@@ -224,9 +224,9 @@ String MPDInterface::mpdResponseOK() {
  * @param message Error message
  * @return Error response string
  */
-String MPDInterface::mpdResponseError(const String& message) {
+String MPDInterface::mpdResponseError(const String& command, const String& message) {
   if (isError) {
-    return "ACK [5@0] {} " + message + "\n";
+    return "ACK [5@0] {" + command + "} " + message + "\n";
   }
 }
 
@@ -416,7 +416,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("play", "No playlist"));
     }
   } else if (command.startsWith("setvol")) {
     // Set volume command
@@ -433,10 +433,10 @@ void MPDInterface::handleMPDCommand(const String& command) {
         sendStatusToClients();  // Notify WebSocket clients
         mpdClient.print(mpdResponseOK());
       } else {
-        mpdClient.print(mpdResponseError("Volume out of range"));
+        mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
       }
     } else {
-      mpdClient.print(mpdResponseError("Missing volume value"));
+      mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
     }
   } else if (command.startsWith("next")) {
     // Next command
@@ -447,7 +447,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("next", "No playlist"));
     }
   } else if (command.startsWith("previous")) {
     // Previous command
@@ -458,7 +458,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("previous", "No playlist"));
     }
   } else if (command.startsWith("clear")) {
     // Clear command (not implemented for this player)
@@ -489,7 +489,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       // We don't actually disable outputs, just acknowledge the command
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("Missing output ID"));
+      mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
     }
   } else if (command.startsWith("enableoutput")) {
     // Enable output command
@@ -499,10 +499,10 @@ void MPDInterface::handleMPDCommand(const String& command) {
         // Only output 0 (I2S) is supported with ESP32-audioI2S
         mpdClient.print(mpdResponseOK());
       } else {
-        mpdClient.print(mpdResponseError("Invalid output ID"));
+        mpdClient.print(mpdResponseError("enableoutput", "Invalid output ID"));
       }
     } else {
-      mpdClient.print(mpdResponseError("Missing output ID"));
+      mpdClient.print(mpdResponseError("enableoutput", "Missing output ID"));
     }
   } else if (command.startsWith("commands")) {
     // Commands command
@@ -636,13 +636,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
         startStream(playlistRef[id].url, playlistRef[id].name);
         mpdClient.print(mpdResponseOK());
       } else {
-        mpdClient.print(mpdResponseError("No such song"));
+        mpdClient.print(mpdResponseError("playid", "No such song"));
       }
     } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
       startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("playid", "No playlist"));
     }
   } else if (command.startsWith("seek")) {
     // Seek command (not implemented for streaming)
@@ -723,12 +723,12 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Don't send OK yet, wait for command_list_end
   } else if (command.startsWith("command_list_end")) {
     // This should not happen outside of command list mode
-    mpdClient.print(mpdResponseError("Not in command list mode"));
+    mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
   } else if (command.length() == 0) {
     // Empty command
     mpdClient.print(mpdResponseOK());
   } else {
     // Unknown command
-    mpdClient.print(mpdResponseError("Unknown command"));
+    mpdClient.print(mpdResponseError("unknown", "Unknown command"));
   }
 }

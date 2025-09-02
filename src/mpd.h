@@ -99,7 +99,7 @@ private:
    * @param message Error message
    * @return Error response string
    */
-  String mpdResponseError(const String& message);
+  String mpdResponseError(const String& command, const String& message);
 
   /**
    * @brief Send playlist information with configurable detail level
