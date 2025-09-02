@@ -124,11 +124,17 @@ unsigned long playStartTime = 0;
 unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
+VS1053 *vs1053 = nullptr;
+bool useVS1053 = false;
 bool audioConnected = false;
 Config config = {
+  DEFAULT_AUDIO_OUTPUT,
   DEFAULT_I2S_DOUT,
   DEFAULT_I2S_BCLK,
   DEFAULT_I2S_LRC,
+  DEFAULT_VS1053_CS,
+  DEFAULT_VS1053_DCS,
+  DEFAULT_VS1053_DREQ,
   DEFAULT_LED_PIN,
   DEFAULT_ROTARY_CLK,
   DEFAULT_ROTARY_DT,
