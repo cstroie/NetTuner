@@ -26,21 +26,22 @@ extern void sendStatusToClients();
 extern const char* BUILD_TIME;
 
 /**
- * @brief Parse volume value from string, handling quotes
- * @param volumeStr The volume string to parse
- * @return The parsed volume value (0-100), or -1 if invalid
+ * @brief Parse value from string, handling quotes
+ * @param valueStr The value string to parse
+ * @return The parsed value as integer
  */
-int parseVolumeValue(const String& volumeStr) {
-  String cleanedStr = volumeStr;
-  
+int parseValue(const String& valueStr) {
+  String cleanedStr = valueStr;
+  // Remove whitespace
+  cleanedStr.trim();
   // Remove quotes if present
   if (cleanedStr.startsWith("\"") && cleanedStr.endsWith("\"") && cleanedStr.length() >= 2) {
     cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
   }
-  
   // Convert to integer
   return cleanedStr.toInt();
 }
+
 extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
@@ -386,7 +387,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Playlist ID command
     int id = -1;
     if (command.length() > 10) {
-      id = command.substring(11).toInt();
+      id = parseValue(command.substring(11));
     }
     // Check if the ID is valid
     if (id >= 0 && id < playlistCountRef) {
@@ -409,7 +410,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (playlistCountRef > 0) {
       int index = -1;
       if (command.length() > 5) {
-        index = command.substring(5).toInt();
+        index = parseValue(command.substring(5));
       }
       // If a valid index is found, play the selected track
       if (index >= 0 && index < playlistCountRef) {
@@ -426,9 +427,8 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Set volume command
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
-      volumeStr.trim();
       // Convert to integer and set volume
-      int newVolume = parseVolumeValue(volumeStr);
+      int newVolume = parseValue(volumeStr);
       if (newVolume >= 0 && newVolume <= 100) {
         volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audioRef) {
@@ -490,7 +490,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("disableoutput")) {
     // Disable output command
     if (command.length() > 13) {
-      int outputId = command.substring(14).toInt();
+      int outputId = parseValue(command.substring(14));
       // We don't actually disable outputs, just acknowledge the command
       mpdClient.print(mpdResponseOK());
     } else {
@@ -499,7 +499,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("enableoutput")) {
     // Enable output command
     if (command.length() > 12) {
-      int outputId = command.substring(13).toInt();
+      int outputId = parseValue(command.substring(13));
       if (outputId == 0) {
         // Only output 0 (I2S) is supported with ESP32-audioI2S
         mpdClient.print(mpdResponseOK());
@@ -627,7 +627,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("playid")) {
     // Play ID command
     if (command.length() > 7) {
-      int id = command.substring(7).toInt();
+      int id = parseValue(command.substring(7));
       if (id >= 0 && id < playlistCountRef) {
         currentSelectionRef = id;
         startStream(playlistRef[id].url, playlistRef[id].name);
