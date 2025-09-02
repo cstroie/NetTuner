@@ -24,9 +24,23 @@ extern void startStream(const char* url, const char* name);
 extern void updateDisplay();
 extern void sendStatusToClients();
 extern const char* BUILD_TIME;
-extern unsigned long startTime;
-extern unsigned long totalPlayTime;
-extern unsigned long playStartTime;
+
+/**
+ * @brief Parse value from string, handling quotes
+ * @param valueStr The value string to parse
+ * @return The parsed value as integer
+ */
+int parseValue(const String& valueStr) {
+  String cleanedStr = valueStr;
+  // Remove whitespace
+  cleanedStr.trim();
+  // Remove quotes if present
+  if (cleanedStr.startsWith("\"") && cleanedStr.endsWith("\"") && cleanedStr.length() >= 2) {
+    cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
+  }
+  // Convert to integer
+  return cleanedStr.toInt();
+}
 
 // Define mpdClient as a global variable
 WiFiClient mpdClient;
@@ -182,22 +196,16 @@ void MPDInterface::handleCommandList(const String& command) {
       inCommandList = false;
       commandListOK = false;
       commandListCount = 0;
-      mpdClient.print(mpdResponseError("Command list too long"));
+      mpdClient.print(mpdResponseError("command_list", "Command list too long"));
     }
   }
 }
 
-
 /**
- * @brief Generate appropriate MPD response based on context
- * @param isError Whether this is an error response
- * @param message Error message (only used for error responses)
- * @return Response string
+ * @brief Generate MPD OK response
+ * @return OK response string
  */
-String MPDInterface::mpdResponse(bool isError, const String& message) {
-  if (isError) {
-    return "ACK [5@0] {} " + message + "\n";
-  }
+String MPDInterface::mpdResponseOK() {
   // Check if in command list mode
   if (inCommandList) {
     // Send OK for each command if in command_list_ok_begin mode
@@ -212,20 +220,12 @@ String MPDInterface::mpdResponse(bool isError, const String& message) {
 }
 
 /**
- * @brief Generate MPD OK response
- * @return OK response string
- */
-String MPDInterface::mpdResponseOK() {
-  return mpdResponse(false, "");
-}
-
-/**
  * @brief Generate MPD error response
  * @param message Error message
  * @return Error response string
  */
-String MPDInterface::mpdResponseError(const String& message) {
-  return mpdResponse(true, message);
+String MPDInterface::mpdResponseError(const String& command, const String& message) {
+  return "ACK [5@0] {" + command + "} " + message + "\n";
 }
 
 /**
@@ -332,7 +332,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print("random: 0\n");
     mpdClient.print("single: 0\n");
     mpdClient.print("consume: 0\n");
-    mpdClient.print("playlist: 1\n");
+    mpdClient.print("playlist: WebRadio\n");
     mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
     mpdClient.print("mixrampdb: 0.000000\n");
     mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
@@ -340,7 +340,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("song: " + String(currentSelectionRef) + "\n");
       mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
       mpdClient.print("time: 0:0\n");
-      mpdClient.print("elapsed: 0.000\n");
+      // Calculate elapsed time
+      extern unsigned long playStartTime;
+      unsigned long elapsed = 0;
+      if (playStartTime > 0) {
+        elapsed = (millis() / 1000) - playStartTime;
+      }
+      mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
       mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
       mpdClient.print("audio: 44100:16:2\n");
       mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
@@ -353,7 +359,19 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (isPlayingRef && strlen(streamNameRef) > 0) {
       mpdClient.print("file: " + String(streamURLRef) + "\n");
       if (strlen(streamTitleRef) > 0) {
-        mpdClient.print("Title: " + String(streamTitleRef) + "\n");
+        // Check if stream title contains " - " separator for artist/track parsing
+        String title = String(streamTitleRef);
+        int separatorPos = title.indexOf(" - ");
+        if (separatorPos != -1) {
+          // Split into artist and track
+          String artist = title.substring(0, separatorPos);
+          String track = title.substring(separatorPos + 3); // Skip " - "
+          mpdClient.print("Artist: " + artist + "\n");
+          mpdClient.print("Title: " + track + "\n");
+        } else {
+          // No separator, use full title
+          mpdClient.print("Title: " + title + "\n");
+        }
       } else {
         mpdClient.print("Title: " + String(streamNameRef) + "\n");
       }
@@ -369,7 +387,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Playlist ID command
     int id = -1;
     if (command.length() > 10) {
-      id = command.substring(11).toInt();
+      id = parseValue(command.substring(11));
     }
     // Check if the ID is valid
     if (id >= 0 && id < playlistCountRef) {
@@ -377,22 +395,34 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("Title: " + String(playlistRef[id].name) + "\n");
       mpdClient.print("Id: " + String(id) + "\n");
       mpdClient.print("Pos: " + String(id) + "\n");
-      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     } else {
       // Return all if no specific ID
       sendPlaylistInfo(2); // Full detail
     }
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("lsinfo")) {
-    // List info command
-    sendPlaylistInfo(1); // Simple detail
-    mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("playid")) {
+    // Play ID command
+    if (command.length() > 7) {
+      int id = parseValue(command.substring(7));
+      if (id >= 0 && id < playlistCountRef) {
+        currentSelectionRef = id;
+        startStream(playlistRef[id].url, playlistRef[id].name);
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("playid", "No such song"));
+      }
+    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
+      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("playid", "No playlist"));
+    }
   } else  if (command.startsWith("play")) {
     // Play command
     if (playlistCountRef > 0) {
       int index = -1;
       if (command.length() > 5) {
-        index = command.substring(5).toInt();
+        index = parseValue(command.substring(5));
       }
       // If a valid index is found, play the selected track
       if (index >= 0 && index < playlistCountRef) {
@@ -403,19 +433,18 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("play", "No playlist"));
     }
+  } else if (command.startsWith("lsinfo")) {
+    // List info command
+    sendPlaylistInfo(1); // Simple detail
+    mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("setvol")) {
     // Set volume command
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
-      volumeStr.trim();
-      // Remove quotes if present
-      if (volumeStr.startsWith("\"") && volumeStr.endsWith("\"") && volumeStr.length() >= 2) {
-        volumeStr = volumeStr.substring(1, volumeStr.length() - 1);
-      }
       // Convert to integer and set volume
-      int newVolume = volumeStr.toInt();
+      int newVolume = parseValue(volumeStr);
       if (newVolume >= 0 && newVolume <= 100) {
         volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
         if (audioRef) {
@@ -425,10 +454,10 @@ void MPDInterface::handleMPDCommand(const String& command) {
         sendStatusToClients();  // Notify WebSocket clients
         mpdClient.print(mpdResponseOK());
       } else {
-        mpdClient.print(mpdResponseError("Volume out of range"));
+        mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
       }
     } else {
-      mpdClient.print(mpdResponseError("Missing volume value"));
+      mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
     }
   } else if (command.startsWith("next")) {
     // Next command
@@ -439,7 +468,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("next", "No playlist"));
     }
   } else if (command.startsWith("previous")) {
     // Previous command
@@ -450,7 +479,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       }
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("No playlist"));
+      mpdClient.print(mpdResponseError("previous", "No playlist"));
     }
   } else if (command.startsWith("clear")) {
     // Clear command (not implemented for this player)
@@ -477,24 +506,24 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("disableoutput")) {
     // Disable output command
     if (command.length() > 13) {
-      int outputId = command.substring(14).toInt();
+      int outputId = parseValue(command.substring(14));
       // We don't actually disable outputs, just acknowledge the command
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("Missing output ID"));
+      mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
     }
   } else if (command.startsWith("enableoutput")) {
     // Enable output command
     if (command.length() > 12) {
-      int outputId = command.substring(13).toInt();
+      int outputId = parseValue(command.substring(13));
       if (outputId == 0) {
         // Only output 0 (I2S) is supported with ESP32-audioI2S
         mpdClient.print(mpdResponseOK());
       } else {
-        mpdClient.print(mpdResponseError("Invalid output ID"));
+        mpdClient.print(mpdResponseError("enableoutput", "Invalid output ID"));
       }
     } else {
-      mpdClient.print(mpdResponseError("Missing output ID"));
+      mpdClient.print(mpdResponseError("enableoutput", "Missing output ID"));
     }
   } else if (command.startsWith("commands")) {
     // Commands command
@@ -512,6 +541,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       "list",
       "listallinfo",
       "listplaylistinfo",
+      "listplaylists",
       "load",
       "lsinfo",
       "next",
@@ -586,21 +616,27 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // List playlist info command
     sendPlaylistInfo(0); // Minimal detail
     mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("listplaylists")) {
+    // List playlists command
+    // For this implementation, we only have one playlist (the main playlist)
+    mpdClient.print("playlist: WebRadio\n");
+    mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
+    mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("list")) {
     // List command
     if (command.length() > 5) {
       String tagType = command.substring(5);
+      tagType.toLowerCase();
+      String tag = "Title: ";
       tagType.trim();
-      if (tagType == "artist") {
-        // Return empty list for artist (no local database)
-      } else if (tagType == "album") {
-        // Return empty list for album (no local database)
-      } else if (tagType == "title") {
-        // Return playlist titles
-        for (int i = 0; i < playlistCountRef; i++) {
-          mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
-          mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
-        }
+      if (tagType.startsWith("artist")) {
+        tag = "Artist: ";
+      } else if (tagType.startsWith("album")) {
+        tag = "Album: ";
+      }
+      // Return the playlist anyway
+      for (int i = 0; i < playlistCountRef; i++) {
+        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
       }
     }
     mpdClient.print(mpdResponseOK());
@@ -612,23 +648,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Find command (exact match)
     handleMPDSearchCommand(command, true);
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("playid")) {
-    // Play ID command
-    if (command.length() > 7) {
-      int id = command.substring(7).toInt();
-      if (id >= 0 && id < playlistCountRef) {
-        currentSelectionRef = id;
-        startStream(playlistRef[id].url, playlistRef[id].name);
-        mpdClient.print(mpdResponseOK());
-      } else {
-        mpdClient.print(mpdResponseError("No such song"));
-      }
-    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
-      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("No playlist"));
-    }
   } else if (command.startsWith("seek")) {
     // Seek command (not implemented for streaming)
     mpdClient.print(mpdResponseOK());
@@ -683,6 +702,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     }
     lastStatusHash = isPlayingRef ? 1 : 0;
     lastStatusHash = lastStatusHash * 31 + volumeRef;
+    lastStatusHash = lastStatusHash * 31 + bitrateRef;
     // Don't send immediate response - wait for changes
     return;
   } else if (command.startsWith("noidle")) {
@@ -707,12 +727,19 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Don't send OK yet, wait for command_list_end
   } else if (command.startsWith("command_list_end")) {
     // This should not happen outside of command list mode
-    mpdClient.print(mpdResponseError("Not in command list mode"));
+    mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
+  } else if (command.startsWith("decoders")) {
+    // Decoders command - return supported audio decoders
+    // ESP32-audioI2S supports these formats
+    mpdClient.print("plugin: mp3\n");
+    mpdClient.print("suffix: mp3\n");
+    mpdClient.print("mime_type: audio/mpeg\n");
+    mpdClient.print(mpdResponseOK());
   } else if (command.length() == 0) {
     // Empty command
     mpdClient.print(mpdResponseOK());
   } else {
     // Unknown command
-    mpdClient.print(mpdResponseError("Unknown command"));
+    mpdClient.print(mpdResponseError("unknown", "Unknown command"));
   }
 }

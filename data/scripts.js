@@ -4,6 +4,69 @@ let bass = 0;
 let midrange = 0;
 let treble = 0;
 
+// Function to find favicon URL from a website
+async function findFaviconUrl(websiteUrl) {
+    try {
+        // Handle cases where the URL might be a stream URL
+        let baseUrl;
+        try {
+            const urlObj = new URL(websiteUrl);
+            baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+        } catch (e) {
+            // If URL parsing fails, try to extract domain
+            const match = websiteUrl.match(/^(?:https?:\/\/)?([^\/\s]+)/);
+            if (match) {
+                baseUrl = `http://${match[1]}`;
+            } else {
+                return null;
+            }
+        }
+        // Common favicon locations to check
+        const faviconLocations = [
+            '/favicon.ico',
+            '/favicon.png',
+            '/apple-touch-icon.png',
+            '/apple-touch-icon-precomposed.png'
+        ];
+        // First, try to get favicon from HTML head by fetching the base URL
+        try {
+            const response = await fetch(baseUrl, { mode: 'no-cors' });
+            // For no-cors requests, we can't access the response body
+            // So we'll skip HTML parsing and go directly to favicon locations
+        } catch (e) {
+            console.log('Could not fetch HTML for favicon detection');
+        }
+        // Check common locations
+        for (const location of faviconLocations) {
+            try {
+                const faviconUrl = new URL(location, baseUrl).href;
+                if (await checkImageExists(faviconUrl)) {
+                    return faviconUrl;
+                }
+            } catch (e) {
+                // Skip if URL construction fails
+                continue;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error finding favicon:', error);
+        return null;
+    }
+}
+
+// Helper function to check if image exists
+async function checkImageExists(url) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        // Add crossorigin attribute to handle CORS issues
+        img.crossOrigin = 'anonymous';
+        img.src = url;
+    });
+}
+
 // Theme handling
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -352,21 +415,50 @@ function connectWebSocket() {
                 // Update stream name element
                 const streamNameElement = document.getElementById('streamName');
                 if (streamNameElement) {
-                    streamNameElement.textContent = status.streamName || 'No station selected';
+                    // Show stream name when playing
+                    let displayText = status.streamName || 'No station selected';
+                    // Update text content but preserve the favicon element
+                    const faviconElement = document.getElementById('stationFavicon');
+                    if (faviconElement) {
+                        streamNameElement.innerHTML = faviconElement.outerHTML + displayText;
+                    } else {
+                        streamNameElement.textContent = displayText;
+                    }
                 }
-                
-                // Update stream info element
-                const currentElement = document.getElementById('streamURL');
-                if (currentElement) {
+
+                // Update stream title element
+                const streamTitleElement = document.getElementById('streamTitle');
+                if (streamTitleElement) {
+                    // Show stream title when playing
+                    let displayText = status.streamTitle || 'No stream selected';
                     if (status.playing) {
-                        // Show stream title when playing
-                        let displayText = status.streamTitle || 'Unknown Stream';
                         if (status.bitrate) {
                             displayText += ' (' + status.bitrate + ' kbps)';
                         }
-                        currentElement.textContent = displayText;
-                    } else {
-                        currentElement.textContent = 'No stream selected';
+                    }
+                    streamTitleElement.textContent = displayText;
+                }
+                
+                // Handle ICY URL if available
+                if (status.streamIcyUrl) {
+                    console.log('Received ICY URL:', status.streamIcyUrl);
+                    // Try to get favicon from the ICY URL
+                    findFaviconUrl(status.streamIcyUrl).then(faviconUrl => {
+                        if (faviconUrl) {
+                            console.log('Found favicon:', faviconUrl);
+                            // Update the favicon image element
+                            const faviconElement = document.getElementById('stationFavicon');
+                            if (faviconElement) {
+                                faviconElement.src = faviconUrl;
+                                faviconElement.style.display = 'inline';
+                            }
+                        }
+                    });
+                } else {
+                    // Hide favicon if no ICY URL
+                    const faviconElement = document.getElementById('stationFavicon');
+                    if (faviconElement) {
+                        faviconElement.style.display = 'none';
                     }
                 }
                 
@@ -846,6 +938,13 @@ function renderPlaylist() {
     streams.forEach((stream, index) => {
         const item = document.createElement('div');
         item.role = "group";
+        
+        // Create favicon preview if available
+        let faviconHtml = '';
+        if (stream.favicon) {
+            faviconHtml = `<img src="${stream.favicon}" alt="Favicon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">`;
+        }
+        
         item.innerHTML = `
             <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
             <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">

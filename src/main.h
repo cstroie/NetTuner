@@ -87,6 +87,8 @@ struct Config {
 extern char streamTitle[128];
 extern char streamName[128];
 extern char streamURL[256];
+extern char streamIcyURL[256];
+extern char streamIconURL[256];
 extern int bitrate;
 extern volatile bool isPlaying;
 extern int volume;
@@ -160,6 +162,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void audio_showstreamtitle(const char *info);
 void audio_showstation(const char *info);
 void audio_bitrate(const char *info);
+void audio_info(const char *info);
+void audio_icyurl(const char *info);
+void audio_icydescription(const char *info);
+void audio_id3data(const char *info);
 
 // Utility functions
 String generateStatusJSON();

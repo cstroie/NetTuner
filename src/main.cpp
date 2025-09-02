@@ -92,6 +92,81 @@ void audio_bitrate(const char *info) {
   }
 }
 
+/**
+ * @brief Audio info callback function
+ * This function is called by the Audio library when general audio information is available
+ * @param info Pointer to the audio information
+ */
+void audio_info(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("Audio Info: ");
+    Serial.println(info);
+    
+    // Check if the info contains StreamUrl=
+    String infoStr = String(info);
+    if (infoStr.startsWith("StreamUrl=")) {
+      // Extract the URL part after "StreamUrl="
+      String urlPart = infoStr.substring(10); // Skip "StreamUrl="
+      
+      // Remove quotes or double quotes if present
+      if (urlPart.startsWith("\"") && urlPart.endsWith("\"") && urlPart.length() >= 2) {
+        urlPart = urlPart.substring(1, urlPart.length() - 1);
+      } else if (urlPart.startsWith("'") && urlPart.endsWith("'") && urlPart.length() >= 2) {
+        urlPart = urlPart.substring(1, urlPart.length() - 1);
+      }
+      
+      // Store the stream icon URL
+      strncpy(streamIconURL, urlPart.c_str(), sizeof(streamIconURL) - 1);
+      streamIconURL[sizeof(streamIconURL) - 1] = '\0';
+      
+      Serial.print("Stream Icon URL: ");
+      Serial.println(streamIconURL);
+      
+      // Notify clients of the new stream icon
+      sendStatusToClients();
+    }
+  }
+}
+
+/**
+ * @brief Audio ICY URL callback function
+ * This function is called by the Audio library when ICY URL information is available
+ * @param info Pointer to the ICY URL information
+ */
+void audio_icyurl(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ICY URL: ");
+    Serial.println(info);
+    // Store the ICY URL for later use
+    strncpy(streamIcyURL, info, sizeof(streamIcyURL) - 1);
+    streamIcyURL[sizeof(streamIcyURL) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Audio ICY description callback function
+ * This function is called by the Audio library when ICY description information is available
+ * @param info Pointer to the ICY description information
+ */
+void audio_icydescription(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ICY Description: ");
+    Serial.println(info);
+  }
+}
+
+/**
+ * @brief Audio ID3 data callback function
+ * This function is called by the Audio library when ID3 data is available
+ * @param info Pointer to the ID3 data
+ */
+void audio_id3data(const char *info) {
+  if (info && strlen(info) > 0) {
+    Serial.print("ID3 Data: ");
+    Serial.println(info);
+  }
+}
+
 // Global variables definitions
 char ssid[MAX_WIFI_NETWORKS][64] = {""};
 char password[MAX_WIFI_NETWORKS][64] = {""};
@@ -102,6 +177,8 @@ WiFiServer mpdServer(6600);
 char streamURL[256] = "";
 char streamName[128] = "";
 char streamTitle[128] = "";
+char streamIcyURL[256] = "";
+char streamIconURL[256] = "";
 int bitrate = 0;
 volatile bool isPlaying = false;
 int volume = 11;
@@ -506,7 +583,7 @@ void loop() {
   handleDisplayTimeout();
   
   // Small delay to prevent busy waiting
-  delay(10);
+  delay(100);
 }
 
 /**
@@ -935,10 +1012,10 @@ void setupAudioOutput() {
  */
 void startStream(const char* url, const char* name) {
   bool resume = false;
-  // Stop any currently playing stream
-  if (audio) {
+  // Stop the currently playing stream if the stream changes
+  if (audio && url && strlen(url) > 0) {
     // Stop first
-    audio->stopSong();
+    stopStream();
   }
   // If no URL provided, check if we have a current stream to resume
   if (!url || strlen(url) == 0) {
@@ -1020,6 +1097,8 @@ void stopStream() {
   streamURL[0] = '\0';       // Clear current stream URL
   streamName[0] = '\0';   // Clear current stream name
   streamTitle[0] = '\0';         // Clear stream title
+  streamIcyURL[0] = '\0';        // Clear ICY URL
+  streamIconURL[0] = '\0';       // Clear stream icon URL
   bitrate = 0;                   // Clear bitrate
   // Update total play time when stopping
   if (playStartTime > 0) {
@@ -1335,10 +1414,6 @@ void handleRotary() {
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (isPlaying) {
-        // If currently playing, stop playback
-        stopStream();
-        sendStatusToClients();  // Notify clients of status change
-      } else {
         // If not playing, start playback of selected stream
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         sendStatusToClients();  // Notify clients of status change
@@ -1697,8 +1772,6 @@ void handlePlay() {
     server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
     return;
   }
-  // Stop any currently playing stream
-  stopStream();
   // Update currentSelection based on index
   if (index > 0) {
     // If index is valid, update currentSelection
@@ -1963,6 +2036,8 @@ String generateStatusJSON() {
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
   status += "\"streamName\":\"" + String(streamName) + "\",";
   status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
+  status += "\"streamIcyUrl\":\"" + String(streamIcyURL) + "\",";
+  status += "\"streamIcon\":\"" + String(streamIconURL) + "\",";
   status += "\"bitrate\":" + String(bitrate) + ",";
   status += "\"volume\":" + String(volume) + ",";
   status += "\"bass\":" + String(bass) + ",";

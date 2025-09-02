@@ -26,6 +26,11 @@
 // Forward declarations
 struct StreamInfo;
 
+// External global variables
+extern unsigned long startTime;
+extern unsigned long totalPlayTime;
+extern unsigned long playStartTime;
+
 /**
  * @brief MPD Interface Class
  * Encapsulates all MPD protocol functionality
@@ -84,14 +89,6 @@ private:
   void handleCommandList(const String& command);
 
   /**
-   * @brief Generate appropriate MPD response based on context
-   * @param isError Whether this is an error response
-   * @param message Error message (only used for error responses)
-   * @return Response string
-   */
-  String mpdResponse(bool isError = false, const String& message = "");
-
-  /**
    * @brief Generate MPD OK response
    * @return OK response string
    */
@@ -102,7 +99,7 @@ private:
    * @param message Error message
    * @return Error response string
    */
-  String mpdResponseError(const String& message);
+  String mpdResponseError(const String& command, const String& message);
 
   /**
    * @brief Send playlist information with configurable detail level
