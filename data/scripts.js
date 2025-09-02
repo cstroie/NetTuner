@@ -2091,12 +2091,16 @@ async function importAllConfiguration() {
     importButton.disabled = true;
     
     try {
-        const formData = new FormData();
-        formData.append('file', file);
+        // Read file content as text
+        const fileContent = await readFileAsText(file);
         
         const response = await fetch('/api/config/import', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: fileContent
         });
         
         if (response.ok) {
@@ -2138,6 +2142,16 @@ async function importAllConfiguration() {
         importButton.textContent = originalText;
         importButton.disabled = false;
     }
+}
+
+// Helper function to read file as text
+function readFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = e => reject(e);
+        reader.readAsText(file);
+    });
 }
 
 // Simple modal dialog function
