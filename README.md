@@ -22,6 +22,10 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 - **File Management**: Upload/download playlists in JSON or M3U formats
 - **WebSocket Communication**: Real-time status updates between device and web interface
 - **MPD Protocol Support**: Control via MPD clients
+- **Favicon Support**: Automatic favicon detection and display for radio stations
+- **ICY Metadata**: Full ICY metadata support including stream URLs and descriptions
+- **Artist/Track Parsing**: Automatic parsing of artist and track information from stream titles
+- **Enhanced Status Information**: Detailed playback information including bitrates and elapsed time
 
 ## Hardware Requirements
 
@@ -96,10 +100,14 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 | `/api/play`      | POST   | Start playing a stream       |
 | `/api/stop`      | POST   | Stop playback                |
 | `/api/volume`    | POST   | Set volume level             |
+| `/api/tone`      | POST   | Set bass/midrange/treble     |
 | `/api/status`    | GET    | Get current player status    |
+| `/api/config`    | GET    | Get current configuration    |
+| `/api/config`    | POST   | Update configuration         |
 | `/api/wifiscan`  | GET    | Scan for WiFi networks       |
 | `/api/wificonfig`| GET    | Get current WiFi configuration|
 | `/api/wifisave`  | POST   | Save WiFi configuration      |
+| `/api/wifistatus`| GET    | Get current WiFi status      |
 
 > **Note**: WebSocket server runs on port 81 for real-time status updates
 
