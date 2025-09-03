@@ -273,11 +273,12 @@ void setup() {
   Wire.begin(config.display_sda, config.display_scl);
   display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
-  //display.setFont(&FreeSans9pt7b);
+  // Larger font for title
+  display.setTextSize(2);
+  display.setCursor(16, 0);
+  display.println("NetTuner");
+  // Normal font for other text
   display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.println("Connecting WiFi...");
   display.display();
   
   // Load WiFi credentials with error recovery
@@ -291,6 +292,16 @@ void setup() {
     for (int i = 0; i < wifiNetworkCount; i++) {
       if (strlen(ssid[i]) > 0) {
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
+        display.clearDisplay();
+        // Larger font for title
+        display.setTextSize(2);
+        display.setCursor(16, 0);
+        display.println("NetTuner");
+        // Normal font for other text
+        display.setTextSize(1);
+        display.setCursor(0, 18);
+        display.println("Connecting to " + String(ssid[i]) + "...");
+        display.display();
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
         const int maxAttempts = 15; // Increased attempts per network
@@ -2318,7 +2329,7 @@ void updateDisplay() {
     }
   } else {
     // Display when stopped
-    // Larger font for status
+    // Larger font for title
     display.setTextSize(2);
     display.setCursor(16, 0);
     display.println("NetTuner");
