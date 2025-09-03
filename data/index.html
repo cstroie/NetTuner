@@ -83,13 +83,16 @@
                 </div>
             </footer>
         </article>
+        <article>
+            <label for="instantUrl">Instant play</label>
+            <div role="group">
+                <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
+                <button onclick="playInstantStream()">▶&nbsp;Play</button>
+            </div>
+        </article>
     </main>
     <footer>
-        <label for="instantUrl">Instant play</label>
-        <div role="group">
-            <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
-            <button onclick="playInstantStream()">▶&nbsp;Play</button>
-        </div>
+        <p>NetTuner</p>
     </footer>
 
     <script src="/scripts.js"></script>
