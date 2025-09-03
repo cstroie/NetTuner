@@ -273,6 +273,7 @@ void setup() {
   Wire.begin(config.display_sda, config.display_scl);
   display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
+  display.setTextColor(SSD1306_WHITE);
   // Larger font for title
   display.setTextSize(2);
   display.setCursor(16, 0);
@@ -300,7 +301,9 @@ void setup() {
         // Normal font for other text
         display.setTextSize(1);
         display.setCursor(0, 18);
-        display.println("Connecting to " + String(ssid[i]) + "...");
+        display.println("Connecting to WiFi...");
+        display.setCursor(0, 26);
+        display.println(String(ssid[i]));
         display.display();
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
@@ -329,16 +332,28 @@ void setup() {
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
     display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println("WiFi Connected");
+    // Larger font for title
+    display.setTextSize(2);
+    display.setCursor(16, 0);
+    display.println("NetTuner");
+    // Normal font for other text
+    display.setTextSize(1);
+    display.setCursor(0, 18);
+    display.println(String(WiFi.SSID()));
+    display.setCursor(0, 26);
     display.println(WiFi.localIP().toString());
     display.display();
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
     display.clearDisplay();
-    display.setCursor(0, 0);
+    // Larger font for title
+    display.setTextSize(2);
+    display.setCursor(16, 0);
+    display.println("NetTuner");
+    // Normal font for other text
+    display.setTextSize(1);
+    display.setCursor(0, 18);
     display.println("Starting AP Mode");
-    display.println("NetTuner-Setup");
     display.display();
     
     // Start WiFi access point mode with error handling
@@ -346,11 +361,13 @@ void setup() {
       Serial.println("Access Point Started");
       Serial.print("AP IP Address: ");
       Serial.println(WiFi.softAPIP().toString());
+      display.setCursor(0, 26);
       display.println("IP:");
       display.println(WiFi.softAPIP().toString());
       display.display();
     } else {
       Serial.println("Failed to start Access Point");
+      display.setCursor(0, 26);
       display.println("AP Start Failed");
       display.display();
     }
