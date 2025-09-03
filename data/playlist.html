@@ -80,14 +80,14 @@
             </div>
             </footer>
         </article>
+        <article>
+            <label for="remotePlaylistUrl">Import remote playlist</label>
+            <div role="group">
+                <input type="url" id="remotePlaylistUrl" placeholder="Enter remote playlist URL (http://...)" />
+                <button onclick="importRemotePlaylist()">Import</button>
+            </div>
+        </article> 
     </main>
-    <footer>
-        <label for="remotePlaylistUrl">Import remote playlist</label>
-        <div role="group">
-            <input type="url" id="remotePlaylistUrl" placeholder="Enter remote playlist URL (http://...)" />
-            <button onclick="importRemotePlaylist()">Import</button>
-        </div>
-    </footer> 
     <script src="/scripts.js"></script>
     <script>
         // Initialize the playlist page
