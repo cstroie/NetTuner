@@ -482,7 +482,7 @@ void setup() {
  * @param line2 Second line of information (default: empty)
  * @param line3 Third line of information (default: empty)
  */
-void displayStatus(const String& line1 = "", const String& line2 = "", const String& line3 = "") {
+void displayStatus(const String& line1, const String& line2, const String& line3) {
   display.clearDisplay();
   display.setCursor(32, 12);
   display.print("NetTuner");
