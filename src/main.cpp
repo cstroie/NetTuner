@@ -384,36 +384,20 @@ void setup() {
     Serial.println("Connected to WiFi");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
-    display.clearDisplay();
-    display.setCursor(32, 12);
-    display.print("NetTuner");
-    display.setCursor(0, 30);
-    display.print(String(WiFi.SSID()));
-    display.setCursor(0, 62);
-    display.print(WiFi.localIP().toString());
-    display.display();
+    displayStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
-    display.clearDisplay();
-    display.setCursor(32, 12);
-    display.print("NetTuner");
-    display.setCursor(0, 30);
-    display.print("Starting AP Mode");
-    display.display();
+    displayStatus("Starting AP Mode");
     
     // Start WiFi access point mode with error handling
     if (WiFi.softAP("NetTuner-Setup")) {
       Serial.println("Access Point Started");
       Serial.print("AP IP Address: ");
       Serial.println(WiFi.softAPIP().toString());
-      display.setCursor(0, 62);
-      display.print(WiFi.softAPIP().toString());
-      display.display();
+      displayStatus("Starting AP Mode", "", WiFi.softAPIP().toString());
     } else {
       Serial.println("Failed to start Access Point");
-      display.setCursor(0, 62);
-      display.print("AP Start Failed");
-      display.display();
+      displayStatus("Starting AP Mode", "", "AP Start Failed");
     }
   }
   
@@ -489,6 +473,36 @@ void setup() {
   
   // Update display
   updateDisplay();
+}
+
+/**
+ * @brief Display status information on OLED
+ * Shows title and up to three lines of information
+ * @param line1 First line of information (default: empty)
+ * @param line2 Second line of information (default: empty)
+ * @param line3 Third line of information (default: empty)
+ */
+void displayStatus(const String& line1 = "", const String& line2 = "", const String& line3 = "") {
+  display.clearDisplay();
+  display.setCursor(32, 12);
+  display.print("NetTuner");
+  
+  if (line1.length() > 0) {
+    display.setCursor(0, 30);
+    display.print(line1);
+  }
+  
+  if (line2.length() > 0) {
+    display.setCursor(0, 45);
+    display.print(line2);
+  }
+  
+  if (line3.length() > 0) {
+    display.setCursor(0, 62);
+    display.print(line3);
+  }
+  
+  display.display();
 }
 
 /**
@@ -705,14 +719,7 @@ void loop() {
           if (WiFi.status() == WL_CONNECTED) {
             Serial.printf("Reconnected to %s\n", ssid[i]);
             // Update display with new IP
-            display.clearDisplay();
-            display.setCursor(32, 12);
-            display.print("NetTuner");
-            display.setCursor(0, 30);
-            display.print("WiFi Reconnect");
-            display.setCursor(0, 62);
-            display.print(WiFi.localIP().toString());
-            display.display();
+            displayStatus("WiFi Reconnect", "", WiFi.localIP().toString());
             delay(2000);
             updateDisplay();
             break;
