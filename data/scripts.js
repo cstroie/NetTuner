@@ -1421,6 +1421,11 @@ async function importRemotePlaylist() {
                    textContent.includes('#EXTM3U')) {
             // M3U format
             playlistData = JSON.parse(convertM3UToJSON(textContent));
+        } else if (url.toLowerCase().endsWith('.pls') || 
+                   contentType.includes('audio/x-scpls') || 
+                   textContent.includes('[playlist]')) {
+            // PLS format
+            playlistData = JSON.parse(convertPLSToJSON(textContent));
         } else {
             throw new Error('Unsupported playlist format');
         }
@@ -1524,6 +1529,88 @@ async function uploadM3U() {
     reader.readAsText(file);
 }
 
+async function uploadPLS() {
+    const fileInput = document.getElementById('playlistFile');
+    const file = fileInput.files[0];
+    
+    console.log('Uploading PLS playlist file:', file);
+    
+    if (!file) {
+        return;
+    }
+    
+    // Check file extension
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.pls')) {
+        // Clear file input on error
+        fileInput.value = '';
+        return;
+    }
+    
+    // Show loading state
+    const uploadButton = document.querySelector('button[onclick="uploadPLS()"]');
+    const originalText = uploadButton ? uploadButton.textContent : null;
+    if (uploadButton) {
+        uploadButton.textContent = 'Uploading...';
+        uploadButton.disabled = true;
+    }
+    
+    // Read file content
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const fileContent = e.target.result;
+        console.log('File content:', fileContent);
+        
+        try {
+            // Convert PLS to JSON
+            const jsonData = convertPLSToJSON(fileContent);
+            console.log('JSON content:', jsonData);
+        
+            const response = await fetch('/api/streams', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: jsonData
+            });
+            
+            console.log('Upload response status:', response.status);
+            
+            if (response.ok) {
+                // Handle JSON response
+                const result = await response.json();
+                if (result.status === 'success') {
+                    // Reload streams after successful upload
+                    loadStreams();
+                }
+            } else {
+                const error = await response.text();
+                console.error('Error uploading playlist: ' + error);
+            }
+        } catch (error) {
+            console.error('Error uploading playlist:', error);
+        } finally {
+            // Clear file input in all cases
+            fileInput.value = '';
+            // Restore button state
+            if (uploadButton) {
+                uploadButton.textContent = originalText || 'Upload PLS';
+                uploadButton.disabled = false;
+            }
+        }
+    };
+    reader.onerror = function() {
+        fileInput.value = '';
+        // Restore button state
+        if (uploadButton) {
+            uploadButton.textContent = originalText || 'Upload PLS';
+            uploadButton.disabled = false;
+        }
+    };
+    reader.readAsText(file);
+}
+
 async function downloadJSON() {
     // Show loading state
     const downloadButton = document.querySelector('button[onclick="downloadJSON()"]');
@@ -1608,6 +1695,51 @@ async function downloadM3U() {
         // Restore button state
         if (downloadButton) {
             downloadButton.textContent = originalText || 'Download M3U';
+            downloadButton.disabled = false;
+        }
+    }
+}
+
+async function downloadPLS() {
+    // Show loading state
+    const downloadButton = document.querySelector('button[onclick="downloadPLS()"]');
+    const originalText = downloadButton ? downloadButton.textContent : null;
+    if (downloadButton) {
+        downloadButton.textContent = 'Downloading...';
+        downloadButton.disabled = true;
+    }
+    
+    try {
+        const response = await fetch('/api/streams', {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        console.log('Download JSON response status:', response.status);
+        
+        if (response.ok) {
+            const jsonData = await response.json();
+            const plsContent = convertJSONToPLS(jsonData);
+            const blob = new Blob([plsContent], { type: 'audio/x-scpls' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'playlist.pls';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            const error = await response.text();
+            console.error('Error downloading JSON:', error);
+        }
+    } catch (error) {
+        console.error('Error downloading playlist:', error);
+    } finally {
+        // Restore button state
+        if (downloadButton) {
+            downloadButton.textContent = originalText || 'Download PLS';
             downloadButton.disabled = false;
         }
     }
@@ -1742,6 +1874,158 @@ function convertJSONToM3U(jsonData) {
     } catch (error) {
         console.error('Error converting JSON to M3U:', error);
         throw new Error('Failed to convert playlist to M3U: ' + error.message);
+    }
+}
+
+// Convert PLS content to JSON
+/**
+ * @brief Convert PLS playlist content to JSON format
+ * Parses PLS format and converts it to the application's JSON stream format
+ * 
+ * This function parses PLS playlist content and converts it to the JSON format
+ * used by the application. It handles the [playlist] header, File/Title entries,
+ * and URL lines. For each valid stream entry, it creates a JSON object with
+ * name and URL properties.
+ * 
+ * The function performs validation on both names (max 128 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 256 chars).
+ * 
+ * @param {string} plsContent - The raw PLS file content as a string
+ * @returns {string} - JSON string representation of the playlist
+ * @throws {Error} - If conversion fails due to parsing errors
+ */
+function convertPLSToJSON(plsContent) {
+    try {
+        const lines = plsContent.split('\n');
+        const streams = [];
+        const entries = {};
+        let entryCount = 0;
+        
+        // First pass: parse all entries
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            
+            if (line.length === 0) continue;
+            
+            if (line.startsWith('NumberOfEntries=')) {
+                entryCount = parseInt(line.split('=')[1]) || 0;
+            } else if (line.startsWith('File')) {
+                const match = line.match(/File(\d+)=(.+)/);
+                if (match) {
+                    const index = match[1];
+                    const url = match[2];
+                    if (!entries[index]) entries[index] = {};
+                    entries[index].url = url;
+                }
+            } else if (line.startsWith('Title')) {
+                const match = line.match(/Title(\d+)=(.+)/);
+                if (match) {
+                    const index = match[1];
+                    const title = match[2];
+                    if (!entries[index]) entries[index] = {};
+                    entries[index].title = title;
+                }
+            }
+        }
+        
+        // Second pass: convert to streams array
+        for (const index in entries) {
+            const entry = entries[index];
+            if (entry.url && (entry.url.startsWith('http://') || entry.url.startsWith('https://'))) {
+                // Validate URL
+                try {
+                    new URL(entry.url);
+                } catch (e) {
+                    console.warn('Skipping invalid URL in PLS file:', entry.url);
+                    continue;
+                }
+                
+                // Use title if available, otherwise generate a name
+                let name = entry.title || 'Stream ' + (streams.length + 1);
+                
+                // Validate name
+                if (name.length > 128) {
+                    name = name.substring(0, 125) + '...';
+                }
+                
+                if (entry.url.length <= 256) {
+                    streams.push({
+                        name: name,
+                        url: entry.url
+                    });
+                } else {
+                    console.warn('Skipping URL that exceeds maximum length:', entry.url);
+                }
+            }
+        }
+        
+        return JSON.stringify(streams);
+    } catch (error) {
+        console.error('Error converting PLS to JSON:', error);
+        throw new Error('Failed to convert PLS file: ' + error.message);
+    }
+}
+
+// Convert JSON content to PLS
+/**
+ * @brief Convert JSON playlist to PLS format
+ * Converts the application's JSON stream format to PLS playlist format
+ * 
+ * This function converts the application's JSON playlist format to PLS format
+ * for export. It generates a proper PLS header ([playlist]), NumberOfEntries,
+ * and File/Title entries for each stream.
+ * 
+ * The function performs validation on both names (max 128 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 256 chars) and skips invalid entries.
+ * 
+ * @param {Array} jsonData - Array of stream objects with name and url properties
+ * @returns {string} - PLS formatted playlist as a string
+ * @throws {Error} - If conversion fails due to invalid data format
+ */
+function convertJSONToPLS(jsonData) {
+    try {
+        let plsContent = '[playlist]\n';
+        let entryCount = 0;
+        
+        if (!Array.isArray(jsonData)) {
+            throw new Error('Invalid JSON format: expected array of streams');
+        }
+        
+        jsonData.forEach((item, index) => {
+            if (item.name && item.url) {
+                // Validate URL
+                try {
+                    new URL(item.url);
+                } catch (e) {
+                    console.warn('Skipping invalid URL in JSON:', item.url);
+                    return;
+                }
+                
+                // Validate URL length
+                if (item.url.length > 256) {
+                    console.warn('Skipping URL that exceeds maximum length:', item.url);
+                    return;
+                }
+                
+                // Validate and sanitize name
+                let sanitizedName = item.name.trim();
+                if (sanitizedName.length > 128) {
+                    sanitizedName = sanitizedName.substring(0, 125) + '...';
+                }
+                
+                entryCount++;
+                plsContent += `File${entryCount}=${item.url}\n`;
+                plsContent += `Title${entryCount}=${sanitizedName}\n`;
+            }
+        });
+        
+        plsContent += `NumberOfEntries=${entryCount}\n`;
+        plsContent += 'Version=2\n';
+        
+        return plsContent;
+    } catch (error) {
+        console.error('Error converting JSON to PLS:', error);
+        throw new Error('Failed to convert playlist to PLS: ' + error.message);
     }
 }
 
