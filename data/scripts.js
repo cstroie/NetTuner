@@ -891,12 +891,26 @@ async function playInstantStream() {
     const playButton = document.querySelector('.instant-play button');
     const originalText = playButton ? playButton.textContent : 'Instant Play';
     if (playButton) {
-        playButton.textContent = 'Playing...';
+        playButton.textContent = 'Processing...';
         playButton.disabled = true;
     }
     
     try {
-        await sendPlayRequest(url, 'Instant Stream', 0);
+        // Check if URL is a playlist by extension
+        const lowerUrl = url.toLowerCase();
+        if (lowerUrl.endsWith('.m3u') || lowerUrl.endsWith('.m3u8') || 
+            lowerUrl.endsWith('.pls') || lowerUrl.endsWith('.json')) {
+            // It's a playlist, fetch and parse it
+            const streamUrl = await getFirstStreamFromPlaylist(url);
+            if (streamUrl) {
+                await sendPlayRequest(streamUrl, 'Instant Stream', 0);
+            } else {
+                throw new Error('No valid streams found in playlist');
+            }
+        } else {
+            // Not a playlist, play directly
+            await sendPlayRequest(url, 'Instant Stream', 0);
+        }
         // Clear the input field after successful play
         urlInput.value = '';
     } catch (error) {
@@ -907,6 +921,103 @@ async function playInstantStream() {
             playButton.textContent = originalText;
             playButton.disabled = false;
         }
+    }
+}
+
+async function getFirstStreamFromPlaylist(url) {
+    try {
+        // Try direct fetch first
+        let response = await fetch(url);
+        
+        // If direct fetch fails due to CORS, try with a proxy
+        if (!response.ok) {
+            console.log('Direct fetch failed, trying with CORS proxy');
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            response = await fetch(proxyUrl);
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch playlist: ${response.status} ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type') || '';
+        const textContent = await response.text();
+        
+        let playlistData;
+        
+        // Detect format based on content type or content
+        const lowerUrl = url.toLowerCase();
+        if (lowerUrl.endsWith('.m3u') || lowerUrl.endsWith('.m3u8') || 
+            contentType.includes('audio/x-mpegurl') || 
+            contentType.includes('application/x-mpegurl') ||
+            textContent.includes('#EXTM3U')) {
+            // M3U format
+            playlistData = JSON.parse(convertM3UToJSON(textContent));
+        } else if (lowerUrl.endsWith('.pls') || 
+                   contentType.includes('audio/x-scpls') || 
+                   textContent.includes('[playlist]')) {
+            // PLS format
+            playlistData = JSON.parse(convertPLSToJSON(textContent));
+        } else if (lowerUrl.endsWith('.json') || 
+            contentType.includes('application/json') || 
+            (textContent.trim().startsWith('{') || textContent.trim().startsWith('['))) {
+            // JSON format
+            const jsonData = JSON.parse(textContent);
+            
+            // Validate the JSON structure
+            if (!Array.isArray(jsonData)) {
+                throw new Error('Invalid playlist format: expected array of streams');
+            }
+            
+            // Validate each stream in the playlist and skip invalid ones
+            const validStreams = [];
+            for (let i = 0; i < jsonData.length; i++) {
+                const stream = jsonData[i];
+                if (!stream || typeof stream !== 'object') {
+                    console.warn(`Skipping invalid stream at position ${i+1}: not an object`);
+                    continue;
+                }
+                
+                if (!stream.name || !stream.name.trim()) {
+                    console.warn(`Skipping stream at position ${i+1}: empty name`);
+                    continue;
+                }
+                
+                if (!stream.url) {
+                    console.warn(`Skipping stream at position ${i+1}: no URL`);
+                    continue;
+                }
+                
+                if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL format`);
+                    continue;
+                }
+                
+                try {
+                    new URL(stream.url);
+                } catch (e) {
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL`);
+                    continue;
+                }
+                
+                // If we get here, the stream is valid
+                validStreams.push(stream);
+            }
+            
+            playlistData = validStreams;
+        } else {
+            throw new Error('Unsupported playlist format');
+        }
+        
+        // Return the first valid stream URL
+        if (playlistData && Array.isArray(playlistData) && playlistData.length > 0) {
+            return playlistData[0].url;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error processing playlist:', error);
+        throw error;
     }
 }
 
