@@ -1399,33 +1399,42 @@ async function importRemotePlaylist() {
                 throw new Error('Invalid playlist format: expected array of streams');
             }
             
-            // Validate each stream in the playlist
+            // Validate each stream in the playlist and skip invalid ones
+            const validStreams = [];
             for (let i = 0; i < jsonData.length; i++) {
                 const stream = jsonData[i];
                 if (!stream || typeof stream !== 'object') {
-                    throw new Error(`Invalid stream at position ${i+1}`);
+                    console.warn(`Skipping invalid stream at position ${i+1}: not an object`);
+                    continue;
                 }
                 
                 if (!stream.name || !stream.name.trim()) {
-                    throw new Error(`Stream at position ${i+1} has an empty name`);
+                    console.warn(`Skipping stream at position ${i+1}: empty name`);
+                    continue;
                 }
                 
                 if (!stream.url) {
-                    throw new Error(`Stream at position ${i+1} has no URL`);
+                    console.warn(`Skipping stream at position ${i+1}: no URL`);
+                    continue;
                 }
                 
                 if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
-                    throw new Error(`Stream at position ${i+1} has invalid URL format`);
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL format`);
+                    continue;
                 }
                 
                 try {
                     new URL(stream.url);
                 } catch (e) {
-                    throw new Error(`Stream at position ${i+1} has invalid URL`);
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL`);
+                    continue;
                 }
+                
+                // If we get here, the stream is valid
+                validStreams.push(stream);
             }
             
-            playlistData = jsonData;
+            playlistData = validStreams;
         } else {
             throw new Error('Unsupported playlist format');
         }
