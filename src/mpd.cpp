@@ -21,6 +21,9 @@
 
 /**
  * @brief Parse value from string, handling quotes
+ * @details Extracts a numeric value from a string, removing surrounding whitespace
+ * and quotes if present. This is needed because MPD commands may send values
+ * with or without quotes depending on the client implementation.
  * @param valueStr The value string to parse
  * @return The parsed value as integer
  */
@@ -36,6 +39,23 @@ int parseValue(const String& valueStr) {
   return cleanedStr.toInt();
 }
 
+/**
+ * @brief Constructor for MPDInterface
+ * @details Initializes the MPD interface with references to global variables
+ * and the WiFi server instance. All parameters are passed by reference to
+ * maintain direct access to the global state.
+ * @param server WiFiServer instance for MPD connections
+ * @param streamTitle Reference to global stream title buffer
+ * @param streamName Reference to global stream name buffer
+ * @param streamURL Reference to global stream URL buffer
+ * @param isPlaying Reference to global playing status flag
+ * @param volume Reference to global volume level (0-22)
+ * @param bitrate Reference to global bitrate value
+ * @param playlistCount Reference to global playlist count
+ * @param currentSelection Reference to global current selection index
+ * @param playlist Reference to global playlist array
+ * @param audio Reference to global audio instance
+ */
 MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
                volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
                int& currentSelection, StreamInfo* playlist, Audio*& audio)
@@ -46,11 +66,16 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
 
 /**
  * @brief Handle MPD client connections and process commands
- * Manages the MPD protocol connection state and command processing
+ * @details Manages the MPD protocol connection state and command processing.
  * 
  * This function handles new client connections, processes incoming MPD commands,
  * and manages special modes like command lists and idle mode. It also handles
  * client disconnections and ensures proper cleanup.
+ * 
+ * Connection handling:
+ * - Accepts new connections when no client is connected
+ * - Rejects new connections when a client is already connected
+ * - Properly closes disconnected clients
  * 
  * In idle mode, the function monitors for changes in playback status and stream
  * information, sending notifications to clients when changes occur.
@@ -105,26 +130,41 @@ void MPDInterface::handleClient() {
 
 /**
  * @brief Handle idle mode monitoring and notifications
- * Monitors for changes in playback status and stream information
+ * @details Monitors for changes in playback status and stream information using
+ * hash-based change detection for efficient monitoring.
+ * 
+ * Change detection works by computing hash values of the monitored data:
+ * - Title hash: Computed from the stream title string
+ * - Status hash: Computed from playing status, volume, and bitrate
+ * 
+ * When changes are detected, appropriate MPD idle notifications are sent:
+ * - "changed: playlist" for title changes
+ * - "changed: player" and "changed: mixer" for status changes
+ * 
+ * The function also handles the noidle command to exit idle mode.
  */
 void MPDInterface::handleIdleMode() {
-  // Check for title changes
+  // Check for title changes using hash computation
   unsigned long currentTitleHash = 0;
   for (int i = 0; streamTitleRef[i]; i++) {
     currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
   }
-  // Check for status changes
+  
+  // Check for status changes using hash computation
   unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
   currentStatusHash = currentStatusHash * 31 + volumeRef;
   currentStatusHash = currentStatusHash * 31 + bitrateRef;
+  
   bool sendIdleResponse = false;
   String idleChanges = "";
+  
   // Check for title change
   if (currentTitleHash != lastTitleHash) {
     idleChanges += "changed: playlist\n";
     lastTitleHash = currentTitleHash;
     sendIdleResponse = true;
   }
+  
   // Check for status change
   if (currentStatusHash != lastStatusHash) {
     idleChanges += "changed: player\n";
@@ -132,6 +172,7 @@ void MPDInterface::handleIdleMode() {
     lastStatusHash = currentStatusHash;
     sendIdleResponse = true;
   }
+  
   // Send idle response if there are changes
   if (sendIdleResponse) {
     mpdClient.print(idleChanges);
@@ -139,6 +180,7 @@ void MPDInterface::handleIdleMode() {
     inIdleMode = false;
     return;
   }
+  
   // Check if there's data available (for noidle command)
   if (mpdClient.available()) {
     String command = mpdClient.readStringUntil('\n');
@@ -154,7 +196,16 @@ void MPDInterface::handleIdleMode() {
 
 /**
  * @brief Handle command list processing
- * Processes commands in command list mode
+ * @details Processes commands in command list mode with support for both
+ * command_list_begin and command_list_ok_begin modes.
+ * 
+ * In command_list_begin mode, commands are buffered until command_list_end
+ * is received, then all commands are executed sequentially.
+ * 
+ * In command_list_ok_begin mode, each command receives a "list_OK" response
+ * except the last which receives a standard "OK" response.
+ * 
+ * The function implements a safety limit of 50 commands to prevent memory issues.
  * @param command The command to process
  */
 void MPDInterface::handleCommandList(const String& command) {
@@ -185,6 +236,10 @@ void MPDInterface::handleCommandList(const String& command) {
 
 /**
  * @brief Generate MPD OK response
+ * @details Generates the appropriate OK response based on the current mode:
+ * - In normal mode: returns "OK\n"
+ * - In command list mode with list_OK enabled: returns "list_OK\n" for intermediate responses
+ * - In command list mode with list_OK disabled: returns empty string for intermediate responses
  * @return OK response string
  */
 String MPDInterface::mpdResponseOK() {
@@ -203,8 +258,14 @@ String MPDInterface::mpdResponseOK() {
 
 /**
  * @brief Generate MPD error response
+ * @details Generates a properly formatted MPD error response following the
+ * MPD protocol specification: ACK [error_code@command_list_num] {current_command} message
+ * 
+ * This implementation uses error code 5 (ACK_ERROR_NO_EXIST) and command list
+ * number 0 as these are appropriate for most general errors.
+ * @param command The command that caused the error
  * @param message Error message
- * @return Error response string
+ * @return Error response string in MPD format
  */
 String MPDInterface::mpdResponseError(const String& command, const String& message) {
   return "ACK [5@0] {" + command + "} " + message + "\n";
@@ -212,7 +273,17 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
 
 /**
  * @brief Send playlist information with configurable detail level
- * Sends playlist information with different levels of metadata
+ * @details Sends playlist information with different levels of metadata based
+ * on the detail level parameter. Higher detail levels include more metadata fields.
+ * 
+ * Detail levels:
+ * - 0: Minimal (file+title) - for listplaylistinfo
+ * - 1: Simple (file+title+lastmod) - for lsinfo, listallinfo
+ * - 2: Full (file+title+id+pos+lastmod) - for playlistinfo
+ * - 3: Artist/Album (file+title+artist+album+id+pos+lastmod) - for search/find with artist/album
+ * 
+ * For artist/album detail levels, dummy "WebRadio" values are used since
+ * web radio streams don't have traditional artist/album metadata.
  * @param detailLevel 
  * 0=minimal (file+title), 
  * 1=simple (file+title+lastmod), 
@@ -243,7 +314,18 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
 
 /**
  * @brief Handle MPD search/find commands
- * Processes search and find commands with partial or exact matching in stream names
+ * @details Processes search and find commands with partial or exact matching in stream names.
+ * The function parses the search criteria and filters the playlist entries based on
+ * the specified matching mode (partial for search, exact for find).
+ * 
+ * Command format examples:
+ * - search "Title" "search term"
+ * - find "Artist" "exact artist name"
+ * 
+ * Special handling is implemented for artist/album searches which return
+ * simple playlist information rather than filtered results.
+ * 
+ * Search is case-insensitive and handles quoted strings properly.
  * @param command The full command string
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
  */
@@ -306,12 +388,22 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
 
 /**
  * @brief Handle MPD commands
- * Processes MPD protocol commands with support for MPD protocol version 0.23.0
- * @param command The command string to process
- * 
+ * @details Processes MPD protocol commands with support for MPD protocol version 0.23.0.
  * This function processes MPD protocol commands and controls the player accordingly.
  * It supports a subset of MPD commands including playback control, volume control,
  * playlist management, status queries, and search functionality.
+ * 
+ * Command processing includes:
+ * - Playback control (play, stop, pause, next, previous)
+ * - Volume control (setvol, getvol, volume)
+ * - Status queries (status, currentsong, stats)
+ * - Playlist management (playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo)
+ * - Search functionality (search, find)
+ * - System commands (ping, commands, notcommands, tagtypes, outputs)
+ * - Special modes (idle, noidle, command lists)
+ * 
+ * Volume handling converts between MPD's 0-100 scale and the ESP32-audioI2S 0-22 scale.
+ * @param command The command string to process
  * 
  * Supported commands include:
  * - Playback: play, stop, pause, next, previous
@@ -337,6 +429,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("status")) {
     // Status command
+    // Convert volume from 0-22 scale to 0-100 scale for MPD compatibility
     int volPercent = map(volumeRef, 0, 22, 0, 100);
     mpdClient.print("volume: " + String(volPercent) + "\n");
     mpdClient.print("repeat: 0\n");
@@ -351,7 +444,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("song: " + String(currentSelectionRef) + "\n");
       mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
       mpdClient.print("time: 0:0\n");
-      // Calculate elapsed time
+      // Calculate elapsed time since playback started
       extern unsigned long playStartTime;
       unsigned long elapsed = 0;
       if (playStartTime > 0) {
@@ -374,16 +467,17 @@ void MPDInterface::handleMPDCommand(const String& command) {
         String title = String(streamTitleRef);
         int separatorPos = title.indexOf(" - ");
         if (separatorPos != -1) {
-          // Split into artist and track
+          // Split into artist and track using the " - " separator
           String artist = title.substring(0, separatorPos);
           String track = title.substring(separatorPos + 3); // Skip " - "
           mpdClient.print("Artist: " + artist + "\n");
           mpdClient.print("Title: " + track + "\n");
         } else {
-          // No separator, use full title
+          // No separator, use full title as track name
           mpdClient.print("Title: " + title + "\n");
         }
       } else {
+        // No stream title, use stream name as fallback
         mpdClient.print("Title: " + String(streamNameRef) + "\n");
       }
       mpdClient.print("Id: " + String(currentSelectionRef) + "\n");
@@ -460,15 +554,16 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Set volume command
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
-      // Convert to integer and set volume
+      // Parse volume value, handling quotes if present
       int newVolume = parseValue(volumeStr);
       if (newVolume >= 0 && newVolume <= 100) {
-        volumeRef = map(newVolume, 0, 100, 0, 22);  // Map 0-100 to 0-22 scale
+        // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
+        volumeRef = map(newVolume, 0, 100, 0, 22);
         if (audioRef) {
           audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
         }
         updateDisplay();
-        sendStatusToClients();  // Notify WebSocket clients
+        sendStatusToClients();  // Notify WebSocket clients of volume change
         mpdClient.print(mpdResponseOK());
       } else {
         mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
@@ -485,10 +580,10 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Volume command - change volume by relative amount
     if (command.length() > 7) {
       String volumeStr = command.substring(7);
-      // Convert to integer (can be negative for decrease)
+      // Parse volume change value (can be negative for decrease)
       int volumeChange = parseValue(volumeStr);
       
-      // Get current volume as percentage
+      // Get current volume as percentage for MPD compatibility
       int currentVolPercent = map(volumeRef, 0, 22, 0, 100);
       
       // Apply change and clamp to 0-100 range
@@ -496,13 +591,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
       if (newVolPercent < 0) newVolPercent = 0;
       if (newVolPercent > 100) newVolPercent = 100;
       
-      // Convert back to 0-22 scale and set
+      // Convert back to 0-22 scale for ESP32-audioI2S and set
       volumeRef = map(newVolPercent, 0, 100, 0, 22);
       if (audioRef) {
         audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
       }
       updateDisplay();
-      sendStatusToClients();  // Notify WebSocket clients
+      sendStatusToClients();  // Notify WebSocket clients of volume change
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("volume", "Missing volume change value"));
@@ -801,7 +896,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
 }
 /**
  * @brief Handle asynchronous command processing
- * Processes commands without blocking, allowing for better responsiveness
+ * @details Processes commands without blocking, allowing for better responsiveness.
+ * This function reads available data from the client connection and accumulates
+ * it in a buffer until a complete command (terminated by newline) is received.
+ * It then processes the command according to the current mode (normal, command list, etc.).
+ * 
+ * The function processes only one command per call to avoid blocking other operations,
+ * which is important for maintaining responsive MPD service.
  */
 void MPDInterface::handleAsyncCommands() {
     // Read available data without blocking
