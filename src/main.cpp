@@ -2311,22 +2311,10 @@ void handleImportConfig() {
     const char* filename = configFiles[i];
     // Check if this section exists in the uploaded data
     if (doc.containsKey(filename)) {
-      // Save the JSON content directly to SPIFFS without parsing
-      File outFile = SPIFFS.open("/" + String(filename), "w");
-      if (outFile) {
-        // Get the raw JSON string for this section
-        String sectionContent;
-        serializeJson(doc[filename], sectionContent);
-        // Write the content directly to the file
-        if (outFile.print(sectionContent) == 0) {
-          Serial.printf("Failed to write %s to file\n", filename);
-          success = false;
-        }
-        outFile.close();
-      } else {
-        Serial.printf("Failed to open %s for writing\n", filename);
-        success = false;
-      }
+      String file = String("/") + String(filename);
+      writeJsonFile(file, doc[filename]);
+      // Yield to other tasks during long operations
+      delay(1);
     }
   }
   if (success) {
