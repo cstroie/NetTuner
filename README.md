@@ -97,24 +97,29 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 
 ### API Endpoints
 
-| Endpoint         | Method | Description                  |
-|------------------|--------|------------------------------|
-| `/`              | GET    | Main control interface       |
-| `/playlist.html` | GET    | Playlist management          |
-| `/wifi.html`     | GET    | WiFi configuration           |
-| `/api/streams`   | GET    | Get all streams in playlist  |
-| `/api/streams`   | POST   | Update playlist              |
-| `/api/play`      | POST   | Start playing a stream       |
-| `/api/stop`      | POST   | Stop playback                |
-| `/api/volume`    | POST   | Set volume level             |
-| `/api/tone`      | POST   | Set bass/midrange/treble     |
-| `/api/status`    | GET    | Get current player status    |
-| `/api/config`    | GET    | Get current configuration    |
-| `/api/config`    | POST   | Update configuration         |
-| `/api/wifiscan`  | GET    | Scan for WiFi networks       |
-| `/api/wificonfig`| GET    | Get current WiFi configuration|
-| `/api/wifisave`  | POST   | Save WiFi configuration      |
-| `/api/wifistatus`| GET    | Get current WiFi status      |
+| Endpoint                  | Method | Description                           |
+|---------------------------|--------|---------------------------------------|
+| `/`                       | GET    | Main control interface                |
+| `/playlist.html`          | GET    | Playlist management                   |
+| `/config.html`            | GET    | Hardware configuration                |
+| `/wifi.html`              | GET    | WiFi configuration                    |
+| `/about.html`             | GET    | About page                            |
+| `/w`                      | GET/POST | Simple web interface                |
+| `/api/streams`            | GET    | Get all streams in playlist           |
+| `/api/streams`            | POST   | Update playlist                       |
+| `/api/play`               | POST   | Start playing a stream                |
+| `/api/stop`               | POST   | Stop playback                         |
+| `/api/volume`             | POST   | Set volume level                      |
+| `/api/tone`               | POST   | Set bass/midrange/treble              |
+| `/api/status`             | GET    | Get current player status             |
+| `/api/config`             | GET    | Get current configuration             |
+| `/api/config`             | POST   | Update configuration                  |
+| `/api/config/export`      | GET    | Export all configuration files        |
+| `/api/config/import`      | POST   | Import configuration files            |
+| `/api/wifi/scan`          | GET    | Scan for WiFi networks                |
+| `/api/wifi/save`          | POST   | Save WiFi configuration               |
+| `/api/wifi/status`        | GET    | Get current WiFi status               |
+| `/api/wifi/config`        | GET    | Get current WiFi configuration        |
 
 > **Note**: WebSocket server runs on port 81 for real-time status updates
 
