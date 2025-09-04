@@ -741,6 +741,8 @@ void handleWiFiConfig() {
   // Populate JSON array with configured network SSIDs
   for (int i = 0; i < wifiNetworkCount; i++) {
     array.add(String(ssid[i]));
+    // Yield to other tasks during long operations
+    delay(1);
   }
   
   // Serialize JSON to string
@@ -2223,6 +2225,8 @@ void handleExportConfig() {
               // Add to main document with filename as key (without leading slash)
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 3) output += ",";
+              // Yield to other tasks during long operations
+              delay(1); 
             }
           }
         }
