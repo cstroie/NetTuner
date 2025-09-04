@@ -1770,16 +1770,7 @@ void handleGetStreams() {
   // Yield to other tasks before processing
   delay(1);
   
-  // If playlist file doesn't exist, create a default empty one
-  if (!SPIFFS.exists("/playlist.json")) {
-    File file = SPIFFS.open("/playlist.json", "w");
-    if (file) {
-      file.println("[]");
-      file.close();
-    }
-  }
-  
-  // Return JSON format (default)
+  // If playlist file doesn't exist, return a default empty one
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     server.send(200, "application/json", "[]");
@@ -1909,7 +1900,8 @@ void handlePlay() {
     url = server.arg("url");
     name = server.arg("name");
   } else {
-    server.send(400, "text/plain", "Missing required parameters: url and name");
+    // Missing required parameters
+    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters: url and name\"}");
     return;
   }
   // Validate extracted values
