@@ -70,22 +70,26 @@
                 <small>Supported formats: JSON, M3U, M3U8, PLS</small>
             </label>
             <footer class="grid">
-            <div role="group">
-                <button onclick="uploadJSON()">Upload JSON</button>
-                <button onclick="downloadJSON()">Download JSON</button>
-            </div>
-            <div role="group">
-                <button class="secondary" onclick="uploadM3U()">Upload M3U</button>
-                <button class="secondary" onclick="downloadM3U()">Download M3U</button>
-            </div>
-            <div role="group">
-                <button class="secondary" onclick="uploadPLS()">Upload PLS</button>
-                <button class="secondary" onclick="downloadPLS()">Download PLS</button>
-            </div>
+                <div role="group">
+                    <button onclick="uploadJSON()">Upload JSON</button>
+                    <button onclick="downloadJSON()">Download JSON</button>
+                </div>
+                <div role="group">
+                    <button class="secondary" onclick="uploadM3U()">Upload M3U</button>
+                    <button class="secondary" onclick="downloadM3U()">Download M3U</button>
+                </div>
+                <div role="group">
+                    <button class="secondary" onclick="uploadPLS()">Upload PLS</button>
+                    <button class="secondary" onclick="downloadPLS()">Download PLS</button>
+                </div>
             </footer>
         </article>
         <article>
-            <label for="remotePlaylistUrl">Import remote playlist</label>
+            <hgroup>
+                <h2>Remote playlist</h2>
+                <p>Import items from a remote playlist in different formats (JSON, M3U, M3U8, PLS).</p>
+            </hgroup>
+            <label for="remotePlaylistUrl">Remote playlist URL</label>
             <div role="group">
                 <input type="url" id="remotePlaylistUrl" placeholder="Enter remote playlist URL (http://...)" />
                 <button onclick="importRemotePlaylist()">Import</button>
