@@ -1475,6 +1475,12 @@ function showPlaylistSelectionModal(playlistData) {
                 <p>${playlistData.length} stream(s) found in the playlist</p>
             </header>
             <div class="playlist-items-container">
+                <div class="select-all-container">
+                    <label>
+                        <input type="checkbox" id="selectAllCheckbox" checked>
+                        <strong>Select / Deselect all</strong>
+                    </label>
+                </div>
     `;
     
     // Add checkbox for each stream
@@ -1482,7 +1488,7 @@ function showPlaylistSelectionModal(playlistData) {
         modalContent += `
             <div class="playlist-item">
                 <label>
-                    <input type="checkbox" checked data-index="${index}">
+                    <input type="checkbox" checked data-index="${index}" class="stream-checkbox">
                     <span class="stream-info">
                         <strong>${escapeHtml(stream.name)}</strong><br>
                         <small>${escapeHtml(stream.url)}</small>
@@ -1505,6 +1511,17 @@ function showPlaylistSelectionModal(playlistData) {
     modal.innerHTML = modalContent;
     document.body.appendChild(modal);
     modal.showModal();
+    
+    // Add event listener for select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('#playlistSelectionModal .stream-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+    }
 }
 
 function appendSelectedStreams(playlistData) {
