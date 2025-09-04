@@ -2278,20 +2278,27 @@ void handleImportConfig() {
  * @return JSON formatted status string
  */
 String generateStatusJSON() {
-  String status = "{";
-  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-  status += "\"streamURL\":\"" + String(streamURL) + "\",";
-  status += "\"streamName\":\"" + String(streamName) + "\",";
-  status += "\"streamTitle\":\"" + String(streamTitle) + "\",";
-  status += "\"streamIcyURL\":\"" + String(streamIcyURL) + "\",";
-  status += "\"streamIconURL\":\"" + String(streamIconURL) + "\",";
-  status += "\"bitrate\":" + String(bitrate) + ",";
-  status += "\"volume\":" + String(volume) + ",";
-  status += "\"bass\":" + String(bass) + ",";
-  status += "\"midrange\":" + String(midrange) + ",";
-  status += "\"treble\":" + String(treble);
-  status += "}";
-  return status;
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(512);
+  
+  // Populate JSON document with status values
+  doc["playing"] = isPlaying;
+  doc["streamURL"] = streamURL;
+  doc["streamName"] = streamName;
+  doc["streamTitle"] = streamTitle;
+  doc["streamIcyURL"] = streamIcyURL;
+  doc["streamIconURL"] = streamIconURL;
+  doc["bitrate"] = bitrate;
+  doc["volume"] = volume;
+  doc["bass"] = bass;
+  doc["midrange"] = midrange;
+  doc["treble"] = treble;
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  
+  return json;
 }
 
 /**
