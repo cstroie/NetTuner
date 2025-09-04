@@ -313,37 +313,9 @@ void setup() {
   // Initialize start time for uptime tracking
   startTime = millis() / 1000;  // Store in seconds
   // Initialize SPIFFS with error recovery
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    // Try to reformat SPIFFS
-    if (!SPIFFS.format()) {
-      Serial.println("ERROR: Failed to format SPIFFS");
-      return;
-    }
-    // Try to mount again after formatting
-    if (!SPIFFS.begin(true)) {
-      Serial.println("ERROR: Failed to mount SPIFFS after formatting");
-      return;
-    }
-    Serial.println("SPIFFS formatted and mounted successfully");
-  }
-  
-  // Test SPIFFS write capability
-  if (!SPIFFS.exists("/spiffs_test")) {
-    Serial.println("Testing SPIFFS write capability...");
-    File testFile = SPIFFS.open("/spiffs_test", "w");
-    if (!testFile) {
-      Serial.println("ERROR: Failed to create SPIFFS test file!");
-    } else {
-      if (testFile.println("SPIFFS write test - OK")) {
-        Serial.println("SPIFFS write test successful");
-      } else {
-        Serial.println("ERROR: Failed to write to SPIFFS test file!");
-      }
-      testFile.close();
-    }
-  } else {
-    Serial.println("SPIFFS write test file already exists - SPIFFS is working");
+  if (!initializeSPIFFS()) {
+    Serial.println("ERROR: Failed to initialize SPIFFS");
+    return;
   }
     
   // Load configuration
@@ -517,6 +489,49 @@ void setup() {
   
   // Update display
   updateDisplay();
+}
+
+/**
+ * @brief Initialize SPIFFS with error recovery
+ * Mounts SPIFFS filesystem with error recovery mechanisms
+ * @return true if successful, false otherwise
+ */
+bool initializeSPIFFS() {
+  // Initialize SPIFFS with error recovery
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    // Try to reformat SPIFFS
+    if (!SPIFFS.format()) {
+      Serial.println("ERROR: Failed to format SPIFFS");
+      return false;
+    }
+    // Try to mount again after formatting
+    if (!SPIFFS.begin(true)) {
+      Serial.println("ERROR: Failed to mount SPIFFS after formatting");
+      return false;
+    }
+    Serial.println("SPIFFS formatted and mounted successfully");
+  }
+  
+  // Test SPIFFS write capability
+  if (!SPIFFS.exists("/spiffs_test")) {
+    Serial.println("Testing SPIFFS write capability...");
+    File testFile = SPIFFS.open("/spiffs_test", "w");
+    if (!testFile) {
+      Serial.println("ERROR: Failed to create SPIFFS test file!");
+    } else {
+      if (testFile.println("SPIFFS write test - OK")) {
+        Serial.println("SPIFFS write test successful");
+      } else {
+        Serial.println("ERROR: Failed to write to SPIFFS test file!");
+      }
+      testFile.close();
+    }
+  } else {
+    Serial.println("SPIFFS write test file already exists - SPIFFS is working");
+  }
+  
+  return true;
 }
 
 /**
