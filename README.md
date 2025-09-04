@@ -84,8 +84,8 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 - **WiFi Configuration**: Configure multiple WiFi networks with priority ordering
 
 ### Playlist Management
-- Upload/download playlists in JSON or M3U formats
-- Convert between JSON and M3U formats on-the-fly
+- Upload/download playlists in JSON, M3U, or PLS formats
+- Convert between JSON, M3U, and PLS formats on-the-fly
 - Manage individual streams through the web interface
 - Real-time validation of stream URLs and names
 
