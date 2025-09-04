@@ -935,6 +935,31 @@ void loadWiFiCredentials() {
 }
 
 /**
+ * @brief Save WiFi credentials to SPIFFS
+ * This function saves the current WiFi credentials to wifi.json in SPIFFS.
+ * It stores networks in the new JSON array format.
+ */
+void saveWiFiCredentials() {
+  DynamicJsonDocument doc(2048); // Increased size for array format
+  JsonArray networks = doc.to<JsonArray>();
+  // Save networks in the JSON array format [{"ssid": "name", "password": "pass"}, ...]
+  for (int i = 0; i < wifiNetworkCount; i++) {
+    JsonObject network = networks.createNestedObject();
+    network["ssid"] = ssid[i];
+    if (strlen(password[i]) > 0) {
+      network["password"] = password[i];
+    }
+  }
+  
+  // Save the JSON document to SPIFFS using helper function
+  if (writeJsonFile("/wifi.json", doc)) {
+    Serial.println("Saved WiFi credentials to SPIFFS");
+  } else {
+    Serial.println("Failed to save WiFi credentials to SPIFFS");
+  }
+}
+
+/**
  * @brief Load configuration from SPIFFS
  * This function reads configuration from config.json in SPIFFS
  */
@@ -1005,31 +1030,6 @@ void saveConfig() {
     Serial.println("Saved configuration to SPIFFS");
   } else {
     Serial.println("Failed to save configuration to SPIFFS");
-  }
-}
-
-/**
- * @brief Save WiFi credentials to SPIFFS
- * This function saves the current WiFi credentials to wifi.json in SPIFFS.
- * It stores networks in the new JSON array format.
- */
-void saveWiFiCredentials() {
-  DynamicJsonDocument doc(2048); // Increased size for array format
-  JsonArray networks = doc.to<JsonArray>();
-  // Save networks in the JSON array format [{"ssid": "name", "password": "pass"}, ...]
-  for (int i = 0; i < wifiNetworkCount; i++) {
-    JsonObject network = networks.createNestedObject();
-    network["ssid"] = ssid[i];
-    if (strlen(password[i]) > 0) {
-      network["password"] = password[i];
-    }
-  }
-  
-  // Save the JSON document to SPIFFS using helper function
-  if (writeJsonFile("/wifi.json", doc)) {
-    Serial.println("Saved WiFi credentials to SPIFFS");
-  } else {
-    Serial.println("Failed to save WiFi credentials to SPIFFS");
   }
 }
 
