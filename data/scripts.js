@@ -1778,8 +1778,8 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
                 <p>${playlistData.length} stream(s) found in the playlist</p>
             </header>
             <div class="playlist-items-container">
-                <label for="streamSelect">Choose a stream:</label>
-                <select id="streamSelect" style="width: 100%; margin-bottom: 1rem;">
+                <label for="instantStreamSelect">Choose a stream:</label>
+                <select id="instantStreamSelect" style="width: 100%; margin-bottom: 1rem;">
     `;
     
     // Add option for each stream
@@ -1800,7 +1800,7 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
                 </select>
             </div>
             <footer class="grid">
-                <button id="playSelectedStreamBtn">Play</button>
+                <button id="playInstantSelectedStreamBtn">Play</button>
                 <button class="secondary" onclick="document.getElementById('instantPlaySelectionModal').remove()">Cancel</button>
             </footer>
         </article>
@@ -1811,17 +1811,17 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
     modal.showModal();
     
     // Add event listener for play button
-    document.getElementById('playSelectedStreamBtn').addEventListener('click', function() {
-        const selectElement = document.getElementById('streamSelect');
+    document.getElementById('playInstantSelectedStreamBtn').addEventListener('click', function() {
+        const selectElement = document.getElementById('instantStreamSelect');
         const selectedIndex = parseInt(selectElement.value);
-        playSelectedStreamFromPlaylist(selectedIndex);
+        playIntantSelectedStreamFromPlaylist(selectedIndex);
     });
     
     // Also allow playing with Enter key
-    document.getElementById('streamSelect').addEventListener('keydown', function(e) {
+    document.getElementById('instantStreamSelect').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const selectedIndex = parseInt(this.value);
-            playSelectedStreamFromPlaylist(selectedIndex);
+            playIntantSelectedStreamFromPlaylist(selectedIndex);
         }
     });
 }
@@ -1866,7 +1866,7 @@ function replaceWithSelectedStreams() {
     document.getElementById('playlistSelectionModal').remove();
 }
 
-async function playSelectedStreamFromPlaylist(index) {
+async function playIntantSelectedStreamFromPlaylist(index) {
     const playlistData = window.currentInstantPlayPlaylistData;
     
     // Validate playlist data
@@ -1882,6 +1882,7 @@ async function playSelectedStreamFromPlaylist(index) {
     }
     
     const selectedStream = playlistData[index];
+    console.log('Selected stream to play:', index, selectedStream);
     
     // Validate the selected stream
     if (!selectedStream || typeof selectedStream !== 'object') {
@@ -1907,7 +1908,7 @@ async function playSelectedStreamFromPlaylist(index) {
     const streamName = (selectedStream.name && selectedStream.name.trim()) || `Stream ${index + 1}`;
     
     // Show loading state
-    const playButton = document.getElementById('playSelectedStreamBtn');
+    const playButton = document.getElementById('playInstantSelectedStreamBtn');
     const originalText = playButton ? playButton.textContent : 'Play';
     if (playButton) {
         playButton.textContent = 'Playing...';
