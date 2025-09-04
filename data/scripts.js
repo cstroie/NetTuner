@@ -962,6 +962,7 @@ function renderPlaylist() {
         // Add drag and drop event listeners
         item.addEventListener('dragstart', handleDragStart);
         item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('dragleave', handleDragLeave);
         item.addEventListener('drop', handleDrop);
         item.addEventListener('dragend', handleDragEnd);
         
@@ -970,6 +971,7 @@ function renderPlaylist() {
     
     // Add drop event listener to the playlist container
     playlistBody.addEventListener('dragover', handleDragOver);
+    playlistBody.addEventListener('dragleave', handleDragLeave);
     playlistBody.addEventListener('drop', handleDropContainer);
 }
 
@@ -999,7 +1001,17 @@ function handleDragOver(e) {
         e.preventDefault();
     }
     e.dataTransfer.dropEffect = 'move';
+    
+    // Add visual indicator for drop target
+    if (this !== dragSrcElement) {
+        this.classList.add('drag-over');
+    }
+    
     return false;
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
 }
 
 function handleDrop(e) {
@@ -1020,6 +1032,7 @@ function handleDrop(e) {
         renderPlaylist();
     }
     
+    this.classList.remove('drag-over');
     return false;
 }
 
@@ -1049,6 +1062,7 @@ function handleDragEnd(e) {
     const items = document.querySelectorAll('.playlist-item');
     items.forEach(item => {
         item.classList.remove('dragging');
+        item.classList.remove('drag-over');
     });
 }
 
