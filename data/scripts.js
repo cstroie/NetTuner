@@ -1462,6 +1462,9 @@ function showPlaylistSelectionModal(playlistData) {
         existingModal.remove();
     }
     
+    // Store playlist data in a global variable for access by modal functions
+    window.currentPlaylistData = playlistData;
+    
     // Create modal element
     const modal = document.createElement('dialog');
     modal.id = 'playlistSelectionModal';
@@ -1501,8 +1504,8 @@ function showPlaylistSelectionModal(playlistData) {
     modalContent += `
             </div>
             <footer class="grid">
-                <button onclick="appendSelectedStreams(${JSON.stringify(playlistData)})">Append Selected</button>
-                <button class="secondary" onclick="replaceWithSelectedStreams(${JSON.stringify(playlistData)})">Replace All</button>
+                <button id="appendSelectedBtn">Append Selected</button>
+                <button class="secondary" id="replaceAllBtn">Replace All</button>
                 <button class="secondary" onclick="document.getElementById('playlistSelectionModal').remove()">Cancel</button>
             </footer>
         </article>
@@ -1511,6 +1514,15 @@ function showPlaylistSelectionModal(playlistData) {
     modal.innerHTML = modalContent;
     document.body.appendChild(modal);
     modal.showModal();
+    
+    // Add event listeners for buttons
+    document.getElementById('appendSelectedBtn').addEventListener('click', function() {
+        appendSelectedStreams();
+    });
+    
+    document.getElementById('replaceAllBtn').addEventListener('click', function() {
+        replaceWithSelectedStreams();
+    });
     
     // Add event listener for select all checkbox
     const selectAllCheckbox = document.getElementById('selectAllCheckbox');
@@ -1524,9 +1536,10 @@ function showPlaylistSelectionModal(playlistData) {
     }
 }
 
-function appendSelectedStreams(playlistData) {
-    const checkboxes = document.querySelectorAll('#playlistSelectionModal input[type="checkbox"]');
+function appendSelectedStreams() {
+    const checkboxes = document.querySelectorAll('#playlistSelectionModal .stream-checkbox');
     const selectedStreams = [];
+    const playlistData = window.currentPlaylistData;
     
     checkboxes.forEach(checkbox => {
         if (checkbox.checked) {
@@ -1543,9 +1556,10 @@ function appendSelectedStreams(playlistData) {
     document.getElementById('playlistSelectionModal').remove();
 }
 
-function replaceWithSelectedStreams(playlistData) {
-    const checkboxes = document.querySelectorAll('#playlistSelectionModal input[type="checkbox"]');
+function replaceWithSelectedStreams() {
+    const checkboxes = document.querySelectorAll('#playlistSelectionModal .stream-checkbox');
     const selectedStreams = [];
+    const playlistData = window.currentPlaylistData;
     
     checkboxes.forEach(checkbox => {
         if (checkbox.checked) {
