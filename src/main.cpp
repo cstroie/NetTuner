@@ -870,17 +870,23 @@ void handleWiFiStatus() {
   // Yield to other tasks before processing
   delay(1);
   
-  String json = "{";
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(256);
+  
   // Add connection status
   if (WiFi.status() == WL_CONNECTED) {
-    json += "\"connected\":true,";
-    json += "\"ssid\":\"" + WiFi.SSID() + "\",";
-    json += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
-    json += "\"rssi\":" + String(WiFi.RSSI());
+    doc["connected"] = true;
+    doc["ssid"] = WiFi.SSID();
+    doc["ip"] = WiFi.localIP().toString();
+    doc["rssi"] = WiFi.RSSI();
   } else {
-    json += "\"connected\":false";
+    doc["connected"] = false;
   }
-  json += "}";
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  
   // Send the JSON response
   server.send(200, "application/json", json);
   
