@@ -61,7 +61,6 @@ class WiFiServer;
 class Adafruit_SSD1306;
 class MPDInterface;
 class WiFiClient;
-class Display;
 
 // Structure declarations
 struct StreamInfo {
