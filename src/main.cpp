@@ -610,34 +610,6 @@ void loop() {
     lastDisplayUpdate = millis();
   }
   
-  // Periodically save player state if dirty
-  static unsigned long lastStateCheck = 0;
-  if (millis() - lastStateCheck > 60000) {  // Check every minute
-    // Check if any state has changed
-    if (playerState.dirty || 
-        playerState.playing != isPlaying ||
-        playerState.volume != volume ||
-        playerState.bass != bass ||
-        playerState.midrange != midrange ||
-        playerState.treble != treble ||
-        playerState.playlistIndex != currentSelection) {
-      
-      // Mark as dirty if any state has changed
-      playerState.dirty = true;
-      playerState.playing = isPlaying;
-      playerState.volume = volume;
-      playerState.bass = bass;
-      playerState.midrange = midrange;
-      playerState.treble = treble;
-      playerState.playlistIndex = currentSelection;
-      
-      // Save if dirty
-      if (playerState.dirty) {
-        savePlayerState();
-      }
-    }
-    lastStateCheck = millis();
-  }
   
   // Check audio connection status with improved error recovery
   if (audio) {
@@ -1538,7 +1510,7 @@ void handleRotary() {
     }
     // Only process if we have playlist items
     if (playlistCount > 0 && currentSelection < playlistCount) {
-      if (isPlaying) {
+      if (!isPlaying) {
         // If not playing, start playback of selected stream
         startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         sendStatusToClients();  // Notify clients of status change
@@ -1914,6 +1886,9 @@ void handlePlay() {
   }
   // Start the stream
   startStream(url.c_str(), name.c_str());
+  // Save player state when user requests to play
+  markPlayerStateDirty();
+  savePlayerState();
   // Update display and notify clients
   updateDisplay();
   sendStatusToClients();
