@@ -31,6 +31,10 @@ extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
 
+// External function declarations
+extern void markPlayerStateDirty();
+extern void savePlayerState();
+
 /**
  * @brief MPD Interface Class
  * Encapsulates all MPD protocol functionality
