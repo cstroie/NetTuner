@@ -169,6 +169,10 @@ void audio_icyurl(const char *info);
 void audio_icydescription(const char *info);
 void audio_id3data(const char *info);
 
+// Helper functions
+bool initializeSPIFFS();
+void displayStatus(const String& line1, const String& line2, const String& line3);
+
 // Utility functions
 String generateStatusJSON();
 
