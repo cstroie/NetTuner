@@ -209,3 +209,14 @@ fieldset input[type="number"]:focus {
 .playlist-item button {
     margin-left: 0.5rem;
 }
+
+/**
+ * @section Theme toggle button
+ * @description Styles for the dark/light mode toggle button
+ */
+button#themeToggle {
+    border: none;
+    font-size: 2em;
+    line-height: 1;
+    padding: 0;
+}
