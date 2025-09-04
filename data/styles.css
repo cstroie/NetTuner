@@ -1,4 +1,13 @@
-/* Custom styles for NetTuner */
+/**
+ * @fileoverview Custom styles for NetTuner web interface
+ * @author NetTuner Team
+ * @version 1.0
+ */
+
+/**
+ * @section Root variables
+ * @description CSS custom properties for consistent styling
+ */
 :root {
     --pico-font-family-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
     --pico-font-family-sans-serif: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, var(--pico-font-family-emoji);
@@ -21,13 +30,20 @@
     --pico-icon-chevron: url(data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='rgb(136, 145, 164)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E);
 }
 
+/**
+ * @section Responsive design
+ * @description Media queries for mobile responsiveness
+ */
 @media (max-width: 768px) {
     .overflow-auto {
         overflow-x: auto;
     }
 }
 
-/* Tone controls */
+/**
+ * @section Tone controls
+ * @description Styles for audio tone control sliders
+ */
 .tone-controls {
     display: flex;
     flex-wrap: wrap;
@@ -48,7 +64,10 @@
     width: 100%;
 }
 
-/* Status indicator */
+/**
+ * @section Status indicator
+ * @description Visual feedback for playback status with animated pulse effect
+ */
 .status-indicator {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -85,7 +104,10 @@
     }
 }
 
-/* Configuration form styles */
+/**
+ * @section Configuration form styles
+ * @description Styling for device configuration forms
+ */
 fieldset {
     margin-bottom: 1rem;
     padding: 1rem;
@@ -121,7 +143,10 @@ fieldset input[type="number"]:focus {
     outline: var(--pico-outline-width) solid var(--pico-primary-focus);
 }
 
-/* Various customizations */
+/**
+ * @section Various customizations
+ * @description Specific element styling overrides
+ */
 #instantUrl {
     width: 80%;
 }
@@ -147,7 +172,10 @@ fieldset input[type="number"]:focus {
     text-align: center;
 }
 
-/* Drag and drop styles */
+/**
+ * @section Drag and drop styles
+ * @description Visual feedback for playlist item drag and drop operations
+ */
 .playlist-item {
     display: flex;
     align-items: center;
