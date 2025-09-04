@@ -10,7 +10,7 @@ An ESP32-based internet radio player with web interface control
 
 NetTuner is an open-source internet radio player built on the ESP32 platform. It allows you to stream MP3 audio from HTTP URLs and control playback through a web interface or physical rotary encoder. The project features an OLED display for local status feedback and supports playlist management through a web API.
 
-## Features
+## 🌟 Key Features
 
 - **Internet Radio Streaming**: Play MP3 streams from HTTP URLs
 - **Web Interface**: Control playback through a responsive web UI
@@ -21,13 +21,13 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 - **WiFi Configuration**: Web-based WiFi setup with network scanning and multiple network support
 - **File Management**: Upload/download playlists in JSON or M3U formats
 - **WebSocket Communication**: Real-time status updates between device and web interface
-- **MPD Protocol Support**: Control via MPD clients
+- **MPD Protocol Support**: Control via MPD clients (port 6600)
 - **Favicon Support**: Automatic favicon detection and display for radio stations
 - **ICY Metadata**: Full ICY metadata support including stream URLs and descriptions
 - **Artist/Track Parsing**: Automatic parsing of artist and track information from stream titles
 - **Enhanced Status Information**: Detailed playback information including bitrates and elapsed time
 
-## Hardware Requirements
+## 🛠 Hardware Requirements
 
 - ESP32 development board
 - I2S DAC (e.g., MAX98357A) or amplifier
@@ -42,31 +42,38 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 | I2S BCLK          | GPIO 27   |
 | I2S LRC           | GPIO 25   |
 | I2S DOUT          | GPIO 26   |
-| OLED SDA          | GPIO 5    |
-| OLED SCL          | GPIO 4    |
+| OLED SDA          | GPIO 21   |
+| OLED SCL          | GPIO 22   |
 | Rotary CLK        | GPIO 18   |
 | Rotary DT         | GPIO 19   |
 | Rotary SW         | GPIO 23   |
 
-> **Note**: Pin assignments can be modified in `src/main.cpp` to match your specific hardware setup.
+> **Note**: Pin assignments can be modified through the web interface or in `src/main.cpp` to match your specific hardware setup.
 
-## Software Setup
+## 🚀 Getting Started
+
+### Prerequisites
 
 1. Install [PlatformIO](https://platformio.org/)
 2. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/nettuner.git
-   cd nettuner
+   git clone https://github.com/cstroie/NetTuner.git
+   cd NetTuner
    ```
-3. Build and upload the firmware:
+
+### Building and Uploading
+
+1. Build and upload the firmware:
    ```bash
    pio run -t upload
    pio run -t uploadfs
    ```
-4. After the device boots, connect to its WiFi access point (default: "NetTuner-Setup") or access the device's IP address on your network
-5. Configure your WiFi networks through the web interface
 
-## Web Interface
+2. After the device boots, connect to its WiFi access point (default: "NetTuner-Setup") or access the device's IP address on your network
+
+3. Configure your WiFi networks through the web interface
+
+## 🌐 Web Interface
 
 Once connected to WiFi, access the web interface by navigating to the ESP32's IP address in a web browser.
 
@@ -111,32 +118,46 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 
 > **Note**: WebSocket server runs on port 81 for real-time status updates
 
-## File Structure
+## 📁 Project Structure
 
 ```
 ├── data/              # Web interface files
 │   ├── index.html     # Main control interface
 │   ├── playlist.html  # Playlist management
 │   ├── wifi.html      # WiFi configuration
+│   ├── config.html    # Hardware configuration
+│   ├── about.html     # About page
 │   ├── styles.css     # Shared styles
 │   └── scripts.js     # Shared JavaScript
 ├── src/
-│   └── main.cpp       # Main firmware code
+│   ├── main.cpp       # Main firmware code
+│   ├── main.h         # Main header file
+│   ├── mpd.cpp        # MPD protocol implementation
+│   ├── mpd.h          # MPD protocol header
+│   ├── rotary.cpp     # Rotary encoder handling
+│   └── rotary.h       # Rotary encoder header
 ├── platformio.ini     # PlatformIO configuration
 └── README.md          # This file
 ```
 
-## License
+## 📜 License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Acknowledgments
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 🙏 Acknowledgments
 
 - ESP32 Audio library by Earle F. Philhower
 - ArduinoJson library by Benoit Blanchon
 - SSD1306 library by Adafruit
 - WebSocket library by Links2004
+- PicoCSS for the beautiful UI framework
