@@ -1376,7 +1376,19 @@ async function importRemotePlaylist() {
         let playlistData;
         
         // Detect format based on content type or content
-        if (contentType.includes('application/json') || 
+        if (url.toLowerCase().endsWith('.m3u') || 
+                   url.toLowerCase().endsWith('.m3u8') || 
+                   contentType.includes('audio/x-mpegurl') || 
+                   contentType.includes('application/x-mpegurl') ||
+                   textContent.includes('#EXTM3U')) {
+            // M3U format
+            playlistData = JSON.parse(convertM3UToJSON(textContent));
+        } else if (url.toLowerCase().endsWith('.pls') || 
+                   contentType.includes('audio/x-scpls') || 
+                   textContent.includes('[playlist]')) {
+            // PLS format
+            playlistData = JSON.parse(convertPLSToJSON(textContent));
+        } else if (contentType.includes('application/json') || 
             url.toLowerCase().endsWith('.json') || 
             (textContent.trim().startsWith('{') || textContent.trim().startsWith('['))) {
             // JSON format
@@ -1414,18 +1426,6 @@ async function importRemotePlaylist() {
             }
             
             playlistData = jsonData;
-        } else if (url.toLowerCase().endsWith('.m3u') || 
-                   url.toLowerCase().endsWith('.m3u8') || 
-                   contentType.includes('audio/x-mpegurl') || 
-                   contentType.includes('application/x-mpegurl') ||
-                   textContent.includes('#EXTM3U')) {
-            // M3U format
-            playlistData = JSON.parse(convertM3UToJSON(textContent));
-        } else if (url.toLowerCase().endsWith('.pls') || 
-                   contentType.includes('audio/x-scpls') || 
-                   textContent.includes('[playlist]')) {
-            // PLS format
-            playlistData = JSON.parse(convertPLSToJSON(textContent));
         } else {
             throw new Error('Unsupported playlist format');
         }
