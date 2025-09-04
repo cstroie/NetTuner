@@ -2312,7 +2312,7 @@ void handleImportConfig() {
     // Check if this section exists in the uploaded data
     if (doc.containsKey(filename)) {
       String file = String("/") + String(filename);
-      writeJsonFile(file, doc[filename]);
+      writeJsonFile(file.c_str(), doc[filename]);
       // Yield to other tasks during long operations
       delay(1);
     }
