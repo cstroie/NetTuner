@@ -474,6 +474,32 @@ void MPDInterface::handleMPDCommand(const String& command) {
     int volPercent = map(volumeRef, 0, 22, 0, 100);
     mpdClient.print("volume: " + String(volPercent) + "\n");
     mpdClient.print(mpdResponseOK());
+  } else if (command.startsWith("volume")) {
+    // Volume command - change volume by relative amount
+    if (command.length() > 7) {
+      String volumeStr = command.substring(7);
+      // Convert to integer (can be negative for decrease)
+      int volumeChange = parseValue(volumeStr);
+      
+      // Get current volume as percentage
+      int currentVolPercent = map(volumeRef, 0, 22, 0, 100);
+      
+      // Apply change and clamp to 0-100 range
+      int newVolPercent = currentVolPercent + volumeChange;
+      if (newVolPercent < 0) newVolPercent = 0;
+      if (newVolPercent > 100) newVolPercent = 100;
+      
+      // Convert back to 0-22 scale and set
+      volumeRef = map(newVolPercent, 0, 100, 0, 22);
+      if (audioRef) {
+        audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
+      }
+      updateDisplay();
+      sendStatusToClients();  // Notify WebSocket clients
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("volume", "Missing volume change value"));
+    }
   } else if (command.startsWith("next")) {
     // Next command
     if (playlistCountRef > 0) {
