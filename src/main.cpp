@@ -699,6 +699,9 @@ void loop() {
  * This function reads the wifi.html file from SPIFFS and sends it to the client
  */
 void handleWiFiConfig() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   File file = SPIFFS.open("/wifi.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -706,6 +709,9 @@ void handleWiFiConfig() {
   }
   server.streamFile(file, "text/html");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -714,6 +720,9 @@ void handleWiFiConfig() {
  * This function provides the list of configured WiFi networks in JSON format
  */
 void handleWiFiConfigAPI() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   String json = "[";
   for (int i = 0; i < wifiNetworkCount; i++) {
     if (i > 0) json += ",";
@@ -721,6 +730,9 @@ void handleWiFiConfigAPI() {
   }
   json += "]";
   server.send(200, "application/json", json);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -730,6 +742,9 @@ void handleWiFiConfigAPI() {
  * the list of already configured networks
  */
 void handleWiFiScan() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   int n = WiFi.scanNetworks();
   String json = "{";
   // Add available networks
@@ -752,6 +767,9 @@ void handleWiFiScan() {
   json += "}";
   // Send the JSON response
   server.send(200, "application/json", json);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -822,6 +840,9 @@ void handleWiFiSave() {
  * connection status, SSID, IP address, and signal strength
  */
 void handleWiFiStatus() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   String json = "{";
   // Add connection status
   if (WiFi.status() == WL_CONNECTED) {
@@ -835,6 +856,9 @@ void handleWiFiStatus() {
   json += "}";
   // Send the JSON response
   server.send(200, "application/json", json);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -1565,6 +1589,9 @@ void handleDisplayTimeout() {
  * This function reads the index.html file from SPIFFS and sends it to the client
  */
 void handleRoot() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   File file = SPIFFS.open("/index.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -1572,6 +1599,9 @@ void handleRoot() {
   }
   server.streamFile(file, "text/html");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -1671,6 +1701,9 @@ void handleSimpleWebPage() {
  * This function reads the playlist.html file from SPIFFS and sends it to the client
  */
 void handlePlaylistPage() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   File file = SPIFFS.open("/playlist.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -1678,6 +1711,9 @@ void handlePlaylistPage() {
   }
   server.streamFile(file, "text/html");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -1686,6 +1722,9 @@ void handlePlaylistPage() {
  * This function reads the config.html file from SPIFFS and sends it to the client
  */
 void handleConfigPage() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   File file = SPIFFS.open("/config.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -1693,6 +1732,9 @@ void handleConfigPage() {
   }
   server.streamFile(file, "text/html");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -1701,6 +1743,9 @@ void handleConfigPage() {
  * This function reads the about.html file from SPIFFS and sends it to the client
  */
 void handleAboutPage() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   File file = SPIFFS.open("/about.html", "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -1708,6 +1753,9 @@ void handleAboutPage() {
   }
   server.streamFile(file, "text/html");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -1717,6 +1765,9 @@ void handleAboutPage() {
  * doesn't exist, it creates a default empty one.
  */
 void handleGetStreams() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   // If playlist file doesn't exist, create a default empty one
   if (!SPIFFS.exists("/playlist.json")) {
     File file = SPIFFS.open("/playlist.json", "w");
@@ -1736,6 +1787,9 @@ void handleGetStreams() {
   // Stream the file contents
   server.streamFile(file, "application/json");
   file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -2049,6 +2103,9 @@ void handleTone() {
  * current stream information, and volume level in JSON format.
  */
 void handleStatus() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   String status = "{";
   status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
   status += "\"streamURL\":\"" + String(streamURL) + "\",";
@@ -2057,6 +2114,9 @@ void handleStatus() {
   status += "}";
   // Return status as JSON
   server.send(200, "application/json", status);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -2065,6 +2125,9 @@ void handleStatus() {
  * This function serves the current configuration in JSON format.
  */
 void handleGetConfig() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   // Get current configuration
   String json = "{";
   json += "\"i2s_dout\":" + String(config.i2s_dout) + ",";
@@ -2083,6 +2146,9 @@ void handleGetConfig() {
   json += "}";
   // Return configuration as JSON
   server.send(200, "application/json", json);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
@@ -2132,6 +2198,9 @@ void handlePostConfig() {
  * JSON object where keys are filenames and values are file contents.
  */
 void handleExportConfig() {
+  // Yield to other tasks before processing
+  delay(1);
+  
   // List of configuration files to export
   const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json", "/player.json"};
   // Initialize output string
@@ -2167,6 +2236,9 @@ void handleExportConfig() {
   output += "}";
   // Send the combined JSON as response
   server.send(200, "application/json", output);
+  
+  // Yield to other tasks after processing
+  delay(1);
 }
 
 /**
