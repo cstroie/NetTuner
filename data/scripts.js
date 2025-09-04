@@ -1483,10 +1483,10 @@ function showPlaylistSelectionModal(playlistData) {
             <div class="playlist-item">
                 <label>
                     <input type="checkbox" checked data-index="${index}">
-                    <div class="stream-info">
-                        <strong>${escapeHtml(stream.name)}</strong>
+                    <span class="stream-info">
+                        <strong>${escapeHtml(stream.name)}</strong><br>
                         <small>${escapeHtml(stream.url)}</small>
-                    </div>
+                    </span>
                 </label>
             </div>
         `;
