@@ -19,7 +19,11 @@
 
 #include "main.h"
 #include "mpd.h"
-#include <Fonts/FreeSans9pt7b.h>
+
+// Spleen fonts https://www.onlinewebfonts.com/icon
+#include "Spleen6x12.h" 
+#include "Spleen8x16.h" 
+#include "Spleen16x32.h" 
 
 
 // MPD Interface instance
@@ -273,13 +277,10 @@ void setup() {
   Wire.begin(config.display_sda, config.display_scl);
   display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
   display.clearDisplay();
+  display.setFont(&Spleen8x16);
   display.setTextColor(SSD1306_WHITE);
-  // Larger font for title
-  display.setTextSize(2);
-  display.setCursor(16, 0);
+  display.setCursor(32, 12);
   display.println("NetTuner");
-  // Normal font for other text
-  display.setTextSize(1);
   display.display();
   
   // Load WiFi credentials with error recovery
@@ -294,15 +295,11 @@ void setup() {
       if (strlen(ssid[i]) > 0) {
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
         display.clearDisplay();
-        // Larger font for title
-        display.setTextSize(2);
-        display.setCursor(16, 0);
+        display.setCursor(32, 12);
         display.println("NetTuner");
-        // Normal font for other text
-        display.setTextSize(1);
-        display.setCursor(0, 18);
-        display.println("Connecting to WiFi...");
-        display.setCursor(0, 26);
+        display.setCursor(0, 30);
+        display.println("WiFi connecting...");
+        display.setCursor(0, 45);
         display.println(String(ssid[i]));
         display.display();
         WiFi.begin(ssid[i], password[i]);
@@ -332,27 +329,19 @@ void setup() {
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
     display.clearDisplay();
-    // Larger font for title
-    display.setTextSize(2);
-    display.setCursor(16, 0);
+    display.setCursor(32, 12);
     display.println("NetTuner");
-    // Normal font for other text
-    display.setTextSize(1);
-    display.setCursor(0, 18);
+    display.setCursor(0, 30);
     display.println(String(WiFi.SSID()));
-    display.setCursor(0, 26);
+    display.setCursor(0, 62);
     display.println(WiFi.localIP().toString());
     display.display();
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
     display.clearDisplay();
-    // Larger font for title
-    display.setTextSize(2);
-    display.setCursor(16, 0);
+    display.setCursor(32, 12);
     display.println("NetTuner");
-    // Normal font for other text
-    display.setTextSize(1);
-    display.setCursor(0, 18);
+    display.setCursor(0, 30);
     display.println("Starting AP Mode");
     display.display();
     
@@ -361,13 +350,13 @@ void setup() {
       Serial.println("Access Point Started");
       Serial.print("AP IP Address: ");
       Serial.println(WiFi.softAPIP().toString());
-      display.setCursor(0, 26);
+      display.setCursor(0, 62);
       display.println("IP:");
       display.println(WiFi.softAPIP().toString());
       display.display();
     } else {
       Serial.println("Failed to start Access Point");
-      display.setCursor(0, 26);
+      display.setCursor(0, 62);
       display.println("AP Start Failed");
       display.display();
     }
@@ -596,8 +585,11 @@ void loop() {
             Serial.printf("Reconnected to %s\n", ssid[i]);
             // Update display with new IP
             display.clearDisplay();
-            display.setCursor(0, 0);
-            display.println("WiFi Reconnected");
+            display.setCursor(32, 12);
+            display.println("NetTuner");
+            display.setCursor(0, 30);
+            display.println("WiFi Reconnect");
+            display.setCursor(0, 62);
             display.println(WiFi.localIP().toString());
             display.display();
             delay(2000);
@@ -2251,14 +2243,11 @@ void updateDisplay() {
   if (!displayOn) {
     return;
   }
-  
   // Clear the display buffer
   display.clearDisplay();
   if (isPlaying) {
     // Display when playing
-    // Larger font for title
-    display.setTextSize(2);
-    display.setCursor(0, 0);
+    display.setCursor(0, 12);
     // Fixed '>' character
     display.print(">");
     // Display stream title (first line) with scrolling
@@ -2267,8 +2256,8 @@ void updateDisplay() {
       title = String(streamName);
     }
     // Scroll title if too long for display (excluding the '>' character)
-    // ~9 chars fit on a 128px display with '>' and some margin
-    if (title.length() > 9) {
+    // 16 chars fit on a 128px display with '>' and some margin
+    if (title.length() > 14) {
       static unsigned long lastTitleScrollTime = 0;
       static int titleScrollOffset = 0;
       static String titleScrollText = "";
@@ -2287,47 +2276,42 @@ void updateDisplay() {
         lastTitleScrollTime = millis();
       }
       // Display scrolled text (starting from position after '>')
-      display.setCursor(16, 0);
+      display.setCursor(16, 12);
       String displayText = title + " ~~~ " + title;
       if (titleScrollOffset < (int)displayText.length()) {
         displayText = displayText.substring(titleScrollOffset);
       }
-      display.println(displayText.substring(0, 9));
+      display.println(displayText.substring(0, 14));
     } else {
       // Display title without scrolling
-      display.setCursor(16, 0);
+      display.setCursor(16, 12);
       display.println(title);
     }
-    // Normal font for stream info
-    display.setTextSize(1);  
     // Display stream name (second line)
-    display.setCursor(0, 18);
+    display.setCursor(0, 30);
     String stationName = String(streamName);
-    // ~21 chars fit on a 128px display
-    if (stationName.length() > 21) {
-      display.println(stationName.substring(0, 21));
+    // 16 chars fit on a 128px display
+    if (stationName.length() > 16) {
+      display.println(stationName.substring(0, 16));
     } else {
       display.println(stationName);
     }
     // Display volume and bitrate on third line
-    if (config.display_height >= 64)
-      display.setCursor(0, 30);
-    else
-      display.setCursor(0, 26);
-    display.print("Vol ");
-    display.print(volume);
-    // Display bitrate right-aligned
-    if (bitrate > 0) {
-      String bitrateStr = String(bitrate) + " kbps";
-      int16_t x1, y1;
-      uint16_t w, h;
-      display.getTextBounds(bitrateStr, 0, 30, &x1, &y1, &w, &h);
-      display.setCursor(display.width() - w, 30);
-      display.println(bitrateStr);
-    }
-    if (config.display_height >= 64) {
+    if (config.display_height >= 32) {
+      display.setCursor(0, 45);
+      display.print("Vol ");
+      display.print(volume);
+      // Display bitrate right-aligned
+      if (bitrate > 0) {
+        String bitrateStr = String(bitrate) + " kbps";
+        int16_t x1, y1;
+        uint16_t w, h;
+        display.getTextBounds(bitrateStr, 0, 30, &x1, &y1, &w, &h);
+        display.setCursor(display.width() - w, 45);
+        display.println(bitrateStr);
+      }
       // Display IP address on the last line, centered
-      display.setCursor(0, 54);
+      display.setCursor(0, 62);
       String ipString;
       if (WiFi.status() == WL_CONNECTED) {
         ipString = WiFi.localIP().toString();
@@ -2341,50 +2325,43 @@ void updateDisplay() {
       int x = (display.width() - w) / 2;
       if (x < 0) x = 0;
       // Center the IP address
-      display.setCursor(x, 54);
+      display.setCursor(x, 62);
       display.println(ipString);
     }
   } else {
     // Display when stopped
-    // Larger font for title
-    display.setTextSize(2);
-    display.setCursor(16, 0);
+    display.setCursor(32, 12);
     display.println("NetTuner");
-    // Normal font for other text
-    display.setTextSize(1);
     // Display current stream name (second line)
-    display.setCursor(0, 18);
+    display.setCursor(0, 30);
     if (strlen(streamName) > 0) {
       String currentStream = String(streamName);
-      // ~21 chars fit on a 128px display
-      if (currentStream.length() > 21) {
-        display.println(currentStream.substring(0, 21));
+      // 16 chars fit on a 128px display
+      if (currentStream.length() > 16) {
+        display.println(currentStream.substring(0, 16));
       } else {
         display.println(currentStream);
       }
     } else if (playlistCount > 0 && currentSelection < playlistCount) {
       String playlistName = String(playlist[currentSelection].name);
-      // ~21 chars fit on a 128px display
-      if (playlistName.length() > 21) {
-        display.println(playlistName.substring(0, 21));
+      // 16 chars fit on a 128px display
+      if (playlistName.length() > 16) {
+        display.println(playlistName.substring(0, 16));
       } else {
         display.println(playlistName);
       }
     } else {
       // No stream is currently found in playlist
-      display.setCursor(34, 18);
+      display.setCursor(34, 30);
       display.println("No streams");
     }
     // Display volume on third line
-    if (config.display_height >= 64)
-      display.setCursor(0, 30);
-    else
-      display.setCursor(0, 26);
-    display.print("Vol ");
-    display.println(volume);
-    if (config.display_height >= 64) {
+    if (config.display_height >= 32) {
+      display.setCursor(0, 45);
+      display.print("Vol ");
+      display.println(volume);
       // Display IP address on the last line, centered
-      display.setCursor(0, 54);
+      display.setCursor(0, 62);
       String ipString;
       if (WiFi.status() == WL_CONNECTED) {
         ipString = WiFi.localIP().toString();
@@ -2394,11 +2371,11 @@ void updateDisplay() {
       // Calculate center position
       int16_t x1, y1;
       uint16_t w, h;
-      display.getTextBounds(ipString, 0, 54, &x1, &y1, &w, &h);
+      display.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
       int x = (display.width() - w) / 2;
       if (x < 0) x = 0;
       // Center the IP address
-      display.setCursor(x, 54);
+      display.setCursor(x, 62);
       display.println(ipString);
     }
   }
