@@ -634,8 +634,8 @@ void loop() {
           } else if (millis() - streamStoppedTime >= 1000) {
             // 1 second has passed, attempt to restart
             Serial.println("Attempting to restart stream...");
-            // With the updated startStream function, we can now call it without parameters
-            // to resume the current stream
+            // With the updated startStream function, we can now call it
+            // without parameters to resume the current stream
             startStream();
             streamStoppedTime = 0; // Reset the timer
           }

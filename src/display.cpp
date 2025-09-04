@@ -157,8 +157,8 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             }
         } else {
             // No stream is currently found in playlist
-            displayRef.setCursor(34, 30);
-            displayRef.print("No streams");
+            displayRef.setCursor(0, 30);
+            displayRef.print("No stream");
         }
         // Display volume on third line
         if (config.display_height >= 32) {
