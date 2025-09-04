@@ -132,5 +132,5 @@ const GFXglyph Spleen6x12Glyphs[] PROGMEM = {
 
 const GFXfont Spleen6x12 PROGMEM = {
   (uint8_t  *)Spleen6x12Bitmaps,
-  (GFXglyph *)Spleen6x12bGlyphs,
+  (GFXglyph *)Spleen6x12Glyphs,
   0x20, 0x7E, 12 };
