@@ -67,6 +67,9 @@ private:
   unsigned long lastTitleHash = 0;   ///< Hash of last stream title for change detection
   unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
 
+  // Asynchronous command handling buffer
+  String commandBuffer = "";         ///< Buffer for accumulating incoming commands
+
 public:
   MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
                volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
@@ -79,6 +82,12 @@ public:
   void handleClient();
 
 private:
+  /**
+   * @brief Handle asynchronous command processing
+   * Processes commands without blocking, allowing for better responsiveness
+   */
+  void handleAsyncCommands();
+
   /**
    * @brief Handle idle mode monitoring and notifications
    * Monitors for changes in playback status and stream information
