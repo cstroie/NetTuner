@@ -2135,11 +2135,11 @@ void handlePostConfig() {
  */
 void handleExportConfig() {
   // List of configuration files to export
-  const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json"};
+  const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json", "/player.json"};
   // Initialize output string
   String output = "{";
   // Process each configuration file
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 4; i++) {
     const char* filename = configFiles[i];
     // Check if file exists
     if (SPIFFS.exists(filename)) {
@@ -2157,7 +2157,7 @@ void handleExportConfig() {
               buf[size] = '\0';              
               // Add to main document with filename as key (without leading slash)
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
-              if (i < 2) output += ",";
+              if (i < 3) output += ",";
             }
           }
         }
@@ -2175,7 +2175,7 @@ void handleExportConfig() {
  * @brief Handle import configuration request
  * Imports a combined JSON configuration file and saves individual files to SPIFFS
  * This function receives a JSON file containing all configurations and decomposes
- * it into individual config.json, wifi.json, and playlist.json files.
+ * it into individual config.json, wifi.json, playlist.json, and player.json files.
  */
 void handleImportConfig() {
   // Check if request method is POST
@@ -2205,8 +2205,8 @@ void handleImportConfig() {
   }
   // Process each configuration section
   bool success = true;
-  const char* configFiles[] = {"config.json", "wifi.json", "playlist.json"};
-  for (int i = 0; i < 3; i++) {
+  const char* configFiles[] = {"config.json", "wifi.json", "playlist.json", "player.json"};
+  for (int i = 0; i < 4; i++) {
     const char* filename = configFiles[i];
     // Check if this section exists in the uploaded data
     if (doc.containsKey(filename)) {
