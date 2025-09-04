@@ -1904,6 +1904,9 @@ void handlePlay() {
 void handleStop() {
   // Stop any currently playing stream
   stopStream();
+  // Save player state when user stops the stream
+  markPlayerStateDirty();
+  savePlayerState();
   // Update display and notify clients
   updateDisplay();
   sendStatusToClients();

@@ -319,6 +319,8 @@ void MPDInterface::handleMPDCommand(const String& command) {
   if (command.startsWith("stop")) {
     // Stop command
     stopStream();
+    markPlayerStateDirty();
+    savePlayerState();
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("pause")) {
     // Pause command (treat as stop for simplicity)
