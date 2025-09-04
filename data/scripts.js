@@ -1439,9 +1439,8 @@ async function importRemotePlaylist() {
             throw new Error('Unsupported playlist format');
         }
         
-        // Replace current playlist with the new one (but don't save yet)
-        streams = playlistData;
-        renderPlaylist();
+        // Show selection modal
+        showPlaylistSelectionModal(playlistData);
         
         // Clear the input field
         urlInput.value = '';
@@ -1454,6 +1453,96 @@ async function importRemotePlaylist() {
             importButton.disabled = false;
         }
     }
+}
+
+function showPlaylistSelectionModal(playlistData) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('playlistSelectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create modal element
+    const modal = document.createElement('dialog');
+    modal.id = 'playlistSelectionModal';
+    modal.className = 'playlist-selection-modal';
+    
+    // Create modal content
+    let modalContent = `
+        <article>
+            <header>
+                <h2>Select Streams to Import</h2>
+                <p>${playlistData.length} stream(s) found in the playlist</p>
+            </header>
+            <div class="playlist-items-container">
+    `;
+    
+    // Add checkbox for each stream
+    playlistData.forEach((stream, index) => {
+        modalContent += `
+            <div class="playlist-item">
+                <label>
+                    <input type="checkbox" checked data-index="${index}">
+                    <div class="stream-info">
+                        <strong>${escapeHtml(stream.name)}</strong>
+                        <small>${escapeHtml(stream.url)}</small>
+                    </div>
+                </label>
+            </div>
+        `;
+    });
+    
+    modalContent += `
+            </div>
+            <footer class="grid">
+                <button onclick="appendSelectedStreams(${JSON.stringify(playlistData)})">Append Selected</button>
+                <button class="secondary" onclick="replaceWithSelectedStreams(${JSON.stringify(playlistData)})">Replace All</button>
+                <button class="secondary" onclick="document.getElementById('playlistSelectionModal').remove()">Cancel</button>
+            </footer>
+        </article>
+    `;
+    
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+    modal.showModal();
+}
+
+function appendSelectedStreams(playlistData) {
+    const checkboxes = document.querySelectorAll('#playlistSelectionModal input[type="checkbox"]');
+    const selectedStreams = [];
+    
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const index = parseInt(checkbox.dataset.index);
+            selectedStreams.push(playlistData[index]);
+        }
+    });
+    
+    // Append selected streams to current playlist
+    streams = streams.concat(selectedStreams);
+    renderPlaylist();
+    
+    // Close modal
+    document.getElementById('playlistSelectionModal').remove();
+}
+
+function replaceWithSelectedStreams(playlistData) {
+    const checkboxes = document.querySelectorAll('#playlistSelectionModal input[type="checkbox"]');
+    const selectedStreams = [];
+    
+    checkboxes.forEach(checkbox => {
+        if (checkbox.checked) {
+            const index = parseInt(checkbox.dataset.index);
+            selectedStreams.push(playlistData[index]);
+        }
+    });
+    
+    // Replace current playlist with selected streams
+    streams = selectedStreams;
+    renderPlaylist();
+    
+    // Close modal
+    document.getElementById('playlistSelectionModal').remove();
 }
 
 async function uploadM3U() {
