@@ -918,6 +918,7 @@ async function playInstantStream() {
  * This function populates the playlist management interface with the current streams.
  * For each stream, it creates editable input fields for name and URL, along with
  * a delete button. It also handles the empty playlist case with a helpful message.
+ * The playlist items are draggable for reordering.
  */
 function renderPlaylist() {
     const playlistBody = document.getElementById('playlistBody');
@@ -935,9 +936,15 @@ function renderPlaylist() {
         return;
     }
     
+    // Make the playlist container a drop zone
+    playlistBody.setAttribute('data-dropzone', 'true');
+    
     streams.forEach((stream, index) => {
         const item = document.createElement('div');
         item.role = "group";
+        item.className = "playlist-item";
+        item.draggable = true;
+        item.dataset.index = index;
         
         // Create favicon preview if available
         let faviconHtml = '';
@@ -946,12 +953,24 @@ function renderPlaylist() {
         }
         
         item.innerHTML = `
+            <div class="drag-handle">⋮⋮</div>
             <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
             <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
             <button class="secondary" onclick="deleteStream(${index})">Delete</button>
         `;
+        
+        // Add drag and drop event listeners
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragend', handleDragEnd);
+        
         playlistBody.appendChild(item);
     });
+    
+    // Add drop event listener to the playlist container
+    playlistBody.addEventListener('dragover', handleDragOver);
+    playlistBody.addEventListener('drop', handleDropContainer);
 }
 
 // Helper function to escape HTML entities
@@ -963,6 +982,74 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// Drag and drop functions for playlist reordering
+let dragSrcElement = null;
+
+function handleDragStart(e) {
+    dragSrcElement = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+    this.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    if (dragSrcElement !== this) {
+        const srcIndex = parseInt(dragSrcElement.dataset.index);
+        const targetIndex = parseInt(this.dataset.index);
+        
+        // Reorder the streams array
+        const movedItem = streams[srcIndex];
+        streams.splice(srcIndex, 1);
+        streams.splice(targetIndex, 0, movedItem);
+        
+        // Re-render the playlist to update indices
+        renderPlaylist();
+    }
+    
+    return false;
+}
+
+function handleDropContainer(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    // If dropping on the container (not on an item), move to the end
+    if (dragSrcElement) {
+        const srcIndex = parseInt(dragSrcElement.dataset.index);
+        
+        if (srcIndex !== streams.length - 1) {
+            const movedItem = streams[srcIndex];
+            streams.splice(srcIndex, 1);
+            streams.push(movedItem);
+            
+            // Re-render the playlist to update indices
+            renderPlaylist();
+        }
+    }
+    
+    return false;
+}
+
+function handleDragEnd(e) {
+    const items = document.querySelectorAll('.playlist-item');
+    items.forEach(item => {
+        item.classList.remove('dragging');
+    });
 }
 
 /**
