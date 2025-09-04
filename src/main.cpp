@@ -212,7 +212,8 @@ Config config = {
   DEFAULT_DISPLAY_HEIGHT,
   DEFAULT_DISPLAY_ADDR
 };
-Display display(Adafruit_SSD1306(config.display_width, config.display_height, &Wire, -1));
+Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
+Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
 StreamInfo playlist[MAX_PLAYLIST_SIZE];
 int playlistCount = 0;
@@ -345,14 +346,7 @@ void setup() {
     for (int i = 0; i < wifiNetworkCount; i++) {
       if (strlen(ssid[i]) > 0) {
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display.clearDisplay();
-        display.setCursor(32, 12);
-        display.print("NetTuner");
-        display.setCursor(0, 30);
-        display.print("WiFi connecting");
-        display.setCursor(0, 45);
-        display.print(String(ssid[i]));
-        display.display();
+        display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
         const int maxAttempts = 15; // Increased attempts per network
