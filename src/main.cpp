@@ -2313,9 +2313,16 @@ void handleImportConfig() {
     if (doc.containsKey(filename)) {
       String file = String("/") + String(filename);
       // Create a temporary DynamicJsonDocument from the JsonVariant
+      // TODO: Optimize size based on actual content
+      // TODO: needs testing
       DynamicJsonDocument tempDoc(1024);
       tempDoc.set(doc[filename]);
-      writeJsonFile(file.c_str(), tempDoc);
+      // Save the JSON to SPIFFS using helper function
+      if (writeJsonFile(file.c_str(), tempDoc)) {
+        Serial.println("Saved " + String(filename) + " to SPIFFS");
+      } else {
+        Serial.println("Failed to save " + String(filename) + " to SPIFFS");
+      }
       // Yield to other tasks during long operations
       delay(1);
     }
