@@ -2312,7 +2312,10 @@ void handleImportConfig() {
     // Check if this section exists in the uploaded data
     if (doc.containsKey(filename)) {
       String file = String("/") + String(filename);
-      writeJsonFile(file.c_str(), doc[filename]);
+      // Create a temporary DynamicJsonDocument from the JsonVariant
+      DynamicJsonDocument tempDoc(1024);
+      tempDoc.set(doc[filename]);
+      writeJsonFile(file.c_str(), tempDoc);
       // Yield to other tasks during long operations
       delay(1);
     }
