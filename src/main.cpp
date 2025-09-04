@@ -683,7 +683,7 @@ void loop() {
           if (WiFi.status() == WL_CONNECTED) {
             Serial.printf("Reconnected to %s\n", ssid[i]);
             // Update display with new IP
-            displayStatus("WiFi Reconnect", "", WiFi.localIP().toString());
+            display.showStatus("WiFi Reconnect", "", WiFi.localIP().toString());
             delay(2000);
             updateDisplay();
             break;
