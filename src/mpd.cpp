@@ -469,6 +469,11 @@ void MPDInterface::handleMPDCommand(const String& command) {
     } else {
       mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
     }
+  } else if (command.startsWith("getvol")) {
+    // Get volume command
+    int volPercent = map(volumeRef, 0, 22, 0, 100);
+    mpdClient.print("volume: " + String(volPercent) + "\n");
+    mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("next")) {
     // Next command
     if (playlistCountRef > 0) {
