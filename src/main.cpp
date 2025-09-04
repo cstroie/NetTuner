@@ -776,12 +776,16 @@ void handleWiFiScan() {
     JsonObject network = networks.createNestedObject();
     network["ssid"] = WiFi.SSID(i);
     network["rssi"] = WiFi.RSSI(i);
+    // Yield to other tasks during long operations
+    delay(1);
   }
   
   // Add configured networks
   JsonArray configured = doc.createNestedArray("configured");
   for (int i = 0; i < wifiNetworkCount; i++) {
     configured.add(String(ssid[i]));
+    // Yield to other tasks during long operations
+    delay(1);
   }
   
   // Serialize JSON to string
