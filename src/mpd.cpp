@@ -231,12 +231,21 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
 /**
  * @brief Send playlist information with configurable detail level
  * Sends playlist information with different levels of metadata
- * @param detailLevel 0=minimal (file+title), 1=simple (file+title+lastmod), 2=full (file+title+id+pos+lastmod)
+ * @param detailLevel 
+ * 0=minimal (file+title), 
+ * 1=simple (file+title+lastmod), 
+ * 2=full (file+title+id+pos+lastmod), 
+ * 3=artist/album (file+title+artist+album+id+pos+lastmod)
  */
 void MPDInterface::sendPlaylistInfo(int detailLevel) {
   for (int i = 0; i < playlistCountRef; i++) {
     mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
     mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+    if (detailLevel >= 3) {
+      // Artist/Album detail level
+      mpdClient.print("Artist: WebRadio\n");
+      mpdClient.print("Album: WebRadio\n");
+    }
     if (detailLevel >= 2) {
       // Full detail level
       mpdClient.print("Id: " + String(i) + "\n");
@@ -260,17 +269,31 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
   // Determine command prefix length (search=6, find=4)
   int prefixLength = command.startsWith("search") ? 6 : 4;
   if (command.length() > prefixLength + 1) {
-    String searchTerm = command.substring(prefixLength + 1);
-    searchTerm.trim();
-    // Extract search string (everything after the first space)
-    int firstSpace = searchTerm.indexOf(' ');
+    // Extract search filter and term
+    String searchFilter = command.substring(prefixLength + 1);
+    searchFilter.trim();
+    String searchTerm;
+    // Extract search filter (after the first space and before the next space)
+    int firstSpace = searchFilter.indexOf(' ');
     if (firstSpace != -1) {
-      searchTerm = searchTerm.substring(firstSpace + 1);
+      // Extract search term (everything after the next space)
+      searchTerm = searchFilter.substring(firstSpace + 1);
       searchTerm.trim();
+      // Extract search filter (everything before the next space)
+      searchFilter = searchFilter.substring(0, firstSpace);
+      searchFilter.trim();
     }
     // Remove quotes if present
+    if (searchFilter.startsWith("\"") && searchFilter.endsWith("\"") && searchFilter.length() >= 2) {
+      searchFilter = searchFilter.substring(1, searchFilter.length() - 1);
+    }
     if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
       searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+    }
+    // Handle special cases for artist/album searches
+    if (searchFilter == "album" || searchFilter == "artist") {
+      sendPlaylistInfo(1); // Send simple info for album search
+      return;
     }
     // Search in playlist names
     for (int i = 0; i < playlistCountRef; i++) {
@@ -292,6 +315,7 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
       if (match) {
         mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
         mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+        mpdClient.print("Track: " + String(i) + "\n");
         mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
       }
     }
