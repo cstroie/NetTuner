@@ -467,10 +467,10 @@ void setup() {
   loadPlayerState();
   
   // Setup web server routes
-  server.on("/", HTTP_GET, handleRoot);
+  server.on("/", HTTP_GET, handleHomePage);
   server.on("/playlist", HTTP_GET, handlePlaylistPage);
   server.on("/config", HTTP_GET, handleConfigPage);
-  server.on("/wifi", HTTP_GET, handleWiFiConfig);
+  server.on("/wifi", HTTP_GET, handleWiFiPage);
   server.on("/about", HTTP_GET, handleAboutPage);
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
@@ -486,7 +486,7 @@ void setup() {
   server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
   server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
   server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
-  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfigAPI);
+  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
    
@@ -719,7 +719,7 @@ void loop() {
  * Serves the WiFi configuration page
  * This function reads the wifi.html file from SPIFFS and sends it to the client
  */
-void handleWiFiConfig() {
+void handleWiFiPage() {
   handleStaticFile("/wifi.html");
 }
 
@@ -728,7 +728,7 @@ void handleWiFiConfig() {
  * Returns the current WiFi configuration as JSON
  * This function provides the list of configured WiFi networks in JSON format
  */
-void handleWiFiConfigAPI() {
+void handleWiFiConfig() {
   // Yield to other tasks before processing
   delay(1);
   
@@ -1593,11 +1593,11 @@ void handleDisplayTimeout() {
 }
 
 /**
- * @brief Handle root page request
+ * @brief Handle home page request
  * Serves the main index.html file
  * This function reads the index.html file from SPIFFS and sends it to the client
  */
-void handleRoot() {
+void handleHomePage() {
   handleStaticFile("/index.html");
 }
 

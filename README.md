@@ -16,7 +16,7 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 - **Web Interface**: Control playback through a responsive web UI
 - **Physical Controls**: Rotary encoder for volume control and navigation
 - **OLED Display**: Real-time status information with scrolling text
-- **Playlist Management**: Store and manage multiple radio stations with JSON/M3U support
+- **Playlist Management**: Store and manage multiple radio stations with JSON/M3U/PLS support
 - **Volume Control**: Adjustable volume through web interface or rotary encoder
 - **WiFi Configuration**: Web-based WiFi setup with network scanning and multiple network support
 - **File Management**: Upload/download playlists in JSON, M3U, or PLS formats

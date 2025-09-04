@@ -351,7 +351,7 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
     }
     if (detailLevel >= 1) {
       // Simple detail level
-      mpdClient.print("Track: " + String(i) + "\n");
+      mpdClient.print("Track: " + String(i + 1) + "\n");
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     }
   }
@@ -431,7 +431,7 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
       if (match) {
         mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
         mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
-        mpdClient.print("Track: " + String(i) + "\n");
+        mpdClient.print("Track: " + String(i + 1) + "\n");
         mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
       }
     }
