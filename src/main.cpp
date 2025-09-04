@@ -219,6 +219,10 @@ int playlistCount = 0;
 int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
+// Forward declarations for JSON helper functions
+bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
+bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
+
 // Player state tracking
 struct PlayerState {
   bool playing = false;
