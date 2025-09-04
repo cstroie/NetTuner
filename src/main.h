@@ -31,6 +31,7 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 #include "rotary.h"
+#include "display.h"
 
 // Constants
 #define MAX_WIFI_NETWORKS 5
@@ -108,7 +109,7 @@ extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
 extern WiFiClient mpdClient;
 extern Config config;
-extern Adafruit_SSD1306 display;
+extern Display display;
 extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
 extern int currentSelection;
@@ -171,7 +172,6 @@ void audio_id3data(const char *info);
 
 // Helper functions
 bool initializeSPIFFS();
-void displayStatus(const String& line1, const String& line2, const String& line3);
 
 // Utility functions
 String generateStatusJSON();

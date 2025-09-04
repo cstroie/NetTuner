@@ -19,6 +19,7 @@
 
 #include "main.h"
 #include "mpd.h"
+#include "display.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 
@@ -211,7 +212,7 @@ Config config = {
   DEFAULT_DISPLAY_HEIGHT,
   DEFAULT_DISPLAY_ADDR
 };
-Adafruit_SSD1306 display(config.display_width, config.display_height, &Wire, -1);
+Display display(Adafruit_SSD1306(config.display_width, config.display_height, &Wire, -1));
 RotaryEncoder rotaryEncoder;
 StreamInfo playlist[MAX_PLAYLIST_SIZE];
 int playlistCount = 0;
@@ -331,13 +332,7 @@ void setup() {
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);
-  display.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-  display.clearDisplay();
-  display.setFont(&Spleen8x16);
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(32, 12);
-  display.print("NetTuner");
-  display.display();
+  display.begin();
   
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
@@ -384,20 +379,20 @@ void setup() {
     Serial.println("Connected to WiFi");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
-    displayStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
-    displayStatus("Starting AP Mode", "", "");
+    display.showStatus("Starting AP Mode", "", "");
     
     // Start WiFi access point mode with error handling
     if (WiFi.softAP("NetTuner-Setup")) {
       Serial.println("Access Point Started");
       Serial.print("AP IP Address: ");
       Serial.println(WiFi.softAPIP().toString());
-      displayStatus("Starting AP Mode", "", WiFi.softAPIP().toString());
+      display.showStatus("Starting AP Mode", "", WiFi.softAPIP().toString());
     } else {
       Serial.println("Failed to start Access Point");
-      displayStatus("Starting AP Mode", "", "AP Start Failed");
+      display.showStatus("Starting AP Mode", "", "AP Start Failed");
     }
   }
   
@@ -475,35 +470,6 @@ void setup() {
   updateDisplay();
 }
 
-/**
- * @brief Display status information on OLED
- * Shows title and up to three lines of information
- * @param line1 First line of information (default: empty)
- * @param line2 Second line of information (default: empty)
- * @param line3 Third line of information (default: empty)
- */
-void displayStatus(const String& line1, const String& line2, const String& line3) {
-  display.clearDisplay();
-  display.setCursor(32, 12);
-  display.print("NetTuner");
-  
-  if (line1.length() > 0) {
-    display.setCursor(0, 30);
-    display.print(line1);
-  }
-  
-  if (line2.length() > 0) {
-    display.setCursor(0, 45);
-    display.print(line2);
-  }
-  
-  if (line3.length() > 0) {
-    display.setCursor(0, 62);
-    display.print(line3);
-  }
-  
-  display.display();
-}
 
 /**
  * @brief Initialize SPIFFS with error recovery
@@ -653,9 +619,7 @@ void loop() {
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
-    if (displayOn) {  // Only update if display is on
-      updateDisplay();
-    }
+    updateDisplay();
     lastDisplayUpdate = millis();
   }
   
@@ -730,7 +694,7 @@ void loop() {
   }
   
   // Handle display timeout
-  handleDisplayTimeout();
+  display.handleTimeout(isPlaying, millis());
   
   // Small delay to prevent busy waiting
   delay(100);
@@ -1571,17 +1535,17 @@ void handleRotary() {
       }
     }
     lastRotaryPosition = currentPosition;  // Update last position
-    lastActivityTime = millis(); // Update activity time on user interaction
-    if (!displayOn) {
-      displayOn = true;
+    display.setActivityTime(millis()); // Update activity time on user interaction
+    if (!display.isOn()) {
+      display.turnOn();
     }
     updateDisplay();                      // Refresh display with new values
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
-    lastActivityTime = millis(); // Update activity time
-    if (!displayOn) {
-      displayOn = true;
+    display.setActivityTime(millis()); // Update activity time
+    if (!display.isOn()) {
+      display.turnOn();
       updateDisplay(); // Turn display back on and update
     }
     // Only process if we have playlist items
@@ -1596,49 +1560,6 @@ void handleRotary() {
   }
 }
 
-/**
- * @brief Handle display timeout
- * Turns off the display after a period of inactivity when not playing
- * This function manages the OLED display timeout to conserve power. When not playing,
- * the display turns off after 30 seconds of inactivity. The display turns back on
- * when there's activity or when playback starts.
- * 
- * When playing, the display stays on but activity time is updated periodically
- * to prevent immediate timeout after playback stops.
- */
-void handleDisplayTimeout() {
-  const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
-  unsigned long currentTime = millis();
-  
-  // Handle potential millis() overflow
-  if (currentTime < lastActivityTime) {
-    lastActivityTime = currentTime; // Reset on overflow
-  }
-  
-  // If we're playing, keep the display on
-  if (isPlaying) {
-    // Update activity time periodically during playback to prevent timeout
-    static unsigned long lastPlaybackActivityUpdate = 0;
-    if (currentTime - lastPlaybackActivityUpdate > 5000) { // Every 5 seconds
-      lastActivityTime = currentTime;
-      lastPlaybackActivityUpdate = currentTime;
-    }
-    if (!displayOn) {
-      displayOn = true;
-      display.display(); // Turn display back on
-    }
-    return;
-  }
-  
-  // If we're not playing, check for timeout
-  if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
-    if (displayOn) {
-      displayOn = false;
-      display.clearDisplay();
-      display.display(); // Update display to clear it
-    }
-  }
-}
 
 /**
  * @brief Handle home page request
@@ -2425,161 +2346,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * the selected playlist item and volume. It also implements scrolling text for long strings.
  */
 void updateDisplay() {
-  // If display is off, don't update
-  if (!displayOn) {
-    return;
-  }
-  // Get text bounds for display
-  int16_t x1, y1;
-  uint16_t w, h;
-  // Clear the display buffer
-  display.clearDisplay();
-  if (isPlaying) {
-    // Display when playing
-    display.setCursor(0, 12);
-    // Fixed '>' character
-    display.print(">");
-    // Display stream title (first line) with scrolling
-    String title = String(streamTitle);
-    if (title.length() == 0) {
-      title = String(streamName);
-    }
-    // Scroll title if too long for display (excluding the '>' character)
-    // 16 chars fit on a 128px display with '>' and some margin
-    // Calculate how many characters we can display (14 chars = 84 pixels)
-    int maxDisplayChars = 14;
-    if (title.length() > maxDisplayChars) {
-      static unsigned long lastTitleScrollTime = 0;
-      static int titleScrollOffset = 0;
-      static String titleScrollText = "";
-      // Reset scroll if text changed
-      if (titleScrollText != title) {
-        titleScrollText = title;
-        titleScrollOffset = 0;
-      }
-      // Scroll every 500ms
-      if (millis() - lastTitleScrollTime > 500) {
-        titleScrollOffset++;
-        titleScrollOffset++;
-        // Reset scroll when we've shown the entire text plus " ~~~ "
-        // Calculate based on pixels: each character is 8 pixels wide in Spleen8x16 font
-        int totalPixels = (title.length() + 4) * 8;  // +4 for " ~~~ "
-        int displayWidth = maxDisplayChars * 8;  // 14 characters * 8 pixels
-        if (titleScrollOffset > (totalPixels + displayWidth)) {
-          titleScrollOffset = 0;
-        }
-        lastTitleScrollTime = millis();
-      }
-      // Display scrolled text with pixel positioning
-      String displayText = title + " ~~~ " + title;
-      // Create a temporary string that's long enough to fill the display
-      String tempText = displayText + displayText;  // Double it to ensure enough content
-      
-      // Calculate starting position based on scroll offset
-      int startPixel = titleScrollOffset % (displayText.length() * 8);  // 8 pixels per char
-      int startChar = startPixel / 8;
-      int pixelOffset = startPixel % 8;
-      
-      // Instead of substring, we'll use pixel positioning
-      display.setCursor(16 - pixelOffset, 12);
-
-      // Display text with pixel offset
-      String visibleText = tempText.substring(startChar, startChar + maxDisplayChars);
-      display.print(visibleText);
-    } else {
-      // Display title without scrolling
-      display.setCursor(16, 12);
-      display.print(title);
-    }
-    // Display stream name (second line)
-    display.setCursor(0, 30);
-    String stationName = String(streamName);
-    // 16 chars fit on a 128px display
-    if (stationName.length() > 16) {
-      display.print(stationName.substring(0, 16));
-    } else {
-      display.print(stationName);
-    }
-    // Display volume and bitrate on third line
-    if (config.display_height >= 32) {
-      // Display volume and bitrate on third line
-      char volStr[20];
-      sprintf(volStr, "Vol %2d", volume);
-      display.setCursor(0, 45);
-      display.print(volStr);
-      // Display bitrate on the same line
-      if (bitrate > 0) {
-        char bitrateStr[20];
-        sprintf(bitrateStr, "%3d kbps", bitrate);
-        display.getTextBounds(bitrateStr, 0, 45, &x1, &y1, &w, &h);
-        display.setCursor(display.width() - w - 1, 45);
-        display.print(bitrateStr);
-      }
-      // Display IP address on the last line, centered
-      String ipString;
-      if (WiFi.status() == WL_CONNECTED) {
-        ipString = WiFi.localIP().toString();
-      } else {
-        ipString = "No IP";
-      }
-      // Center the IP address
-      display.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
-      int x = (display.width() - w) / 2;
-      if (x < 0) x = 0;
-      // Center the IP address
-      display.setCursor(x, 62);
-      display.print(ipString);
-    }
+  String ipString;
+  if (WiFi.status() == WL_CONNECTED) {
+    ipString = WiFi.localIP().toString();
   } else {
-    // Display when stopped
-    display.setCursor(32, 12);
-    display.print("NetTuner");
-    // Display current stream name (second line)
-    display.setCursor(0, 30);
-    if (strlen(streamName) > 0) {
-      String currentStream = String(streamName);
-      // 16 chars fit on a 128px display
-      if (currentStream.length() > 16) {
-        display.print(currentStream.substring(0, 16));
-      } else {
-        display.print(currentStream);
-      }
-    } else if (playlistCount > 0 && currentSelection < playlistCount) {
-      String playlistName = String(playlist[currentSelection].name);
-      // 16 chars fit on a 128px display
-      if (playlistName.length() > 16) {
-        display.print(playlistName.substring(0, 16));
-      } else {
-        display.print(playlistName);
-      }
-    } else {
-      // No stream is currently found in playlist
-      display.setCursor(34, 30);
-      display.print("No streams");
-    }
-    // Display volume on third line
-    if (config.display_height >= 32) {
-      // Display volume and bitrate on third line
-      char volStr[20];
-      sprintf(volStr, "Vol %2d", volume);
-      display.setCursor(0, 45);
-      display.print(volStr);
-      // Display IP address on the last line, centered
-      String ipString;
-      if (WiFi.status() == WL_CONNECTED) {
-        ipString = WiFi.localIP().toString();
-      } else {
-        ipString = "No IP";
-      }
-      // Center the IP address
-      display.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
-      int x = (display.width() - w) / 2;
-      if (x < 0) x = 0;
-      // Center the IP address
-      display.setCursor(x, 62);
-      display.print(ipString);
-    }
+    ipString = "No IP";
   }
-  // Send buffer to display
-  display.display();
+  
+  display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
 }
