@@ -25,8 +25,23 @@
 
 extern Config config;
 
+/**
+ * @brief Construct a new Display object
+ * 
+ * Initializes the display with a reference to an Adafruit_SSD1306 instance,
+ * sets the display to on state, and initializes the activity time to 0.
+ * 
+ * @param display Reference to Adafruit_SSD1306 display instance
+ */
 Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(true), lastActivityTime(0) {}
 
+/**
+ * @brief Initialize the display
+ * 
+ * Configures and initializes the OLED display with default settings,
+ * including font, text color, and initial "NetTuner" splash screen.
+ * This method must be called before any other display operations.
+ */
 void Display::begin() {
     displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
     displayRef.clearDisplay();
@@ -37,44 +52,68 @@ void Display::begin() {
     displayRef.display();
 }
 
+/**
+ * @brief Update display with current playback information
+ * 
+ * Updates the display with current playback status, stream information,
+ * volume level, and IP address. Implements scrolling text for long titles.
+ * 
+ * Scrolling Text Implementation:
+ * - For titles longer than 14 characters, implements smooth scrolling
+ * - Uses a static offset that increments every 500ms
+ * - Displays "title ~~~ title" to create seamless scrolling effect
+ * - Calculates pixel positioning for smooth character-by-character scroll
+ * 
+ * @param isPlaying Current playback state
+ * @param streamTitle Current stream title
+ * @param streamName Current stream name
+ * @param volume Current volume level (0-22)
+ * @param bitrate Current stream bitrate
+ * @param ipString IP address to display
+ */
 void Display::update(bool isPlaying, const char* streamTitle, const char* streamName, 
                      int volume, int bitrate, const String& ipString) {
-    // If display is off, don't update
+    // If display is off, don't update to save power
     if (!displayOn) {
         return;
     }
     
-    // Get text bounds for display
+    // Text bounds variables for centering calculations
     int16_t x1, y1;
     uint16_t w, h;
     
-    // Clear the display buffer
+    // Clear the display buffer for fresh content
     displayRef.clearDisplay();
     
     if (isPlaying) {
-        // Display when playing
+        // Display when playing - show stream information with scrolling title
         displayRef.setCursor(0, 12);
-        // Fixed '>' character
+        // Fixed '>' character to indicate playing state
         displayRef.print(">");
-        // Display stream title (first line) with scrolling
+        
+        // Display stream title (first line) with scrolling for long titles
         String title = String(streamTitle);
         if (title.length() == 0) {
             title = String(streamName);
         }
+        
         // Scroll title if too long for display (excluding the '>' character)
         // 16 chars fit on a 128px display with '>' and some margin
         // Calculate how many characters we can display (14 chars = 84 pixels)
         int maxDisplayChars = 14;
         if (title.length() > maxDisplayChars) {
+            // Static variables for scrolling state management
             static unsigned long lastTitleScrollTime = 0;
             static int titleScrollOffset = 0;
             static String titleScrollText = "";
+            
             // Reset scroll if text changed
             if (titleScrollText != title) {
                 titleScrollText = title;
                 titleScrollOffset = 0;
             }
-            // Scroll every 500ms
+            
+            // Scroll every 500ms for smooth animation
             if (millis() - lastTitleScrollTime > 500) {
                 titleScrollOffset++;
                 titleScrollOffset++;
@@ -87,7 +126,8 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 }
                 lastTitleScrollTime = millis();
             }
-            // Display scrolled text with pixel positioning
+            
+            // Display scrolled text with pixel positioning for smooth scrolling
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
@@ -104,11 +144,12 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String visibleText = tempText.substring(startChar, startChar + maxDisplayChars);
             displayRef.print(visibleText);
         } else {
-            // Display title without scrolling
+            // Display title without scrolling for short titles
             displayRef.setCursor(16, 12);
             displayRef.print(title);
         }
-        // Display stream name (second line)
+        
+        // Display stream name (second line) - truncated if too long
         displayRef.setCursor(0, 30);
         String stationName = String(streamName);
         // 16 chars fit on a 128px display
@@ -117,14 +158,16 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         } else {
             displayRef.print(stationName);
         }
-        // Display volume and bitrate on third line
+        
+        // Display volume and bitrate on third line (only for displays with sufficient height)
         if (config.display_height >= 32) {
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
             displayRef.setCursor(0, 45);
             displayRef.print(volStr);
-            // Display bitrate on the same line
+            
+            // Display bitrate on the same line if available
             if (bitrate > 0) {
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
@@ -132,8 +175,8 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 displayRef.setCursor(displayRef.width() - w - 1, 45);
                 displayRef.print(bitrateStr);
             }
+            
             // Display IP address on the last line, centered
-            // Center the IP address
             displayRef.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
@@ -142,10 +185,11 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             displayRef.print(ipString);
         }
     } else {
-        // Display when stopped
+        // Display when stopped - show NetTuner title and current selection
         displayRef.setCursor(32, 12);
         displayRef.print("NetTuner");
-        // Display current stream name (second line)
+        
+        // Display current stream name (second line) or "No stream" if none selected
         displayRef.setCursor(0, 30);
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
@@ -160,15 +204,16 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             displayRef.setCursor(0, 30);
             displayRef.print("No stream");
         }
-        // Display volume on third line
+        
+        // Display volume on third line (only for displays with sufficient height)
         if (config.display_height >= 32) {
-            // Display volume and bitrate on third line
+            // Display volume level
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
             displayRef.setCursor(0, 45);
             displayRef.print(volStr);
+            
             // Display IP address on the last line, centered
-            // Center the IP address
             displayRef.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
@@ -177,20 +222,38 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             displayRef.print(ipString);
         }
     }
-    // Send buffer to display
+    
+    // Send buffer to display to make changes visible
     displayRef.display();
 }
 
+/**
+ * @brief Clear the display
+ * 
+ * Clears the display buffer and updates the physical display.
+ * This method immediately clears the screen regardless of display state.
+ */
 void Display::clear() {
     displayRef.clearDisplay();
     displayRef.display();
 }
 
+/**
+ * @brief Show status information on display
+ * 
+ * Displays a standardized status screen with "NetTuner" title and
+ * up to three lines of additional information.
+ * 
+ * @param line1 First line of information (displayed at y=30)
+ * @param line2 Second line of information (displayed at y=45)
+ * @param line3 Third line of information (displayed at y=62)
+ */
 void Display::showStatus(const String& line1, const String& line2, const String& line3) {
     displayRef.clearDisplay();
     displayRef.setCursor(32, 12);
     displayRef.print("NetTuner");
     
+    // Display each line if it contains content
     if (line1.length() > 0) {
         displayRef.setCursor(0, 30);
         displayRef.print(line1);
@@ -209,25 +272,58 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     displayRef.display();
 }
 
+/**
+ * @brief Turn display on
+ * 
+ * Enables display output and refreshes the screen.
+ * This method immediately turns the display on and shows current content.
+ */
 void Display::turnOn() {
     displayOn = true;
     displayRef.display();
 }
 
+/**
+ * @brief Turn display off
+ * 
+ * Disables display output and clears the screen.
+ * This method immediately turns the display off to save power.
+ */
 void Display::turnOff() {
     displayOn = false;
     displayRef.clearDisplay();
     displayRef.display();
 }
 
+/**
+ * @brief Check if display is on
+ * 
+ * @return true if display is currently on
+ * @return false if display is currently off
+ */
 bool Display::isOn() const {
     return displayOn;
 }
 
+/**
+ * @brief Handle display timeout
+ * 
+ * Manages automatic display power management based on playback state
+ * and user activity. Turns display off after 30 seconds of inactivity
+ * when not playing, and keeps it on during playback.
+ * 
+ * Timeout Logic:
+ * - When playing: Display stays on, activity time updated every 5 seconds
+ * - When stopped: Display turns off after 30 seconds of inactivity
+ * - Handles millis() overflow by resetting activity time
+ * 
+ * @param isPlaying Current playback state
+ * @param currentTime Current system time in milliseconds
+ */
 void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
     
-    // Handle potential millis() overflow
+    // Handle potential millis() overflow by resetting activity time
     if (currentTime < lastActivityTime) {
         lastActivityTime = currentTime; // Reset on overflow
     }
@@ -257,10 +353,23 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     }
 }
 
+/**
+ * @brief Set last activity time
+ * 
+ * Updates the timestamp of the last user activity, used for timeout
+ * management.
+ * 
+ * @param time Timestamp in milliseconds
+ */
 void Display::setActivityTime(unsigned long time) {
     lastActivityTime = time;
 }
 
+/**
+ * @brief Get last activity time
+ * 
+ * @return unsigned long Timestamp of last user activity
+ */
 unsigned long Display::getLastActivityTime() const {
     return lastActivityTime;
 }
