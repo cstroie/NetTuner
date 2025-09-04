@@ -2259,7 +2259,9 @@ void updateDisplay() {
     }
     // Scroll title if too long for display (excluding the '>' character)
     // 16 chars fit on a 128px display with '>' and some margin
-    if (title.length() > 14) {
+    // Calculate how many characters we can display (14 chars = 84 pixels)
+    int maxDisplayChars = 14;
+    if (title.length() > maxDisplayChars) {
       static unsigned long lastTitleScrollTime = 0;
       static int titleScrollOffset = 0;
       static String titleScrollText = "";
@@ -2268,13 +2270,14 @@ void updateDisplay() {
         titleScrollText = title;
         titleScrollOffset = 0;
       }
-      // Scroll every 200ms (faster for pixel scrolling)
-      if (millis() - lastTitleScrollTime > 200) {
+      // Scroll every 500ms
+      if (millis() - lastTitleScrollTime > 500) {
+        titleScrollOffset++;
         titleScrollOffset++;
         // Reset scroll when we've shown the entire text plus " ~~~ "
-        // Calculate based on pixels: each character is 6 pixels wide in Spleen8x16 font
-        int totalPixels = (title.length() + 4) * 6;  // +4 for " ~~~ "
-        int displayWidth = 14 * 6;  // 14 characters * 6 pixels
+        // Calculate based on pixels: each character is 8 pixels wide in Spleen8x16 font
+        int totalPixels = (title.length() + 4) * 8;  // +4 for " ~~~ "
+        int displayWidth = maxDisplayChars * 8;  // 14 characters * 8 pixels
         if (titleScrollOffset > (totalPixels + displayWidth)) {
           titleScrollOffset = 0;
         }
@@ -2282,21 +2285,19 @@ void updateDisplay() {
       }
       // Display scrolled text with pixel positioning
       String displayText = title + " ~~~ " + title;
-      // Calculate how many characters we can display (14 chars = 84 pixels)
-      int maxDisplayChars = 14;
-      
-      // Instead of substring, we'll use pixel positioning
-      display.setCursor(16, 12);
       // Create a temporary string that's long enough to fill the display
       String tempText = displayText + displayText;  // Double it to ensure enough content
       
       // Calculate starting position based on scroll offset
-      int startPixel = titleScrollOffset % (displayText.length() * 6);  // 6 pixels per char
-      int startChar = startPixel / 6;
-      int pixelOffset = startPixel % 6;
+      int startPixel = titleScrollOffset % (displayText.length() * 8);  // 8 pixels per char
+      int startChar = startPixel / 8;
+      int pixelOffset = startPixel % 8;
       
+      // Instead of substring, we'll use pixel positioning
+      display.setCursor(16 - pixelOffset, 12);
+
       // Display text with pixel offset
-      String visibleText = tempText.substring(startChar, startChar + maxDisplayChars + 2);
+      String visibleText = tempText.substring(startChar, startChar + maxDisplayChars);
       display.print(visibleText);
     } else {
       // Display title without scrolling
