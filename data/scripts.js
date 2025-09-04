@@ -231,6 +231,10 @@ async function saveConfig() {
     }
 }
 
+/**
+ * @brief Initialize the configuration page
+ * @description Loads existing configuration and sets up form submit handler
+ */
 function initConfigPage() {
     // Load existing configuration when page loads
     loadConfig();
@@ -247,12 +251,13 @@ function initConfigPage() {
 
 /**
  * @brief Load streams from the server
- * Fetches the playlist from the server and updates the UI
+ * @description Fetches the playlist from the server and updates the UI
  * Shows loading states and handles errors appropriately
  * 
  * This function retrieves the current playlist from the server via the /api/streams endpoint.
  * It updates both the main page stream selector and the playlist management page.
  * The function handles loading states, error conditions, and data validation.
+ * @returns {Promise<void>}
  */
 async function loadStreams() {
     // Show loading state
@@ -319,19 +324,11 @@ async function loadStreams() {
 }
 
 
-// WebSocket connection
-let ws = null;
-let reconnectTimeout = null;
-let isConnecting = false;
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 10;
-const connectionTimeout = 10000; // 10 seconds timeout for connection
-
 /**
- * @brief Establish WebSocket connection to server
- * Manages WebSocket connection lifecycle with automatic reconnection and error handling
+ * @file WebSocket connection management
+ * @description Manages WebSocket connection lifecycle with automatic reconnection and error handling
  * 
- * This function creates a WebSocket connection to the server for real-time status updates.
+ * This section handles the WebSocket connection to the server for real-time status updates.
  * It implements robust connection management including:
  * - Automatic reconnection with exponential backoff
  * - Connection timeout handling
@@ -340,6 +337,48 @@ const connectionTimeout = 10000; // 10 seconds timeout for connection
  * 
  * The WebSocket connects to port 81 (different from HTTP server port) and handles
  * various events including open, message, close, and error conditions.
+ */
+
+/**
+ * WebSocket connection instance
+ * @type {WebSocket|null}
+ */
+let ws = null;
+
+/**
+ * Reconnection timeout ID
+ * @type {number|null}
+ */
+let reconnectTimeout = null;
+
+/**
+ * Connection state flag
+ * @type {boolean}
+ */
+let isConnecting = false;
+
+/**
+ * Reconnection attempt counter
+ * @type {number}
+ */
+let reconnectAttempts = 0;
+
+/**
+ * Maximum number of reconnection attempts
+ * @type {number}
+ */
+const maxReconnectAttempts = 10;
+
+/**
+ * Connection timeout duration (ms)
+ * @type {number}
+ */
+const connectionTimeout = 10000;
+
+/**
+ * @brief Establish WebSocket connection to server
+ * @description Creates a WebSocket connection to the server for real-time status updates
+ * @returns {void}
  */
 function connectWebSocket() {
     // Clear any existing reconnection timeout
@@ -564,7 +603,11 @@ function connectWebSocket() {
     }
 }
 
-// Function to force reconnect
+/**
+ * @brief Force WebSocket reconnection
+ * @description Closes the current WebSocket connection and initiates a new connection
+ * @returns {void}
+ */
 function forceReconnect() {
     if (ws) {
         ws.close();
@@ -574,6 +617,11 @@ function forceReconnect() {
     connectWebSocket();
 }
 
+/**
+ * @brief Play selected stream
+ * @description Plays the stream selected in the main dropdown
+ * @returns {Promise<void>}
+ */
 async function playStream() {
     const { select, url, name } = getSelectedStream();
     if (!select) {
