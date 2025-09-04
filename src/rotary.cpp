@@ -91,7 +91,7 @@ void RotaryEncoder::handleButtonPress() {
  * counter-clockwise rotation.
  * @return Current position value
  */
-int RotaryEncoder::getPosition() const {
+int RotaryEncoder::getPosition() const volatile {
   return position;
 }
 
