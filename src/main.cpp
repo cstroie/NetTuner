@@ -752,56 +752,79 @@ void handleWiFiStatus() {
 }
 
 /**
+ * @brief Read JSON file from SPIFFS
+ * Helper function to read and parse JSON files from SPIFFS
+ * @param filename Path to the file in SPIFFS
+ * @param maxFileSize Maximum allowed file size
+ * @param doc JsonDocument to populate with parsed data
+ * @return true if successful, false otherwise
+ */
+bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc) {
+  // Check if the file exists
+  if (!SPIFFS.exists(filename)) {
+    Serial.printf("JSON file not found: %s\n", filename);
+    return false;
+  }
+  
+  // Open the file
+  File file = SPIFFS.open(filename, "r");
+  if (!file) {
+    Serial.printf("Failed to open JSON file: %s\n", filename);
+    return false;
+  }
+  
+  // Get the size of the file
+  size_t size = file.size();
+  if (size > maxFileSize) {
+    Serial.printf("JSON file too large: %s\n", filename);
+    file.close();
+    return false;
+  }
+  
+  // Check if the file is empty
+  if (size == 0) {
+    Serial.printf("JSON file is empty: %s\n", filename);
+    file.close();
+    return false;
+  }
+  
+  // Allocate buffer for file content
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (!buf) {
+    Serial.printf("Error: Failed to allocate memory for JSON file: %s\n", filename);
+    file.close();
+    return false;
+  }
+  
+  // Read the file content
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.printf("Failed to read JSON file: %s\n", filename);
+    file.close();
+    return false;
+  }
+  
+  buf[size] = '\0';
+  file.close();
+  
+  // Parse the JSON document
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.printf("Failed to parse JSON file %s: %s\n", filename, error.c_str());
+    return false;
+  }
+  
+  return true;
+}
+
+/**
  * @brief Load WiFi credentials from SPIFFS
  * This function reads WiFi credentials from wifi.json in SPIFFS and populates
  * the ssid and password arrays. It supports the new JSON array format.
  */
 void loadWiFiCredentials() {
-  // Check if the WiFi config file exists
-  if (!SPIFFS.exists("/wifi.json")) {
-    Serial.println("WiFi config file not found");
-    return;
-  }
-  // Open the WiFi config file
-  File file = SPIFFS.open("/wifi.json", "r");
-  if (!file) {
-    Serial.println("Failed to open WiFi config file");
-    return;
-  }
-  // Get the size of the file
-  size_t size = file.size();
-  if (size > 2048) {  // Increased size for array format
-    Serial.println("WiFi config file too large");
-    file.close();
-    return;
-  }
-  // Check if the file is empty
-  if (size == 0) {
-    Serial.println("WiFi config file is empty");
-    file.close();
-    return;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.println("Error: Failed to allocate memory for WiFi config file");
-    file.close();
-    return;
-  }
-  // Read the file content
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Failed to read WiFi config file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
   // Parse the JSON document
   DynamicJsonDocument doc(2048);  // Increased size for array format
-  DeserializationError error = deserializeJson(doc, buf.get());
-  if (error) {
-    Serial.print("Failed to parse WiFi config JSON: ");
-    Serial.println(error.c_str());
+  if (!readJsonFile("/wifi.json", 2048, doc)) {
     return;
   }
   // Handle the JSON array format [{"ssid": "name", "password": "pass"}, ...]
@@ -855,7 +878,9 @@ void loadWiFiCredentials() {
  * This function reads configuration from config.json in SPIFFS
  */
 void loadConfig() {
-  if (!SPIFFS.exists("/config.json")) {
+  // Parse the JSON document
+  DynamicJsonDocument doc(1024);
+  if (!readJsonFile("/config.json", 1024, doc)) {
     Serial.println("Config file not found, using defaults");
     // Initialize config with default values
     config.i2s_dout = DEFAULT_I2S_DOUT;
@@ -873,48 +898,6 @@ void loadConfig() {
     config.display_address = DEFAULT_DISPLAY_ADDR;
     // Save the default configuration to file
     saveConfig();
-    return;
-  }
-  // Open the config file
-  File file = SPIFFS.open("/config.json", "r");
-  if (!file) {
-    Serial.println("Failed to open config file");
-    return;
-  }
-  // Get the size of the file
-  size_t size = file.size();
-  if (size > 1024) {
-    Serial.println("Config file too large");
-    file.close();
-    return;
-  }
-  // Check if the file is empty
-  if (size == 0) {
-    Serial.println("Config file is empty");
-    file.close();
-    return;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.println("Error: Failed to allocate memory for config file");
-    file.close();
-    return;
-  }
-  // Read the file content
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Failed to read config file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
-  // Parse the JSON document
-  DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, buf.get());
-  if (error) {
-    Serial.print("Failed to parse config JSON: ");
-    Serial.println(error.c_str());
     return;
   }
   // Load configuration values, using defaults for missing values
@@ -1654,12 +1637,14 @@ void handleGetStreams() {
       file.close();
     }
   }
+  
   // Return JSON format (default)
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     server.send(200, "application/json", "[]");
     return;
   }
+  
   // Stream the file contents
   server.streamFile(file, "application/json");
   file.close();
