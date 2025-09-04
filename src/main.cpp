@@ -387,7 +387,7 @@ void setup() {
     displayStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
-    displayStatus("Starting AP Mode");
+    displayStatus("Starting AP Mode", "", "");
     
     // Start WiFi access point mode with error handling
     if (WiFi.softAP("NetTuner-Setup")) {
