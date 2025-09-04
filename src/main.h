@@ -135,11 +135,11 @@ void loadWiFiCredentials();
 void saveWiFiCredentials();
 
 // Web server handlers
-void handleRoot();
+void handleHomePage();
 void handlePlaylistPage();
 void handleConfigPage();
 void handleAboutPage();
-void handleWiFiConfig();
+void handleWiFiPage();
 void handleSimpleWebPage();
 void handleGetStreams();
 void handlePostStreams();
@@ -155,7 +155,7 @@ void handleImportConfig();
 void handleWiFiScan();
 void handleWiFiSave();
 void handleWiFiStatus();
-void handleWiFiConfigAPI();
+void handleWiFiConfig();
 
 // WebSocket handlers
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
