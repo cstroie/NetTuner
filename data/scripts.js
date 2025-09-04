@@ -1862,12 +1862,27 @@ function replaceWithSelectedStreams() {
 async function playSelectedStreamFromPlaylist(index, originalUrl) {
     const playlistData = window.currentInstantPlayPlaylistData;
     
-    if (!playlistData || index < 0 || index >= playlistData.length) {
-        console.error('Invalid stream selection');
+    if (!playlistData || !Array.isArray(playlistData) || index < 0 || index >= playlistData.length) {
+        console.error('Invalid stream selection:', { playlistData, index });
         return;
     }
     
     const selectedStream = playlistData[index];
+    
+    // Validate the selected stream
+    if (!selectedStream || typeof selectedStream !== 'object') {
+        console.error('Invalid stream object:', selectedStream);
+        return;
+    }
+    
+    // Check if stream has required properties
+    if (!selectedStream.url) {
+        console.error('Stream missing URL:', selectedStream);
+        return;
+    }
+    
+    // Use stream name if available, otherwise generate one
+    const streamName = selectedStream.name || `Stream ${index + 1}`;
     
     // Show loading state
     const playButton = document.getElementById('playSelectedStreamBtn');
@@ -1878,7 +1893,7 @@ async function playSelectedStreamFromPlaylist(index, originalUrl) {
     }
     
     try {
-        await sendPlayRequest(selectedStream.url, selectedStream.name, index);
+        await sendPlayRequest(selectedStream.url, streamName, index);
         
         // Close modal
         const modal = document.getElementById('instantPlaySelectionModal');
