@@ -185,7 +185,9 @@ async function saveConfig() {
                 </header>
                 <p>Configuration saved successfully. Device restart required for changes to take effect.</p>
                 <footer>
-                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                    <div role="group">
+                        <button onclick="document.getElementById('configModal').remove()">OK</button>
+                    </div>
                 </footer>
             </article>
         `;
@@ -218,7 +220,9 @@ async function saveConfig() {
                 </header>
                 <p>Error saving configuration</p>
                 <footer>
-                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                    <div role="group">
+                        <button onclick="document.getElementById('configModal').remove()">OK</button>
+                    </div>
                 </footer>
             </article>
         `;
@@ -1074,7 +1078,7 @@ function renderPlaylist() {
             <div class="drag-handle">⋮⋮</div>
             <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
             <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
-            <button class="secondary" onclick="playStreamFromPlaylist(${index})">Play</button>
+            <button onclick="playStreamFromPlaylist(${index})">Play</button>
             <button class="secondary" onclick="deleteStream(${index})">Delete</button>
         `;
         
@@ -1347,11 +1351,15 @@ function deleteStream(index) {
     modal.id = 'deleteModal';
     modal.innerHTML = `
         <article>
-            <h2>Confirm Deletion</h2>
+            <header>
+                <h2>Confirm Deletion</h2>
+            </header>
             <p>Are you sure you want to delete this stream?</p>
             <footer>
-                <button class="secondary" onclick="document.getElementById('deleteModal').remove()">Cancel</button>
-                <button onclick="confirmDeleteStream(${index})">Delete</button>
+                <div role="group">
+                    <button onclick="confirmDeleteStream(${index})">Delete</button>
+                    <button class="secondary" onclick="document.getElementById('deleteModal').remove()">Cancel</button>
+                </div>
             </footer>
         </article>
     `;
@@ -1379,11 +1387,15 @@ async function savePlaylist() {
         modal.id = 'emptyPlaylistModal';
         modal.innerHTML = `
             <article>
-                <h2>Empty Playlist</h2>
+                <header>
+                    <h2>Empty Playlist</h2>
+                </header>
                 <p>Playlist is empty. Do you want to save an empty playlist?</p>
                 <footer>
-                    <button class="secondary" onclick="document.getElementById('emptyPlaylistModal').remove()">Cancel</button>
-                    <button onclick="confirmSaveEmptyPlaylist()">Save</button>
+                    <div role="group">
+                        <button onclick="confirmSaveEmptyPlaylist()">Save</button>
+                        <button class="secondary" onclick="document.getElementById('emptyPlaylistModal').remove()">Cancel</button>
+                    </div>
                 </footer>
             </article>
         `;
@@ -1742,9 +1754,11 @@ function showPlaylistSelectionModal(playlistData) {
     modalContent += `
             </div>
             <footer class="grid">
-                <button id="appendSelectedBtn">Append Selected</button>
-                <button class="secondary" id="replaceAllBtn">Replace All</button>
-                <button class="secondary" onclick="document.getElementById('playlistSelectionModal').remove()">Cancel</button>
+                <div role="group">
+                    <button id="appendSelectedBtn">Append Selected</button>
+                    <button class="secondary" id="replaceAllBtn">Replace All</button>
+                    <button class="secondary" onclick="document.getElementById('playlistSelectionModal').remove()">Cancel</button>
+                </div>
             </footer>
         </article>
     `;
@@ -1818,9 +1832,11 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
     modalContent += `
                 </select>
             </div>
-            <footer class="grid">
-                <button id="playInstantSelectedStreamBtn">Play</button>
-                <button class="secondary" onclick="document.getElementById('instantPlaySelectionModal').remove()">Cancel</button>
+            <footer>
+                <div role="group">
+                    <button id="playInstantSelectedStreamBtn">Play</button>
+                    <button class="secondary" onclick="document.getElementById('instantPlaySelectionModal').remove()">Cancel</button>
+                </div>
             </footer>
         </article>
     `;
@@ -2990,7 +3006,9 @@ function showModal(title, message) {
             </header>
             <p>${message}</p>
             <footer>
-                <button onclick="document.getElementById('configModal').remove()">OK</button>
+                <div role="group">
+                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                </div>
             </footer>
         </article>
     `;
