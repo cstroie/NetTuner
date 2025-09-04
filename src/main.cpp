@@ -732,12 +732,22 @@ void handleWiFiConfig() {
   // Yield to other tasks before processing
   delay(1);
   
-  String json = "[";
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(1024);
+  
+  // Create JSON array
+  JsonArray array = doc.to<JsonArray>();
+  
+  // Populate JSON array with configured network SSIDs
   for (int i = 0; i < wifiNetworkCount; i++) {
-    if (i > 0) json += ",";
-    json += "\"" + String(ssid[i]) + "\"";
+    array.add(String(ssid[i]));
   }
-  json += "]";
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(array, json);
+  
+  // Send the JSON response
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
