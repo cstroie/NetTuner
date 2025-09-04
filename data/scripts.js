@@ -1074,6 +1074,7 @@ function renderPlaylist() {
             <div class="drag-handle">⋮⋮</div>
             <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
             <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
+            <button class="secondary" onclick="playStreamFromPlaylist(${index})">Play</button>
             <button class="secondary" onclick="deleteStream(${index})">Delete</button>
         `;
         
@@ -1316,6 +1317,24 @@ function updateStream(index, field, value) {
     }
     
     streams[index][field] = trimmedValue;
+}
+
+function playStreamFromPlaylist(index) {
+    if (index < 0 || index >= streams.length) {
+        return;
+    }
+    
+    const stream = streams[index];
+    if (!stream || !stream.url) {
+        return;
+    }
+    
+    // Play the stream directly
+    sendPlayRequest(stream.url, stream.name, index)
+        .catch(error => {
+            console.error('Error playing stream from playlist:', error);
+            handlePlayError(error);
+        });
 }
 
 function deleteStream(index) {
