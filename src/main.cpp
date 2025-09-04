@@ -817,6 +817,67 @@ bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument&
 }
 
 /**
+ * @brief Write JSON file to SPIFFS
+ * Helper function to serialize and write JSON files to SPIFFS
+ * @param filename Path to the file in SPIFFS
+ * @param doc JsonDocument to serialize
+ * @return true if successful, false otherwise
+ */
+bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
+  // Create backup of existing file
+  String backupFilename = String(filename) + ".bak";
+  if (SPIFFS.exists(filename)) {
+    if (SPIFFS.exists(backupFilename)) {
+      SPIFFS.remove(backupFilename);
+    }
+    if (!SPIFFS.rename(filename, backupFilename)) {
+      Serial.printf("Warning: Failed to create backup of %s\n", filename);
+    }
+  }
+  
+  // Open the file for writing
+  File file = SPIFFS.open(filename, "w");
+  if (!file) {
+    Serial.printf("Failed to open JSON file for writing: %s\n", filename);
+    // Try to restore from backup
+    if (SPIFFS.exists(backupFilename)) {
+      if (SPIFFS.rename(backupFilename, filename)) {
+        Serial.printf("Restored %s from backup\n", filename);
+      } else {
+        Serial.printf("Error: Failed to restore %s from backup\n", filename);
+      }
+    }
+    return false;
+  }
+  
+  // Serialize the JSON document to the file
+  size_t bytesWritten = serializeJson(doc, file);
+  if (bytesWritten == 0) {
+    Serial.printf("Failed to write JSON to file: %s\n", filename);
+    file.close();
+    // Try to restore from backup
+    if (SPIFFS.exists(backupFilename)) {
+      SPIFFS.remove(filename); // Remove the failed file
+      if (SPIFFS.rename(backupFilename, filename)) {
+        Serial.printf("Restored %s from backup\n", filename);
+      } else {
+        Serial.printf("Error: Failed to restore %s from backup\n", filename);
+      }
+    }
+    return false;
+  }
+  
+  file.close();
+  
+  // Remove backup file after successful save
+  if (SPIFFS.exists(backupFilename)) {
+    SPIFFS.remove(backupFilename);
+  }
+  
+  return true;
+}
+
+/**
  * @brief Load WiFi credentials from SPIFFS
  * This function reads WiFi credentials from wifi.json in SPIFFS and populates
  * the ssid and password arrays. It supports the new JSON array format.
@@ -938,22 +999,13 @@ void saveConfig() {
   doc["display_width"] = config.display_width;
   doc["display_height"] = config.display_height;
   doc["display_address"] = config.display_address;
-  // Save the JSON document to SPIFFS
-  File file = SPIFFS.open("/config.json", "w");
-  if (!file) {
-    Serial.println("Failed to open config file for writing");
-    return;
+  
+  // Save the JSON document to SPIFFS using helper function
+  if (writeJsonFile("/config.json", doc)) {
+    Serial.println("Saved configuration to SPIFFS");
+  } else {
+    Serial.println("Failed to save configuration to SPIFFS");
   }
-  // Serialize the JSON document to the file
-  size_t bytesWritten = serializeJson(doc, file);
-  if (bytesWritten == 0) {
-    Serial.println("Failed to write config to file");
-    file.close();
-    return;
-  }
-  file.close();
-  // Print success message
-  Serial.println("Saved configuration to SPIFFS");
 }
 
 /**
@@ -972,24 +1024,13 @@ void saveWiFiCredentials() {
       network["password"] = password[i];
     }
   }
-  // Print saved WiFi credentials
-  Serial.println("Saved WiFi credentials to SPIFFS");
-  // Open the WiFi config file
-  File file = SPIFFS.open("/wifi.json", "w");
-  if (!file) {
-    Serial.println("Failed to open WiFi config file for writing");
-    return;
+  
+  // Save the JSON document to SPIFFS using helper function
+  if (writeJsonFile("/wifi.json", doc)) {
+    Serial.println("Saved WiFi credentials to SPIFFS");
+  } else {
+    Serial.println("Failed to save WiFi credentials to SPIFFS");
   }
-  // Serialize the JSON document to the file
-  size_t bytesWritten = serializeJson(doc, file);
-  if (bytesWritten == 0) {
-    Serial.println("Failed to write WiFi config to file");
-    file.close();
-    return;
-  }
-  file.close();
-  // Print success message
-  Serial.println("Saved WiFi credentials to SPIFFS");
 }
 
 
@@ -1278,53 +1319,13 @@ void savePlaylist() {
     item["name"] = playlist[i].name;
     item["url"] = playlist[i].url;
   }
-  // Create backup of existing playlist file
-  if (SPIFFS.exists("/playlist.json")) {
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      SPIFFS.remove("/playlist.json.bak");
-    }
-    if (!SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
-      Serial.println("Warning: Failed to create backup of playlist file");
-    }
+  
+  // Save the JSON document to SPIFFS using helper function
+  if (writeJsonFile("/playlist.json", doc)) {
+    Serial.println("Saved playlist to file");
+  } else {
+    Serial.println("Failed to save playlist to file");
   }
-  // Save to file
-  File file = SPIFFS.open("/playlist.json", "w");
-  if (!file) {
-    Serial.println("Error: Failed to open playlist file for writing");
-    // Try to restore from backup
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      if (SPIFFS.rename("/playlist.json.bak", "/playlist.json")) {
-        Serial.println("Restored playlist from backup");
-      } else {
-        Serial.println("Error: Failed to restore playlist from backup");
-      }
-    }
-    return;
-  }
-  // Write JSON to file with better error handling
-  size_t bytesWritten = serializeJson(array, file);
-  if (bytesWritten == 0) {
-    Serial.println("Error: Failed to write playlist to file");
-    file.close();
-    // Try to restore from backup
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      SPIFFS.remove("/playlist.json"); // Remove the failed file
-      if (SPIFFS.rename("/playlist.json.bak", "/playlist.json")) {
-        Serial.println("Restored playlist from backup");
-      } else {
-        Serial.println("Error: Failed to restore playlist from backup");
-      }
-    }
-    return;
-  }
-  // Successfully wrote playlist to file
-  file.close();
-  // Remove backup file after successful save
-  if (SPIFFS.exists("/playlist.json.bak")) {
-    SPIFFS.remove("/playlist.json.bak");
-  }
-  // Print success message
-  Serial.println("Saved playlist to file");
 }
 
 
