@@ -1370,41 +1370,63 @@ async function importRemotePlaylist() {
             throw new Error(`Failed to fetch playlist: ${response.status} ${response.statusText}`);
         }
         
-        const jsonData = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        const textContent = await response.text();
         
-        // Validate the JSON structure
-        if (!Array.isArray(jsonData)) {
-            throw new Error('Invalid playlist format: expected array of streams');
-        }
+        let playlistData;
         
-        // Validate each stream in the playlist
-        for (let i = 0; i < jsonData.length; i++) {
-            const stream = jsonData[i];
-            if (!stream || typeof stream !== 'object') {
-                throw new Error(`Invalid stream at position ${i+1}`);
+        // Detect format based on content type or content
+        if (contentType.includes('application/json') || 
+            url.toLowerCase().endsWith('.json') || 
+            (textContent.trim().startsWith('{') || textContent.trim().startsWith('['))) {
+            // JSON format
+            const jsonData = JSON.parse(textContent);
+            
+            // Validate the JSON structure
+            if (!Array.isArray(jsonData)) {
+                throw new Error('Invalid playlist format: expected array of streams');
             }
             
-            if (!stream.name || !stream.name.trim()) {
-                throw new Error(`Stream at position ${i+1} has an empty name`);
+            // Validate each stream in the playlist
+            for (let i = 0; i < jsonData.length; i++) {
+                const stream = jsonData[i];
+                if (!stream || typeof stream !== 'object') {
+                    throw new Error(`Invalid stream at position ${i+1}`);
+                }
+                
+                if (!stream.name || !stream.name.trim()) {
+                    throw new Error(`Stream at position ${i+1} has an empty name`);
+                }
+                
+                if (!stream.url) {
+                    throw new Error(`Stream at position ${i+1} has no URL`);
+                }
+                
+                if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+                    throw new Error(`Stream at position ${i+1} has invalid URL format`);
+                }
+                
+                try {
+                    new URL(stream.url);
+                } catch (e) {
+                    throw new Error(`Stream at position ${i+1} has invalid URL`);
+                }
             }
             
-            if (!stream.url) {
-                throw new Error(`Stream at position ${i+1} has no URL`);
-            }
-            
-            if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
-                throw new Error(`Stream at position ${i+1} has invalid URL format`);
-            }
-            
-            try {
-                new URL(stream.url);
-            } catch (e) {
-                throw new Error(`Stream at position ${i+1} has invalid URL`);
-            }
+            playlistData = jsonData;
+        } else if (url.toLowerCase().endsWith('.m3u') || 
+                   url.toLowerCase().endsWith('.m3u8') || 
+                   contentType.includes('audio/x-mpegurl') || 
+                   contentType.includes('application/x-mpegurl') ||
+                   textContent.includes('#EXTM3U')) {
+            // M3U format
+            playlistData = JSON.parse(convertM3UToJSON(textContent));
+        } else {
+            throw new Error('Unsupported playlist format');
         }
         
         // Replace current playlist with the new one (but don't save yet)
-        streams = jsonData;
+        streams = playlistData;
         renderPlaylist();
         
         // Clear the input field
