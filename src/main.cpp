@@ -27,7 +27,6 @@
 
 
 // MPD Interface instance
-extern WiFiClient mpdClient;  // Declare the missing mpdClient
 MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
                           playlistCount, currentSelection, playlist, audio);
 
@@ -653,10 +652,6 @@ void loop() {
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
-    // Force cleanup of any stale connections
-    if (mpdClient && !mpdClient.connected()) {
-      mpdClient.stop();
-    }
     
     // Check and recover from potential WiFi disconnections
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
