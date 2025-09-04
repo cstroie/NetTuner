@@ -764,26 +764,30 @@ void handleWiFiScan() {
   // Yield to other tasks before processing
   delay(1);
   
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(2048);
+  
+  // Scan for available networks
   int n = WiFi.scanNetworks();
-  String json = "{";
+  
   // Add available networks
-  json += "\"networks\":[";
+  JsonArray networks = doc.createNestedArray("networks");
   for (int i = 0; i < n; ++i) {
-    if (i > 0) json += ",";
-    json += "{";
-    json += "\"ssid\":\"" + WiFi.SSID(i) + "\",";
-    json += "\"rssi\":" + String(WiFi.RSSI(i));
-    json += "}";
+    JsonObject network = networks.createNestedObject();
+    network["ssid"] = WiFi.SSID(i);
+    network["rssi"] = WiFi.RSSI(i);
   }
-  json += "],";
+  
   // Add configured networks
-  json += "\"configured\":[";
+  JsonArray configured = doc.createNestedArray("configured");
   for (int i = 0; i < wifiNetworkCount; i++) {
-    if (i > 0) json += ",";
-    json += "\"" + String(ssid[i]) + "\"";
+    configured.add(String(ssid[i]));
   }
-  json += "]";
-  json += "}";
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  
   // Send the JSON response
   server.send(200, "application/json", json);
   
