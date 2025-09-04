@@ -219,6 +219,87 @@ int playlistCount = 0;
 int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
+// Player state tracking
+struct PlayerState {
+  bool playing = false;
+  int volume = 11;
+  int bass = 0;
+  int midrange = 0;
+  int treble = 0;
+  int playlistIndex = 0;
+  unsigned long lastSaveTime = 0;
+  bool dirty = false;
+};
+
+PlayerState playerState;
+
+/**
+ * @brief Load player state from SPIFFS
+ */
+void loadPlayerState() {
+  DynamicJsonDocument doc(512);
+  if (readJsonFile("/player.json", 512, doc)) {
+    playerState.playing = doc["playing"] | false;
+    playerState.volume = doc["volume"] | 11;
+    playerState.bass = doc["bass"] | 0;
+    playerState.midrange = doc["midrange"] | 0;
+    playerState.treble = doc["treble"] | 0;
+    playerState.playlistIndex = doc["playlistIndex"] | 0;
+    
+    // Apply loaded state
+    volume = playerState.volume;
+    bass = playerState.bass;
+    midrange = playerState.midrange;
+    treble = playerState.treble;
+    
+    if (audio) {
+      audio->setVolume(volume);
+      audio->setTone(bass, midrange, treble);
+    }
+    
+    if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlistCount) {
+      currentSelection = playerState.playlistIndex;
+    }
+    
+    Serial.println("Loaded player state from SPIFFS");
+    
+    // If was playing, resume playback
+    if (playerState.playing && playlistCount > 0 && currentSelection < playlistCount) {
+      Serial.println("Resuming playback from saved state");
+      startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+    }
+  } else {
+    Serial.println("No player state file found, using defaults");
+  }
+}
+
+/**
+ * @brief Save player state to SPIFFS
+ */
+void savePlayerState() {
+  DynamicJsonDocument doc(512);
+  doc["playing"] = isPlaying;
+  doc["volume"] = volume;
+  doc["bass"] = bass;
+  doc["midrange"] = midrange;
+  doc["treble"] = treble;
+  doc["playlistIndex"] = currentSelection;
+  
+  if (writeJsonFile("/player.json", doc)) {
+    Serial.println("Saved player state to SPIFFS");
+    playerState.dirty = false;
+  } else {
+    Serial.println("Failed to save player state to SPIFFS");
+  }
+}
+
+/**
+ * @brief Mark player state as dirty (needs saving)
+ */
+void markPlayerStateDirty() {
+  playerState.dirty = true;
+}
+
 /**
  * @brief Arduino setup function
  * Initializes all system components including WiFi, audio, display, and servers
@@ -379,6 +460,9 @@ void setup() {
     currentSelection = 0;
   }
   
+  // Load player state
+  loadPlayerState();
+  
   // Setup web server routes
   server.on("/", HTTP_GET, handleRoot);
   server.on("/playlist", HTTP_GET, handlePlaylistPage);
@@ -475,6 +559,7 @@ void handleBoardButton() {
       // Toggle play/stop
       if (isPlaying) {
         stopStream();
+        markPlayerStateDirty();
       } else {
         // If we have a current stream, resume it
         if (strlen(streamURL) > 0) {
@@ -484,6 +569,7 @@ void handleBoardButton() {
         else if (playlistCount > 0 && currentSelection < playlistCount) {
           startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         }
+        markPlayerStateDirty();
       }
       updateDisplay();
       sendStatusToClients();
@@ -518,6 +604,35 @@ void loop() {
       updateDisplay();
     }
     lastDisplayUpdate = millis();
+  }
+  
+  // Periodically save player state if dirty
+  static unsigned long lastStateCheck = 0;
+  if (millis() - lastStateCheck > 60000) {  // Check every minute
+    // Check if any state has changed
+    if (playerState.dirty || 
+        playerState.playing != isPlaying ||
+        playerState.volume != volume ||
+        playerState.bass != bass ||
+        playerState.midrange != midrange ||
+        playerState.treble != treble ||
+        playerState.playlistIndex != currentSelection) {
+      
+      // Mark as dirty if any state has changed
+      playerState.dirty = true;
+      playerState.playing = isPlaying;
+      playerState.volume = volume;
+      playerState.bass = bass;
+      playerState.midrange = midrange;
+      playerState.treble = treble;
+      playerState.playlistIndex = currentSelection;
+      
+      // Save if dirty
+      if (playerState.dirty) {
+        savePlayerState();
+      }
+    }
+    lastStateCheck = millis();
   }
   
   // Check audio connection status with improved error recovery
@@ -1378,6 +1493,7 @@ void handleRotary() {
         if (audio) {
           audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
         }
+        markPlayerStateDirty();
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
