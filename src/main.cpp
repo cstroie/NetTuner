@@ -1660,17 +1660,24 @@ void handleSimpleWebPage() {
       }
     }
   }
+  
+  // Pre-allocate string with estimated size to reduce reallocations
+  String html;
+  html.reserve(2048); // Reserve space to reduce memory fragmentation
+  
   // Serve the HTML page
-  String html = "<!DOCTYPE html><html>";
-  html += "<head><title>NetTuner</title><link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\"></head><body>";
-  html += "<header><h1>NetTuner</h1></header>";
-  html += "<main>";
-  // Show current status
-  html += "<section>";
-  html += "<h2>Status</h2>";
-  html += "<p><b>Status:</b> ";
+  html = R"rawliteral(<!DOCTYPE html><html>
+<head><title>NetTuner</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"></head>
+<body>
+<header><h1>NetTuner</h1></header>
+<main>
+<section>
+<h2>Status</h2>
+<p><b>Status:</b> )rawliteral";
+  
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
+  
   // Show current stream name
   if (isPlaying && streamName[0]) {
     html += "<p><b>Current Stream:</b> ";
@@ -1681,22 +1688,25 @@ void handleSimpleWebPage() {
     html += playlist[currentSelection].name;
     html += "</p>";
   }
-  html += "</section>";
-  // Play/Stop buttons
-  html += "<section>";
-  html += "<h2>Controls</h2>";
-  html += "<form method='post'>";
-  html += "<button name='action' value='play' type='submit'>Play</button> ";
-  html += "<button name='action' value='stop' type='submit'>Stop</button>";
-  html += "</form>";
-  html += "</section>";
-  // Stream selection
-  html += "<section>";
-  html += "<h2>Playlist</h2>";
+  
+  html += R"rawliteral(</section>
+<section>
+<h2>Controls</h2>
+<form method='post'>
+<button name='action' value='play' type='submit'>Play</button> 
+<button name='action' value='stop' type='submit'>Stop</button>
+</form>
+</section>
+<section>
+<h2>Playlist</h2>
+)rawliteral";
+  
   if (playlistCount > 0) {
-    html += "<form method='post'>";
-    html += "<label for='stream'>Select Stream:</label>";
-    html += "<select name='stream' id='stream'>";
+    html += R"rawliteral(<form method='post'>
+<label for='stream'>Select Stream:</label>
+<select name='stream' id='stream'>
+)rawliteral";
+    
     // Populate the dropdown with available streams
     for (int i = 0; i < playlistCount; i++) {
       html += "<option value='" + String(i) + "'";
@@ -1705,16 +1715,21 @@ void handleSimpleWebPage() {
       }
       html += ">" + String(playlist[i].name) + "</option>";
     }
-    html += "</select>";
-    html += "<button name='action' value='play' type='submit'>Play Selected</button>";
-    html += "</form>";
+    
+    html += R"rawliteral(</select>
+<button name='action' value='play' type='submit'>Play Selected</button>
+</form>
+)rawliteral";
   } else {
     html += "<p>No streams available</p>";
   }
-  html += "</section>";
-  html += "</main>";
-  html += "<footer><p>NetTuner Simple Interface</p></footer>";
-  html += "</body></html>";
+  
+  html += R"rawliteral(</section>
+</main>
+<footer><p>NetTuner Simple Interface</p></footer>
+</body>
+</html>)rawliteral";
+  
   server.send(200, "text/html", html);
 }
 
