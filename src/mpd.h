@@ -111,10 +111,16 @@ private:
 
   /**
    * @brief Handle command list processing
-   * @details Processes commands in command list mode.
-   * In command list mode, multiple commands are sent as a batch and executed
-   * together. This function buffers commands until the end of the list is
-   * received, then executes all commands in sequence.
+   * @details Processes commands in command list mode with support for both
+   * command_list_begin and command_list_ok_begin modes.
+   * 
+   * In command_list_begin mode, commands are buffered until command_list_end
+   * is received, then all commands are executed sequentially.
+   * 
+   * In command_list_ok_begin mode, each command receives a "list_OK" response
+   * except the last which receives a standard "OK" response.
+   * 
+   * The function implements a safety limit of 50 commands to prevent memory issues.
    * @param command The command to process
    */
   void handleCommandList(const String& command);
@@ -130,8 +136,11 @@ private:
 
   /**
    * @brief Generate MPD error response
-   * @details Generates a properly formatted MPD error response with error code,
-   * position, command name, and error message.
+   * @details Generates a properly formatted MPD error response following the
+   * MPD protocol specification: ACK [error_code@command_list_num] {current_command} message
+   * 
+   * This implementation uses error code 5 (ACK_ERROR_NO_EXIST) and command list
+   * number 0 as these are appropriate for most general errors.
    * @param command The command that caused the error
    * @param message Error message
    * @return Error response string in MPD format
@@ -155,6 +164,15 @@ private:
    * @details Processes search and find commands with partial or exact matching in stream names.
    * The function parses the search criteria and filters the playlist entries based on
    * the specified matching mode (partial for search, exact for find).
+   * 
+   * Command format examples:
+   * - search "Title" "search term"
+   * - find "Artist" "exact artist name"
+   * 
+   * Special handling is implemented for artist/album searches which return
+   * simple playlist information rather than filtered results.
+   * 
+   * Search is case-insensitive and handles quoted strings properly.
    * @param command The full command string
    * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
    */
@@ -167,6 +185,18 @@ private:
    * It supports a subset of MPD commands including playback control, volume control,
    * playlist management, status queries, and search functionality.
    * 
+   * Command processing includes:
+   * - Playback control (play, stop, pause, next, previous)
+   * - Volume control (setvol, getvol, volume)
+   * - Status queries (status, currentsong, stats)
+   * - Playlist management (playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo)
+   * - Search functionality (search, find)
+   * - System commands (ping, commands, notcommands, tagtypes, outputs)
+   * - Special modes (idle, noidle, command lists)
+   * 
+   * Volume handling converts between MPD's 0-100 scale and the ESP32-audioI2S 0-22 scale.
+   * @param command The command string to process
+   * 
    * Supported commands include:
    * - Playback: play, stop, pause, next, previous
    * - Volume: setvol, getvol, volume
@@ -175,7 +205,6 @@ private:
    * - Search: search, find
    * - System: ping, commands, notcommands, tagtypes, outputs
    * - Special modes: idle, noidle, command lists
-   * @param command The command string to process
    */
   void handleMPDCommand(const String& command);
 };
