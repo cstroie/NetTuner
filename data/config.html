@@ -8,11 +8,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="container">
+    <!-- Navigation bar -->
     <nav>
         <ul>
             <li><strong>NetTuner</strong></li>
         </ul>
         <ul>
+            <!-- Dropdown menu for page navigation -->
             <li>
                 <details class="dropdown">
                     <summary>Config</summary>
@@ -25,16 +27,21 @@
                     </ul>
                 </details>
             </li>
+            <!-- Theme toggle button -->
             <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
         </ul>
     </nav>
+    <!-- Main content with hardware configuration -->
     <main>
+        <!-- Hardware configuration form -->
         <article>
             <hgroup>
                 <h2>Hardware configuration</h2>
                 <p>Configure hardware pins and settings</p>
             </hgroup>
+            <!-- Configuration form with grouped settings -->
             <form id="configForm">
+                <!-- I2S audio pin configuration -->
                 <fieldset class="grid">
                     <legend>I2S audio pins</legend>
                     <span></span>
@@ -49,6 +56,8 @@
                     </label>
                     <span></span>
                 </fieldset>
+                
+                <!-- Control pin configuration -->
                 <fieldset class="grid">
                     <legend>Control pins</legend>
                     <label for="led_pin">Onboard LED
@@ -67,6 +76,8 @@
                         <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required>
                     </label>
                 </fieldset>
+                
+                <!-- Display configuration -->
                 <fieldset class="grid">
                     <legend>Display settings</legend>
                     <label for="display_sda">I2C SDA
@@ -86,28 +97,35 @@
                     </label>
                 </fieldset>
             </form>
+            <!-- Save configuration button -->
             <footer>
                 <button type="submit" form="configForm">Save configuration</button>
             </footer>
         </article>
+        
+        <!-- Configuration export/import -->
         <article>
             <hgroup>
                 <h2>Configuration export and import</h2>
                 <p>Export and import all configuration files as a single JSON package</p>
             </hgroup>
             <p>Export or import all your NetTuner configuration files (config.json, wifi.json, playlist.json) as a single JSON file for backup or transfer purposes.</p>
+            <!-- File input for configuration import -->
             <div><input type="file" id="importFile" accept=".json" onchange="handleImportFileSelect()"></div>
+            <!-- Import/export buttons -->
             <footer class="grid">
                 <button type="button" onclick="importAllConfiguration()" id="importButton" disabled>Import configuration</button>
                 <button type="button" onclick="exportAllConfiguration()">Export configuration</button>
             </footer>
         </article>
     </main>
+    <!-- JavaScript includes -->
     <script src="/scripts.js"></script>
     <script>
+        // Initialize the configuration page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
-            initTheme();
-            initConfigPage();
+            initTheme();       // Initialize theme settings
+            initConfigPage();  // Initialize configuration page functionality
         });
     </script>
 </body>

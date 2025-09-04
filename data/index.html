@@ -8,14 +8,17 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="container">
+    <!-- Navigation bar with status indicator -->
     <nav>
         <ul>
             <li><strong>NetTuner</strong></li>
         </ul>
         <ul>
+            <!-- Playback status indicator -->
             <li><span id="status" class="status-indicator stopped">STOPPED</span></li>
         </ul>
         <ul>
+            <!-- Dropdown menu for page navigation -->
             <li>
                 <details class="dropdown">
                     <summary>Home</summary>
@@ -28,38 +31,49 @@
                     </ul>
                 </details>
             </li>
+            <!-- Theme toggle button -->
             <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
         </ul>
     </nav>
+    <!-- Header with stream information and controls -->
     <header>
         <article>
+            <!-- Stream title and name display -->
             <hgroup>
                 <h2 id="streamTitle">No stream selected</h2>
                 <p id="streamName">
+                    <!-- Station favicon image (hidden by default) -->
                     <img id="stationFavicon" src="" alt="Station Favicon" style="display: none; width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">
                     No station selected
                 </p>
             </hgroup>
+            <!-- Audio controls footer -->
             <footer>
+                <!-- Volume control card -->
                 <card>
                     <label for="volume">Volume:
                         <span id="volumeValue">11</span>
                     </label>
+                    <!-- Volume slider (0-22 range for ESP32-audioI2S) -->
                     <input type="range" id="volume" min="0" max="22" value="11" step="1" oninput="handleVolumeChange(this.value)">
                 </card>
+                <!-- Tone controls card -->
                 <card class="tone-controls">
+                    <!-- Bass control -->
                     <div class="tone-control">
                         <label for="bass">Bass:
                             <span id="bassValue">0dB</span>
                         </label>
                         <input type="range" id="bass" min="-6" max="6" value="0" step="1" oninput="handleToneChange('bass', this.value)">
                     </div>
+                    <!-- Midrange control -->
                     <div class="tone-control">
                         <label for="midrange">Midrange:
                             <span id="midrangeValue">0dB</span>
                         </label>
                         <input type="range" id="midrange" min="-6" max="6" value="0" step="1" oninput="handleToneChange('midrange', this.value)">
                     </div>
+                    <!-- Treble control -->
                     <div class="tone-control">
                         <label for="treble">Treble:
                             <span id="trebleValue">0dB</span>
@@ -70,12 +84,16 @@
             </footer>
         </article>
     </header>
+    <!-- Main content with stream selection and instant play -->
     <main>     
+        <!-- Stream selection article -->
         <article>
             <label for="streamSelect">Select a stream</label>
+            <!-- Playlist dropdown populated by JavaScript -->
             <select id="streamSelect" onchange="playSelectedStream()">
                 <option value="">Select a stream...</option>
             </select>
+            <!-- Playback control buttons -->
             <footer>
                 <div role="group">
                     <button onclick="playStream()">▶&nbsp;Play</button>
@@ -83,21 +101,26 @@
                 </div>
             </footer>
         </article>
+        
+        <!-- Instant play article -->
         <article>
             <label for="instantUrl">Instant play</label>
+            <!-- Direct URL input for playing streams not in playlist -->
             <div role="group">
                 <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
                 <button onclick="playInstantStream()">▶&nbsp;Play</button>
             </div>
         </article>
     </main>
+    <!-- JavaScript includes -->
     <script src="/scripts.js"></script>
     <script>
-        // Initialize the main page
+        // Initialize the main page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
+            // Verify we're on the correct page before initializing
             if (document.getElementById('streamSelect')) {
-                initTheme();
-                initMainPage();
+                initTheme();    // Initialize theme settings
+                initMainPage(); // Initialize main page functionality
             }
         });
     </script>
