@@ -1784,8 +1784,15 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
     
     // Add option for each stream
     playlistData.forEach((stream, index) => {
+        // Validate stream object
+        if (!stream || typeof stream !== 'object') {
+            console.warn('Skipping invalid stream object in playlist:', stream);
+            return;
+        }
+        
+        const streamName = stream.name || `Stream ${index + 1}`;
         modalContent += `
-            <option value="${index}">${escapeHtml(stream.name)}</option>
+            <option value="${index}">${escapeHtml(streamName)}</option>
         `;
     });
     
@@ -1807,14 +1814,14 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
     document.getElementById('playSelectedStreamBtn').addEventListener('click', function() {
         const selectElement = document.getElementById('streamSelect');
         const selectedIndex = parseInt(selectElement.value);
-        playSelectedStreamFromPlaylist(selectedIndex, originalUrl);
+        playSelectedStreamFromPlaylist(selectedIndex);
     });
     
     // Also allow playing with Enter key
     document.getElementById('streamSelect').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const selectedIndex = parseInt(this.value);
-            playSelectedStreamFromPlaylist(selectedIndex, originalUrl);
+            playSelectedStreamFromPlaylist(selectedIndex);
         }
     });
 }
@@ -1859,11 +1866,18 @@ function replaceWithSelectedStreams() {
     document.getElementById('playlistSelectionModal').remove();
 }
 
-async function playSelectedStreamFromPlaylist(index, originalUrl) {
+async function playSelectedStreamFromPlaylist(index) {
     const playlistData = window.currentInstantPlayPlaylistData;
     
-    if (!playlistData || !Array.isArray(playlistData) || index < 0 || index >= playlistData.length) {
-        console.error('Invalid stream selection:', { playlistData, index });
+    // Validate playlist data
+    if (!playlistData || !Array.isArray(playlistData)) {
+        console.error('Invalid playlist data:', playlistData);
+        return;
+    }
+    
+    // Validate index
+    if (index < 0 || index >= playlistData.length) {
+        console.error('Invalid stream index:', { index, playlistLength: playlistData.length });
         return;
     }
     
@@ -1871,18 +1885,26 @@ async function playSelectedStreamFromPlaylist(index, originalUrl) {
     
     // Validate the selected stream
     if (!selectedStream || typeof selectedStream !== 'object') {
-        console.error('Invalid stream object:', selectedStream);
+        console.error('Invalid stream object at index:', { index, stream: selectedStream });
         return;
     }
     
     // Check if stream has required properties
     if (!selectedStream.url) {
-        console.error('Stream missing URL:', selectedStream);
+        console.error('Stream missing URL at index:', { index, stream: selectedStream });
+        return;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(selectedStream.url);
+    } catch (e) {
+        console.error('Invalid stream URL at index:', { index, url: selectedStream.url });
         return;
     }
     
     // Use stream name if available, otherwise generate one
-    const streamName = selectedStream.name || `Stream ${index + 1}`;
+    const streamName = (selectedStream.name && selectedStream.name.trim()) || `Stream ${index + 1}`;
     
     // Show loading state
     const playButton = document.getElementById('playSelectedStreamBtn');
