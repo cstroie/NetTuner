@@ -8,11 +8,13 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="container">
+    <!-- Navigation bar with dropdown menu -->
     <nav>
         <ul>
             <li><strong>NetTuner</strong></li>
         </ul>
         <ul>
+            <!-- Dropdown menu for page navigation -->
             <li>
                 <details class="dropdown">
                     <summary>About</summary>
@@ -25,16 +27,20 @@
                     </ul>
                 </details>
             </li>
+            <!-- Theme toggle button -->
             <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
         </ul>
     </nav>
+    <!-- Page header with project description -->
     <header>
         <article>
             <h1>About NetTuner</h1>
             <p>NetTuner is an open-source ESP32-based internet radio player that allows you to stream your favorite radio stations directly from the internet with multiple control options.</p>
         </article>
     </header>
+    <!-- Main content with detailed information -->
     <main>
+        <!-- Features section -->
         <article>
             <h2>Features</h2>
             <ul>
@@ -52,6 +58,8 @@
                 <li>Playlist management with JSON/M3U import/export</li>
             </ul>
         </article>
+        
+        <!-- Usage instructions -->
         <article>
             <h2>How to Use</h2>
             <ol>
@@ -62,6 +70,8 @@
                 <li><strong>Control:</strong> Use the volume slider, rotary encoder, or MPD client to adjust audio levels</li>
             </ol>
         </article>
+        
+        <!-- Control methods explanation -->
         <article>
             <h2>Control Methods</h2>
             <p>NetTuner can be controlled in multiple ways:</p>
@@ -73,6 +83,8 @@
                 <li><strong>OLED Display:</strong> Local status feedback with scrolling text</li>
             </ul>
         </article>
+        
+        <!-- Technical architecture details -->
         <article>
             <h2>Technical Details</h2>
             <p>NetTuner is built on the following technologies:</p>
@@ -85,18 +97,22 @@
                 <li><strong>Data Storage:</strong> SPIFFS for configuration and playlist storage</li>
             </ul>
         </article>
+        
+        <!-- Project information -->
         <article>
             <h2>Project Information</h2>
             <p>NetTuner is an open-source project designed for hobbyists and makers who want to build their own internet radio player. The project is hosted on GitHub where you can find the source code, documentation, and instructions for building your own device.</p>
         </article>
     </main>
+    <!-- Footer with license and version information -->
     <footer> 
         <p><strong>License:</strong> GPL3</p>
         <p><strong>Version:</strong> 1.0</p>
     </footer>
+    <!-- JavaScript includes -->
     <script src="/scripts.js"></script>
     <script>
-        // Initialize theme toggle
+        // Initialize theme toggle when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
         });
