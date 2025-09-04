@@ -21,37 +21,70 @@
 
 #include <Arduino.h>
 
+/**
+ * @brief Rotary Encoder Handler Class
+ * @details This class manages the rotary encoder hardware for volume control
+ * and playlist navigation. It handles both rotation detection and button press
+ * events with proper debouncing to ensure reliable operation.
+ * 
+ * The rotary encoder uses a quadrature encoding scheme where two signals (CLK and DT)
+ * change state in a specific sequence depending on the rotation direction.
+ */
 class RotaryEncoder {
 private:
-  volatile int position = 0;
-  int lastCLK = 0;
-  volatile unsigned long lastRotaryTime = 0;
-  bool buttonPressedFlag = false;
+  volatile int position = 0;                 ///< Current rotary encoder position counter
+  int lastCLK = 0;                           ///< Last CLK signal state for edge detection
+  volatile unsigned long lastRotaryTime = 0; ///< Last rotary event timestamp for debouncing
+  bool buttonPressedFlag = false;            ///< Flag indicating button press detected
 
 public:
   /**
    * @brief Handle rotary encoder rotation
-   * This replaces the previous ISR with a cleaner approach
+   * @details Processes rotation events by detecting CLK signal edges and determining
+   * rotation direction based on the DT signal state. Implements 5ms debouncing to
+   * prevent false readings from electrical noise.
+   * 
+   * The quadrature encoding works as follows:
+   * - When rotating clockwise: CLK leads DT
+   * - When rotating counter-clockwise: DT leads CLK
+   * 
+   * Only processes events when CLK transitions from LOW to HIGH to avoid double-counting.
    */
   void handleRotation();
   
   /**
    * @brief Handle button press
+   * @details Processes button press events with 50ms debouncing to prevent
+   * multiple detections from a single press. Sets an internal flag that can
+   * be checked and cleared by wasButtonPressed().
+   * 
+   * The button is connected with a pull-up resistor, so a press is detected
+   * when the signal transitions from HIGH to LOW (falling edge).
    */
   void handleButtonPress();
   
   /**
    * @brief Get current position
+   * @details Returns the current rotary encoder position counter value.
+   * The position increases with clockwise rotation and decreases with
+   * counter-clockwise rotation.
+   * @return Current position value
    */
   int getPosition() const;
   
   /**
    * @brief Set position
+   * @details Sets the rotary encoder position counter to a specific value.
+   * This can be used to reset the position or synchronize with external state.
+   * @param pos New position value
    */
   void setPosition(int pos);
   
   /**
    * @brief Check if button was pressed
+   * @details Returns the button press status and automatically clears the flag.
+   * This ensures that each button press is only processed once.
+   * @return true if button was pressed since last check, false otherwise
    */
   bool wasButtonPressed();
 };

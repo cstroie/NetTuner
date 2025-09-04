@@ -19,6 +19,20 @@
 #include "rotary.h"
 #include "main.h"
 
+/**
+ * @brief Handle rotary encoder rotation
+ * @details Processes rotation events by detecting CLK signal edges and determining
+ * rotation direction based on the DT signal state. Implements 5ms debouncing to
+ * prevent false readings from electrical noise.
+ * 
+ * The quadrature encoding works as follows:
+ * - When rotating clockwise: CLK leads DT
+ * - When rotating counter-clockwise: DT leads CLK
+ * 
+ * Only processes events when CLK transitions from LOW to HIGH to avoid double-counting.
+ * This implementation uses a state machine approach to track the last CLK value
+ * and detect rising edges.
+ */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
   
@@ -30,40 +44,75 @@ void RotaryEncoder::handleRotation() {
   int CLK = digitalRead(config.rotary_clk);  // Read clock signal
   int DT = digitalRead(config.rotary_dt);    // Read data signal
   
-  // Only process when CLK transitions from LOW to HIGH
+  // Only process when CLK transitions from LOW to HIGH (rising edge detection)
   if (CLK == HIGH && lastCLK == LOW) {
-    // Determine rotation direction based on DT state
+    // Determine rotation direction based on DT state at the time of CLK rising edge
+    // In quadrature encoding, when CLK rises:
+    // - If DT is LOW, rotation is clockwise
+    // - If DT is HIGH, rotation is counter-clockwise
     if (DT == LOW) {
-      position++;      // Clockwise rotation
+      position++;      // Clockwise rotation increments position
     } else {
-      position--;      // Counter-clockwise rotation
+      position--;      // Counter-clockwise rotation decrements position
     }
-    lastRotaryTime = currentTime;  // Update last event time
+    lastRotaryTime = currentTime;  // Update last event time for debouncing
   }
-  lastCLK = CLK;
+  lastCLK = CLK;  // Store current CLK state for next iteration
 }
 
+/**
+ * @brief Handle button press
+ * @details Processes button press events with 50ms debouncing to prevent
+ * multiple detections from a single press. Sets an internal flag that can
+ * be checked and cleared by wasButtonPressed().
+ * 
+ * The button is connected with a pull-up resistor, so a press is detected
+ * when the signal transitions from HIGH to LOW (falling edge). However, this
+ * function is triggered by an interrupt on the falling edge, so we only need
+ * to implement debouncing based on time since last interrupt.
+ */
 void RotaryEncoder::handleButtonPress() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
   
   // Debounce the button press (ignore if less than 50ms since last press)
+  // This prevents multiple detections from a single physical button press
+  // due to mechanical switch bouncing
   if (interruptTime - lastInterruptTime > 50) {
-    buttonPressedFlag = true;
+    buttonPressedFlag = true;  // Set flag to indicate button press detected
   }
-  lastInterruptTime = interruptTime;
+  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
 }
 
+/**
+ * @brief Get current position
+ * @details Returns the current rotary encoder position counter value.
+ * The position increases with clockwise rotation and decreases with
+ * counter-clockwise rotation.
+ * @return Current position value
+ */
 int RotaryEncoder::getPosition() const {
   return position;
 }
 
+/**
+ * @brief Set position
+ * @details Sets the rotary encoder position counter to a specific value.
+ * This can be used to reset the position or synchronize with external state.
+ * @param pos New position value
+ */
 void RotaryEncoder::setPosition(int pos) {
   position = pos;
 }
 
+/**
+ * @brief Check if button was pressed
+ * @details Returns the button press status and automatically clears the flag.
+ * This ensures that each button press is only processed once.
+ * @return true if button was pressed since last check, false otherwise
+ */
 bool RotaryEncoder::wasButtonPressed() {
-  bool result = buttonPressedFlag;
-  buttonPressedFlag = false;
-  return result;
+  bool result = buttonPressedFlag;  // Store current flag state
+  buttonPressedFlag = false;        // Clear flag to prevent reprocessing
+  return result;                    // Return previous flag state
 }
