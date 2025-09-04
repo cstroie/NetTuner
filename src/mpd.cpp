@@ -244,6 +244,7 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
     }
     if (detailLevel >= 1) {
       // Simple detail level
+      mpdClient.print("Track: " + String(i) + "\n");
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     }
   }
@@ -632,8 +633,8 @@ void MPDInterface::handleMPDCommand(const String& command) {
       playtime += (millis() / 1000) - playStartTime;
     }
     // Send stats information
-    mpdClient.print("artists: 0\n");
-    mpdClient.print("albums: 0\n");
+    mpdClient.print("artists: 1\n");
+    mpdClient.print("albums: 1\n");
     mpdClient.print("songs: " + String(playlistCountRef) + "\n");
     mpdClient.print("uptime: " + String(uptime) + "\n");
     mpdClient.print("playtime: " + String(playtime) + "\n");
@@ -676,12 +677,16 @@ void MPDInterface::handleMPDCommand(const String& command) {
       tagType.trim();
       if (tagType.startsWith("artist")) {
         tag = "Artist: ";
+        mpdClient.print("Artist: WebRadio\n");
       } else if (tagType.startsWith("album")) {
         tag = "Album: ";
-      }
-      // Return the playlist anyway
-      for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
+        mpdClient.print("Album: WebRadio\n");
+      } else if (tagType.startsWith("title")) {
+        tag = "Title: ";
+        // Return the playlist
+        for (int i = 0; i < playlistCountRef; i++) {
+          mpdClient.print(tag + String(playlistRef[i].name) + "\n");
+        }
       }
     }
     mpdClient.print(mpdResponseOK());

@@ -383,7 +383,7 @@ void setup() {
         display.setCursor(32, 12);
         display.print("NetTuner");
         display.setCursor(0, 30);
-        display.print("WiFi connecting...");
+        display.print("WiFi connecting");
         display.setCursor(0, 45);
         display.print(String(ssid[i]));
         display.display();
