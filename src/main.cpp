@@ -2091,14 +2091,21 @@ void handleStatus() {
   // Yield to other tasks before processing
   delay(1);
   
-  String status = "{";
-  status += "\"playing\":" + String(isPlaying ? "true" : "false") + ",";
-  status += "\"streamURL\":\"" + String(streamURL) + "\",";
-  status += "\"streamName\":\"" + String(streamName) + "\",";
-  status += "\"volume\":" + String(volume);
-  status += "}";
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(256);
+  
+  // Populate JSON document with status values
+  doc["playing"] = isPlaying;
+  doc["streamURL"] = streamURL;
+  doc["streamName"] = streamName;
+  doc["volume"] = volume;
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  
   // Return status as JSON
-  server.send(200, "application/json", status);
+  server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
   delay(1);
