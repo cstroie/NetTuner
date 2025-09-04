@@ -86,37 +86,6 @@ struct Config {
 #define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
 #define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
 
-// Forward declarations
-class Audio;
-class WebServer;
-class WebSocketsServer;
-class WiFiServer;
-class Adafruit_SSD1306;
-class MPDInterface;
-class WiFiClient;
-
-// Structure declarations
-struct StreamInfo {
-  char name[128];
-  char url[256];
-};
-
-struct Config {
-  int i2s_dout;        ///< I2S Data Out pin
-  int i2s_bclk;        ///< I2S Bit Clock pin
-  int i2s_lrc;         ///< I2S Left/Right Clock pin
-  int led_pin;         ///< LED indicator pin
-  int rotary_clk;      ///< Rotary encoder clock pin
-  int rotary_dt;       ///< Rotary encoder data pin
-  int rotary_sw;       ///< Rotary encoder switch pin
-  int board_button;    ///< Board button pin
-  int display_sda;     ///< OLED display SDA pin
-  int display_scl;     ///< OLED display SCL pin
-  int display_width;   ///< OLED display width
-  int display_height;  ///< OLED display height
-  int display_address; ///< OLED display I2C address
-};
-
 // Global variables
 extern char streamTitle[128];
 extern char streamName[128];
