@@ -901,9 +901,21 @@ async function playInstantStream() {
         if (lowerUrl.endsWith('.m3u') || lowerUrl.endsWith('.m3u8') || 
             lowerUrl.endsWith('.pls') || lowerUrl.endsWith('.json')) {
             // It's a playlist, fetch and parse it
-            const streamUrl = await getFirstStreamFromPlaylist(url);
-            if (streamUrl) {
-                await sendPlayRequest(streamUrl, 'Instant Stream', 0);
+            const playlistData = await getPlaylistData(url);
+            if (playlistData && playlistData.length > 0) {
+                if (playlistData.length === 1) {
+                    // Only one stream, play it directly
+                    await sendPlayRequest(playlistData[0].url, playlistData[0].name, 0);
+                } else {
+                    // Multiple streams, show selection modal
+                    showPlaylistSelectionModalForInstantPlay(playlistData, url);
+                    // Don't clear input yet, user needs to select
+                    if (playButton) {
+                        playButton.textContent = originalText;
+                        playButton.disabled = false;
+                    }
+                    return;
+                }
             } else {
                 throw new Error('No valid streams found in playlist');
             }
@@ -924,7 +936,7 @@ async function playInstantStream() {
     }
 }
 
-async function getFirstStreamFromPlaylist(url) {
+async function getPlaylistData(url) {
     try {
         // Try direct fetch first
         let response = await fetch(url);
@@ -1009,12 +1021,7 @@ async function getFirstStreamFromPlaylist(url) {
             throw new Error('Unsupported playlist format');
         }
         
-        // Return the first valid stream URL
-        if (playlistData && Array.isArray(playlistData) && playlistData.length > 0) {
-            return playlistData[0].url;
-        }
-        
-        return null;
+        return playlistData;
     } catch (error) {
         console.error('Error processing playlist:', error);
         throw error;
@@ -1748,6 +1755,70 @@ function showPlaylistSelectionModal(playlistData) {
     }
 }
 
+function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('instantPlaySelectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Store playlist data in a global variable for access by modal functions
+    window.currentInstantPlayPlaylistData = playlistData;
+    
+    // Create modal element
+    const modal = document.createElement('dialog');
+    modal.id = 'instantPlaySelectionModal';
+    modal.className = 'playlist-selection-modal';
+    
+    // Create modal content
+    let modalContent = `
+        <article>
+            <header>
+                <h2>Select Stream to Play</h2>
+                <p>${playlistData.length} stream(s) found in the playlist</p>
+            </header>
+            <div class="playlist-items-container">
+                <label for="streamSelect">Choose a stream:</label>
+                <select id="streamSelect" style="width: 100%; margin-bottom: 1rem;">
+    `;
+    
+    // Add option for each stream
+    playlistData.forEach((stream, index) => {
+        modalContent += `
+            <option value="${index}">${escapeHtml(stream.name)}</option>
+        `;
+    });
+    
+    modalContent += `
+                </select>
+            </div>
+            <footer class="grid">
+                <button id="playSelectedStreamBtn">Play</button>
+                <button class="secondary" onclick="document.getElementById('instantPlaySelectionModal').remove()">Cancel</button>
+            </footer>
+        </article>
+    `;
+    
+    modal.innerHTML = modalContent;
+    document.body.appendChild(modal);
+    modal.showModal();
+    
+    // Add event listener for play button
+    document.getElementById('playSelectedStreamBtn').addEventListener('click', function() {
+        const selectElement = document.getElementById('streamSelect');
+        const selectedIndex = parseInt(selectElement.value);
+        playSelectedStreamFromPlaylist(selectedIndex, originalUrl);
+    });
+    
+    // Also allow playing with Enter key
+    document.getElementById('streamSelect').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const selectedIndex = parseInt(this.value);
+            playSelectedStreamFromPlaylist(selectedIndex, originalUrl);
+        }
+    });
+}
+
 function appendSelectedStreams() {
     const checkboxes = document.querySelectorAll('#playlistSelectionModal .stream-checkbox');
     const selectedStreams = [];
@@ -1786,6 +1857,49 @@ function replaceWithSelectedStreams() {
     
     // Close modal
     document.getElementById('playlistSelectionModal').remove();
+}
+
+async function playSelectedStreamFromPlaylist(index, originalUrl) {
+    const playlistData = window.currentInstantPlayPlaylistData;
+    
+    if (!playlistData || index < 0 || index >= playlistData.length) {
+        console.error('Invalid stream selection');
+        return;
+    }
+    
+    const selectedStream = playlistData[index];
+    
+    // Show loading state
+    const playButton = document.getElementById('playSelectedStreamBtn');
+    const originalText = playButton ? playButton.textContent : 'Play';
+    if (playButton) {
+        playButton.textContent = 'Playing...';
+        playButton.disabled = true;
+    }
+    
+    try {
+        await sendPlayRequest(selectedStream.url, selectedStream.name, index);
+        
+        // Close modal
+        const modal = document.getElementById('instantPlaySelectionModal');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Clear the input field
+        const urlInput = document.getElementById('instantUrl');
+        if (urlInput) {
+            urlInput.value = '';
+        }
+    } catch (error) {
+        handlePlayError(error);
+    } finally {
+        // Restore button state
+        if (playButton) {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+        }
+    }
 }
 
 async function uploadM3U() {
