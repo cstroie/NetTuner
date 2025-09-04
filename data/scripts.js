@@ -1,10 +1,27 @@
-// Main functions
+/**
+ * @fileoverview Main JavaScript functions for the NetTuner web interface
+ * @author NetTuner Team
+ * @version 1.0
+ */
+
+/**
+ * Global variables to store application state
+ * @type {Array<Object>} streams - Array of stream objects containing name and URL
+ * @type {number} bass - Current bass level (-6 to 6 dB)
+ * @type {number} midrange - Current midrange level (-6 to 6 dB)
+ * @type {number} treble - Current treble level (-6 to 6 dB)
+ */
 let streams = [];
 let bass = 0;
 let midrange = 0;
 let treble = 0;
 
-// Function to find favicon URL from a website
+/**
+ * @brief Find favicon URL from a website
+ * @description Attempts to locate a favicon for a given website by checking common locations
+ * @param {string} websiteUrl - The URL of the website to search for favicon
+ * @returns {Promise<string|null>} The favicon URL if found, null otherwise
+ */
 async function findFaviconUrl(websiteUrl) {
     try {
         // Handle cases where the URL might be a stream URL
@@ -55,7 +72,12 @@ async function findFaviconUrl(websiteUrl) {
     }
 }
 
-// Helper function to check if image exists
+/**
+ * @brief Check if an image exists at a given URL
+ * @description Creates an image element and attempts to load the image to verify existence
+ * @param {string} url - The URL of the image to check
+ * @returns {Promise<boolean>} True if image exists, false otherwise
+ */
 async function checkImageExists(url) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -67,13 +89,20 @@ async function checkImageExists(url) {
     });
 }
 
-// Theme handling
+/**
+ * @brief Initialize theme based on saved preference or default
+ * @description Sets the theme based on localStorage value or defaults to light theme
+ */
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeToggle();
 }
 
+/**
+ * @brief Toggle between light and dark themes
+ * @description Switches the current theme and saves the preference to localStorage
+ */
 function toggleTheme() {
     const currentTheme = document.documentElement.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -82,6 +111,10 @@ function toggleTheme() {
     updateThemeToggle();
 }
 
+/**
+ * @brief Update theme toggle button appearance
+ * @description Updates the theme toggle button text and title based on current theme
+ */
 function updateThemeToggle() {
     const themeToggle = document.getElementById('themeToggle');
     const currentTheme = document.documentElement.getAttribute('data-theme');
@@ -91,6 +124,10 @@ function updateThemeToggle() {
     }
 }
 
+/**
+ * @brief Initialize the main page
+ * @description Sets up the main page by loading streams and connecting WebSocket
+ */
 function initMainPage() {
     loadStreams();
     connectWebSocket();
@@ -107,11 +144,19 @@ function initMainPage() {
     });
 }
 
+/**
+ * @brief Initialize the playlist page
+ * @description Loads the existing playlist when the playlist page loads
+ */
 function initPlaylistPage() {
     // Load existing playlist when page loads
     loadStreams();
 }
 
+/**
+ * @brief Initialize the WiFi configuration page
+ * @description Loads existing WiFi configuration when the WiFi page loads
+ */
 function initWiFiPage() {
     // Load existing WiFi configuration when page loads
     window.addEventListener('load', function() {
@@ -119,6 +164,11 @@ function initWiFiPage() {
     });
 }
 
+/**
+ * @brief Load configuration from server
+ * @description Fetches the current device configuration and populates the form fields
+ * @returns {Promise<void>}
+ */
 async function loadConfig() {
     try {
         const response = await fetch('/api/config');
@@ -143,6 +193,11 @@ async function loadConfig() {
     }
 }
 
+/**
+ * @brief Save configuration to server
+ * @description Collects form data and sends it to the server to save device configuration
+ * @returns {Promise<void>}
+ */
 async function saveConfig() {
     const config = {
         i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
@@ -206,6 +261,14 @@ function initConfigPage() {
  * This function retrieves the current playlist from the server via the /api/streams endpoint.
  * It updates both the main page stream selector and the playlist management page.
  * The function handles loading states, error conditions, and data validation.
+ * 
+ * Implementation details:
+ * - Shows loading indicators during fetch
+ * - Validates response format (must be array)
+ * - Validates each stream object (must have name and URL)
+ * - Handles network errors gracefully
+ * - Updates both main page and playlist page UI
+ * 
  * @returns {Promise<void>}
  */
 async function loadStreams() {
@@ -286,6 +349,13 @@ async function loadStreams() {
  * 
  * The WebSocket connects to port 81 (different from HTTP server port) and handles
  * various events including open, message, close, and error conditions.
+ * 
+ * Connection management features:
+ * - Exponential backoff reconnection (max 30 seconds between attempts)
+ * - Connection timeout (10 seconds) to prevent hanging connections
+ * - Proper cleanup of previous connections to prevent memory leaks
+ * - State tracking to prevent multiple simultaneous connections
+ * - Maximum reconnection attempt limit (10 attempts)
  */
 
 /**
@@ -295,31 +365,31 @@ async function loadStreams() {
 let ws = null;
 
 /**
- * Reconnection timeout ID
+ * Reconnection timeout ID for cleanup
  * @type {number|null}
  */
 let reconnectTimeout = null;
 
 /**
- * Connection state flag
+ * Connection state flag to prevent multiple connections
  * @type {boolean}
  */
 let isConnecting = false;
 
 /**
- * Reconnection attempt counter
+ * Reconnection attempt counter for exponential backoff
  * @type {number}
  */
 let reconnectAttempts = 0;
 
 /**
- * Maximum number of reconnection attempts
+ * Maximum number of reconnection attempts before giving up
  * @type {number}
  */
 const maxReconnectAttempts = 10;
 
 /**
- * Connection timeout duration (ms)
+ * Connection timeout duration (ms) to prevent hanging connections
  * @type {number}
  */
 const connectionTimeout = 10000;
@@ -327,6 +397,14 @@ const connectionTimeout = 10000;
 /**
  * @brief Establish WebSocket connection to server
  * @description Creates a WebSocket connection to the server for real-time status updates
+ * 
+ * Implementation details:
+ * - Prevents multiple simultaneous connection attempts
+ * - Implements connection timeout for robustness
+ * - Handles reconnection with exponential backoff
+ * - Properly cleans up previous connections
+ * - Sends initial status request on connection
+ * 
  * @returns {void}
  */
 function connectWebSocket() {
@@ -555,6 +633,12 @@ function connectWebSocket() {
 /**
  * @brief Force WebSocket reconnection
  * @description Closes the current WebSocket connection and initiates a new connection
+ * 
+ * This function is useful for:
+ * - Recovering from connection issues
+ * - Forcing a fresh connection after network changes
+ * - Manual reconnection by user action
+ * 
  * @returns {void}
  */
 function forceReconnect() {
@@ -569,6 +653,14 @@ function forceReconnect() {
 /**
  * @brief Play selected stream
  * @description Plays the stream selected in the main dropdown
+ * 
+ * Implementation details:
+ * - Shows loading state during play request
+ * - Validates stream selection before playing
+ * - Handles network errors gracefully
+ * - Restores UI state after completion
+ * - Provides user feedback on success/failure
+ * 
  * @returns {Promise<void>}
  */
 async function playStream() {

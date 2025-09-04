@@ -34,42 +34,51 @@ extern unsigned long playStartTime;
 // External function declarations
 extern void markPlayerStateDirty();
 extern void savePlayerState();
-
 /**
  * @brief MPD Interface Class
- * @details Encapsulates all MPD protocol functionality for the NetTuner
+ * @details Encapsulates all MPD protocol functionality for the NetTuner.
  * This class handles MPD client connections, command processing, and protocol
  * compliance for controlling the internet radio player.
+ * 
+ * The MPD interface implements a subset of the MPD protocol (version 0.23.0)
+ * to allow control via standard MPD clients. It supports:
+ * - Playback control (play, stop, pause, next, previous)
+ * - Volume control (setvol, getvol, volume)
+ * - Playlist management (playlistinfo, lsinfo, etc.)
+ * - Status queries (status, currentsong, stats)
+ * - Search functionality (search, find)
+ * - System commands (ping, commands, tagtypes)
+ * - Special modes (idle, command lists)
  */
 class MPDInterface {
 private:
   WiFiServer& mpdServer;             ///< WiFi server instance for MPD connections
   WiFiClient mpdClient;              ///< Current MPD client connection
 
-  // References to global variables
+  // References to global variables for state synchronization
   char* streamTitleRef;              ///< Reference to global stream title buffer
   char* streamNameRef;               ///< Reference to global stream name buffer
   char* streamURLRef;                ///< Reference to global stream URL buffer
   volatile bool& isPlayingRef;       ///< Reference to global playing status flag
-  int& volumeRef;                    ///< Reference to global volume level (0-22)
-  int& bitrateRef;                   ///< Reference to global bitrate value
+  int& volumeRef;                    ///< Reference to global volume level (0-22, ESP32-audioI2S scale)
+  int& bitrateRef;                   ///< Reference to global bitrate value (in kbps)
   int& playlistCountRef;             ///< Reference to global playlist count
   int& currentSelectionRef;          ///< Reference to global current selection index
   StreamInfo* playlistRef;           ///< Reference to global playlist array
   Audio*& audioRef;                  ///< Reference to global audio instance
 
-  // MPD command list state variables
+  // MPD command list state variables for batch command processing
   bool inCommandList = false;        ///< Flag indicating if we're in command list mode
   bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
-  String commandList[50];            ///< Buffer for command list (max 50 commands)
+  String commandList[50];            ///< Buffer for command list (max 50 commands for memory safety)
   int commandListCount = 0;          ///< Number of commands in the current command list
 
-  // MPD idle state variables
+  // MPD idle state variables for efficient change notification
   bool inIdleMode = false;           ///< Flag indicating if we're in idle mode
   unsigned long lastTitleHash = 0;   ///< Hash of last stream title for change detection
   unsigned long lastStatusHash = 0;  ///< Hash of last status for change detection
 
-  // Asynchronous command handling buffer
+  // Asynchronous command handling buffer for non-blocking processing
   String commandBuffer = "";         ///< Buffer for accumulating incoming commands
 
 public:
@@ -84,6 +93,11 @@ public:
    * and manages special modes like command lists and idle mode. It also handles
    * client disconnections and ensures proper cleanup.
    * 
+   * Connection handling:
+   * - Accepts new connections when no client is connected
+   * - Rejects new connections when a client is already connected
+   * - Properly closes disconnected clients
+   * 
    * In idle mode, the function monitors for changes in playback status and stream
    * information, sending notifications to clients when changes occur.
    */
@@ -96,16 +110,26 @@ private:
    * This function reads available data from the client connection and accumulates
    * it in a buffer until a complete command (terminated by newline) is received.
    * It then processes the command according to the current mode (normal, command list, etc.).
+   * 
+   * The function processes only one command per call to avoid blocking other operations,
+   * which is important for maintaining responsive MPD service.
    */
   void handleAsyncCommands();
 
   /**
    * @brief Handle idle mode monitoring and notifications
-   * @details Monitors for changes in playback status and stream information.
-   * In idle mode, the client is waiting for notifications about changes in the
-   * player state. This function uses hash-based change detection to efficiently
-   * monitor for changes in stream title and playback status, sending appropriate
-   * notifications when changes occur.
+   * @details Monitors for changes in playback status and stream information using
+   * hash-based change detection for efficient monitoring.
+   * 
+   * Change detection works by computing hash values of the monitored data:
+   * - Title hash: Computed from the stream title string
+   * - Status hash: Computed from playing status, volume, and bitrate
+   * 
+   * When changes are detected, appropriate MPD idle notifications are sent:
+   * - "changed: playlist" for title changes
+   * - "changed: player" and "changed: mixer" for status changes
+   * 
+   * The function also handles the noidle command to exit idle mode.
    */
   void handleIdleMode();
 
@@ -127,9 +151,10 @@ private:
 
   /**
    * @brief Generate MPD OK response
-   * @details Generates the appropriate OK response based on the current mode.
-   * In normal mode, returns "OK\n". In command list mode with list_OK enabled,
-   * returns "list_OK\n" for intermediate responses and "OK\n" for the final response.
+   * @details Generates the appropriate OK response based on the current mode:
+   * - In normal mode: returns "OK\n"
+   * - In command list mode with list_OK enabled: returns "list_OK\n" for intermediate responses
+   * - In command list mode with list_OK disabled: returns empty string for intermediate responses
    * @return OK response string
    */
   String mpdResponseOK();
@@ -151,6 +176,15 @@ private:
    * @brief Send playlist information with configurable detail level
    * @details Sends playlist information with different levels of metadata based
    * on the detail level parameter. Higher detail levels include more metadata fields.
+   * 
+   * Detail levels:
+   * - 0: Minimal (file+title) - for listplaylistinfo
+   * - 1: Simple (file+title+lastmod) - for lsinfo, listallinfo
+   * - 2: Full (file+title+id+pos+lastmod) - for playlistinfo
+   * - 3: Artist/Album (file+title+artist+album+id+pos+lastmod) - for search/find with artist/album
+   * 
+   * For artist/album detail levels, dummy "WebRadio" values are used since
+   * web radio streams don't have traditional artist/album metadata.
    * @param detailLevel 
    * 0=minimal (file+title), 
    * 1=simple (file+title+lastmod), 

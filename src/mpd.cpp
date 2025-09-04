@@ -24,6 +24,12 @@
  * @details Extracts a numeric value from a string, removing surrounding whitespace
  * and quotes if present. This is needed because MPD commands may send values
  * with or without quotes depending on the client implementation.
+ * 
+ * The function handles:
+ * - Whitespace trimming
+ * - Quote removal (both single and double quotes)
+ * - String to integer conversion
+ * 
  * @param valueStr The value string to parse
  * @return The parsed value as integer
  */
@@ -44,13 +50,17 @@ int parseValue(const String& valueStr) {
  * @details Initializes the MPD interface with references to global variables
  * and the WiFi server instance. All parameters are passed by reference to
  * maintain direct access to the global state.
+ * 
+ * The constructor initializes all member variables with the provided references
+ * and sets initial state for command processing.
+ * 
  * @param server WiFiServer instance for MPD connections
  * @param streamTitle Reference to global stream title buffer
  * @param streamName Reference to global stream name buffer
  * @param streamURL Reference to global stream URL buffer
  * @param isPlaying Reference to global playing status flag
- * @param volume Reference to global volume level (0-22)
- * @param bitrate Reference to global bitrate value
+ * @param volume Reference to global volume level (0-22, ESP32-audioI2S scale)
+ * @param bitrate Reference to global bitrate value (in kbps)
  * @param playlistCount Reference to global playlist count
  * @param currentSelection Reference to global current selection index
  * @param playlist Reference to global playlist array
@@ -79,6 +89,11 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
  * 
  * In idle mode, the function monitors for changes in playback status and stream
  * information, sending notifications to clients when changes occur.
+ * 
+ * The function implements proper resource management:
+ * - Ensures previous clients are properly closed before accepting new ones
+ * - Resets command processing state on new connections
+ * - Handles unexpected disconnections gracefully
  */
 void MPDInterface::handleClient() {
     // Handle new client connections
@@ -134,7 +149,7 @@ void MPDInterface::handleClient() {
  * hash-based change detection for efficient monitoring.
  * 
  * Change detection works by computing hash values of the monitored data:
- * - Title hash: Computed from the stream title string
+ * - Title hash: Computed from the stream title string using polynomial rolling hash
  * - Status hash: Computed from playing status, volume, and bitrate
  * 
  * When changes are detected, appropriate MPD idle notifications are sent:
@@ -142,6 +157,9 @@ void MPDInterface::handleClient() {
  * - "changed: player" and "changed: mixer" for status changes
  * 
  * The function also handles the noidle command to exit idle mode.
+ * 
+ * Hash computation uses a simple polynomial rolling hash with base 31 for good
+ * distribution properties while being computationally efficient.
  */
 void MPDInterface::handleIdleMode() {
   // Check for title changes using hash computation
@@ -205,7 +223,14 @@ void MPDInterface::handleIdleMode() {
  * In command_list_ok_begin mode, each command receives a "list_OK" response
  * except the last which receives a standard "OK" response.
  * 
- * The function implements a safety limit of 50 commands to prevent memory issues.
+ * The function implements a safety limit of 50 commands to prevent memory issues
+ * and potential denial of service attacks.
+ * 
+ * Command list processing follows the MPD protocol specification:
+ * - Commands are executed in order
+ * - Each command is processed as if sent individually
+ * - Error in any command stops processing and returns error
+ * 
  * @param command The command to process
  */
 void MPDInterface::handleCommandList(const String& command) {
@@ -240,6 +265,12 @@ void MPDInterface::handleCommandList(const String& command) {
  * - In normal mode: returns "OK\n"
  * - In command list mode with list_OK enabled: returns "list_OK\n" for intermediate responses
  * - In command list mode with list_OK disabled: returns empty string for intermediate responses
+ * 
+ * The function follows MPD protocol specification for response formatting:
+ * - Normal responses end with "\n"
+ * - Command list responses follow specific sequencing rules
+ * - Proper handling of intermediate vs final responses in command lists
+ * 
  * @return OK response string
  */
 String MPDInterface::mpdResponseOK() {
@@ -263,6 +294,13 @@ String MPDInterface::mpdResponseOK() {
  * 
  * This implementation uses error code 5 (ACK_ERROR_NO_EXIST) and command list
  * number 0 as these are appropriate for most general errors.
+ * 
+ * Error response format follows MPD specification:
+ * - Error code 5 indicates "No such song"
+ * - Command list number 0 indicates error in current command
+ * - Current command name is included in braces
+ * - Human-readable message follows the command name
+ * 
  * @param command The command that caused the error
  * @param message Error message
  * @return Error response string in MPD format
@@ -284,6 +322,13 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
  * 
  * For artist/album detail levels, dummy "WebRadio" values are used since
  * web radio streams don't have traditional artist/album metadata.
+ * 
+ * Metadata fields included per detail level:
+ * - Level 0: file, Title
+ * - Level 1: file, Title, Track, Last-Modified
+ * - Level 2: file, Title, Id, Pos, Track, Last-Modified
+ * - Level 3: file, Title, Artist, Album, Id, Pos, Track, Last-Modified
+ * 
  * @param detailLevel 
  * 0=minimal (file+title), 
  * 1=simple (file+title+lastmod), 
@@ -326,6 +371,13 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
  * simple playlist information rather than filtered results.
  * 
  * Search is case-insensitive and handles quoted strings properly.
+ * 
+ * The function implements proper parsing of search commands:
+ * - Extracts search filter and term from command string
+ * - Handles quoted strings with proper quote removal
+ * - Performs case-insensitive comparison
+ * - Supports both partial (search) and exact (find) matching
+ * 
  * @param command The full command string
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
  */
@@ -403,6 +455,14 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
  * - Special modes (idle, noidle, command lists)
  * 
  * Volume handling converts between MPD's 0-100 scale and the ESP32-audioI2S 0-22 scale.
+ * 
+ * The function implements comprehensive command handling:
+ * - Validates command parameters
+ * - Converts between MPD and internal value ranges
+ * - Updates global state variables
+ * - Notifies WebSocket clients of state changes
+ * - Follows MPD protocol response format
+ * 
  * @param command The command string to process
  * 
  * Supported commands include:

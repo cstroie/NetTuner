@@ -2,11 +2,16 @@
  * @fileoverview Custom styles for NetTuner web interface
  * @author NetTuner Team
  * @version 1.0
+ * @description This file contains all custom CSS styles for the NetTuner web interface.
+ * It extends the PicoCSS framework with application-specific styling for a consistent
+ * and responsive user experience across all pages.
  */
 
 /**
  * @section Root variables
  * @description CSS custom properties for consistent styling
+ * These variables define the base styling for the application and can be easily
+ * modified to change the overall look and feel.
  */
 :root {
     --pico-font-family-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -33,6 +38,8 @@
 /**
  * @section Responsive design
  * @description Media queries for mobile responsiveness
+ * These media queries ensure the interface works well on mobile devices
+ * by adjusting layout and overflow behavior for smaller screens.
  */
 @media (max-width: 768px) {
     .overflow-auto {
@@ -43,6 +50,8 @@
 /**
  * @section Tone controls
  * @description Styles for audio tone control sliders
+ * These styles create a responsive layout for the bass, midrange, and treble
+ * sliders with proper spacing and flexibility for different screen sizes.
  */
 .tone-controls {
     display: flex;
@@ -67,6 +76,10 @@
 /**
  * @section Status indicator
  * @description Visual feedback for playback status with animated pulse effect
+ * These styles provide clear visual feedback for playback status with:
+ * - Color-coded states (red for stopped, green for playing)
+ * - Animated pulse effect for playing state
+ * - Consistent styling with the rest of the interface
  */
 .status-indicator {
     display: inline-block;
@@ -107,6 +120,11 @@
 /**
  * @section Configuration form styles
  * @description Styling for device configuration forms
+ * These styles enhance the default PicoCSS fieldset styling with:
+ * - Consistent padding and borders
+ * - Clear legend styling
+ * - Properly spaced form elements
+ * - Responsive input sizing
  */
 fieldset {
     margin-bottom: 1rem;
@@ -146,6 +164,8 @@ fieldset input[type="number"]:focus {
 /**
  * @section Various customizations
  * @description Specific element styling overrides
+ * These styles override default PicoCSS behaviors for specific elements
+ * to better match the application's design requirements.
  */
 #instantUrl {
     width: 80%;
@@ -175,6 +195,10 @@ fieldset input[type="number"]:focus {
 /**
  * @section Drag and drop styles
  * @description Visual feedback for playlist item drag and drop operations
+ * These styles provide visual feedback during drag and drop operations:
+ * - Visual indication of dragged items
+ * - Drop target highlighting
+ * - Consistent styling with the rest of the interface
  */
 .playlist-item {
     display: flex;
@@ -213,6 +237,10 @@ fieldset input[type="number"]:focus {
 /**
  * @section Theme toggle button
  * @description Styles for the dark/light mode toggle button
+ * These styles customize the theme toggle button appearance:
+ * - Circular shape for better visual appeal
+ * - Large font size for clear icon display
+ * - Proper padding and line height for centering
  */
 button#themeToggle {
     border: none;
