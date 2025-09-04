@@ -19,12 +19,6 @@
 #include "mpd.h"
 #include "main.h"  // For global function declarations
 
-extern void stopStream();
-extern void startStream(const char* url, const char* name);
-extern void updateDisplay();
-extern void sendStatusToClients();
-extern const char* BUILD_TIME;
-
 /**
  * @brief Parse value from string, handling quotes
  * @param valueStr The value string to parse
@@ -41,9 +35,6 @@ int parseValue(const String& valueStr) {
   // Convert to integer
   return cleanedStr.toInt();
 }
-
-// Define mpdClient as a global variable
-WiFiClient mpdClient;
 
 MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
                volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
@@ -81,6 +72,7 @@ void MPDInterface::handleClient() {
         commandListOK = false;
         commandListCount = 0;
         inIdleMode = false;
+        commandBuffer = "";
       } else {
         // Reject connection if we already have a client
         WiFiClient rejectedClient = mpdServer.available();
@@ -95,6 +87,7 @@ void MPDInterface::handleClient() {
       commandListOK = false;
       commandListCount = 0;
       inIdleMode = false;
+      commandBuffer = "";
       return;
     }
     // Process client if connected
@@ -105,19 +98,8 @@ void MPDInterface::handleClient() {
         handleIdleMode();
         return;
       }
-      // Handle incoming commands
-      if (mpdClient.available()) {
-        String command = mpdClient.readStringUntil('\n');
-        command.trim();
-        Serial.println("MPD Command: " + command);
-        // Handle command list mode
-        if (inCommandList) {
-          handleCommandList(command);
-        } else {
-          // Normal command processing
-          handleMPDCommand(command);
-        }
-      }
+      // Handle incoming commands asynchronously
+      handleAsyncCommands();
     }
 }
 
@@ -333,7 +315,7 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
  * 
  * Supported commands include:
  * - Playback: play, stop, pause, next, previous
- * - Volume: setvol
+ * - Volume: setvol, getvol, volume
  * - Status: status, currentsong, stats
  * - Playlist: playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo
  * - Search: search, find
@@ -816,4 +798,34 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Unknown command
     mpdClient.print(mpdResponseError("unknown", "Unknown command"));
   }
+}
+/**
+ * @brief Handle asynchronous command processing
+ * Processes commands without blocking, allowing for better responsiveness
+ */
+void MPDInterface::handleAsyncCommands() {
+    // Read available data without blocking
+    while (mpdClient.available()) {
+        char c = mpdClient.read();
+        if (c == '\n') {
+            // Process complete command
+            String command = commandBuffer;
+            command.trim();
+            commandBuffer = "";
+            
+            if (command.length() > 0) {
+                Serial.println("MPD Command: " + command);
+                // Handle command list mode
+                if (inCommandList) {
+                    handleCommandList(command);
+                } else {
+                    // Normal command processing
+                    handleMPDCommand(command);
+                }
+            }
+            break; // Process one command at a time to avoid blocking
+        } else {
+            commandBuffer += c;
+        }
+    }
 }
