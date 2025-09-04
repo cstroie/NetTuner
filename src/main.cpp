@@ -2089,22 +2089,28 @@ void handleGetConfig() {
   // Yield to other tasks before processing
   delay(1);
   
-  // Get current configuration
-  String json = "{";
-  json += "\"i2s_dout\":" + String(config.i2s_dout) + ",";
-  json += "\"i2s_bclk\":" + String(config.i2s_bclk) + ",";
-  json += "\"i2s_lrc\":" + String(config.i2s_lrc) + ",";
-  json += "\"led_pin\":" + String(config.led_pin) + ",";
-  json += "\"rotary_clk\":" + String(config.rotary_clk) + ",";
-  json += "\"rotary_dt\":" + String(config.rotary_dt) + ",";
-  json += "\"rotary_sw\":" + String(config.rotary_sw) + ",";
-  json += "\"board_button\":" + String(config.board_button) + ",";
-  json += "\"display_sda\":" + String(config.display_sda) + ",";
-  json += "\"display_scl\":" + String(config.display_scl) + ",";
-  json += "\"display_width\":" + String(config.display_width) + ",";
-  json += "\"display_height\":" + String(config.display_height) + ",";
-  json += "\"display_address\":" + String(config.display_address);
-  json += "}";
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(512);
+  
+  // Populate JSON document with configuration values
+  doc["i2s_dout"] = config.i2s_dout;
+  doc["i2s_bclk"] = config.i2s_bclk;
+  doc["i2s_lrc"] = config.i2s_lrc;
+  doc["led_pin"] = config.led_pin;
+  doc["rotary_clk"] = config.rotary_clk;
+  doc["rotary_dt"] = config.rotary_dt;
+  doc["rotary_sw"] = config.rotary_sw;
+  doc["board_button"] = config.board_button;
+  doc["display_sda"] = config.display_sda;
+  doc["display_scl"] = config.display_scl;
+  doc["display_width"] = config.display_width;
+  doc["display_height"] = config.display_height;
+  doc["display_address"] = config.display_address;
+  
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  
   // Return configuration as JSON
   server.send(200, "application/json", json);
   
