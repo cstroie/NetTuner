@@ -520,6 +520,27 @@ void setup() {
 }
 
 /**
+ * @brief Handle static file requests
+ * Serves static HTML files with yield points for better async behavior
+ * @param filename Path to the file in SPIFFS
+ */
+void handleStaticFile(const char* filename) {
+  // Yield to other tasks before processing
+  delay(1);
+  
+  File file = SPIFFS.open(filename, "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.streamFile(file, "text/html");
+  file.close();
+  
+  // Yield to other tasks after processing
+  delay(1);
+}
+
+/**
  * @brief Audio task function
  * Handles audio streaming on core 0
  * @param pvParameters Task parameters (not used)
@@ -699,19 +720,7 @@ void loop() {
  * This function reads the wifi.html file from SPIFFS and sends it to the client
  */
 void handleWiFiConfig() {
-  // Yield to other tasks before processing
-  delay(1);
-  
-  File file = SPIFFS.open("/wifi.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  
-  // Yield to other tasks after processing
-  delay(1);
+  handleStaticFile("/wifi.html");
 }
 
 /**
@@ -1589,19 +1598,7 @@ void handleDisplayTimeout() {
  * This function reads the index.html file from SPIFFS and sends it to the client
  */
 void handleRoot() {
-  // Yield to other tasks before processing
-  delay(1);
-  
-  File file = SPIFFS.open("/index.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  
-  // Yield to other tasks after processing
-  delay(1);
+  handleStaticFile("/index.html");
 }
 
 /**
@@ -1701,19 +1698,7 @@ void handleSimpleWebPage() {
  * This function reads the playlist.html file from SPIFFS and sends it to the client
  */
 void handlePlaylistPage() {
-  // Yield to other tasks before processing
-  delay(1);
-  
-  File file = SPIFFS.open("/playlist.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  
-  // Yield to other tasks after processing
-  delay(1);
+  handleStaticFile("/playlist.html");
 }
 
 /**
@@ -1722,19 +1707,7 @@ void handlePlaylistPage() {
  * This function reads the config.html file from SPIFFS and sends it to the client
  */
 void handleConfigPage() {
-  // Yield to other tasks before processing
-  delay(1);
-  
-  File file = SPIFFS.open("/config.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  
-  // Yield to other tasks after processing
-  delay(1);
+  handleStaticFile("/config.html");
 }
 
 /**
@@ -1743,19 +1716,7 @@ void handleConfigPage() {
  * This function reads the about.html file from SPIFFS and sends it to the client
  */
 void handleAboutPage() {
-  // Yield to other tasks before processing
-  delay(1);
-  
-  File file = SPIFFS.open("/about.html", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  
-  // Yield to other tasks after processing
-  delay(1);
+  handleStaticFile("/about.html");
 }
 
 /**
