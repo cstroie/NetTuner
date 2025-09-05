@@ -24,11 +24,12 @@
 /**
  * @brief Rotary Encoder Handler Class
  * @details This class manages the rotary encoder hardware for volume control
- * and playlist navigation. It handles both rotation detection and button press
- * events with proper debouncing to ensure reliable operation.
+ * and playlist navigation. It handles both rotation detection and button
+ * press events with proper debouncing to ensure reliable operation.
  * 
- * The rotary encoder uses a quadrature encoding scheme where two signals (CLK and DT)
- * change state in a specific sequence depending on the rotation direction.
+ * The rotary encoder uses a quadrature encoding scheme where two signals
+ * (CLK and DT) change state in a specific sequence depending on the rotation
+ *  direction.
  */
 class RotaryEncoder {
 private:
@@ -40,15 +41,16 @@ private:
 public:
   /**
    * @brief Handle rotary encoder rotation
-   * @details Processes rotation events by detecting CLK signal edges and determining
-   * rotation direction based on the DT signal state. Implements 5ms debouncing to
-   * prevent false readings from electrical noise.
+   * @details Processes rotation events by detecting CLK signal edges and 
+   * determining rotation direction based on the DT signal state. Implements 
+   * 5ms debouncing to prevent false readings from electrical noise.
    * 
    * The quadrature encoding works as follows:
    * - When rotating clockwise: CLK leads DT
    * - When rotating counter-clockwise: DT leads CLK
    * 
-   * Only processes events when CLK transitions from LOW to HIGH to avoid double-counting.
+   * Only processes events when CLK transitions from LOW to HIGH to avoid 
+   * double-counting.
    */
   void handleRotation();
   

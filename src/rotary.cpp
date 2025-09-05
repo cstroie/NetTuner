@@ -21,17 +21,17 @@
 
 /**
  * @brief Handle rotary encoder rotation
- * @details Processes rotation events by detecting CLK signal edges and determining
- * rotation direction based on the DT signal state. Implements 5ms debouncing to
- * prevent false readings from electrical noise.
+ * @details Processes rotation events by detecting CLK signal edges and 
+ * determining rotation direction based on the DT signal state. Implements 5ms 
+ * debouncing to prevent false readings from electrical noise.
  * 
  * The quadrature encoding works as follows:
  * - When rotating clockwise: CLK leads DT
  * - When rotating counter-clockwise: DT leads CLK
  * 
- * Only processes events when CLK transitions from LOW to HIGH to avoid double-counting.
- * This implementation uses a state machine approach to track the last CLK value
- * and detect rising edges.
+ * Only processes events when CLK transitions from LOW to HIGH to avoid
+ * double-counting. This implementation uses a state machine approach to track
+ * the last CLK value and detect rising edges.
  */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
