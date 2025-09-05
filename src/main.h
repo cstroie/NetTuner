@@ -104,6 +104,7 @@ extern unsigned long startTime;
 extern unsigned long playStartTime;
 extern unsigned long totalPlayTime;
 extern const char* BUILD_TIME;
+extern const unsigned long BUILD_TIME_UNIX;
 extern Audio* audio;
 extern bool audioConnected;
 extern WebServer server;
