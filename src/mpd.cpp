@@ -22,10 +22,16 @@
 /**
  * @brief Parse value from string, handling quotes
  * @details Extracts a numeric value from a string, removing surrounding whitespace
- * and quotes if present.
+ * and quotes if present. This function is used to parse MPD command arguments
+ * that may be quoted or unquoted.
+ * 
+ * The function implements robust argument parsing with the following features:
+ * - Whitespace trimming from both ends of the string
+ * - Quote removal for both single and double quotes
+ * - Safe integer conversion with fallback to 0 for invalid values
  * 
  * @param valueStr The value string to parse
- * @return The parsed value as integer
+ * @return The parsed value as integer, or 0 if parsing fails
  */
 int parseValue(const String& valueStr) {
   String cleanedStr = valueStr;
