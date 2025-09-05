@@ -336,6 +336,11 @@ void markPlayerStateDirty() {
  */
 void setup() {
   Serial.begin(115200);
+  // Print program name and build timestamp
+  Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
+  Serial.print("Build timestamp: ");
+  Serial.println(BUILD_TIME);
+  
   // Initialize start time for uptime tracking
   startTime = millis() / 1000;  // Store in seconds
   // Initialize SPIFFS with error recovery
