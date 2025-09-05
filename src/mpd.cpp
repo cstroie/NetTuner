@@ -747,6 +747,21 @@ void MPDInterface::handleIdleMode() {
  * This function handles the actual playback logic for both commands, including
  * starting the stream, updating state, and sending responses.
  * 
+ * The function implements robust playback handling with proper validation:
+ * - Validates playlist existence before attempting playback
+ * - Handles both explicit index and current selection scenarios
+ * - Ensures index bounds checking to prevent array access errors
+ * - Updates global state variables for consistency
+ * - Triggers state persistence to maintain settings across reboots
+ * 
+ * Playback flow:
+ * 1. Validate playlist exists
+ * 2. Determine target index (provided index or current selection)
+ * 3. Validate index is within playlist bounds
+ * 4. Update current selection
+ * 5. Start stream playback
+ * 6. Mark player state as dirty and save
+ * 
  * @param index The playlist index to play (-1 for current selection)
  * @return true if playback started successfully, false otherwise
  */
@@ -1039,10 +1054,20 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
 }
 
 /**
- * @brief Handle MPD commands using command registry
- * @details Processes MPD protocol commands using a registry-based approach for better
- * organization and maintainability. Commands are mapped to handler functions using
- * a lookup table for efficient command dispatch.
+ * @brief Handle MPD commands
+ * @details Processes MPD protocol commands with support for MPD protocol version 0.23.0.
+ * This function serves as the entry point for command processing, delegating to the
+ * registry-based command execution system for efficient dispatch.
+ * 
+ * The function implements the MPD protocol command processing flow:
+ * - Delegates to executeCommand() for registry-based lookup and execution
+ * - Maintains compatibility with existing command handling patterns
+ * - Ensures proper error handling and response formatting
+ * 
+ * Command processing follows the MPD protocol specification:
+ * - Commands are processed in the order received
+ * - Each command receives an appropriate response (OK, list_OK, or error)
+ * - State changes are properly tracked and notified to clients
  * 
  * @param command The command string to process
  */
@@ -1052,7 +1077,24 @@ void MPDInterface::handleMPDCommand(const String& command) {
 
 /**
  * @brief Execute command using registry lookup
- * @details Finds and executes the appropriate handler for a given command
+ * @details Finds and executes the appropriate handler for a given command using
+ * a registry-based approach for better organization and maintainability. Commands 
+ * are mapped to handler functions using a lookup table for efficient command dispatch.
+ * 
+ * The function implements command matching with support for both exact and prefix matching:
+ * - Exact matching for commands like "stop", "status", etc.
+ * - Prefix matching for commands like "play" that need to handle "playid" as well
+ * 
+ * Command argument extraction is handled automatically based on the matching type:
+ * - For exact matches, all remaining text is treated as arguments
+ * - For prefix matches, text after the command name (plus space) is treated as arguments
+ * 
+ * The function implements proper command dispatch following MPD protocol requirements:
+ * - Efficient O(n) lookup where n is the number of registered commands
+ * - Proper argument parsing and passing to handlers
+ * - Standardized error handling for unknown commands
+ * - Special handling for empty commands (returns OK)
+ * 
  * @param command The command string to execute
  * @return true if command was found and executed, false otherwise
  */
