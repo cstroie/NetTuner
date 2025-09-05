@@ -72,6 +72,64 @@ void MPDInterface::handleStopCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+/**
+ * @brief Handle the MPD status command
+ * @details This function processes the MPD "status" command by returning comprehensive
+ * information about the current player state. The response includes volume settings,
+ * playback state, playlist information, and stream metadata when applicable.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Converting volume from ESP32-audioI2S 0-22 scale to MPD 0-100 percentage scale
+ * - Reporting standard MPD state values (play, stop, pause)
+ * - Providing playlist position and ID information
+ * - Including stream metadata like bitrate and audio format when playing
+ * - Reporting elapsed time since playback started
+ * 
+ * Status information includes:
+ * - Volume level (0-100)
+ * - Repeat, random, single, consume modes (all 0 for disabled in this implementation)
+ * - Playlist version and length
+ * - Current playback state (play/stop)
+ * - Song position and ID when playing
+ * - Elapsed time in seconds when playing
+ * - Bitrate and audio format when playing
+ * - Next song information
+ * - Database update status
+ * 
+ * @param args Command arguments (not used for status command)
+ */
+void MPDInterface::handleStatusCommand(const String& args) {
+  // Status command
+  // Convert volume from 0-22 scale to 0-100 scale for MPD compatibility
+  int volPercent = map(volumeRef, 0, 22, 0, 100);
+  mpdClient.print("volume: " + String(volPercent) + "\n");
+  mpdClient.print("repeat: 0\n");
+  mpdClient.print("random: 0\n");
+  mpdClient.print("single: 0\n");
+  mpdClient.print("consume: 0\n");
+  mpdClient.print("playlist: 1\n");
+  mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
+  mpdClient.print("mixrampdb: 0.000000\n");
+  mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
+  if (isPlayingRef && strlen(streamNameRef) > 0) {
+    mpdClient.print("song: " + String(currentSelectionRef) + "\n");
+    mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
+    // Calculate elapsed time since playback started
+    extern unsigned long playStartTime;
+    unsigned long elapsed = 0;
+    if (playStartTime > 0) {
+      elapsed = (millis() / 1000) - playStartTime;
+    }
+    mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
+    mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
+    mpdClient.print("audio: 44100:16:2\n");
+    mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
+    mpdClient.print("nextsongid: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
+  }
+  mpdClient.print("updating_db: 0\n");
+  mpdClient.print(mpdResponseOK());
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleStatusCommand(const String& args) {
   // Status command
