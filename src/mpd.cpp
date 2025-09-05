@@ -882,7 +882,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print(mpdResponseOK());
     } else {
       // Default tagtypes response
-      const char* supportedTagTypes[] = {
+      std::vector<std::string> supportedTagTypes = {
         "Artist",
         "Album",
         "Title",
@@ -900,10 +900,9 @@ void MPDInterface::handleMPDCommand(const String& command) {
         "MUSICBRAINZ_TRACKID"
       };
       // Send the list of supported tag types
-      const int tagTypeCount = sizeof(supportedTagTypes) / sizeof(supportedTagTypes[0]);
-      for (int i = 0; i < tagTypeCount; i++) {
+      for (const auto& tagType : supportedTagTypes) {
         mpdClient.print("tagtype: ");
-        mpdClient.print(supportedTagTypes[i]);
+        mpdClient.print(tagType.c_str());
         mpdClient.print("\n");
       }
       mpdClient.print(mpdResponseOK());
