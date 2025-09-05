@@ -36,6 +36,10 @@ extern unsigned long playStartTime;
 // External function declarations
 extern void markPlayerStateDirty();
 extern void savePlayerState();
+
+// Forward declaration for argument parser
+class MPDArgumentParser;
+
 /**
  * @brief MPD Interface Class
  * @details Encapsulates all MPD protocol functionality for the NetTuner.
@@ -87,6 +91,17 @@ private:
   std::vector<std::string> supportedCommands;
   // Supported MPD tag types
   std::vector<std::string> supportedTagTypes;
+
+  // Command registry structure
+  struct MPDCommand {
+    const char* name;
+    void (MPDInterface::*handler)(const String& args);
+    bool exactMatch;  // true = exact match, false = prefix match
+  };
+  
+  // Command registry
+  static const MPDCommand commandRegistry[];
+  static const size_t commandCount;
 
 
 public:
@@ -232,34 +247,69 @@ private:
   void handleMPDSearchCommand(const String& command, bool exactMatch);
 
   /**
-   * @brief Handle MPD commands
-   * @details Processes MPD protocol commands with support for MPD protocol version 0.23.0.
-   * This function processes MPD protocol commands and controls the player accordingly.
-   * It supports a subset of MPD commands including playback control, volume control,
-   * playlist management, status queries, and search functionality.
+   * @brief Handle MPD commands using command registry
+   * @details Processes MPD protocol commands using a registry-based approach for better
+   * organization and maintainability. Commands are mapped to handler functions using
+   * a lookup table for efficient command dispatch.
    * 
-   * Command processing includes:
-   * - Playback control (play, stop, pause, next, previous)
-   * - Volume control (setvol, getvol, volume)
-   * - Status queries (status, currentsong, stats)
-   * - Playlist management (playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo)
-   * - Search functionality (search, find)
-   * - System commands (ping, commands, notcommands, tagtypes, outputs)
-   * - Special modes (idle, noidle, command lists)
-   * 
-   * Volume handling converts between MPD's 0-100 scale and the ESP32-audioI2S 0-22 scale.
    * @param command The command string to process
-   * 
-   * Supported commands include:
-   * - Playback: play, stop, pause, next, previous
-   * - Volume: setvol, getvol, volume
-   * - Status: status, currentsong, stats
-   * - Playlist: playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo
-   * - Search: search, find
-   * - System: ping, commands, notcommands, tagtypes, outputs
-   * - Special modes: idle, noidle, command lists
    */
   void handleMPDCommand(const String& command);
+  
+  /**
+   * @brief Execute command using registry lookup
+   * @details Finds and executes the appropriate handler for a given command
+   * @param command The command string to execute
+   * @return true if command was found and executed, false otherwise
+   */
+  bool executeCommand(const String& command);
+
+private:
+  // Individual command handlers
+  void handleStopCommand(const String& args);
+  void handleStatusCommand(const String& args);
+  void handleCurrentSongCommand(const String& args);
+  void handlePlaylistInfoCommand(const String& args);
+  void handlePlaylistIdCommand(const String& args);
+  void handlePlayCommand(const String& args);
+  void handleLsInfoCommand(const String& args);
+  void handleSetVolCommand(const String& args);
+  void handleGetVolCommand(const String& args);
+  void handleVolumeCommand(const String& args);
+  void handleNextCommand(const String& args);
+  void handlePreviousCommand(const String& args);
+  void handleClearCommand(const String& args);
+  void handleAddCommand(const String& args);
+  void handleDeleteCommand(const String& args);
+  void handleLoadCommand(const String& args);
+  void handleSaveCommand(const String& args);
+  void handleOutputsCommand(const String& args);
+  void handleDisableOutputCommand(const String& args);
+  void handleEnableOutputCommand(const String& args);
+  void handleCommandsCommand(const String& args);
+  void handleNotCommandsCommand(const String& args);
+  void handleStatsCommand(const String& args);
+  void handlePingCommand(const String& args);
+  void handlePasswordCommand(const String& args);
+  void handleKillCommand(const String& args);
+  void handleUpdateCommand(const String& args);
+  void handleListAllInfoCommand(const String& args);
+  void handleListPlaylistInfoCommand(const String& args);
+  void handleListPlaylistsCommand(const String& args);
+  void handleListCommand(const String& args);
+  void handleSearchCommand(const String& args);
+  void handleFindCommand(const String& args);
+  void handleSeekCommand(const String& args);
+  void handleSeekIdCommand(const String& args);
+  void handleTagTypesCommand(const String& args);
+  void handlePlChangesCommand(const String& args);
+  void handleIdleCommand(const String& args);
+  void handleNoIdleCommand(const String& args);
+  void handleCloseCommand(const String& args);
+  void handleCommandListBeginCommand(const String& args);
+  void handleCommandListOkBeginCommand(const String& args);
+  void handleCommandListEndCommand(const String& args);
+  void handleDecodersCommand(const String& args);
 };
 
 #endif // MPD_H
