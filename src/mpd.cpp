@@ -528,14 +528,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print("random: 0\n");
     mpdClient.print("single: 0\n");
     mpdClient.print("consume: 0\n");
-    mpdClient.print("playlist: WebRadio\n");
+    mpdClient.print("playlist: 1\n");
     mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
     mpdClient.print("mixrampdb: 0.000000\n");
     mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
     if (isPlayingRef && strlen(streamNameRef) > 0) {
       mpdClient.print("song: " + String(currentSelectionRef) + "\n");
       mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
-      mpdClient.print("time: 0:0\n");
       // Calculate elapsed time since playback started
       extern unsigned long playStartTime;
       unsigned long elapsed = 0;
@@ -556,17 +555,16 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("file: " + String(streamURLRef) + "\n");
       if (strlen(streamTitleRef) > 0) {
         // Check if stream title contains " - " separator for artist/track parsing
-        String title = String(streamTitleRef);
-        int separatorPos = title.indexOf(" - ");
+        int separatorPos = streamTitleRef.indexOf(" - ");
         if (separatorPos != -1) {
           // Split into artist and track using the " - " separator
-          String artist = title.substring(0, separatorPos);
-          String track = title.substring(separatorPos + 3); // Skip " - "
+          String artist = streamTitleRef.substring(0, separatorPos);
+          String title = streamTitleRef.substring(separatorPos + 3); // Skip " - "
           mpdClient.print("Artist: " + artist + "\n");
-          mpdClient.print("Title: " + track + "\n");
+          mpdClient.print("Title: " + title + "\n");
         } else {
           // No separator, use full title as track name
-          mpdClient.print("Title: " + title + "\n");
+          mpdClient.print("Title: " + streamTitleRef + "\n");
         }
       } else {
         // No stream title, use stream name as fallback
