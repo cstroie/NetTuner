@@ -20,6 +20,7 @@
 #include "main.h"
 #include "mpd.h"
 #include "display.h"
+#include "rotary.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 

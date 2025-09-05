@@ -83,6 +83,12 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
     "seek", "seekid", "setvol", "stats", "status", "stop", "tagtypes", 
     "update"
   };
+  // Default tagtypes response
+  supportedTagTypes = {
+        "Artist", "Album", "Title", "Track", "Name", "Genre", "Date", 
+        "Comment", "Disc"
+  };
+
 }
 
 /**
@@ -881,24 +887,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
       // These commands simply return OK
       mpdClient.print(mpdResponseOK());
     } else {
-      // Default tagtypes response
-      std::vector<std::string> supportedTagTypes = {
-        "Artist",
-        "Album",
-        "Title",
-        "Track",
-        "Name",
-        "Genre",
-        "Date",
-        "Composer",
-        "Performer",
-        "Comment",
-        "Disc",
-        "MUSICBRAINZ_ARTISTID",
-        "MUSICBRAINZ_ALBUMID",
-        "MUSICBRAINZ_ALBUMARTISTID",
-        "MUSICBRAINZ_TRACKID"
-      };
       // Send the list of supported tag types
       for (const auto& tagType : supportedTagTypes) {
         mpdClient.print("tagtype: ");
@@ -951,7 +939,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("decoders")) {
     // Decoders command - return supported audio decoders
     // ESP32-audioI2S supports these formats
-    mpdClient.print("plugin: mp3\n");
+    mpdClient.print("plugin: ESP-I2S\n");
     mpdClient.print("suffix: mp3\n");
     mpdClient.print("mime_type: audio/mpeg\n");
     mpdClient.print(mpdResponseOK());

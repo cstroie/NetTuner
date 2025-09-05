@@ -85,7 +85,8 @@ private:
   
   // Supported MPD commands list
   std::vector<std::string> supportedCommands;
-
+  // Supported MPD tag types
+  std::vector<std::string> supportedTagTypes;
 
 
 public:

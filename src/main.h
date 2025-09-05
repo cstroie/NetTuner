@@ -30,7 +30,6 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
-#include "rotary.h"
 
 // Forward declarations
 class Audio;
@@ -63,8 +62,6 @@ struct Config {
   int display_height;  ///< OLED display height
   int display_address; ///< OLED display I2C address
 };
-
-#include "display.h"
 
 // Constants
 #define MAX_WIFI_NETWORKS 5
@@ -178,5 +175,9 @@ bool initializeSPIFFS();
 
 // Utility functions
 String generateStatusJSON();
+
+
+// Timestamp
+#define BUILD_TIME_UNIX 1757065455
 
 #endif // MAIN_H
