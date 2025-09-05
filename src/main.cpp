@@ -515,7 +515,7 @@ bool initializeSPIFFS() {
  */
 void handleStaticFile(const char* filename) {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   File file = SPIFFS.open(filename, "r");
   if (!file) {
@@ -526,7 +526,7 @@ void handleStaticFile(const char* filename) {
   file.close();
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -710,7 +710,7 @@ void handleWiFiPage() {
  */
 void handleWiFiConfig() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(1024);
@@ -722,7 +722,7 @@ void handleWiFiConfig() {
   for (int i = 0; i < wifiNetworkCount; i++) {
     array.add(String(ssid[i]));
     // Yield to other tasks during long operations
-    delay(1);
+    delay(0);
   }
   
   // Serialize JSON to string
@@ -733,7 +733,7 @@ void handleWiFiConfig() {
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -744,7 +744,7 @@ void handleWiFiConfig() {
  */
 void handleWiFiScan() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(2048);
@@ -759,7 +759,7 @@ void handleWiFiScan() {
     network["ssid"] = WiFi.SSID(i);
     network["rssi"] = WiFi.RSSI(i);
     // Yield to other tasks during long operations
-    delay(1);
+    delay(0);
   }
   
   // Add configured networks
@@ -778,7 +778,7 @@ void handleWiFiScan() {
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -850,7 +850,7 @@ void handleWiFiSave() {
  */
 void handleWiFiStatus() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(256);
@@ -873,7 +873,7 @@ void handleWiFiStatus() {
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -1705,7 +1705,7 @@ void handleAboutPage() {
  */
 void handleGetStreams() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // If playlist file doesn't exist, return a default empty one
   File file = SPIFFS.open("/playlist.json", "r");
@@ -1719,7 +1719,7 @@ void handleGetStreams() {
   file.close();
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -2054,7 +2054,7 @@ void handleStatus() {
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -2064,7 +2064,7 @@ void handleStatus() {
  */
 void handleGetConfig() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
@@ -2092,7 +2092,7 @@ void handleGetConfig() {
   server.send(200, "application/json", json);
   
   // Yield to other tasks after processing
-  delay(1);
+  delay(0);
 }
 
 /**
@@ -2143,7 +2143,7 @@ void handlePostConfig() {
  */
 void handleExportConfig() {
   // Yield to other tasks before processing
-  delay(1);
+  delay(0);
   
   // List of configuration files to export
   const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json", "/player.json"};
@@ -2170,7 +2170,7 @@ void handleExportConfig() {
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 3) output += ",";
               // Yield to other tasks during long operations
-              delay(1); 
+              delay(0); 
             }
           }
         }
