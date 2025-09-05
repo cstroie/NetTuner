@@ -112,8 +112,8 @@ void MPDInterface::handleStatusCommand(const String& args) {
   mpdClient.print("mixrampdb: 0.000000\n");
   mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
   if (isPlayingRef && strlen(streamNameRef) > 0) {
-    mpdClient.print("song: " + String(currentSelectionRef) + "\n");
-    mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
+    mpdClient.print("song: " + String(currentSelectionRef + 1) + "\n");
+    mpdClient.print("songid: " + String(currentSelectionRef + 1) + "\n");
     // Calculate elapsed time since playback started
     extern unsigned long playStartTime;
     unsigned long elapsed = 0;
@@ -123,46 +123,14 @@ void MPDInterface::handleStatusCommand(const String& args) {
     mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
     mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
     mpdClient.print("audio: 44100:16:2\n");
-    mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
-    mpdClient.print("nextsongid: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
+    mpdClient.print("nextsong: " + String((currentSelectionRef + 2) % playlistCountRef) + "\n");
+    mpdClient.print("nextsongid: " + String((currentSelectionRef + 2) % playlistCountRef) + "\n");
   }
   mpdClient.print("updating_db: 0\n");
   mpdClient.print(mpdResponseOK());
 }
 
 // Improve function documentation, AI!
-void MPDInterface::handleStatusCommand(const String& args) {
-  // Status command
-  // Convert volume from 0-22 scale to 0-100 scale for MPD compatibility
-  int volPercent = map(volumeRef, 0, 22, 0, 100);
-  mpdClient.print("volume: " + String(volPercent) + "\n");
-  mpdClient.print("repeat: 0\n");
-  mpdClient.print("random: 0\n");
-  mpdClient.print("single: 0\n");
-  mpdClient.print("consume: 0\n");
-  mpdClient.print("playlist: 1\n");
-  mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
-  mpdClient.print("mixrampdb: 0.000000\n");
-  mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
-  if (isPlayingRef && strlen(streamNameRef) > 0) {
-    mpdClient.print("song: " + String(currentSelectionRef) + "\n");
-    mpdClient.print("songid: " + String(currentSelectionRef) + "\n");
-    // Calculate elapsed time since playback started
-    extern unsigned long playStartTime;
-    unsigned long elapsed = 0;
-    if (playStartTime > 0) {
-      elapsed = (millis() / 1000) - playStartTime;
-    }
-    mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
-    mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
-    mpdClient.print("audio: 44100:16:2\n");
-    mpdClient.print("nextsong: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
-    mpdClient.print("nextsongid: " + String((currentSelectionRef + 1) % playlistCountRef) + "\n");
-  }
-  mpdClient.print("updating_db: 0\n");
-  mpdClient.print(mpdResponseOK());
-}
-
 void MPDInterface::handleCurrentSongCommand(const String& args) {
   // Current song command
   if (isPlayingRef && strlen(streamNameRef) > 0) {
@@ -185,8 +153,8 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
       // No stream title, use stream name as fallback
       mpdClient.print("Title: " + String(streamNameRef) + "\n");
     }
-    mpdClient.print("Id: " + String(currentSelectionRef) + "\n");
-    mpdClient.print("Pos: " + String(currentSelectionRef) + "\n");
+    mpdClient.print("Id: " + String(currentSelectionRef + 1) + "\n");
+    mpdClient.print("Pos: " + String(currentSelectionRef + 1) + "\n");
   }
   mpdClient.print(mpdResponseOK());
 }
