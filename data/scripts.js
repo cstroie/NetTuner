@@ -1938,14 +1938,14 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
     document.getElementById('playInstantSelectedStreamBtn').addEventListener('click', function() {
         const selectElement = document.getElementById('instantStreamSelect');
         const selectedIndex = parseInt(selectElement.value);
-        playIntantSelectedStreamFromPlaylist(selectedIndex);
+        playInstantSelectedStreamFromPlaylist(selectedIndex);
     });
     
     // Also allow playing with Enter key
     document.getElementById('instantStreamSelect').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             const selectedIndex = parseInt(this.value);
-            playIntantSelectedStreamFromPlaylist(selectedIndex);
+            playInstantSelectedStreamFromPlaylist(selectedIndex);
         }
     });
 }
@@ -1990,7 +1990,7 @@ function replaceWithSelectedStreams() {
     document.getElementById('playlistSelectionModal').remove();
 }
 
-async function playIntantSelectedStreamFromPlaylist(index) {
+async function playInstantSelectedStreamFromPlaylist(index) {
     const playlistData = window.currentInstantPlayPlaylistData;
     
     // Validate playlist data

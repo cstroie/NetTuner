@@ -535,10 +535,10 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
 void MPDInterface::handleDecodersCommand(const String& args) {
   // Decoders command - return supported audio decoders
   // ESP32-audioI2S supports these formats
-  mpdClient.print("plugin: ESP-I2S\n");
+  mpdClient.print("plugin: HelixMP3\n");
   mpdClient.print("suffix: mp3\n");
   mpdClient.print("mime_type: audio/mpeg\n");
-  mpdClient.print("plugin: ESP-I2S\n");
+  mpdClient.print("plugin: HelixAAC\n");
   mpdClient.print("suffix: aac\n");
   mpdClient.print("mime_type: audio/aac\n");
   mpdClient.print(mpdResponseOK());
