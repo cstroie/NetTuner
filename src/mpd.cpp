@@ -133,8 +133,8 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   }
   // Check if the ID is valid
   if (id >= 0 && id < playlistCountRef) {
-    mpdClient.print("file: " + String(playlistRef[id].url) + "\n");
-    mpdClient.print("Title: " + String(playlistRef[id].name) + "\n");
+    mpdClient.print("file: " + String(playlistRef[id + 1].url) + "\n");
+    mpdClient.print("Title: " + String(playlistRef[id + 1].name) + "\n");
     mpdClient.print("Artist: WebRadio\n");
     mpdClient.print("Album: WebRadio\n");
     mpdClient.print("Id: " + String(id) + "\n");
@@ -150,14 +150,13 @@ void MPDInterface::handlePlayCommand(const String& args) {
   // Play and Play ID commands
   int playlistIndex = -1;
   if (args.length() > 0) {
-    playlistIndex = parseValue(args);
+    playlistIndex = parseValue(args) - 1; // Convert to 0-based index
     // Validate index if provided
     if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
   }
-  
   if (handlePlayback(playlistIndex)) {
     mpdClient.print(mpdResponseOK());
   } else {
@@ -596,12 +595,12 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"status", &MPDInterface::handleStatusCommand, true},
   {"currentsong", &MPDInterface::handleCurrentSongCommand, true},
   {"playlistinfo", &MPDInterface::handlePlaylistInfoCommand, true},
-  {"playlistid", &MPDInterface::handlePlaylistIdCommand, true},
-  {"play", &MPDInterface::handlePlayCommand, false},  // prefix match for play/playid
+  {"playlistid", &MPDInterface::handlePlaylistIdCommand, false},
+  {"play", &MPDInterface::handlePlayCommand, false},
   {"lsinfo", &MPDInterface::handleLsInfoCommand, true},
-  {"setvol", &MPDInterface::handleSetVolCommand, true},
+  {"setvol", &MPDInterface::handleSetVolCommand, false},
   {"getvol", &MPDInterface::handleGetVolCommand, true},
-  {"volume", &MPDInterface::handleVolumeCommand, true},
+  {"volume", &MPDInterface::handleVolumeCommand, false},
   {"next", &MPDInterface::handleNextCommand, true},
   {"previous", &MPDInterface::handlePreviousCommand, true},
   {"clear", &MPDInterface::handleClearCommand, true},
@@ -610,25 +609,25 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"load", &MPDInterface::handleLoadCommand, true},
   {"save", &MPDInterface::handleSaveCommand, true},
   {"outputs", &MPDInterface::handleOutputsCommand, true},
-  {"disableoutput", &MPDInterface::handleDisableOutputCommand, true},
-  {"enableoutput", &MPDInterface::handleEnableOutputCommand, true},
+  {"disableoutput", &MPDInterface::handleDisableOutputCommand, false},
+  {"enableoutput", &MPDInterface::handleEnableOutputCommand, false},
   {"commands", &MPDInterface::handleCommandsCommand, true},
   {"notcommands", &MPDInterface::handleNotCommandsCommand, true},
   {"stats", &MPDInterface::handleStatsCommand, true},
   {"ping", &MPDInterface::handlePingCommand, true},
-  {"password", &MPDInterface::handlePasswordCommand, true},
+  {"password", &MPDInterface::handlePasswordCommand, false},
   {"kill", &MPDInterface::handleKillCommand, true},
   {"update", &MPDInterface::handleUpdateCommand, true},
   {"listallinfo", &MPDInterface::handleListAllInfoCommand, true},
   {"listplaylistinfo", &MPDInterface::handleListPlaylistInfoCommand, true},
   {"listplaylists", &MPDInterface::handleListPlaylistsCommand, true},
-  {"list", &MPDInterface::handleListCommand, true},
-  {"search", &MPDInterface::handleSearchCommand, true},
-  {"find", &MPDInterface::handleFindCommand, true},
-  {"seek", &MPDInterface::handleSeekCommand, true},
-  {"seekid", &MPDInterface::handleSeekIdCommand, true},
+  {"list", &MPDInterface::handleListCommand, false},
+  {"search", &MPDInterface::handleSearchCommand, false},
+  {"find", &MPDInterface::handleFindCommand, false},
+  {"seek", &MPDInterface::handleSeekCommand, false},
+  {"seekid", &MPDInterface::handleSeekIdCommand, false},
   {"tagtypes", &MPDInterface::handleTagTypesCommand, true},
-  {"plchanges", &MPDInterface::handlePlChangesCommand, true},
+  {"plchanges", &MPDInterface::handlePlChangesCommand, false},
   {"idle", &MPDInterface::handleIdleCommand, true},
   {"noidle", &MPDInterface::handleNoIdleCommand, true},
   {"close", &MPDInterface::handleCloseCommand, true},
@@ -741,23 +740,20 @@ void MPDInterface::handleIdleMode() {
   for (int i = 0; streamTitleRef[i]; i++) {
     currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
   }
-  
   // Check for status changes using hash computation
   // Combines playing status (boolean), volume (0-22), and bitrate (kbps) into a single hash
   unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
   currentStatusHash = currentStatusHash * 31 + volumeRef;
   currentStatusHash = currentStatusHash * 31 + bitrateRef;
-  
+  // Prepare to send idle response if changes detected
   bool sendIdleResponse = false;
   String idleChanges = "";
-  
   // Check for title change - indicates playlist content change
   if (currentTitleHash != lastTitleHash) {
     idleChanges += "changed: playlist\n";
     lastTitleHash = currentTitleHash;
     sendIdleResponse = true;
   }
-  
   // Check for status change - indicates player or mixer state change
   if (currentStatusHash != lastStatusHash) {
     idleChanges += "changed: player\n";
@@ -765,7 +761,6 @@ void MPDInterface::handleIdleMode() {
     lastStatusHash = currentStatusHash;
     sendIdleResponse = true;
   }
-  
   // Send idle response if there are changes
   if (sendIdleResponse) {
     mpdClient.print(idleChanges);
@@ -773,7 +768,6 @@ void MPDInterface::handleIdleMode() {
     inIdleMode = false;
     return;
   }
-  
   // Check if there's data available (for noidle command)
   if (mpdClient.available()) {
     String command = mpdClient.readStringUntil('\n');
@@ -814,27 +808,21 @@ bool MPDInterface::handlePlayback(int index) {
   if (playlistCountRef <= 0) {
     return false;
   }
-  
   // Use current selection if no valid index provided
   if (index < 0 || index >= playlistCountRef) {
     index = currentSelectionRef;
   }
-  
   // Validate that we have a valid index within playlist bounds
   if (index < 0 || index >= playlistCountRef) {
     return false;
   }
-  
   // Update current selection
   currentSelectionRef = index;
-  
   // Start playback
   startStream(playlistRef[index].url, playlistRef[index].name);
-  
   // Update state
   markPlayerStateDirty();
   savePlayerState();
-  
   return true;
 }
 
@@ -918,6 +906,8 @@ void MPDInterface::handleCommandList(const String& command) {
   if (command == "command_list_end") {
     // Execute all buffered commands
     for (int i = 0; i < commandListCount; i++) {
+      // Yield to allow other tasks to run
+      delay(0);
       handleMPDCommand(commandList[i]);
     }
     // Reset command list state
@@ -1194,11 +1184,12 @@ bool MPDInterface::executeCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
     return true;
   }
-  
   // Search for matching command in registry
   for (size_t i = 0; i < commandCount; i++) {
+    // Yield to allow other tasks to run
+    delay(0);
     const MPDCommand& cmd = commandRegistry[i];
-    
+    // Check for exact or prefix match
     if (cmd.exactMatch) {
       if (command.equals(cmd.name)) {
         (this->*cmd.handler)("");
@@ -1209,15 +1200,15 @@ bool MPDInterface::executeCommand(const String& command) {
         // Extract arguments (everything after the command name)
         String args = "";
         if (command.length() > strlen(cmd.name)) {
-          args = command.substring(strlen(cmd.name) + 1); // +1 for space
+          // +1 for space
+          args = command.substring(strlen(cmd.name) + 1);
         }
         (this->*cmd.handler)(args);
         return true;
       }
     }
   }
-  
   // Unknown command
-  mpdClient.print(mpdResponseError("unknown", "Unknown command"));
+  mpdClient.print(mpdResponseError(command, "Unknown command"));
   return false;
 }
