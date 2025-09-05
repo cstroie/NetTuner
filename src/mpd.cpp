@@ -588,20 +588,12 @@ void MPDInterface::handleMPDCommand(const String& command) {
     }
   } else  if (command.startsWith("play")) {
     // Play command
-    if (playlistCountRef > 0) {
-      int index = -1;
-      if (command.length() > 5) {
-        index = parseValue(command.substring(5));
-      }
-      // If a valid index is found, play the selected track
-      if (index >= 0 && index < playlistCountRef) {
-        currentSelectionRef = index;
-        startStream(playlistRef[index].url, playlistRef[index].name);
-      } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
-        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
-      }
-      markPlayerStateDirty();
-      savePlayerState();
+    int index = -1;
+    if (command.length() > 5) {
+      index = parseValue(command.substring(5));
+    }
+    
+    if (handlePlayback(index)) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("play", "No playlist"));
@@ -954,6 +946,45 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseError("unknown", "Unknown command"));
   }
 }
+/**
+ * @brief Handle playback command
+ * @details Common handler for play and playid commands to reduce code duplication.
+ * This function handles the actual playback logic for both commands, including
+ * starting the stream, updating state, and sending responses.
+ * 
+ * @param index The playlist index to play (-1 for current selection)
+ * @return true if playback started successfully, false otherwise
+ */
+bool MPDInterface::handlePlayback(int index) {
+  if (playlistCountRef <= 0) {
+    return false;
+  }
+  
+  // Determine which index to play
+  int playIndex = index;
+  if (playIndex < 0 || playIndex >= playlistCountRef) {
+    // Use current selection if no valid index provided or out of range
+    playIndex = currentSelectionRef;
+  }
+  
+  // Validate that we have a valid index within playlist bounds
+  if (playIndex < 0 || playIndex >= playlistCountRef) {
+    return false;
+  }
+  
+  // Update current selection
+  currentSelectionRef = playIndex;
+  
+  // Start playback
+  startStream(playlistRef[playIndex].url, playlistRef[playIndex].name);
+  
+  // Update state
+  markPlayerStateDirty();
+  savePlayerState();
+  
+  return true;
+}
+
 /**
  * @brief Handle asynchronous command processing
  * @details Processes commands without blocking, allowing for better responsiveness.

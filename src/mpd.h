@@ -117,6 +117,17 @@ private:
   void handleAsyncCommands();
 
   /**
+   * @brief Handle playback command
+   * @details Common handler for play and playid commands to reduce code duplication.
+   * This function handles the actual playback logic for both commands, including
+   * starting the stream, updating state, and sending responses.
+   * 
+   * @param index The playlist index to play (-1 for current selection)
+   * @return true if playback started successfully, false otherwise
+   */
+  bool handlePlayback(int index = -1);
+
+  /**
    * @brief Handle idle mode monitoring and notifications
    * @details Monitors for changes in playback status and stream information using
    * hash-based change detection for efficient monitoring.
