@@ -663,26 +663,24 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("next")) {
     // Next command
     if (playlistCountRef > 0) {
-      currentSelectionRef = (currentSelectionRef + 1) % playlistCountRef;
-      if (isPlayingRef) {
-        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
+      int nextIndex = (currentSelectionRef + 1) % playlistCountRef;
+      if (handlePlayback(nextIndex)) {
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("next", "Playback failed"));
       }
-      markPlayerStateDirty();
-      savePlayerState();
-      mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("next", "No playlist"));
     }
   } else if (command.startsWith("previous")) {
     // Previous command
     if (playlistCountRef > 0) {
-      currentSelectionRef = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
-      if (isPlayingRef) {
-        startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
+      int prevIndex = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
+      if (handlePlayback(prevIndex)) {
+        mpdClient.print(mpdResponseOK());
+      } else {
+        mpdClient.print(mpdResponseError("previous", "Playback failed"));
       }
-      markPlayerStateDirty();
-      savePlayerState();
-      mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("previous", "No playlist"));
     }
