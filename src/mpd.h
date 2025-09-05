@@ -22,6 +22,8 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Audio.h>
+#include <vector>
+#include <string>
 
 // Forward declarations
 struct StreamInfo;
@@ -82,16 +84,7 @@ private:
   String commandBuffer = "";         ///< Buffer for accumulating incoming commands
   
   // Supported MPD commands list
-  const char* supportedCommands[] = {
-    "add", "clear", "close", "currentsong", "delete", "disableoutput", 
-    "enableoutput", "find", "idle", "kill", "list", "listallinfo", 
-    "listplaylistinfo", "listplaylists", "load", "lsinfo", "next", 
-    "notcommands", "outputs", "password", "pause", "ping", "play", "playid", 
-    "playlistid", "playlistinfo", "plchanges", "previous", "save", "search", 
-    "seek", "seekid", "setvol", "stats", "status", "stop", "tagtypes", 
-    "update"
-  };
-  const int supportedCommandsCount = sizeof(supportedCommands) / sizeof(supportedCommands[0]);
+  std::vector<std::string> supportedCommands;
 
 
 

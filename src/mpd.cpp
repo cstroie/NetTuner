@@ -72,7 +72,18 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
     : mpdServer(server), streamTitleRef(streamTitle), streamNameRef(streamName),
       streamURLRef(streamURL), isPlayingRef(isPlaying), volumeRef(volume), bitrateRef(bitrate),
       playlistCountRef(playlistCount), currentSelectionRef(currentSelection),
-      playlistRef(playlist), audioRef(audio) {}
+      playlistRef(playlist), audioRef(audio) {
+  // Initialize supported commands list
+  supportedCommands = {
+    "add", "clear", "close", "currentsong", "delete", "disableoutput", 
+    "enableoutput", "find", "idle", "kill", "list", "listallinfo", 
+    "listplaylistinfo", "listplaylists", "load", "lsinfo", "next", 
+    "notcommands", "outputs", "password", "pause", "ping", "play", "playid", 
+    "playlistid", "playlistinfo", "plchanges", "previous", "save", "search", 
+    "seek", "seekid", "setvol", "stats", "status", "stop", "tagtypes", 
+    "update"
+  };
+}
 
 /**
  * @brief Handle MPD client connections and process commands
@@ -770,9 +781,9 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("commands")) {
     // Commands command
     // Send the list of supported commands
-    for (int i = 0; i < SUPPORTED_COMMANDS_COUNT; i++) {
+    for (const auto& cmd : supportedCommands) {
       mpdClient.print("command: ");
-      mpdClient.print(supportedCommands[i]);
+      mpdClient.print(cmd.c_str());
       mpdClient.print("\n");
       delay(0);
     }
