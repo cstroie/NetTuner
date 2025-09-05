@@ -73,6 +73,61 @@ void MPDInterface::handleStopCommand(const String& args) {
 }
 
 /**
+ * @brief Handle the MPD currentsong command
+ * @details This function processes the MPD "currentsong" command by returning
+ * detailed information about the currently playing stream. The response includes
+ * file URI, track metadata, and position information when a stream is playing.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Providing file URI as the stream URL
+ * - Parsing stream title for artist/track information when available
+ * - Using stream name as fallback when no title is available
+ * - Reporting position and ID information using 1-based indexing
+ * 
+ * Metadata parsing features:
+ * - Automatic detection of "Artist - Title" format in stream titles
+ * - Proper separation of artist and title fields when separator is found
+ * - Fallback to using full title as track name when no separator exists
+ * - Use of stream name as ultimate fallback when no title is available
+ * 
+ * Response information includes:
+ * - File URI (stream URL)
+ * - Artist name (parsed from title or "WebRadio" default)
+ * - Track title (parsed from title or stream name)
+ * - Position (1-based index)
+ * - ID (1-based index)
+ * 
+ * @param args Command arguments (not used for currentsong command)
+ */
+void MPDInterface::handleCurrentSongCommand(const String& args) {
+  // Current song command
+  if (isPlayingRef && strlen(streamNameRef) > 0) {
+    mpdClient.print("file: " + String(streamURLRef) + "\n");
+    if (strlen(streamTitleRef) > 0) {
+      String streamTitleStr = String(streamTitleRef);
+      // Check if stream title contains " - " separator for artist/track parsing
+      int separatorPos = streamTitleStr.indexOf(" - ");
+      if (separatorPos != -1) {
+        // Split into artist and track using the " - " separator
+        String artist = streamTitleStr.substring(0, separatorPos);
+        String title = streamTitleStr.substring(separatorPos + 3); // Skip " - "
+        mpdClient.print("Artist: " + artist + "\n");
+        mpdClient.print("Title: " + title + "\n");
+      } else {
+        // No separator, use full title as track name
+        mpdClient.print("Title: " + streamTitleStr + "\n");
+      }
+    } else {
+      // No stream title, use stream name as fallback
+      mpdClient.print("Title: " + String(streamNameRef) + "\n");
+    }
+    mpdClient.print("Id: " + String(currentSelectionRef + 1) + "\n");
+    mpdClient.print("Pos: " + String(currentSelectionRef + 1) + "\n");
+  }
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
  * @brief Handle the MPD status command
  * @details This function processes the MPD "status" command by returning comprehensive
  * information about the current player state. The response includes volume settings,
