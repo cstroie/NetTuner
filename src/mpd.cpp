@@ -48,7 +48,7 @@ int parseValue(const String& valueStr) {
   return cleanedStr.toInt();
 }
 
-// Individual command handlers
+// Improve function documentation, AI!
 void MPDInterface::handleStopCommand(const String& args) {
   // Stop/Pause command (both treated as stop for simplicity)
   stopStream();
