@@ -531,6 +531,7 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
   mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
 }
 
+// Improve function ducumentation, AI!
 void MPDInterface::handleDecodersCommand(const String& args) {
   // Decoders command - return supported audio decoders
   // ESP32-audioI2S supports these formats
@@ -571,6 +572,7 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
       streamURLRef(streamURL), isPlayingRef(isPlaying), volumeRef(volume), bitrateRef(bitrate),
       playlistCountRef(playlistCount), currentSelectionRef(currentSelection),
       playlistRef(playlist), audioRef(audio) {
+        
   // Initialize supported commands list
   supportedCommands = {
     "add", "clear", "close", "currentsong", "delete", "disableoutput", 
@@ -583,8 +585,7 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
   };
   // Default tagtypes response
   supportedTagTypes = {
-        "Artist", "Album", "Title", "Track", "Name", "Genre", "Date", 
-        "Comment", "Disc"
+    "Artist", "Album", "Title", "Track", "Name", "Genre", "Date", "Comment", "Disc"
   };
 }
 
@@ -610,7 +611,6 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
  * 3. Adding an entry to this registry
  * 4. Adding the command to supportedCommands vector if it should appear in "commands" response
  */
-
 const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"stop", &MPDInterface::handleStopCommand, true},
   {"pause", &MPDInterface::handleStopCommand, true},
@@ -658,7 +658,7 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"command_list_end", &MPDInterface::handleCommandListEndCommand, true},
   {"decoders", &MPDInterface::handleDecodersCommand, true}
 };
-
+// Calculate the number of commands in the registry
 const size_t MPDInterface::commandCount = sizeof(commandRegistry) / sizeof(MPDCommand);
 
 /**
