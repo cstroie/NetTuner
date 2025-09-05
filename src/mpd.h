@@ -80,6 +80,48 @@ private:
 
   // Asynchronous command handling buffer for non-blocking processing
   String commandBuffer = "";         ///< Buffer for accumulating incoming commands
+  
+      const char* supportedCommands[] = {
+      "add",
+      "clear",
+      "close",
+      "currentsong",
+      "delete",
+      "disableoutput",
+      "enableoutput",
+      "find",
+      "idle",
+      "kill",
+      "list",
+      "listallinfo",
+      "listplaylistinfo",
+      "listplaylists",
+      "load",
+      "lsinfo",
+      "next",
+      "notcommands",
+      "outputs",
+      "password",
+      "pause",
+      "ping",
+      "play",
+      "playid",
+      "playlistid",
+      "playlistinfo",
+      "plchanges",
+      "previous",
+      "save",
+      "search",
+      "seek",
+      "seekid",
+      "setvol",
+      "stats",
+      "status",
+      "stop",
+      "tagtypes",
+      "update"
+    };
+
 
 public:
   MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,

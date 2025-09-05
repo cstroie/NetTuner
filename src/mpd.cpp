@@ -713,7 +713,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       // We don't actually disable outputs, just acknowledge the command
       mpdClient.print(mpdResponseOK());
     } else {
-      mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
+      mpdClient.print(mpdResponseError("disableoutput", "Invalid output ID"));
     }
   } else if (command.startsWith("enableoutput")) {
     // Enable output command
@@ -730,46 +730,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
     }
   } else if (command.startsWith("commands")) {
     // Commands command
-    const char* supportedCommands[] = {
-      "add",
-      "clear",
-      "close",
-      "currentsong",
-      "delete",
-      "disableoutput",
-      "enableoutput",
-      "find",
-      "idle",
-      "kill",
-      "list",
-      "listallinfo",
-      "listplaylistinfo",
-      "listplaylists",
-      "load",
-      "lsinfo",
-      "next",
-      "notcommands",
-      "outputs",
-      "password",
-      "pause",
-      "ping",
-      "play",
-      "playid",
-      "playlistid",
-      "playlistinfo",
-      "plchanges",
-      "previous",
-      "save",
-      "search",
-      "seek",
-      "seekid",
-      "setvol",
-      "stats",
-      "status",
-      "stop",
-      "tagtypes",
-      "update"
-    };
     // Send the list of supported commands
     const int commandCount = sizeof(supportedCommands) / sizeof(supportedCommands[0]);
     for (int i = 0; i < commandCount; i++) {
