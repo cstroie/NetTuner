@@ -542,6 +542,35 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
   mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
 }
 
+/**
+ * @brief Handle the MPD command_list_ok_begin command
+ * @details This function is called when the command_list_ok_begin command is received.
+ * It puts the MPD interface into command list mode where each command in the list
+ * will receive a "list_OK" response instead of the standard "OK" response.
+ * 
+ * Command list mode allows clients to send multiple commands as a single atomic
+ * operation. In command_list_ok_begin mode, each command (except the final 
+ * command_list_end) receives a "list_OK" response, allowing the client to know
+ * that each individual command was processed successfully.
+ * 
+ * The function sets the following state variables:
+ * - inCommandList: true to indicate command list mode is active
+ * - commandListOK: true to indicate list_OK responses should be used
+ * - commandListCount: 0 to reset the command counter
+ * 
+ * The actual command list processing is handled by the handleCommandList function
+ * when command_list_end is received.
+ * 
+ * @param args Command arguments (not used for this command)
+ */
+void MPDInterface::handleCommandListOkBeginCommand(const String& args) {
+  // Start command list mode with OK responses
+  inCommandList = true;
+  commandListOK = true;
+  commandListCount = 0;
+  // Don't send OK yet, wait for command_list_end
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleCommandListOkBeginCommand(const String& args) {
   // Start command list mode with OK responses
