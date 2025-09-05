@@ -82,7 +82,7 @@ private:
   String commandBuffer = "";         ///< Buffer for accumulating incoming commands
   
   // Supported MPD commands list
-  static const int SUPPORTED_COMMANDS_COUNT = 37;
+  static const int SUPPORTED_COMMANDS_COUNT = 38;
   const char* supportedCommands[SUPPORTED_COMMANDS_COUNT] = {
     "add", "clear", "close", "currentsong", "delete", "disableoutput", 
     "enableoutput", "find", "idle", "kill", "list", "listallinfo", 

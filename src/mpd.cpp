@@ -284,6 +284,8 @@ void MPDInterface::handleAsyncCommands() {
         }
     }
 }
+
+/**
  * 
  * In command_list_begin mode, commands are buffered until command_list_end
  * is received, then all commands are executed sequentially.
