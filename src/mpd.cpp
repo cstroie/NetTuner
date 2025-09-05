@@ -225,6 +225,11 @@ bool MPDInterface::handlePlayback(int index) {
     return false;
   }
   
+  // Use current selection if no valid index provided
+  if (index < 0 || index >= playlistCountRef) {
+    index = currentSelectionRef;
+  }
+  
   // Validate that we have a valid index within playlist bounds
   if (index < 0 || index >= playlistCountRef) {
     return false;
@@ -244,9 +249,41 @@ bool MPDInterface::handlePlayback(int index) {
 }
 
 /**
- * @brief Handle command list processing
- * @details Processes commands in command list mode with support for both
- * command_list_begin and command_list_ok_begin modes.
+ * @brief Handle asynchronous command processing
+ * @details Processes commands without blocking, allowing for better responsiveness.
+ * This function reads available data from the client connection and accumulates
+ * it in a buffer until a complete command (terminated by newline) is received.
+ * It then processes the command according to the current mode (normal, command list, etc.).
+ * 
+ * The function processes only one command per call to avoid blocking other operations,
+ * which is important for maintaining responsive MPD service.
+ */
+void MPDInterface::handleAsyncCommands() {
+    // Read available data without blocking
+    while (mpdClient.available()) {
+        char c = mpdClient.read();
+        if (c == '\n') {
+            // Process complete command
+            String command = commandBuffer;
+            command.trim();
+            commandBuffer = "";
+            
+            if (command.length() > 0) {
+                Serial.println("MPD Command: " + command);
+                // Handle command list mode
+                if (inCommandList) {
+                    handleCommandList(command);
+                } else {
+                    // Normal command processing
+                    handleMPDCommand(command);
+                }
+            }
+            break; // Process one command at a time to avoid blocking
+        } else {
+            commandBuffer += c;
+        }
+    }
+}
  * 
  * In command_list_begin mode, commands are buffered until command_list_end
  * is received, then all commands are executed sequentially.
