@@ -82,8 +82,7 @@ private:
   String commandBuffer = "";         ///< Buffer for accumulating incoming commands
   
   // Supported MPD commands list
-  static const int SUPPORTED_COMMANDS_COUNT = 38;
-  const char* supportedCommands[SUPPORTED_COMMANDS_COUNT] = {
+  const char* supportedCommands[] = {
     "add", "clear", "close", "currentsong", "delete", "disableoutput", 
     "enableoutput", "find", "idle", "kill", "list", "listallinfo", 
     "listplaylistinfo", "listplaylists", "load", "lsinfo", "next", 
@@ -92,6 +91,8 @@ private:
     "seek", "seekid", "setvol", "stats", "status", "stop", "tagtypes", 
     "update"
   };
+  const int supportedCommandsCount = sizeof(supportedCommands) / sizeof(supportedCommands[0]);
+
 
 
 public:
