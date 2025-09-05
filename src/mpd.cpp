@@ -41,6 +41,9 @@ int parseValue(const String& valueStr) {
   if (cleanedStr.startsWith("\"") && cleanedStr.endsWith("\"") && cleanedStr.length() >= 2) {
     cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
   }
+  if (cleanedStr.startsWith("\'") && cleanedStr.endsWith("\'") && cleanedStr.length() >= 2) {
+    cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
+  }
   // Convert to integer
   return cleanedStr.toInt();
 }
@@ -532,20 +535,9 @@ void MPDInterface::handleCloseCommand(const String& args) {
  * @param args Command arguments (not used for this command)
  */
 void MPDInterface::handleCommandListBeginCommand(const String& args) {
-  // Start command list mode
   inCommandList = true;
   commandListOK = false;
   commandListCount = 0;
-  // Don't send OK yet, wait for command_list_end
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleCommandListBeginCommand(const String& args) {
-  // Start command list mode
-  inCommandList = true;
-  commandListOK = false;
-  commandListCount = 0;
-  // Don't send OK yet, wait for command_list_end
 }
 
 /**

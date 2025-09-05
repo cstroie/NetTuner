@@ -1478,9 +1478,9 @@ void savePlaylist() {
   
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/playlist.json", doc)) {
-    Serial.println("Saved playlist to file");
+    Serial.println("Saved playlist to SPIFFS");
   } else {
-    Serial.println("Failed to save playlist to file");
+    Serial.println("Failed to save playlist to SPIFFS");
   }
 }
 
