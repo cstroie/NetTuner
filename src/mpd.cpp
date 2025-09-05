@@ -510,6 +510,35 @@ void MPDInterface::handleCloseCommand(const String& args) {
   mpdClient.stop();
 }
 
+/**
+ * @brief Handle the MPD command_list_begin command
+ * @details This function is called when the command_list_begin command is received.
+ * It puts the MPD interface into command list mode where commands are buffered
+ * until command_list_end is received.
+ * 
+ * In command list mode, commands are not executed immediately but are stored
+ * in a buffer. When command_list_end is received, all buffered commands are
+ * executed sequentially. This allows clients to send multiple commands as a
+ * single atomic operation.
+ * 
+ * The function sets the following state variables:
+ * - inCommandList: true to indicate command list mode is active
+ * - commandListOK: false to indicate standard responses should be used
+ * - commandListCount: 0 to reset the command counter
+ * 
+ * The actual command list processing is handled by the handleCommandList function
+ * when command_list_end is received.
+ * 
+ * @param args Command arguments (not used for this command)
+ */
+void MPDInterface::handleCommandListBeginCommand(const String& args) {
+  // Start command list mode
+  inCommandList = true;
+  commandListOK = false;
+  commandListCount = 0;
+  // Don't send OK yet, wait for command_list_end
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleCommandListBeginCommand(const String& args) {
   // Start command list mode
