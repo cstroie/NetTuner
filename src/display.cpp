@@ -44,12 +44,9 @@ Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(tru
  */
 void Display::begin() {
     displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    displayRef.clearDisplay();
     displayRef.setFont(&Spleen8x16);
     displayRef.setTextColor(SSD1306_WHITE);
-    displayRef.setCursor(32, 12);
-    displayRef.print("NetTuner");
-    displayRef.display();
+    showStatus("", "", "");
 }
 
 /**
