@@ -526,6 +526,7 @@ void MPDInterface::handleCommandListOkBeginCommand(const String& args) {
   // Don't send OK yet, wait for command_list_end
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleCommandListEndCommand(const String& args) {
   // This should not happen outside of command list mode
   mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
@@ -552,21 +553,6 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
  * @param args Command arguments (not used for this command)
  */
 void MPDInterface::handleDecodersCommand(const String& args) {
-  // Decoders command - return supported audio decoders
-  // ESP32-audioI2S supports these formats
-  mpdClient.print("plugin: HelixMP3\n");
-  mpdClient.print("suffix: mp3\n");
-  mpdClient.print("mime_type: audio/mpeg\n");
-  mpdClient.print("plugin: HelixAAC\n");
-  mpdClient.print("suffix: aac\n");
-  mpdClient.print("mime_type: audio/aac\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function ducumentation, AI!
-void MPDInterface::handleDecodersCommand(const String& args) {
-  // Decoders command - return supported audio decoders
-  // ESP32-audioI2S supports these formats
   mpdClient.print("plugin: HelixMP3\n");
   mpdClient.print("suffix: mp3\n");
   mpdClient.print("mime_type: audio/mpeg\n");
