@@ -73,6 +73,755 @@ void MPDInterface::handleStopCommand(const String& args) {
 }
 
 /**
+ * @brief Handle the MPD noidle command
+ * @details This function processes the MPD "noidle" command by exiting
+ * idle mode and returning to normal command processing. This allows
+ * MPD clients to stop monitoring for changes and resume normal operation.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Clearing the inIdleMode flag to disable idle processing
+ * - Returning standard OK response to acknowledge command
+ * - Resuming normal command processing on next handleClient() call
+ * 
+ * This command is typically sent by MPD clients when they no longer
+ * need to monitor for player state changes or when switching to
+ * active command mode.
+ * 
+ * @param args Command arguments (not used for noidle command)
+ */
+void MPDInterface::handleNoIdleCommand(const String& args) {
+  // Noidle command
+  inIdleMode = false;
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD plchanges command
+ * @details This function processes the MPD "plchanges" command by returning
+ * information about playlist entries that have changed since a specified
+ * playlist version. In this implementation, it returns all playlist entries
+ * since detailed change tracking is not implemented.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning all playlist entries with full metadata
+ * - Using standard response format for playlist changes
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not track detailed playlist changes since
+ * the playlist is managed through the web interface. It simply returns
+ * the entire playlist to maintain client compatibility.
+ * 
+ * Response information for each playlist entry includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * - Artist name (WebRadio)
+ * - Album name (WebRadio)
+ * - Entry ID (0-based index)
+ * - Position (0-based index)
+ * - Track number (1-based index)
+ * - Last modified timestamp
+ * 
+ * @param args Command arguments (not used for plchanges command)
+ */
+void MPDInterface::handlePlChangesCommand(const String& args) {
+  // Playlist changes command
+  // For simplicity, we'll return the entire playlist (as if all entries changed)
+  sendPlaylistInfo(3);
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD seekid command
+ * @details This function processes the MPD "seekid" command which would
+ * normally seek to a specific position in a track identified by ID.
+ * In this implementation, the command is acknowledged but has no effect
+ * since streaming playback does not support seeking.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not support seeking in streams since
+ * web radio streams are live and do not have seekable positions.
+ * The command is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for seekid command)
+ */
+void MPDInterface::handleSeekIdCommand(const String& args) {
+  // Seek ID command (not implemented for streaming)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD seek command
+ * @details This function processes the MPD "seek" command which would
+ * normally seek to a specific position in a track. In this implementation,
+ * the command is acknowledged but has no effect since streaming playback
+ * does not support seeking.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not support seeking in streams since
+ * web radio streams are live and do not have seekable positions.
+ * The command is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for seek command)
+ */
+void MPDInterface::handleSeekCommand(const String& args) {
+  // Seek command (not implemented for streaming)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD find command
+ * @details This function processes the MPD "find" command by searching
+ * for streams in the playlist that exactly match the specified criteria.
+ * The search is case-insensitive and supports searching by title.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Reconstructing the full command for compatibility with existing search function
+ * - Performing case-insensitive exact matching
+ * - Returning matching stream metadata
+ * - Using standard response format for search results
+ * 
+ * Search behavior:
+ * - Case-insensitive matching
+ * - Exact string matching (equals)
+ * - Supports title searches
+ * - Returns file URI, title, track number, and last modified for matches
+ * 
+ * Special handling:
+ * - Artist/album searches return all playlist entries
+ * - Empty searches handled by existing search function
+ * 
+ * @param args Command arguments (search criteria)
+ */
+void MPDInterface::handleFindCommand(const String& args) {
+  // Find command (exact match)
+  // Reconstruct the full command for compatibility with existing function
+  String fullCommand = "find " + args;
+  handleMPDSearchCommand(fullCommand, true);
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD search command
+ * @details This function processes the MPD "search" command by searching
+ * for streams in the playlist that partially match the specified criteria.
+ * The search is case-insensitive and supports searching by title.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Reconstructing the full command for compatibility with existing search function
+ * - Performing case-insensitive partial matching
+ * - Returning matching stream metadata
+ * - Using standard response format for search results
+ * 
+ * Search behavior:
+ * - Case-insensitive matching
+ * - Partial string matching (contains)
+ * - Supports title searches
+ * - Returns file URI, title, track number, and last modified for matches
+ * 
+ * Special handling:
+ * - Artist/album searches return all playlist entries
+ * - Empty searches handled by existing search function
+ * 
+ * @param args Command arguments (search criteria)
+ */
+void MPDInterface::handleSearchCommand(const String& args) {
+  // Search command (partial match)
+  // Reconstruct the full command for compatibility with existing function
+  String fullCommand = "search " + args;
+  handleMPDSearchCommand(fullCommand, false);
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD list command
+ * @details This function processes the MPD "list" command by returning
+ * values for a specific tag type. In this implementation, it supports
+ * listing artists, albums, and titles from the playlist.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Parsing the requested tag type from command arguments
+ * - Returning appropriate values for supported tag types
+ * - Using dummy "WebRadio" values for artist/album tags
+ * - Returning playlist titles when requested
+ * 
+ * Supported tag types:
+ * - Artist: Returns "WebRadio" for all entries
+ * - Album: Returns "WebRadio" for all entries
+ * - Title: Returns all playlist stream names
+ * 
+ * Response format:
+ * - One line per tag value in "TagType: value" format
+ * - Standard OK response termination
+ * 
+ * This command allows MPD clients to browse available tag values for
+ * filtering and search operations.
+ * 
+ * @param args Command arguments (tag type to list)
+ */
+void MPDInterface::handleListCommand(const String& args) {
+  // List command
+  if (args.length() > 0) {
+    String tagType = args;
+    tagType.toLowerCase();
+    String tag = "Title: ";
+    tagType.trim();
+    if (tagType.startsWith("artist")) {
+      tag = "Artist: ";
+      mpdClient.print("Artist: WebRadio\n");
+    } else if (tagType.startsWith("album")) {
+      tag = "Album: ";
+      mpdClient.print("Album: WebRadio\n");
+    } else if (tagType.startsWith("title")) {
+      tag = "Title: ";
+      // Return the playlist
+      for (int i = 0; i < playlistCountRef; i++) {
+        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
+      }
+    }
+  }
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD listplaylists command
+ * @details This function processes the MPD "listplaylists" command by
+ * returning information about available playlists. In this implementation,
+ * only a single default playlist (WebRadio) is available.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Reporting the single available playlist with metadata
+ * - Including playlist name and last modified timestamp
+ * - Using standard response format for playlist listings
+ * 
+ * Response information includes:
+ * - Playlist name (WebRadio)
+ * - Last modified timestamp (build time)
+ * 
+ * This command allows MPD clients to discover available playlists and
+ * their metadata, which is useful for playlist management interfaces.
+ * 
+ * @param args Command arguments (not used for listplaylists command)
+ */
+void MPDInterface::handleListPlaylistsCommand(const String& args) {
+  // List playlists command
+  // For this implementation, we only have one playlist (the main playlist)
+  mpdClient.print("playlist: WebRadio\n");
+  mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD listplaylistinfo command
+ * @details This function processes the MPD "listplaylistinfo" command by
+ * returning minimal information about all streams in the playlist. This
+ * command is typically used by MPD clients to retrieve playlist contents.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Providing minimal stream metadata for each playlist entry
+ * - Including only file URI and title information
+ * - Using the most basic detail level for efficient response
+ * 
+ * Response information for each playlist entry includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * 
+ * This command is used by MPD clients when they need to retrieve the
+ * contents of a playlist with minimal metadata, typically for display
+ * in playlist views or selection interfaces.
+ * 
+ * @param args Command arguments (not used for listplaylistinfo command)
+ */
+void MPDInterface::handleListPlaylistInfoCommand(const String& args) {
+  // List playlist info command
+  sendPlaylistInfo(0); // Minimal detail
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD listallinfo command
+ * @details This function processes the MPD "listallinfo" command by returning
+ * simple information about all streams in the playlist. This command is
+ * typically used by MPD clients to browse all available media.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Providing basic stream metadata for each playlist entry
+ * - Including file URI, title, track number, and last modified information
+ * - Using minimal detail level for efficient response
+ * 
+ * Response information for each playlist entry includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * - Track number (1-based index)
+ * - Last modified timestamp
+ * 
+ * This command is functionally similar to lsinfo but may be used in
+ * different contexts by MPD clients for browsing available media.
+ * 
+ * @param args Command arguments (not used for listallinfo command)
+ */
+void MPDInterface::handleListAllInfoCommand(const String& args) {
+  // List all info command
+  sendPlaylistInfo(1); // Simple detail
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD update command
+ * @details This function processes the MPD "update" command which would
+ * normally trigger a media database update. In this implementation, the
+ * command is acknowledged but has no effect since there is no media database.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning "updating_db: 1" to indicate update in progress
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not have a media database to update.
+ * The command is acknowledged to maintain client compatibility while
+ * indicating that no actual update is occurring.
+ * 
+ * @param args Command arguments (not used for update command)
+ */
+void MPDInterface::handleUpdateCommand(const String& args) {
+  // Update command (not implemented for this player)
+  mpdClient.print("updating_db: 1\n");
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD password command
+ * @details This function processes the MPD "password" command which would
+ * normally be used for authentication. In this implementation, the command
+ * is acknowledged but has no effect since authentication is not implemented.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not implement password authentication.
+ * The command is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for password command)
+ */
+void MPDInterface::handlePasswordCommand(const String& args) {
+  // Password command (not implemented)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD ping command
+ * @details This function processes the MPD "ping" command which is used by
+ * clients to test connectivity and keep the connection alive. The command
+ * simply returns OK to acknowledge the ping.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * This command is typically sent periodically by MPD clients to ensure
+ * the server is still responsive and to prevent connection timeouts.
+ * 
+ * @param args Command arguments (not used for ping command)
+ */
+void MPDInterface::handlePingCommand(const String& args) {
+  // Ping command
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD stats command
+ * @details This function processes the MPD "stats" command by returning
+ * statistics about the player's operation including uptime, playback time,
+ * and media counts.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Calculating uptime from system start time
+ * - Tracking total and current playback time
+ * - Reporting media counts (artists, albums, songs)
+ * - Including database update timestamp
+ * 
+ * Response information includes:
+ * - Artists count (1 for WebRadio)
+ * - Albums count (1 for WebRadio)
+ * - Songs count (playlist length)
+ * - Uptime in seconds
+ * - Total play time in seconds
+ * - Database play time in seconds
+ * - Database update timestamp (build time)
+ * 
+ * Statistics tracking:
+ * - Uptime calculated from system start
+ * - Play time includes both historical and current playback
+ * - Media counts reflect current playlist state
+ * - Database timestamp uses build time
+ * 
+ * @param args Command arguments (not used for stats command)
+ */
+void MPDInterface::handleStatsCommand(const String& args) {
+  // Stats command
+  unsigned long uptime = (millis() / 1000) - startTime;
+  unsigned long playtime = totalPlayTime;
+  if (isPlayingRef && playStartTime > 0) {
+    playtime += (millis() / 1000) - playStartTime;
+  }
+  // Send stats information
+  mpdClient.print("artists: 1\n");
+  mpdClient.print("albums: 1\n");
+  mpdClient.print("songs: " + String(playlistCountRef) + "\n");
+  mpdClient.print("uptime: " + String(uptime) + "\n");
+  mpdClient.print("playtime: " + String(playtime) + "\n");
+  mpdClient.print("db_playtime: " + String(playtime) + "\n");
+  mpdClient.print("db_update: " + String(BUILD_TIME_UNIX) + "\n");
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD notcommands command
+ * @details This function processes the MPD "notcommands" command which would
+ * normally return a list of commands that are not available. In this
+ * implementation, the command simply returns OK since all commands are
+ * technically "available" (even if some are no-ops).
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually track disabled commands since
+ * all registered commands are available (even if some have no effect).
+ * The command is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for notcommands command)
+ */
+void MPDInterface::handleNotCommandsCommand(const String& args) {
+  // Not commands command
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD commands command
+ * @details This function processes the MPD "commands" command by returning a
+ * list of all supported MPD commands. This allows MPD clients to understand
+ * which commands are available for use with this implementation.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Returning the list of supported commands in standard format
+ * - Using "command: " prefix for each supported command
+ * - Including all commands registered in the supportedCommands vector
+ * - Maintaining compatibility with MPD clients that query capabilities
+ * 
+ * Response format:
+ * - One "command: command_name" line for each supported command
+ * - Standard OK response termination
+ * 
+ * The supportedCommands vector is initialized in the constructor and contains
+ * all commands that this implementation handles, either fully or partially.
+ * 
+ * @param args Command arguments (not used for commands command)
+ */
+void MPDInterface::handleCommandsCommand(const String& args) {
+  // Commands command
+  // Send the list of supported commands
+  for (const auto& cmd : supportedCommands) {
+    mpdClient.print("command: ");
+    mpdClient.print(cmd.c_str());
+    mpdClient.print("\n");
+    delay(0);
+  }
+  // End of command list
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD outputs command
+ * @details This function processes the MPD "outputs" command by returning
+ * information about available audio outputs. Since the NetTuner uses
+ * ESP32-audioI2S, only a single I2S output is available.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Reporting the single I2S output with appropriate metadata
+ * - Using standard output ID, name, and enabled status format
+ * - Maintaining compatibility with MPD clients that query outputs
+ * 
+ * Response information includes:
+ * - Output ID (0 for I2S output)
+ * - Output name (I2S (External DAC))
+ * - Enabled status (1 for enabled)
+ * 
+ * This command allows MPD clients to understand the available audio
+ * output options and their current status.
+ * 
+ * @param args Command arguments (not used for outputs command)
+ */
+void MPDInterface::handleOutputsCommand(const String& args) {
+  // Outputs command - with ESP32-audioI2S, we only have I2S output
+  mpdClient.print("outputid: 0\n");
+  mpdClient.print("outputname: I2S (External DAC)\n");
+  mpdClient.print("outputenabled: 1\n");
+  //mpdClient.print("attribute: allowed_formats=\n");
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD save command
+ * @details This function processes the MPD "save" command which would normally
+ * save the current playlist. In this implementation, the command is acknowledged
+ * but has no effect since playlist management is handled through the web interface.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually save playlists since
+ * playlist management is performed through the web interface. The command
+ * is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for save command)
+ */
+void MPDInterface::handleSaveCommand(const String& args) {
+  // Save command (not implemented for this player)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD load command
+ * @details This function processes the MPD "load" command which would normally
+ * load a stored playlist. In this implementation, the command is acknowledged
+ * but has no effect since playlist management is handled through the web interface.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually load playlists since
+ * playlist management is performed through the web interface. The command
+ * is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for load command)
+ */
+void MPDInterface::handleLoadCommand(const String& args) {
+  // Load command (not implemented for this player)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD delete command
+ * @details This function processes the MPD "delete" command which would normally
+ * remove a stream from the current playlist. In this implementation, the command
+ * is acknowledged but has no effect since playlist management is handled through
+ * the web interface.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually delete streams from the playlist since
+ * playlist management is performed through the web interface. The command
+ * is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for delete command)
+ */
+void MPDInterface::handleDeleteCommand(const String& args) {
+  // Delete command (not implemented for this player)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD add command
+ * @details This function processes the MPD "add" command which would normally
+ * add a stream to the current playlist. In this implementation, the command is
+ * acknowledged but has no effect since playlist management is handled through
+ * the web interface.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually add streams to the playlist since
+ * playlist management is performed through the web interface. The command
+ * is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for add command)
+ */
+void MPDInterface::handleAddCommand(const String& args) {
+  // Add command (not implemented for this player)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD clear command
+ * @details This function processes the MPD "clear" command which would normally
+ * clear the current playlist. In this implementation, the command is acknowledged
+ * but has no effect since playlist management is handled through the web interface.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually clear the playlist since
+ * playlist management is performed through the web interface. The command
+ * is simply acknowledged to maintain client compatibility.
+ * 
+ * @param args Command arguments (not used for clear command)
+ */
+void MPDInterface::handleClearCommand(const String& args) {
+  // Clear command (not implemented for this player)
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD getvol command
+ * @details This function processes the MPD "getvol" command by returning the
+ * current playback volume as a percentage value. The volume is converted from
+ * the ESP32-audioI2S 0-22 scale to MPD's 0-100 percentage scale.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Converting volume from ESP32-audioI2S 0-22 scale to MPD 0-100 percentage
+ * - Returning volume in the standard "volume: value" format
+ * - Supporting clients that query current volume settings
+ * 
+ * Response format:
+ * - "volume: X\n" where X is the current volume percentage (0-100)
+ * - Standard OK response termination
+ * 
+ * This command is typically used by MPD clients to display or synchronize
+ * volume controls with the current player state.
+ * 
+ * @param args Command arguments (not used for getvol command)
+ */
+void MPDInterface::handleGetVolCommand(const String& args) {
+  // Get volume command
+  int volPercent = map(volumeRef, 0, 22, 0, 100);
+  mpdClient.print("volume: " + String(volPercent) + "\n");
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD lsinfo command
+ * @details This function processes the MPD "lsinfo" command by returning
+ * simple information about all streams in the playlist. This command is
+ * typically used by MPD clients to browse available media.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Providing basic stream metadata for each playlist entry
+ * - Including file URI, title, track number, and last modified information
+ * - Using minimal detail level for efficient response
+ * 
+ * Response information for each playlist entry includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * - Track number (1-based index)
+ * - Last modified timestamp
+ * 
+ * This command is functionally similar to listallinfo but with simpler
+ * metadata, making it suitable for browsing interfaces.
+ * 
+ * @param args Command arguments (not used for lsinfo command)
+ */
+void MPDInterface::handleLsInfoCommand(const String& args) {
+  // List info command
+  sendPlaylistInfo(1); // Simple detail
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD playlistid command
+ * @details This function processes the MPD "playlistid" command by returning
+ * information about a specific stream in the playlist identified by its ID.
+ * If no ID is provided, it returns information about all streams.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Validating playlist IDs against current playlist bounds
+ * - Providing appropriate error responses for invalid IDs
+ * - Returning comprehensive metadata for valid entries
+ * - Supporting both specific ID and all-entries modes
+ * 
+ * For valid IDs, the response includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * - Artist name (WebRadio)
+ * - Album name (WebRadio)
+ * - Entry ID (0-based index)
+ * - Position (0-based index)
+ * 
+ * Error handling:
+ * - Returns ACK error for IDs outside playlist bounds
+ * - Returns full playlist info when no ID specified
+ * 
+ * @param args Command arguments (optional playlist ID)
+ */
+void MPDInterface::handlePlaylistIdCommand(const String& args) {
+  // Playlist ID command
+  int id = -1;
+  if (args.length() > 0) {
+    id = parseValue(args);
+    // Validate ID range
+    if (id < 0 || id >= playlistCountRef) {
+      mpdClient.print(mpdResponseError("playlistid", "Invalid playlist ID"));
+      return;
+    }
+  }
+  // Check if the ID is valid
+  if (id >= 0 && id < playlistCountRef) {
+    mpdClient.print("file: " + String(playlistRef[id + 1].url) + "\n");
+    mpdClient.print("Title: " + String(playlistRef[id + 1].name) + "\n");
+    mpdClient.print("Artist: WebRadio\n");
+    mpdClient.print("Album: WebRadio\n");
+    mpdClient.print("Id: " + String(id) + "\n");
+    mpdClient.print("Pos: " + String(id) + "\n");
+  } else {
+    // Return all if no specific ID
+    sendPlaylistInfo(3);
+  }
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
+ * @brief Handle the MPD playlistinfo command
+ * @details This function processes the MPD "playlistinfo" command by returning
+ * detailed information about all streams in the playlist with full metadata.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Providing comprehensive stream metadata for each playlist entry
+ * - Including file URI, title, ID, position, and last modified information
+ * - Supporting artist/album metadata with dummy "WebRadio" values
+ * 
+ * Response information for each playlist entry includes:
+ * - File URI (stream URL)
+ * - Track title (stream name)
+ * - Artist name (WebRadio)
+ * - Album name (WebRadio)
+ * - Entry ID (0-based index)
+ * - Position (0-based index)
+ * - Track number (1-based index)
+ * - Last modified timestamp
+ * 
+ * @param args Command arguments (not used for playlistinfo command)
+ */
+void MPDInterface::handlePlaylistInfoCommand(const String& args) {
+  // Playlist info command
+  sendPlaylistInfo(3);
+  mpdClient.print(mpdResponseOK());
+}
+
+/**
  * @brief Handle the MPD currentsong command
  * @details This function processes the MPD "currentsong" command by returning
  * detailed information about the currently playing stream. The response includes
@@ -218,6 +967,357 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
 }
 
 // Improve function documentation, AI!
+void MPDInterface::handlePlayCommand(const String& args) {
+  // Play and Play ID commands
+  int playlistIndex = -1;
+  if (args.length() > 0) {
+    playlistIndex = parseValue(args) - 1; // Convert to 0-based index
+    // Validate index if provided
+    if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
+      mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
+      return;
+    }
+  }
+  if (handlePlayback(playlistIndex)) {
+    mpdClient.print(mpdResponseOK());
+  } else {
+    mpdClient.print(mpdResponseError("play", "No playlist"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD tagtypes command
+ * @details This function processes the MPD "tagtypes" command by returning
+ * a list of supported tag types that can be used for searching and filtering.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Supporting special "all" and "clear" arguments
+ * - Returning the list of supported tag types in standard format
+ * - Using "tagtype: " prefix for each supported tag type
+ * - Including all tag types registered in the supportedTagTypes vector
+ * 
+ * Response format:
+ * - One "tagtype: tag_type" line for each supported tag type
+ * - Standard OK response termination
+ * 
+ * Special arguments:
+ * - "all": Returns OK without listing tag types
+ * - "clear": Returns OK without listing tag types
+ * 
+ * The supportedTagTypes vector is initialized in the constructor and contains
+ * all tag types that this implementation supports for search operations.
+ * 
+ * @param args Command arguments (optional "all" or "clear")
+ */
+void MPDInterface::handleTagTypesCommand(const String& args) {
+  // Tag types command
+  if (args.equals("\"all\"") || args.equals("\"clear\"")) {
+    // These commands simply return OK
+    mpdClient.print(mpdResponseOK());
+  } else {
+    // Send the list of supported tag types
+    for (const auto& tagType : supportedTagTypes) {
+      mpdClient.print("tagtype: ");
+      mpdClient.print(tagType.c_str());
+      mpdClient.print("\n");
+    }
+    mpdClient.print(mpdResponseOK());
+  }
+}
+
+/**
+ * @brief Handle the MPD enableoutput command
+ * @details This function processes the MPD "enableoutput" command which would
+ * normally enable a specific audio output. In this implementation, the command
+ * is acknowledged but has no effect since the I2S output is always enabled.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Validating the output ID (only 0 is supported)
+ * - Accepting the command without error for valid IDs
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually enable outputs since
+ * the I2S output is always enabled. The command is simply acknowledged
+ * to maintain client compatibility.
+ * 
+ * Error handling:
+ * - Returns ACK error for invalid output IDs (not 0)
+ * - Returns ACK error for missing output ID
+ * 
+ * @param args Command arguments (output ID to enable)
+ */
+void MPDInterface::handleEnableOutputCommand(const String& args) {
+  // Enable output command
+  if (args.length() > 0) {
+    int outputId = parseValue(args);
+    if (outputId == 0) {
+      // Only output 0 (I2S) is supported with ESP32-audioI2S
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("enableoutput", "Invalid output ID"));
+      return;
+    }
+  } else {
+    mpdClient.print(mpdResponseError("enableoutput", "Missing output ID"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD disableoutput command
+ * @details This function processes the MPD "disableoutput" command which would
+ * normally disable a specific audio output. In this implementation, the command
+ * is acknowledged but has no effect since only I2S output is available and it
+ * cannot be disabled.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Validating the output ID (only 0 is supported)
+ * - Accepting the command without error for valid IDs
+ * - Returning standard OK response
+ * - Maintaining compatibility with MPD clients
+ * 
+ * Note: This implementation does not actually disable outputs since
+ * the I2S output is always enabled. The command is simply acknowledged
+ * to maintain client compatibility.
+ * 
+ * Error handling:
+ * - Returns ACK error for invalid output IDs (not 0)
+ * - Returns ACK error for missing output ID
+ * 
+ * @param args Command arguments (output ID to disable)
+ */
+void MPDInterface::handleDisableOutputCommand(const String& args) {
+  // Disable output command
+  if (args.length() > 0) {
+    int outputId = parseValue(args);
+    // Validate output ID (only 0 is supported)
+    if (outputId != 0) {
+      mpdClient.print(mpdResponseError("disableoutput", "Invalid output ID"));
+      return;
+    }
+    // We don't actually disable outputs, just acknowledge the command
+    mpdClient.print(mpdResponseOK());
+  } else {
+    mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD previous command
+ * @details This function processes the MPD "previous" command by moving playback
+ * to the previous stream in the playlist. If currently at the first stream, it
+ * wraps around to the last stream.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Calculating previous playlist index with wraparound behavior
+ * - Validating playlist exists before attempting navigation
+ * - Providing appropriate error responses for empty playlists
+ * - Updating global state and persisting player settings
+ * 
+ * Navigation behavior:
+ * - Moves to previous stream (index - 1 with wraparound)
+ * - Wraps to last stream when at beginning of playlist
+ * - Maintains current selection state
+ * - Starts playback of new stream
+ * 
+ * Error handling:
+ * - Returns ACK error for empty playlists
+ * - Returns ACK error for playback failures
+ * 
+ * @param args Command arguments (not used for previous command)
+ */
+void MPDInterface::handlePreviousCommand(const String& args) {
+  // Previous command
+  if (playlistCountRef > 0) {
+    int prevIndex = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
+    if (handlePlayback(prevIndex)) {
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("previous", "Playback failed"));
+      return;
+    }
+  } else {
+    mpdClient.print(mpdResponseError("previous", "No playlist"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD next command
+ * @details This function processes the MPD "next" command by advancing playback
+ * to the next stream in the playlist. If currently at the last stream, it wraps
+ * around to the first stream.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Calculating next playlist index with wraparound behavior
+ * - Validating playlist exists before attempting navigation
+ * - Providing appropriate error responses for empty playlists
+ * - Updating global state and persisting player settings
+ * 
+ * Navigation behavior:
+ * - Advances to next stream (index + 1)
+ * - Wraps to first stream when at end of playlist
+ * - Maintains current selection state
+ * - Starts playback of new stream
+ * 
+ * Error handling:
+ * - Returns ACK error for empty playlists
+ * - Returns ACK error for playback failures
+ * 
+ * @param args Command arguments (not used for next command)
+ */
+void MPDInterface::handleNextCommand(const String& args) {
+  // Next command
+  if (playlistCountRef > 0) {
+    int nextIndex = (currentSelectionRef + 1) % playlistCountRef;
+    if (handlePlayback(nextIndex)) {
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("next", "Playback failed"));
+      return;
+    }
+  } else {
+    mpdClient.print(mpdResponseError("next", "No playlist"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD volume command
+ * @details This function processes the MPD "volume" command by adjusting the
+ * playback volume by a relative amount. The volume change can be positive
+ * (increase) or negative (decrease) and is applied to the current volume.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting relative volume changes (positive or negative integers)
+ * - Converting current volume to MPD's 0-100 percentage scale for calculations
+ * - Clamping resulting volume to valid 0-100 range
+ * - Converting back to ESP32-audioI2S 0-22 scale for hardware control
+ * - Updating UI and notifying WebSocket clients of changes
+ * 
+ * Volume adjustment features:
+ * - Relative change support (positive/negative values)
+ * - Range clamping (0-100 percentage, 0-22 hardware scale)
+ * - Real-time audio volume adjustment
+ * - UI synchronization through updateDisplay()
+ * - WebSocket notifications for remote clients
+ * 
+ * Error handling:
+ * - Returns ACK error for missing volume change values
+ * 
+ * @param args Command arguments (relative volume change)
+ */
+void MPDInterface::handleVolumeCommand(const String& args) {
+  // Volume command - change volume by relative amount
+  if (args.length() > 0) {
+    // Parse volume change value (can be negative for decrease)
+    int volumeChange = parseValue(args);
+    
+    // Get current volume as percentage for MPD compatibility
+    int currentVolPercent = map(volumeRef, 0, 22, 0, 100);
+    
+    // Apply change and clamp to 0-100 range
+    int newVolPercent = currentVolPercent + volumeChange;
+    if (newVolPercent < 0) newVolPercent = 0;
+    if (newVolPercent > 100) newVolPercent = 100;
+    
+    // Convert back to 0-22 scale for ESP32-audioI2S and set
+    volumeRef = map(newVolPercent, 0, 100, 0, 22);
+    if (audioRef) {
+      audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
+    }
+    updateDisplay();
+    sendStatusToClients();  // Notify WebSocket clients of volume change
+    mpdClient.print(mpdResponseOK());
+  } else {
+    mpdClient.print(mpdResponseError("volume", "Missing volume change value"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD setvol command
+ * @details This function processes the MPD "setvol" command by setting the
+ * playback volume to an absolute value. The volume is specified as a percentage
+ * (0-100) which is converted to the ESP32-audioI2S 0-22 scale.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting volume values in MPD's 0-100 percentage scale
+ * - Converting values to ESP32-audioI2S 0-22 scale for hardware control
+ * - Validating volume values against acceptable range
+ * - Updating UI and notifying WebSocket clients of changes
+ * - Providing appropriate error responses for invalid values
+ * 
+ * Volume control features:
+ * - Range validation (0-100 for MPD compatibility)
+ * - Automatic scaling to 0-22 for ESP32-audioI2S
+ * - Real-time audio volume adjustment
+ * - UI synchronization through updateDisplay()
+ * - WebSocket notifications for remote clients
+ * 
+ * Error handling:
+ * - Returns ACK error for missing volume values
+ * - Returns ACK error for out-of-range volume values
+ * 
+ * @param args Command arguments (volume percentage 0-100)
+ */
+void MPDInterface::handleSetVolCommand(const String& args) {
+  // Set volume command
+  if (args.length() > 0) {
+    // Parse volume value, handling quotes if present
+    int newVolume = parseValue(args);
+    // Validate volume range (0-100 for MPD compatibility)
+    if (newVolume >= 0 && newVolume <= 100) {
+      // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
+      volumeRef = map(newVolume, 0, 100, 0, 22);
+      if (audioRef) {
+        audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
+      }
+      updateDisplay();
+      sendStatusToClients();  // Notify WebSocket clients of volume change
+      mpdClient.print(mpdResponseOK());
+    } else {
+      mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
+      return;
+    }
+  } else {
+    mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
+    return;
+  }
+}
+
+/**
+ * @brief Handle the MPD play and playid commands
+ * @details This function processes the MPD "play" and "playid" commands by
+ * starting playback of a stream from the playlist. The command can specify
+ * either a playlist index (play) or playlist ID (playid), with -1 indicating
+ * the current selection.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Supporting both play (by index) and playid (by ID) commands
+ * - Validating playlist indices against current playlist bounds
+ * - Providing appropriate error responses for invalid indices
+ * - Handling both explicit and implicit stream selection
+ * - Updating global state and persisting player settings
+ * 
+ * Playback flow:
+ * 1. Parse and validate playlist index/ID from arguments
+ * 2. Use current selection if no valid index provided
+ * 3. Validate index is within playlist bounds
+ * 4. Update current selection
+ * 5. Start stream playback
+ * 6. Mark player state as dirty and save
+ * 
+ * Error handling:
+ * - Returns ACK error for empty playlists
+ * - Returns ACK error for indices outside playlist bounds
+ * - Returns ACK error for playback failures
+ * 
+ * @param args Command arguments (optional playlist index/ID)
+ */
 void MPDInterface::handlePlayCommand(const String& args) {
   // Play and Play ID commands
   int playlistIndex = -1;
@@ -477,6 +1577,36 @@ void MPDInterface::handleKillCommand(const String& args) {
   ESP.restart();
 }
 
+/**
+ * @brief Handle the MPD kill command
+ * @details This function processes the MPD "kill" command by restarting the
+ * ESP32 device. This provides a way for MPD clients to trigger a system
+ * restart through the standard MPD protocol.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response before restart
+ * - Flushing the client connection before restart
+ * - Using ESP.restart() to perform system restart
+ * 
+ * Restart behavior:
+ * - Sends OK response to acknowledge command
+ * - Flushes client connection to ensure delivery
+ * - Calls ESP.restart() to reboot the device
+ * 
+ * This command provides MPD clients with a standard way to restart the
+ * NetTuner device without requiring direct access to the web interface.
+ * 
+ * @param args Command arguments (not used for kill command)
+ */
+void MPDInterface::handleKillCommand(const String& args) {
+  // Kill command - trigger system restart
+  mpdClient.print(mpdResponseOK());
+  mpdClient.flush();
+  // Use ESP32 restart function
+  ESP.restart();
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleUpdateCommand(const String& args) {
   // Update command (not implemented for this player)
@@ -602,6 +1732,45 @@ void MPDInterface::handleIdleCommand(const String& args) {
   // Don't send immediate response - wait for changes
 }
 
+/**
+ * @brief Handle the MPD idle command
+ * @details This function processes the MPD "idle" command by putting the
+ * connection into idle mode where it waits for changes in player state
+ * before sending notifications. This allows MPD clients to efficiently
+ * monitor player status without polling.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Setting the inIdleMode flag to enable idle processing
+ * - Initializing hash values for change detection
+ * - Computing initial hashes of stream title and player status
+ * - Suspending normal command processing until changes occur
+ * 
+ * Idle mode behavior:
+ * - Monitors stream title for playlist changes
+ * - Monitors player status (playing, volume, bitrate) for player changes
+ * - Sends "changed: " notifications when changes are detected
+ * - Supports noidle command to exit idle mode
+ * 
+ * Change detection uses hash-based comparison for efficiency:
+ * - Title hash: polynomial rolling hash of stream title string
+ * - Status hash: combined hash of playing status, volume, and bitrate
+ * 
+ * @param args Command arguments (not used for idle command)
+ */
+void MPDInterface::handleIdleCommand(const String& args) {
+  // Idle command - enter idle mode and wait for changes
+  inIdleMode = true;
+  // Initialize hashes for tracking changes
+  lastTitleHash = 0;
+  for (int i = 0; streamTitleRef[i]; i++) {
+    lastTitleHash = lastTitleHash * 31 + streamTitleRef[i];
+  }
+  lastStatusHash = isPlayingRef ? 1 : 0;
+  lastStatusHash = lastStatusHash * 31 + volumeRef;
+  lastStatusHash = lastStatusHash * 31 + bitrateRef;
+  // Don't send immediate response - wait for changes
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleNoIdleCommand(const String& args) {
   // Noidle command
@@ -610,6 +1779,35 @@ void MPDInterface::handleNoIdleCommand(const String& args) {
 }
 
 // Improve function documentation, AI!
+void MPDInterface::handleCloseCommand(const String& args) {
+  // Close command
+  mpdClient.print(mpdResponseOK());
+  mpdClient.stop();
+}
+
+/**
+ * @brief Handle the MPD close command
+ * @details This function processes the MPD "close" command by closing
+ * the current client connection. This allows MPD clients to gracefully
+ * terminate their connection to the server.
+ * 
+ * The function implements MPD protocol compatibility by:
+ * - Accepting the command without error
+ * - Returning standard OK response before closing
+ * - Closing the client connection using mpdClient.stop()
+ * - Cleaning up connection state for next client
+ * 
+ * Connection cleanup:
+ * - Sends OK response to acknowledge command
+ * - Calls mpdClient.stop() to close connection
+ * - Resets command list and idle mode state
+ * - Clears command buffer for next connection
+ * 
+ * This command provides MPD clients with a standard way to terminate
+ * their connection without simply dropping the TCP connection.
+ * 
+ * @param args Command arguments (not used for close command)
+ */
 void MPDInterface::handleCloseCommand(const String& args) {
   // Close command
   mpdClient.print(mpdResponseOK());
