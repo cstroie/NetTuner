@@ -225,23 +225,16 @@ bool MPDInterface::handlePlayback(int index) {
     return false;
   }
   
-  // Determine which index to play
-  int playIndex = index;
-  if (playIndex < 0 || playIndex >= playlistCountRef) {
-    // Use current selection if no valid index provided or out of range
-    playIndex = currentSelectionRef;
-  }
-  
   // Validate that we have a valid index within playlist bounds
-  if (playIndex < 0 || playIndex >= playlistCountRef) {
+  if (index < 0 || index >= playlistCountRef) {
     return false;
   }
   
   // Update current selection
-  currentSelectionRef = playIndex;
+  currentSelectionRef = index;
   
   // Start playback
-  startStream(playlistRef[playIndex].url, playlistRef[playIndex].name);
+  startStream(playlistRef[index].url, playlistRef[index].name);
   
   // Update state
   markPlayerStateDirty();
@@ -577,7 +570,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistinfo")) {
     // Playlist info command
-    sendPlaylistInfo(2); // Full detail
+    sendPlaylistInfo(3);
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("playlistid")) {
     // Playlist ID command
@@ -589,38 +582,19 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (id >= 0 && id < playlistCountRef) {
       mpdClient.print("file: " + String(playlistRef[id].url) + "\n");
       mpdClient.print("Title: " + String(playlistRef[id].name) + "\n");
+      mpdClient.print("Artist: WebRadio\n");
+      mpdClient.print("Album: WebRadio\n");
       mpdClient.print("Id: " + String(id) + "\n");
       mpdClient.print("Pos: " + String(id) + "\n");
     } else {
       // Return all if no specific ID
-      sendPlaylistInfo(2); // Full detail
+      sendPlaylistInfo(3);
     }
     mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("playid")) {
-    // Play ID command
-    if (command.length() > 7) {
-      int id = parseValue(command.substring(7));
-      if (id >= 0 && id < playlistCountRef) {
-        currentSelectionRef = id;
-        startStream(playlistRef[id].url, playlistRef[id].name);
-        markPlayerStateDirty();
-        savePlayerState();
-        mpdClient.print(mpdResponseOK());
-      } else {
-        mpdClient.print(mpdResponseError("playid", "No such song"));
-      }
-    } else if (playlistCountRef > 0 && currentSelectionRef < playlistCountRef) {
-      startStream(playlistRef[currentSelectionRef].url, playlistRef[currentSelectionRef].name);
-      markPlayerStateDirty();
-      savePlayerState();
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("playid", "No playlist"));
-    }
-  } else  if (command.startsWith("play")) {
-    // Play command
-    int index = -1;
-    if (command.length() > 5) {
+  } else if (command.startsWith("playid") || command.startsWith("play")) {
+    // Play and Play ID commands
+    int prefixLength = command.startsWith("playid") ? 6 : 4;
+    if (command.length() > prefixLength + 1) {
       index = parseValue(command.substring(5));
     }
     
