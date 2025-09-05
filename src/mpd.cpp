@@ -824,7 +824,6 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Kill command - trigger system restart
     mpdClient.print(mpdResponseOK());
     mpdClient.flush();
-    
     // Use ESP32 restart function
     ESP.restart();
   } else if (command.startsWith("update")) {
@@ -898,7 +897,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("plchanges")) {
     // Playlist changes command
     // For simplicity, we'll return the entire playlist (as if all entries changed)
-    sendPlaylistInfo(2);
+    sendPlaylistInfo(3);
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("idle")) {
     // Idle command - enter idle mode and wait for changes
