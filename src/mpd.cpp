@@ -154,8 +154,6 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
  * @param args Command arguments (not used for status command)
  */
 void MPDInterface::handleStatusCommand(const String& args) {
-  // Status command
-  // Convert volume from 0-22 scale to 0-100 scale for MPD compatibility
   int volPercent = map(volumeRef, 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print("repeat: 0\n");
@@ -186,40 +184,13 @@ void MPDInterface::handleStatusCommand(const String& args) {
 }
 
 // Improve function documentation, AI!
-void MPDInterface::handleCurrentSongCommand(const String& args) {
-  // Current song command
-  if (isPlayingRef && strlen(streamNameRef) > 0) {
-    mpdClient.print("file: " + String(streamURLRef) + "\n");
-    if (strlen(streamTitleRef) > 0) {
-      String streamTitleStr = String(streamTitleRef);
-      // Check if stream title contains " - " separator for artist/track parsing
-      int separatorPos = streamTitleStr.indexOf(" - ");
-      if (separatorPos != -1) {
-        // Split into artist and track using the " - " separator
-        String artist = streamTitleStr.substring(0, separatorPos);
-        String title = streamTitleStr.substring(separatorPos + 3); // Skip " - "
-        mpdClient.print("Artist: " + artist + "\n");
-        mpdClient.print("Title: " + title + "\n");
-      } else {
-        // No separator, use full title as track name
-        mpdClient.print("Title: " + streamTitleStr + "\n");
-      }
-    } else {
-      // No stream title, use stream name as fallback
-      mpdClient.print("Title: " + String(streamNameRef) + "\n");
-    }
-    mpdClient.print("Id: " + String(currentSelectionRef + 1) + "\n");
-    mpdClient.print("Pos: " + String(currentSelectionRef + 1) + "\n");
-  }
-  mpdClient.print(mpdResponseOK());
-}
-
 void MPDInterface::handlePlaylistInfoCommand(const String& args) {
   // Playlist info command
   sendPlaylistInfo(3);
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePlaylistIdCommand(const String& args) {
   // Playlist ID command
   int id = -1;
@@ -246,6 +217,7 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePlayCommand(const String& args) {
   // Play and Play ID commands
   int playlistIndex = -1;
@@ -265,12 +237,14 @@ void MPDInterface::handlePlayCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleLsInfoCommand(const String& args) {
   // List info command
   sendPlaylistInfo(1); // Simple detail
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleSetVolCommand(const String& args) {
   // Set volume command
   if (args.length() > 0) {
@@ -296,6 +270,7 @@ void MPDInterface::handleSetVolCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleGetVolCommand(const String& args) {
   // Get volume command
   int volPercent = map(volumeRef, 0, 22, 0, 100);
@@ -303,6 +278,7 @@ void MPDInterface::handleGetVolCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleVolumeCommand(const String& args) {
   // Volume command - change volume by relative amount
   if (args.length() > 0) {
@@ -331,6 +307,7 @@ void MPDInterface::handleVolumeCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleNextCommand(const String& args) {
   // Next command
   if (playlistCountRef > 0) {
@@ -347,6 +324,7 @@ void MPDInterface::handleNextCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePreviousCommand(const String& args) {
   // Previous command
   if (playlistCountRef > 0) {
@@ -363,31 +341,37 @@ void MPDInterface::handlePreviousCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleClearCommand(const String& args) {
   // Clear command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleAddCommand(const String& args) {
   // Add command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleDeleteCommand(const String& args) {
   // Delete command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleLoadCommand(const String& args) {
   // Load command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleSaveCommand(const String& args) {
   // Save command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleOutputsCommand(const String& args) {
   // Outputs command - with ESP32-audioI2S, we only have I2S output
   mpdClient.print("outputid: 0\n");
@@ -397,6 +381,7 @@ void MPDInterface::handleOutputsCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleDisableOutputCommand(const String& args) {
   // Disable output command
   if (args.length() > 0) {
@@ -414,6 +399,7 @@ void MPDInterface::handleDisableOutputCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleEnableOutputCommand(const String& args) {
   // Enable output command
   if (args.length() > 0) {
@@ -431,6 +417,7 @@ void MPDInterface::handleEnableOutputCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleCommandsCommand(const String& args) {
   // Commands command
   // Send the list of supported commands
@@ -444,11 +431,13 @@ void MPDInterface::handleCommandsCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleNotCommandsCommand(const String& args) {
   // Not commands command
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleStatsCommand(const String& args) {
   // Stats command
   unsigned long uptime = (millis() / 1000) - startTime;
@@ -467,16 +456,19 @@ void MPDInterface::handleStatsCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePingCommand(const String& args) {
   // Ping command
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePasswordCommand(const String& args) {
   // Password command (not implemented)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleKillCommand(const String& args) {
   // Kill command - trigger system restart
   mpdClient.print(mpdResponseOK());
@@ -485,24 +477,28 @@ void MPDInterface::handleKillCommand(const String& args) {
   ESP.restart();
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleUpdateCommand(const String& args) {
   // Update command (not implemented for this player)
   mpdClient.print("updating_db: 1\n");
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleListAllInfoCommand(const String& args) {
   // List all info command
   sendPlaylistInfo(1); // Simple detail
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleListPlaylistInfoCommand(const String& args) {
   // List playlist info command
   sendPlaylistInfo(0); // Minimal detail
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleListPlaylistsCommand(const String& args) {
   // List playlists command
   // For this implementation, we only have one playlist (the main playlist)
@@ -511,6 +507,7 @@ void MPDInterface::handleListPlaylistsCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleListCommand(const String& args) {
   // List command
   if (args.length() > 0) {
@@ -535,6 +532,7 @@ void MPDInterface::handleListCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleSearchCommand(const String& args) {
   // Search command (partial match)
   // Reconstruct the full command for compatibility with existing function
@@ -543,6 +541,7 @@ void MPDInterface::handleSearchCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleFindCommand(const String& args) {
   // Find command (exact match)
   // Reconstruct the full command for compatibility with existing function
@@ -551,16 +550,19 @@ void MPDInterface::handleFindCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleSeekCommand(const String& args) {
   // Seek command (not implemented for streaming)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleSeekIdCommand(const String& args) {
   // Seek ID command (not implemented for streaming)
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleTagTypesCommand(const String& args) {
   // Tag types command
   if (args.equals("\"all\"") || args.equals("\"clear\"")) {
@@ -577,6 +579,7 @@ void MPDInterface::handleTagTypesCommand(const String& args) {
   }
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handlePlChangesCommand(const String& args) {
   // Playlist changes command
   // For simplicity, we'll return the entire playlist (as if all entries changed)
@@ -584,6 +587,7 @@ void MPDInterface::handlePlChangesCommand(const String& args) {
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleIdleCommand(const String& args) {
   // Idle command - enter idle mode and wait for changes
   inIdleMode = true;
@@ -598,12 +602,14 @@ void MPDInterface::handleIdleCommand(const String& args) {
   // Don't send immediate response - wait for changes
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleNoIdleCommand(const String& args) {
   // Noidle command
   inIdleMode = false;
   mpdClient.print(mpdResponseOK());
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleCloseCommand(const String& args) {
   // Close command
   mpdClient.print(mpdResponseOK());
