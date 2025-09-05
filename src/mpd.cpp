@@ -793,7 +793,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print("uptime: " + String(uptime) + "\n");
     mpdClient.print("playtime: " + String(playtime) + "\n");
     mpdClient.print("db_playtime: " + String(playtime) + "\n");
-    mpdClient.print("db_update: 0\n");
+    mpdClient.print("db_update: " + String(BUILD_TIME_UNIX) + "\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("ping")) {
     // Ping command
