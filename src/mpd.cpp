@@ -594,11 +594,12 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("playid") || command.startsWith("play")) {
     // Play and Play ID commands
     int prefixLength = command.startsWith("playid") ? 6 : 4;
+    int playlistIndex = -1;
     if (command.length() > prefixLength + 1) {
-      index = parseValue(command.substring(5));
+      playlistIndex = parseValue(command.substring(prefixLength + 1));
     }
     
-    if (handlePlayback(index)) {
+    if (handlePlayback(playlistIndex)) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("play", "No playlist"));
