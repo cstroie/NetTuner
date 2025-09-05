@@ -513,14 +513,8 @@ void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch
  * - Special modes: idle, noidle, command lists
  */
 void MPDInterface::handleMPDCommand(const String& command) {
-  if (command.startsWith("stop")) {
-    // Stop command
-    stopStream();
-    markPlayerStateDirty();
-    savePlayerState();
-    mpdClient.print(mpdResponseOK());
-  } else if (command.startsWith("pause")) {
-    // Pause command (treat as stop for simplicity)
+  if (command.startsWith("stop") || command.startsWith("pause")) {
+    // Stop/Pause command (both treated as stop for simplicity)
     stopStream();
     markPlayerStateDirty();
     savePlayerState();
