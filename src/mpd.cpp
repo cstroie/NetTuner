@@ -48,6 +48,31 @@ int parseValue(const String& valueStr) {
   return cleanedStr.toInt();
 }
 
+/**
+ * @brief Handle the MPD stop command
+ * @details This function processes the MPD "stop" command (and "pause" command which
+ * is treated identically in this implementation). It stops the currently playing
+ * stream and saves the player state.
+ * 
+ * The function performs the following actions:
+ * 1. Calls stopStream() to stop audio playback
+ * 2. Marks the player state as dirty to trigger persistence
+ * 3. Saves the player state to non-volatile storage
+ * 4. Sends an OK response to the MPD client
+ * 
+ * In MPD protocol terms, both "stop" and "pause" commands are handled by this
+ * function for simplicity, as the NetTuner implementation treats them the same way.
+ * 
+ * @param args Command arguments (not used for stop command)
+ */
+void MPDInterface::handleStopCommand(const String& args) {
+  // Stop/Pause command (both treated as stop for simplicity)
+  stopStream();
+  markPlayerStateDirty();
+  savePlayerState();
+  mpdClient.print(mpdResponseOK());
+}
+
 // Improve function documentation, AI!
 void MPDInterface::handleStopCommand(const String& args) {
   // Stop/Pause command (both treated as stop for simplicity)
