@@ -509,32 +509,6 @@ void MPDInterface::handleDecodersCommand(const String& args) {
 }
 
 /**
- * @brief Parse value from string, handling quotes
- * @details Extracts a numeric value from a string, removing surrounding whitespace
- * and quotes if present. This is needed because MPD commands may send values
- * with or without quotes depending on the client implementation.
- * 
- * The function handles:
- * - Whitespace trimming
- * - Quote removal (both single and double quotes)
- * - String to integer conversion
- * 
- * @param valueStr The value string to parse
- * @return The parsed value as integer
- */
-int parseValue(const String& valueStr) {
-  String cleanedStr = valueStr;
-  // Remove whitespace
-  cleanedStr.trim();
-  // Remove quotes if present
-  if (cleanedStr.startsWith("\"") && cleanedStr.endsWith("\"") && cleanedStr.length() >= 2) {
-    cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
-  }
-  // Convert to integer
-  return cleanedStr.toInt();
-}
-
-/**
  * @brief Constructor for MPDInterface
  * @details Initializes the MPD interface with references to global variables
  * and the WiFi server instance. All parameters are passed by reference to
