@@ -115,6 +115,13 @@ extern char ssid[MAX_WIFI_NETWORKS][64];
 extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
 
+// Stream information variables
+extern char streamURL[256];
+extern char streamName[128];
+extern char streamTitle[128];
+extern char streamIcyURL[256];
+extern char streamIconURL[256];
+
 // Forward declarations for global functions
 void stopStream();
 void startStream(const char* url = nullptr, const char* name = nullptr); 

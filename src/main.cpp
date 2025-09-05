@@ -216,6 +216,13 @@ int playlistCount = 0;
 int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
+// Stream information variables
+char streamURL[256] = "";
+char streamName[128] = "";
+char streamTitle[128] = "";
+char streamIcyURL[256] = "";
+char streamIconURL[256] = "";
+
 // Forward declarations for JSON helper functions
 bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
 bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
