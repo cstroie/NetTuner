@@ -83,11 +83,6 @@ struct Config {
 #define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
 #define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
 
-char streamURL[256] = "";
-char streamName[128] = "";
-char streamTitle[128] = "";
-char streamIcyURL[256] = "";
-char streamIconURL[256] = "";
 
 
 // Global variables
