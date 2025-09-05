@@ -554,17 +554,18 @@ void MPDInterface::handleMPDCommand(const String& command) {
     if (isPlayingRef && strlen(streamNameRef) > 0) {
       mpdClient.print("file: " + String(streamURLRef) + "\n");
       if (strlen(streamTitleRef) > 0) {
+        String streamTitleStr = String(streamTitleRef);
         // Check if stream title contains " - " separator for artist/track parsing
-        int separatorPos = streamTitleRef.indexOf(" - ");
+        int separatorPos = streamTitleStr.indexOf(" - ");
         if (separatorPos != -1) {
           // Split into artist and track using the " - " separator
-          String artist = streamTitleRef.substring(0, separatorPos);
-          String title = streamTitleRef.substring(separatorPos + 3); // Skip " - "
+          String artist = streamTitleStr.substring(0, separatorPos);
+          String title = streamTitleStr.substring(separatorPos + 3); // Skip " - "
           mpdClient.print("Artist: " + artist + "\n");
           mpdClient.print("Title: " + title + "\n");
         } else {
           // No separator, use full title as track name
-          mpdClient.print("Title: " + streamTitleRef + "\n");
+          mpdClient.print("Title: " + streamTitleStr + "\n");
         }
       } else {
         // No stream title, use stream name as fallback
