@@ -696,15 +696,24 @@ void MPDInterface::handleClient() {
  * 
  * Hash computation uses a simple polynomial rolling hash with base 31 for good
  * distribution properties while being computationally efficient.
+ * 
+ * The idle monitoring implements an efficient polling mechanism:
+ * - Computes rolling hashes of monitored data on each call
+ * - Compares with previously stored hashes to detect changes
+ * - Sends appropriate MPD notifications when changes occur
+ * - Handles noidle command to exit idle mode gracefully
+ * - Maintains low CPU usage through minimal processing per call
  */
 void MPDInterface::handleIdleMode() {
   // Check for title changes using hash computation
+  // Uses polynomial rolling hash with base 31 for good distribution
   unsigned long currentTitleHash = 0;
   for (int i = 0; streamTitleRef[i]; i++) {
     currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
   }
   
   // Check for status changes using hash computation
+  // Combines playing status (boolean), volume (0-22), and bitrate (kbps) into a single hash
   unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
   currentStatusHash = currentStatusHash * 31 + volumeRef;
   currentStatusHash = currentStatusHash * 31 + bitrateRef;
@@ -712,14 +721,14 @@ void MPDInterface::handleIdleMode() {
   bool sendIdleResponse = false;
   String idleChanges = "";
   
-  // Check for title change
+  // Check for title change - indicates playlist content change
   if (currentTitleHash != lastTitleHash) {
     idleChanges += "changed: playlist\n";
     lastTitleHash = currentTitleHash;
     sendIdleResponse = true;
   }
   
-  // Check for status change
+  // Check for status change - indicates player or mixer state change
   if (currentStatusHash != lastStatusHash) {
     idleChanges += "changed: player\n";
     idleChanges += "changed: mixer\n";
@@ -808,6 +817,17 @@ bool MPDInterface::handlePlayback(int index) {
  * 
  * The function processes only one command per call to avoid blocking other operations,
  * which is important for maintaining responsive MPD service.
+ * 
+ * Command processing implements a state machine with the following states:
+ * - Normal mode: Process commands immediately
+ * - Command list mode: Buffer commands until command_list_end
+ * - Idle mode: Handled separately in handleIdleMode()
+ * 
+ * The function implements proper buffering and command boundary detection:
+ * - Accumulates characters until newline delimiter is found
+ * - Trims whitespace from commands
+ * - Routes commands to appropriate handlers based on current mode
+ * - Processes one command at a time to maintain responsiveness
  */
 void MPDInterface::handleAsyncCommands() {
     // Read available data without blocking
@@ -837,6 +857,9 @@ void MPDInterface::handleAsyncCommands() {
 }
 
 /**
+ * @brief Handle command list processing
+ * @details Processes commands in command list mode with support for both
+ * command_list_begin and command_list_ok_begin modes.
  * 
  * In command_list_begin mode, commands are buffered until command_list_end
  * is received, then all commands are executed sequentially.
@@ -851,6 +874,13 @@ void MPDInterface::handleAsyncCommands() {
  * - Commands are executed in order
  * - Each command is processed as if sent individually
  * - Error in any command stops processing and returns error
+ * 
+ * The function implements proper command list state management:
+ * - Buffers commands until command_list_end is received
+ * - Executes all buffered commands sequentially
+ * - Handles both command_list_begin and command_list_ok_begin modes
+ * - Implements safety limit to prevent memory exhaustion
+ * - Properly resets state after command list execution
  * 
  * @param command The command to process
  */
@@ -998,6 +1028,13 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
  * - Handles quoted strings with proper quote removal
  * - Performs case-insensitive comparison
  * - Supports both partial (search) and exact (find) matching
+ * 
+ * Search algorithm implements efficient string matching:
+ * - Case-insensitive comparison by converting to lowercase
+ * - Exact matching for 'find' commands (strcmp equivalent)
+ * - Partial matching for 'search' commands (strstr equivalent)
+ * - Special handling for artist/album tags (returns all entries)
+ * - Proper metadata formatting for matched entries
  * 
  * @param command The full command string
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
