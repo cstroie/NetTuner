@@ -679,9 +679,16 @@ void MPDInterface::handleClient() {
         inIdleMode = false;
         commandBuffer = "";
       } else {
-        // Reject connection if we already have a client
-        WiFiClient rejectedClient = mpdServer.available();
-        rejectedClient.stop();  // Properly close rejected connection
+        // Accept connection even if we already have a client
+        WiFiClient newClient = mpdServer.available();
+        // Send MPD welcome message
+        if (newClient && newClient.connected()) {
+          newClient.print("OK MPD 0.23.0\n");
+          // Send error message
+          newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
+          // Close the connection
+          newClient.stop();
+        }
       }
     }
     // Check if client disconnected unexpectedly
