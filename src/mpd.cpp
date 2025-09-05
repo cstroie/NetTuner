@@ -802,16 +802,12 @@ void MPDInterface::handleMPDCommand(const String& command) {
     // Password command (not implemented)
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("kill")) {
-    // Kill command - trigger system restart using watchdog
+    // Kill command - trigger system restart
     mpdClient.print(mpdResponseOK());
     mpdClient.flush();
-    // Use ESP32 watchdog to trigger restart
-    esp_task_wdt_init(1, true);  // Initialize watchdog with 1 second timeout and panic mode
-    esp_task_wdt_add(NULL);      // Add current task to watchdog
-    // Feed the watchdog once to start the countdown, then let it timeout
-    esp_task_wdt_reset();    
-    // Wait for watchdog to trigger reset
-    while (true) {}
+    
+    // Use ESP32 restart function
+    ESP.restart();
   } else if (command.startsWith("update")) {
     // Update command (not implemented for this player)
     mpdClient.print("updating_db: 1\n");
