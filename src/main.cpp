@@ -225,6 +225,29 @@ TaskHandle_t audioTaskHandle = NULL;
 bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
 bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
 
+/**
+ * @brief Send JSON response with status and message
+ * Helper function to send standardized JSON responses
+ * @param status Status string ("success" or "error")
+ * @param message Human-readable message
+ * @param code HTTP status code (default 200 for success, 400 for error)
+ */
+void sendJsonResponse(const String& status, const String& message, int code = -1) {
+  // If code not specified, determine based on status
+  if (code == -1) {
+    code = (status == "success") ? 200 : 400;
+  }
+  
+  // Create JSON response
+  DynamicJsonDocument doc(256);
+  doc["status"] = status;
+  doc["message"] = message;
+  
+  String json;
+  serializeJson(doc, json);
+  server.send(code, "application/json", json);
+}
+
 // Player state tracking
 struct PlayerState {
   bool playing = false;
@@ -790,7 +813,7 @@ void handleWiFiScan() {
  */
 void handleWiFiSave() {
   if (!server.hasArg("plain")) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
+    sendJsonResponse("error", "Missing JSON data");
     return;
   }
   
@@ -799,7 +822,7 @@ void handleWiFiSave() {
   DeserializationError error = deserializeJson(doc, json);
   
   if (error) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+    sendJsonResponse("error", "Invalid JSON");
     return;
   }
   
@@ -818,7 +841,7 @@ void handleWiFiSave() {
           strncpy(ssid[wifiNetworkCount], ssidValue, sizeof(ssid[wifiNetworkCount]) - 1);
           ssid[wifiNetworkCount][sizeof(ssid[wifiNetworkCount]) - 1] = '\0';
         } else {
-          server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid SSID\"}");
+          sendJsonResponse("error", "Invalid SSID");
           return;
         }
         
@@ -840,7 +863,7 @@ void handleWiFiSave() {
   };
   
   saveWiFiCredentials();
-  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"WiFi configuration saved\"}");
+  sendJsonResponse("success", "WiFi configuration saved");
 }
 
 /**
@@ -1734,13 +1757,13 @@ void handlePostStreams() {
   String jsonData = server.arg("plain");
   // Validate that we received data
   if (jsonData.length() == 0) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
+    sendJsonResponse("error", "Missing JSON data");
     return;
   }
   // Validate JSON format (should be an array)
   jsonData.trim();
   if (!jsonData.startsWith("[") || !jsonData.endsWith("]")) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format - expected array\"}");
+    sendJsonResponse("error", "Invalid JSON format - expected array");
     return;
   }
   // Parse the JSON data
@@ -1750,19 +1773,19 @@ void handlePostStreams() {
   if (error) {
     Serial.print("JSON parsing error: ");
     Serial.println(error.c_str());
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
+    sendJsonResponse("error", "Invalid JSON format");
     return;
   }
   // Ensure it's an array
   if (!doc.is<JsonArray>()) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"JSON root must be an array\"}");
+    sendJsonResponse("error", "JSON root must be an array");
     return;
   }
   // Get the array
   JsonArray array = doc.as<JsonArray>();
   // Validate array size
   if (array.size() > MAX_PLAYLIST_SIZE) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Playlist exceeds maximum size\"}");
+    sendJsonResponse("error", "Playlist exceeds maximum size");
     return;
   }
   // Clear existing playlist
@@ -1774,7 +1797,7 @@ void handlePostStreams() {
     }
     // Validate required fields
     if (!item.containsKey("name") || !item.containsKey("url")) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Each item must have 'name' and 'url' fields\"}");
+      sendJsonResponse("error", "Each item must have 'name' and 'url' fields");
       return;
     }
     // Extract name and url
@@ -1782,12 +1805,12 @@ void handlePostStreams() {
     const char* url = item["url"];
     // Validate data
     if (!name || !url || strlen(name) == 0 || strlen(url) == 0) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Name and URL cannot be empty\"}");
+      sendJsonResponse("error", "Name and URL cannot be empty");
       return;
     }
     // Validate URL format
     if (!VALIDATE_URL(url)) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format\"}");
+      sendJsonResponse("error", "Invalid URL format");
       return;
     }
     // Add to playlist
@@ -1799,9 +1822,8 @@ void handlePostStreams() {
   }
   // Save to SPIFFS
   savePlaylist();
-  // Send success response as JSON
-  String response = "{\"status\":\"success\",\"message\":\"Playlist updated successfully\"}";
-  server.send(200, "application/json", response);
+  // Send success response
+  sendJsonResponse("success", "Playlist updated successfully");
 }
 
 /**
@@ -1821,12 +1843,12 @@ void handlePlay() {
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+      sendJsonResponse("error", "Invalid JSON");
       return;
     }
     // Check for required parameters
     if (!doc.containsKey("url") || !doc.containsKey("name")) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters: url and name\"}");
+      sendJsonResponse("error", "Missing required parameters: url and name");
       return;
     }
     // Extract URL and name
@@ -1839,17 +1861,17 @@ void handlePlay() {
     name = server.arg("name");
   } else {
     // Missing required parameters
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameters: url and name\"}");
+    sendJsonResponse("error", "Missing required parameters: url and name");
     return;
   }
   // Validate extracted values
   if (url.length() == 0 || name.length() == 0) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"URL and name cannot be empty\"}");
+    sendJsonResponse("error", "URL and name cannot be empty");
     return;
   }
   // Validate URL format
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid URL format. Must start with http:// or https://\"}");
+    sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
     return;
   }
   // Update currentSelection based on index
@@ -1874,7 +1896,7 @@ void handlePlay() {
   updateDisplay();
   sendStatusToClients();
   // Send success response
-  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream started successfully\"}");
+  sendJsonResponse("success", "Stream started successfully");
 }
 
 /**
@@ -1892,7 +1914,7 @@ void handleStop() {
   updateDisplay();
   sendStatusToClients();
   // Send success response
-  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Stream stopped successfully\"}");
+  sendJsonResponse("success", "Stream stopped successfully");
 }
 
 /**
@@ -1909,19 +1931,19 @@ void handleVolume() {
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+      sendJsonResponse("error", "Invalid JSON");
       return;
     }
     // Check for required parameters
     if (!doc.containsKey("volume")) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
+      sendJsonResponse("error", "Missing required parameter: volume");
       return;
     }
     // Extract volume value
     int newVolume = doc["volume"];
     // Validate volume range
     if (newVolume < 0 || newVolume > 22) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
+      sendJsonResponse("error", "Volume must be between 0 and 22");
       return;
     }
     // Update volume
@@ -1933,14 +1955,14 @@ void handleVolume() {
     updateDisplay();
     sendStatusToClients();
     // Send success response
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
+    sendJsonResponse("success", "Volume set successfully");
   } else if (server.hasArg("volume")) {
     // Handle form data
     String vol = server.arg("volume");
     int newVolume = vol.toInt();
     // Validate volume range
     if (newVolume < 0 || newVolume > 22) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Volume must be between 0 and 22\"}");
+      sendJsonResponse("error", "Volume must be between 0 and 22");
       return;
     }
     // Update volume
@@ -1952,10 +1974,10 @@ void handleVolume() {
     updateDisplay();
     sendStatusToClients();
     // Send success response
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Volume set successfully\"}");
+    sendJsonResponse("success", "Volume set successfully");
   } else {
     // Missing required parameter
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: volume\"}");
+    sendJsonResponse("error", "Missing required parameter: volume");
     return;
   }
 }
@@ -1974,7 +1996,7 @@ void handleTone() {
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+      sendJsonResponse("error", "Invalid JSON");
       return;
     }
     bool updated = false;
@@ -1982,7 +2004,7 @@ void handleTone() {
     if (doc.containsKey("bass")) {
       int newBass = doc["bass"];
       if (newBass < -6 || newBass > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Bass must be between -6 and 6\"}");
+        sendJsonResponse("error", "Bass must be between -6 and 6");
         return;
       }
       bass = newBass;
@@ -1992,7 +2014,7 @@ void handleTone() {
     if (doc.containsKey("midrange")) {
       int newMidrange = doc["midrange"];
       if (newMidrange < -6 || newMidrange > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Midrange must be between -6 and 6\"}");
+        sendJsonResponse("error", "Midrange must be between -6 and 6");
         return;
       }
       midrange = newMidrange;
@@ -2002,7 +2024,7 @@ void handleTone() {
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
       if (newTreble < -6 || newTreble > 6) {
-        server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Treble must be between -6 and 6\"}");
+        sendJsonResponse("error", "Treble must be between -6 and 6");
         return;
       }
       treble = newTreble;
@@ -2010,7 +2032,7 @@ void handleTone() {
     }
     // Check for missing parameters
     if (!updated) {
-      server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing required parameter: bass, midrange, or treble\"}");
+      sendJsonResponse("error", "Missing required parameter: bass, midrange, or treble");
       return;
     }
     // Apply tone settings to audio using the Audio library's setTone function
@@ -2021,9 +2043,9 @@ void handleTone() {
     // Update display and notify clients
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Tone settings updated successfully\"}");
+    sendJsonResponse("success", "Tone settings updated successfully");
   } else {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
+    sendJsonResponse("error", "Missing JSON data");
     return;
   }
 }
@@ -2104,7 +2126,7 @@ void handleGetConfig() {
 void handlePostConfig() {
   // Check for JSON data
   if (!server.hasArg("plain")) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Missing JSON data\"}");
+    sendJsonResponse("error", "Missing JSON data");
     return;
   }
   // Parse the JSON data
@@ -2113,7 +2135,7 @@ void handlePostConfig() {
   DeserializationError error = deserializeJson(doc, jsonData);
   // Check for JSON parsing errors
   if (error) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON\"}");
+    sendJsonResponse("error", "Invalid JSON");
     return;
   }
   // Update configuration values
@@ -2133,7 +2155,7 @@ void handlePostConfig() {
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
-  server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration updated successfully\"}");
+  sendJsonResponse("success", "Configuration updated successfully");
 }
 
 /**
@@ -2197,19 +2219,19 @@ void handleExportConfig() {
 void handleImportConfig() {
   // Check if request method is POST
   if (server.method() != HTTP_POST) {
-    server.send(405, "application/json", "{\"status\":\"error\",\"message\":\"Method not allowed\"}");
+    sendJsonResponse("error", "Method not allowed", 405);
     return;
   }
   // Check if we have data in the request body
   if (!server.hasArg("plain")) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No data received\"}");
+    sendJsonResponse("error", "No data received");
     return;
   }
   // Get the JSON data from the request body
   String jsonData = server.arg("plain");
   // Check if data is empty
   if (jsonData.length() == 0) {
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"No file uploaded\"}");
+    sendJsonResponse("error", "No file uploaded");
     return;
   }
   // Parse the JSON data
@@ -2217,7 +2239,7 @@ void handleImportConfig() {
   DeserializationError error = deserializeJson(doc, jsonData);
   if (error) {
     Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
-    server.send(400, "application/json", "{\"status\":\"error\",\"message\":\"Invalid JSON format\"}");
+    sendJsonResponse("error", "Invalid JSON format");
     return;
   }
   // Process each configuration section
@@ -2244,9 +2266,9 @@ void handleImportConfig() {
     }
   }
   if (success) {
-    server.send(200, "application/json", "{\"status\":\"success\",\"message\":\"Configuration imported successfully\"}");
+    sendJsonResponse("success", "Configuration imported successfully");
   } else {
-    server.send(500, "application/json", "{\"status\":\"error\",\"message\":\"Error importing configuration\"}");
+    sendJsonResponse("error", "Error importing configuration", 500);
   }
 }
 
