@@ -731,8 +731,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
   } else if (command.startsWith("commands")) {
     // Commands command
     // Send the list of supported commands
-    const int commandCount = sizeof(supportedCommands) / sizeof(supportedCommands[0]);
-    for (int i = 0; i < commandCount; i++) {
+    for (int i = 0; i < SUPPORTED_COMMANDS_COUNT; i++) {
       mpdClient.print("command: ");
       mpdClient.print(supportedCommands[i]);
       mpdClient.print("\n");
