@@ -66,7 +66,6 @@ int parseValue(const String& valueStr) {
  * @param args Command arguments (not used for stop command)
  */
 void MPDInterface::handleStopCommand(const String& args) {
-  // Stop/Pause command (both treated as stop for simplicity)
   stopStream();
   markPlayerStateDirty();
   savePlayerState();
@@ -74,14 +73,6 @@ void MPDInterface::handleStopCommand(const String& args) {
 }
 
 // Improve function documentation, AI!
-void MPDInterface::handleStopCommand(const String& args) {
-  // Stop/Pause command (both treated as stop for simplicity)
-  stopStream();
-  markPlayerStateDirty();
-  savePlayerState();
-  mpdClient.print(mpdResponseOK());
-}
-
 void MPDInterface::handleStatusCommand(const String& args) {
   // Status command
   // Convert volume from 0-22 scale to 0-100 scale for MPD compatibility
