@@ -588,8 +588,28 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
   };
 }
 
-// Command registry definition
-// Improve the documentation, describing the structure and purpose, AI!
+/**
+ * @brief Command registry mapping MPD commands to their handlers
+ * @details This static array defines all supported MPD commands and their corresponding
+ * handler functions. Each entry contains:
+ * - Command name as a string literal
+ * - Pointer to the handler function (member function pointer)
+ * - Exact match flag (true = exact match, false = prefix match)
+ * 
+ * The registry is used by the command processing system to efficiently dispatch
+ * incoming MPD commands to their appropriate handlers. Commands are matched
+ * either exactly (for commands like "stop") or as prefixes (for commands like
+ * "play" which should also match "playid").
+ * 
+ * The registry is sorted alphabetically by command name for readability, though
+ * the command processing system does a linear search through all entries.
+ * 
+ * Adding new commands requires:
+ * 1. Adding a handler function declaration in the header file
+ * 2. Implementing the handler function
+ * 3. Adding an entry to this registry
+ * 4. Adding the command to supportedCommands vector if it should appear in "commands" response
+ */
 
 const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"stop", &MPDInterface::handleStopCommand, true},
