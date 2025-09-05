@@ -247,18 +247,49 @@ private:
   void handleMPDSearchCommand(const String& command, bool exactMatch);
 
   /**
-   * @brief Handle MPD commands using command registry
-   * @details Processes MPD protocol commands using a registry-based approach for better
-   * organization and maintainability. Commands are mapped to handler functions using
-   * a lookup table for efficient command dispatch.
+   * @brief Handle MPD commands
+   * @details Processes MPD protocol commands with support for MPD protocol version 0.23.0.
+   * This function processes MPD protocol commands and controls the player accordingly.
+   * It supports a subset of MPD commands including playback control, volume control,
+   * playlist management, status queries, and search functionality.
    * 
+   * Command processing includes:
+   * - Playback control (play, stop, pause, next, previous)
+   * - Volume control (setvol, getvol, volume)
+   * - Status queries (status, currentsong, stats)
+   * - Playlist management (playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo)
+   * - Search functionality (search, find)
+   * - System commands (ping, commands, notcommands, tagtypes, outputs)
+   * - Special modes (idle, noidle, command lists)
+   * 
+   * Volume handling converts between MPD's 0-100 scale and the ESP32-audioI2S 0-22 scale.
    * @param command The command string to process
+   * 
+   * Supported commands include:
+   * - Playback: play, stop, pause, next, previous
+   * - Volume: setvol, getvol, volume
+   * - Status: status, currentsong, stats
+   * - Playlist: playlistinfo, playlistid, lsinfo, listallinfo, listplaylistinfo
+   * - Search: search, find
+   * - System: ping, commands, notcommands, tagtypes, outputs
+   * - Special modes: idle, noidle, command lists
    */
   void handleMPDCommand(const String& command);
   
   /**
    * @brief Execute command using registry lookup
-   * @details Finds and executes the appropriate handler for a given command
+   * @details Finds and executes the appropriate handler for a given command using
+   * a registry-based approach for better organization and maintainability. Commands 
+   * are mapped to handler functions using a lookup table for efficient command dispatch.
+   * 
+   * The function implements command matching with support for both exact and prefix matching:
+   * - Exact matching for commands like "stop", "status", etc.
+   * - Prefix matching for commands like "play" that need to handle "playid" as well
+   * 
+   * Command argument extraction is handled automatically based on the matching type:
+   * - For exact matches, all remaining text is treated as arguments
+   * - For prefix matches, text after the command name (plus space) is treated as arguments
+   * 
    * @param command The command string to execute
    * @return true if command was found and executed, false otherwise
    */
