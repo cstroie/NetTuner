@@ -106,27 +106,22 @@ void audio_info(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("Audio Info: ");
     Serial.println(info);
-    
     // Check if the info contains StreamUrl=
     String infoStr = String(info);
     if (infoStr.startsWith("StreamUrl=")) {
       // Extract the URL part after "StreamUrl="
       String urlPart = infoStr.substring(10); // Skip "StreamUrl="
-      
       // Remove quotes or double quotes if present
       if (urlPart.startsWith("\"") && urlPart.endsWith("\"") && urlPart.length() >= 2) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       } else if (urlPart.startsWith("'") && urlPart.endsWith("'") && urlPart.length() >= 2) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       }
-      
       // Store the stream icon URL
       strncpy(streamIconURL, urlPart.c_str(), sizeof(streamIconURL) - 1);
       streamIconURL[sizeof(streamIconURL) - 1] = '\0';
-      
       Serial.print("Stream Icon URL: ");
       Serial.println(streamIconURL);
-      
       // Notify clients of the new stream icon
       sendStatusToClients();
     }
@@ -239,12 +234,10 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
   if (code == -1) {
     code = (status == "success") ? 200 : 400;
   }
-  
   // Create JSON response
   DynamicJsonDocument doc(256);
   doc["status"] = status;
   doc["message"] = message;
-  
   String json;
   serializeJson(doc, json);
   server.send(code, "application/json", json);
@@ -261,7 +254,6 @@ struct PlayerState {
   unsigned long lastSaveTime = 0;
   bool dirty = false;
 };
-
 PlayerState playerState;
 
 /**
@@ -276,24 +268,19 @@ void loadPlayerState() {
     playerState.midrange = doc["midrange"] | 0;
     playerState.treble = doc["treble"] | 0;
     playerState.playlistIndex = doc["playlistIndex"] | 0;
-    
     // Apply loaded state
     volume = playerState.volume;
     bass = playerState.bass;
     midrange = playerState.midrange;
     treble = playerState.treble;
-    
     if (audio) {
       audio->setVolume(volume);
       audio->setTone(bass, midrange, treble);
     }
-    
     if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlistCount) {
       currentSelection = playerState.playlistIndex;
     }
-    
     Serial.println("Loaded player state from SPIFFS");
-    
     // If was playing, resume playback
     if (playerState.playing && playlistCount > 0 && currentSelection < playlistCount) {
       Serial.println("Resuming playback from saved state");
@@ -315,7 +302,6 @@ void savePlayerState() {
   doc["midrange"] = midrange;
   doc["treble"] = treble;
   doc["playlistIndex"] = currentSelection;
-  
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
     playerState.dirty = false;
@@ -342,7 +328,6 @@ void setup() {
   Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
-  
   // Initialize start time for uptime tracking
   startTime = millis() / 1000;  // Store in seconds
   // Initialize SPIFFS with error recovery
@@ -350,25 +335,19 @@ void setup() {
     Serial.println("ERROR: Failed to initialize SPIFFS");
     return;
   }
-    
   // Load configuration
   loadConfig();
-  
   // Initialize LED pin
   pinMode(config.led_pin, OUTPUT);
   digitalWrite(config.led_pin, LOW);  // Turn off LED initially
-  
- // Initialize board button with pull-up resistor
+  // Initialize board button with pull-up resistor
   pinMode(config.board_button, INPUT_PULLUP);
-
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);
   display.begin();
-  
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
-  
   // Connect to WiFi with improved error handling
   bool connected = false;
   if (wifiNetworkCount > 0) {
@@ -399,7 +378,7 @@ void setup() {
       }
     }
   }
-  
+  // If not connected to any network, start access point mode
   if (connected) {
     Serial.println("Connected to WiFi");
     Serial.print("IP Address: ");
@@ -420,16 +399,14 @@ void setup() {
       display.showStatus("Starting AP Mode", "", "AP Start Failed");
     }
   }
-  
+
   // Setup audio output with error handling
   setupAudioOutput();
-    
   // Setup rotary encoder with error handling
   setupRotaryEncoder();
-  
   // Load playlist with error recovery
   loadPlaylist();
-  
+
   // Validate loaded playlist
   if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
@@ -465,7 +442,6 @@ void setup() {
   server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
-   
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
@@ -481,7 +457,6 @@ void setup() {
   // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");
-  
   
   // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
@@ -546,8 +521,7 @@ bool initializeSPIFFS() {
  */
 void handleStaticFile(const char* filename) {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   File file = SPIFFS.open(filename, "r");
   if (!file) {
     server.send(404, "text/plain", "File not found");
@@ -555,9 +529,8 @@ void handleStaticFile(const char* filename) {
   }
   server.streamFile(file, "text/html");
   file.close();
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -586,16 +559,13 @@ void handleBoardButton() {
   static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
   static bool buttonPressHandled = false;  // Track if we've handled this press
-  
   // Handle board button press for play/stop toggle
   int buttonReading = digitalRead(config.board_button);
-  
   // Check if button state changed (debounce)
   if (buttonReading != lastButtonState) {
     lastDebounceTime = millis();
     buttonPressHandled = false;  // Reset handled flag when state changes
   }
-  
   // If button state has been stable for debounce delay
   if ((millis() - lastDebounceTime) > debounceDelay) {
     // If button is pressed (LOW due to pull-up) and we haven't handled this press yet
@@ -624,7 +594,7 @@ void handleBoardButton() {
       buttonPressHandled = false;
     }
   }
-  
+  // Save the reading for next loop
   lastButtonState = buttonReading;
 }
 
@@ -640,15 +610,12 @@ void loop() {
   webSocket.loop();        // Process WebSocket events
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
-  
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
     updateDisplay();
     lastDisplayUpdate = millis();
   }
-  
-  
   // Check audio connection status with improved error recovery
   if (audio) {
     // Check if audio is still connected
@@ -686,12 +653,10 @@ void loop() {
       }
     }
   }
-  
   // Periodic cleanup with error recovery
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
-    
     // Check and recover from potential WiFi disconnections
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi disconnected, attempting to reconnect...");
@@ -717,12 +682,10 @@ void loop() {
       }
     }
   }
-  
   // Handle display timeout
   display.handleTimeout(isPlaying, millis());
-  
   // Small delay to prevent busy waiting
-  delay(100);
+  delay(50);
 }
 
 /**
@@ -741,30 +704,24 @@ void handleWiFiPage() {
  */
 void handleWiFiConfig() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(1024);
-  
   // Create JSON array
   JsonArray array = doc.to<JsonArray>();
-  
   // Populate JSON array with configured network SSIDs
   for (int i = 0; i < wifiNetworkCount; i++) {
     array.add(String(ssid[i]));
     // Yield to other tasks during long operations
-    delay(0);
+    yield();
   }
-  
   // Serialize JSON to string
   String json;
   serializeJson(array, json);
-  
   // Send the JSON response
   server.send(200, "application/json", json);
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -775,14 +732,12 @@ void handleWiFiConfig() {
  */
 void handleWiFiScan() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(2048);
-  
   // Scan for available networks
   int n = WiFi.scanNetworks();
-  
+  yield();
   // Add available networks
   JsonArray networks = doc.createNestedArray("networks");
   for (int i = 0; i < n; ++i) {
@@ -790,26 +745,22 @@ void handleWiFiScan() {
     network["ssid"] = WiFi.SSID(i);
     network["rssi"] = WiFi.RSSI(i);
     // Yield to other tasks during long operations
-    delay(0);
+    yield();
   }
-  
   // Add configured networks
   JsonArray configured = doc.createNestedArray("configured");
   for (int i = 0; i < wifiNetworkCount; i++) {
     configured.add(String(ssid[i]));
     // Yield to other tasks during long operations
-    delay(1);
+    yield();
   }
-  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
-  
   // Send the JSON response
   server.send(200, "application/json", json);
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -823,25 +774,22 @@ void handleWiFiSave() {
     sendJsonResponse("error", "Missing JSON data");
     return;
   }
-  
+  // Parse JSON data
   String json = server.arg("plain");
   DynamicJsonDocument doc(2048);  // Increased size for array format
   DeserializationError error = deserializeJson(doc, json);
-  
+  // Check for errors
   if (error) {
     sendJsonResponse("error", "Invalid JSON");
     return;
   }
-  
   // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
   wifiNetworkCount = 0;
-  
   if (doc.is<JsonArray>()) {
     JsonArray networks = doc.as<JsonArray>();
-    
     for (JsonObject network : networks) {
       if (wifiNetworkCount >= MAX_WIFI_NETWORKS) break;
-      
+      // Handle required SSID
       if (network.containsKey("ssid")) {
         const char* ssidValue = network["ssid"];
         if (ssidValue && strlen(ssidValue) > 0 && strlen(ssidValue) < sizeof(ssid[wifiNetworkCount])) {
@@ -851,7 +799,7 @@ void handleWiFiSave() {
           sendJsonResponse("error", "Invalid SSID");
           return;
         }
-        
+        // Handle optional password
         if (network.containsKey("password")) {
           const char* pwdValue = network["password"];
           if (pwdValue && strlen(pwdValue) < sizeof(password[wifiNetworkCount])) {
@@ -863,12 +811,12 @@ void handleWiFiSave() {
         } else {
           password[wifiNetworkCount][0] = '\0';
         }
-        
+        // Increment network count
         wifiNetworkCount++;
       }
     }
-  };
-  
+  }
+  // Save updated credentials to SPIFFS
   saveWiFiCredentials();
   sendJsonResponse("success", "WiFi configuration saved");
 }
@@ -881,11 +829,9 @@ void handleWiFiSave() {
  */
 void handleWiFiStatus() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(256);
-  
   // Add connection status
   if (WiFi.status() == WL_CONNECTED) {
     doc["connected"] = true;
@@ -895,16 +841,13 @@ void handleWiFiStatus() {
   } else {
     doc["connected"] = false;
   }
-  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
-  
   // Send the JSON response
   server.send(200, "application/json", json);
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -921,14 +864,12 @@ bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument&
     Serial.printf("JSON file not found: %s\n", filename);
     return false;
   }
-  
   // Open the file
   File file = SPIFFS.open(filename, "r");
   if (!file) {
     Serial.printf("Failed to open JSON file: %s\n", filename);
     return false;
   }
-  
   // Get the size of the file
   size_t size = file.size();
   if (size > maxFileSize) {
@@ -936,14 +877,12 @@ bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument&
     file.close();
     return false;
   }
-  
   // Check if the file is empty
   if (size == 0) {
     Serial.printf("JSON file is empty: %s\n", filename);
     file.close();
     return false;
   }
-  
   // Allocate buffer for file content
   std::unique_ptr<char[]> buf(new char[size + 1]);
   if (!buf) {
@@ -951,24 +890,22 @@ bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument&
     file.close();
     return false;
   }
-  
   // Read the file content
   if (file.readBytes(buf.get(), size) != size) {
     Serial.printf("Failed to read JSON file: %s\n", filename);
     file.close();
     return false;
   }
-  
+  // Null-terminate the buffer
   buf[size] = '\0';
   file.close();
-  
   // Parse the JSON document
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
     Serial.printf("Failed to parse JSON file %s: %s\n", filename, error.c_str());
     return false;
   }
-  
+  // Successfully read and parsed the JSON file
   return true;
 }
 
@@ -990,7 +927,6 @@ bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
       Serial.printf("Warning: Failed to create backup of %s\n", filename);
     }
   }
-  
   // Open the file for writing
   File file = SPIFFS.open(filename, "w");
   if (!file) {
@@ -1005,7 +941,6 @@ bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
     }
     return false;
   }
-  
   // Serialize the JSON document to the file
   size_t bytesWritten = serializeJson(doc, file);
   if (bytesWritten == 0) {
@@ -1022,14 +957,12 @@ bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
     }
     return false;
   }
-  
   file.close();
-  
   // Remove backup file after successful save
   if (SPIFFS.exists(backupFilename)) {
     SPIFFS.remove(backupFilename);
   }
-  
+  // Successfully wrote the JSON file
   return true;
 }
 
@@ -1106,7 +1039,6 @@ void saveWiFiCredentials() {
       network["password"] = password[i];
     }
   }
-  
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/wifi.json", doc)) {
     Serial.println("Saved WiFi credentials to SPIFFS");
@@ -1180,7 +1112,6 @@ void saveConfig() {
   doc["display_width"] = config.display_width;
   doc["display_height"] = config.display_height;
   doc["display_address"] = config.display_address;
-  
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/config.json", doc)) {
     Serial.println("Saved configuration to SPIFFS");
@@ -1188,7 +1119,6 @@ void saveConfig() {
     Serial.println("Failed to save configuration to SPIFFS");
   }
 }
-
 
 /**
  * @brief Initialize audio output interface
@@ -1484,7 +1414,6 @@ void savePlaylist() {
   }
 }
 
-
 /**
  * @brief Interrupt service routine for rotary encoder
  * Handles rotary encoder rotation events
@@ -1511,7 +1440,6 @@ void setupRotaryEncoder() {
     rotaryEncoder.handleButtonPress();
   }, FALLING);
 }
-
 
 /**
  * @brief Handle rotary encoder input
@@ -1585,7 +1513,6 @@ void handleRotary() {
   }
 }
 
-
 /**
  * @brief Handle home page request
  * Serves the main index.html file
@@ -1628,11 +1555,9 @@ void handleSimpleWebPage() {
       }
     }
   }
-  
   // Pre-allocate string with estimated size to reduce reallocations
   String html;
   html.reserve(2048); // Reserve space to reduce memory fragmentation
-  
   // Serve the HTML page
   html = R"rawliteral(<!DOCTYPE html><html>
 <head><title>NetTuner</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"></head>
@@ -1642,10 +1567,8 @@ void handleSimpleWebPage() {
 <section>
 <h2>Status</h2>
 <p><b>Status:</b> )rawliteral";
-  
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
-  
   // Show current stream name
   if (isPlaying && streamName[0]) {
     html += "<p><b>Current Stream:</b> ";
@@ -1656,7 +1579,6 @@ void handleSimpleWebPage() {
     html += playlist[currentSelection].name;
     html += "</p>";
   }
-  
   html += R"rawliteral(</section>
 <section>
 <h2>Controls</h2>
@@ -1668,13 +1590,12 @@ void handleSimpleWebPage() {
 <section>
 <h2>Playlist</h2>
 )rawliteral";
-  
+  // Show stream selection dropdown if we have a playlist
   if (playlistCount > 0) {
     html += R"rawliteral(<form method='post'>
 <label for='stream'>Select Stream:</label>
 <select name='stream' id='stream'>
 )rawliteral";
-    
     // Populate the dropdown with available streams
     for (int i = 0; i < playlistCount; i++) {
       html += "<option value='" + String(i) + "'";
@@ -1683,7 +1604,7 @@ void handleSimpleWebPage() {
       }
       html += ">" + String(playlist[i].name) + "</option>";
     }
-    
+    // Close the select and form
     html += R"rawliteral(</select>
 <button name='action' value='play' type='submit'>Play Selected</button>
 </form>
@@ -1691,13 +1612,13 @@ void handleSimpleWebPage() {
   } else {
     html += "<p>No streams available</p>";
   }
-  
+  // Close the HTML
   html += R"rawliteral(</section>
 </main>
 <footer><p>NetTuner Simple Interface</p></footer>
 </body>
 </html>)rawliteral";
-  
+  // Send the HTML response
   server.send(200, "text/html", html);
 }
 
@@ -1736,21 +1657,18 @@ void handleAboutPage() {
  */
 void handleGetStreams() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // If playlist file doesn't exist, return a default empty one
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     server.send(200, "application/json", "[]");
     return;
   }
-  
   // Stream the file contents
   server.streamFile(file, "application/json");
   file.close();
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -2066,25 +1984,20 @@ void handleTone() {
 void handleStatus() {
   // Yield to other tasks before processing
   delay(1);
-  
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(256);
-  
   // Populate JSON document with status values
   doc["playing"] = isPlaying;
   doc["streamURL"] = streamURL;
   doc["streamName"] = streamName;
   doc["volume"] = volume;
-  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
-  
   // Return status as JSON
   server.send(200, "application/json", json);
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -2094,11 +2007,9 @@ void handleStatus() {
  */
 void handleGetConfig() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-  
   // Populate JSON document with configuration values
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
@@ -2113,16 +2024,13 @@ void handleGetConfig() {
   doc["display_width"] = config.display_width;
   doc["display_height"] = config.display_height;
   doc["display_address"] = config.display_address;
-  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
-  
   // Return configuration as JSON
   server.send(200, "application/json", json);
-  
   // Yield to other tasks after processing
-  delay(0);
+  yield();
 }
 
 /**
@@ -2173,8 +2081,7 @@ void handlePostConfig() {
  */
 void handleExportConfig() {
   // Yield to other tasks before processing
-  delay(0);
-  
+  yield();
   // List of configuration files to export
   const char* configFiles[] = {"/config.json", "/wifi.json", "/playlist.json", "/player.json"};
   // Initialize output string
@@ -2200,7 +2107,7 @@ void handleExportConfig() {
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 3) output += ",";
               // Yield to other tasks during long operations
-              delay(0); 
+              yield(); 
             }
           }
         }
@@ -2212,7 +2119,6 @@ void handleExportConfig() {
   output += "}";
   // Send the combined JSON as response
   server.send(200, "application/json", output);
-  
   // Yield to other tasks after processing
   delay(1);
 }
@@ -2287,7 +2193,6 @@ void handleImportConfig() {
 String generateStatusJSON() {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-  
   // Populate JSON document with status values
   doc["playing"] = isPlaying;
   doc["streamURL"] = streamURL;
@@ -2300,11 +2205,9 @@ String generateStatusJSON() {
   doc["bass"] = bass;
   doc["midrange"] = midrange;
   doc["treble"] = treble;
-  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
-  
   return json;
 }
 
@@ -2376,6 +2279,6 @@ void updateDisplay() {
   } else {
     ipString = "No IP";
   }
-  
+  // Update the display with current status
   display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
 }

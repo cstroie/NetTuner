@@ -90,7 +90,6 @@ void MPDInterface::handleStopCommand(const String& args) {
  * @param args Command arguments (not used for noidle command)
  */
 void MPDInterface::handleNoIdleCommand(const String& args) {
-  // Noidle command
   inIdleMode = false;
   mpdClient.print(mpdResponseOK());
 }
@@ -125,8 +124,6 @@ void MPDInterface::handleNoIdleCommand(const String& args) {
  * @param args Command arguments (not used for plchanges command)
  */
 void MPDInterface::handlePlChangesCommand(const String& args) {
-  // Playlist changes command
-  // For simplicity, we'll return the entire playlist (as if all entries changed)
   sendPlaylistInfo(3);
   mpdClient.print(mpdResponseOK());
 }
@@ -150,7 +147,6 @@ void MPDInterface::handlePlChangesCommand(const String& args) {
  * @param args Command arguments (not used for seekid command)
  */
 void MPDInterface::handleSeekIdCommand(const String& args) {
-  // Seek ID command (not implemented for streaming)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -173,7 +169,6 @@ void MPDInterface::handleSeekIdCommand(const String& args) {
  * @param args Command arguments (not used for seek command)
  */
 void MPDInterface::handleSeekCommand(const String& args) {
-  // Seek command (not implemented for streaming)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -184,7 +179,6 @@ void MPDInterface::handleSeekCommand(const String& args) {
  * The search is case-insensitive and supports searching by title.
  * 
  * The function implements MPD protocol compatibility by:
- * - Reconstructing the full command for compatibility with existing search function
  * - Performing case-insensitive exact matching
  * - Returning matching stream metadata
  * - Using standard response format for search results
@@ -202,10 +196,7 @@ void MPDInterface::handleSeekCommand(const String& args) {
  * @param args Command arguments (search criteria)
  */
 void MPDInterface::handleFindCommand(const String& args) {
-  // Find command (exact match)
-  // Reconstruct the full command for compatibility with existing function
-  String fullCommand = "find " + args;
-  handleMPDSearchCommand(fullCommand, true);
+  handleMPDSearchCommand(args, true);
   mpdClient.print(mpdResponseOK());
 }
 
@@ -216,7 +207,6 @@ void MPDInterface::handleFindCommand(const String& args) {
  * The search is case-insensitive and supports searching by title.
  * 
  * The function implements MPD protocol compatibility by:
- * - Reconstructing the full command for compatibility with existing search function
  * - Performing case-insensitive partial matching
  * - Returning matching stream metadata
  * - Using standard response format for search results
@@ -234,10 +224,7 @@ void MPDInterface::handleFindCommand(const String& args) {
  * @param args Command arguments (search criteria)
  */
 void MPDInterface::handleSearchCommand(const String& args) {
-  // Search command (partial match)
-  // Reconstruct the full command for compatibility with existing function
-  String fullCommand = "search " + args;
-  handleMPDSearchCommand(fullCommand, false);
+  handleMPDSearchCommand(args, false);
   mpdClient.print(mpdResponseOK());
 }
 
@@ -268,23 +255,20 @@ void MPDInterface::handleSearchCommand(const String& args) {
  * @param args Command arguments (tag type to list)
  */
 void MPDInterface::handleListCommand(const String& args) {
-  // List command
   if (args.length() > 0) {
     String tagType = args;
     tagType.toLowerCase();
-    String tag = "Title: ";
     tagType.trim();
     if (tagType.startsWith("artist")) {
-      tag = "Artist: ";
+      // Return dummy artist
       mpdClient.print("Artist: WebRadio\n");
     } else if (tagType.startsWith("album")) {
-      tag = "Album: ";
+      // Return dummy album
       mpdClient.print("Album: WebRadio\n");
     } else if (tagType.startsWith("title")) {
-      tag = "Title: ";
       // Return the playlist
       for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
+        mpdClient.print("Title:" + String(playlistRef[i].name) + "\n");
       }
     }
   }
@@ -312,8 +296,6 @@ void MPDInterface::handleListCommand(const String& args) {
  * @param args Command arguments (not used for listplaylists command)
  */
 void MPDInterface::handleListPlaylistsCommand(const String& args) {
-  // List playlists command
-  // For this implementation, we only have one playlist (the main playlist)
   mpdClient.print("playlist: WebRadio\n");
   mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
   mpdClient.print(mpdResponseOK());
@@ -341,7 +323,6 @@ void MPDInterface::handleListPlaylistsCommand(const String& args) {
  * @param args Command arguments (not used for listplaylistinfo command)
  */
 void MPDInterface::handleListPlaylistInfoCommand(const String& args) {
-  // List playlist info command
   sendPlaylistInfo(0); // Minimal detail
   mpdClient.print(mpdResponseOK());
 }
@@ -369,7 +350,6 @@ void MPDInterface::handleListPlaylistInfoCommand(const String& args) {
  * @param args Command arguments (not used for listallinfo command)
  */
 void MPDInterface::handleListAllInfoCommand(const String& args) {
-  // List all info command
   sendPlaylistInfo(1); // Simple detail
   mpdClient.print(mpdResponseOK());
 }
@@ -393,7 +373,6 @@ void MPDInterface::handleListAllInfoCommand(const String& args) {
  * @param args Command arguments (not used for update command)
  */
 void MPDInterface::handleUpdateCommand(const String& args) {
-  // Update command (not implemented for this player)
   mpdClient.print("updating_db: 1\n");
   mpdClient.print(mpdResponseOK());
 }
@@ -415,7 +394,6 @@ void MPDInterface::handleUpdateCommand(const String& args) {
  * @param args Command arguments (not used for password command)
  */
 void MPDInterface::handlePasswordCommand(const String& args) {
-  // Password command (not implemented)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -436,7 +414,6 @@ void MPDInterface::handlePasswordCommand(const String& args) {
  * @param args Command arguments (not used for ping command)
  */
 void MPDInterface::handlePingCommand(const String& args) {
-  // Ping command
   mpdClient.print(mpdResponseOK());
 }
 
@@ -470,7 +447,7 @@ void MPDInterface::handlePingCommand(const String& args) {
  * @param args Command arguments (not used for stats command)
  */
 void MPDInterface::handleStatsCommand(const String& args) {
-  // Stats command
+  // Calculate uptime and playtime
   unsigned long uptime = (millis() / 1000) - startTime;
   unsigned long playtime = totalPlayTime;
   if (isPlayingRef && playStartTime > 0) {
@@ -506,7 +483,6 @@ void MPDInterface::handleStatsCommand(const String& args) {
  * @param args Command arguments (not used for notcommands command)
  */
 void MPDInterface::handleNotCommandsCommand(const String& args) {
-  // Not commands command
   mpdClient.print(mpdResponseOK());
 }
 
@@ -532,15 +508,12 @@ void MPDInterface::handleNotCommandsCommand(const String& args) {
  * @param args Command arguments (not used for commands command)
  */
 void MPDInterface::handleCommandsCommand(const String& args) {
-  // Commands command
-  // Send the list of supported commands
   for (const auto& cmd : supportedCommands) {
     mpdClient.print("command: ");
     mpdClient.print(cmd.c_str());
     mpdClient.print("\n");
-    delay(0);
+    yield();
   }
-  // End of command list
   mpdClient.print(mpdResponseOK());
 }
 
@@ -566,11 +539,9 @@ void MPDInterface::handleCommandsCommand(const String& args) {
  * @param args Command arguments (not used for outputs command)
  */
 void MPDInterface::handleOutputsCommand(const String& args) {
-  // Outputs command - with ESP32-audioI2S, we only have I2S output
   mpdClient.print("outputid: 0\n");
   mpdClient.print("outputname: I2S (External DAC)\n");
   mpdClient.print("outputenabled: 1\n");
-  //mpdClient.print("attribute: allowed_formats=\n");
   mpdClient.print(mpdResponseOK());
 }
 
@@ -592,7 +563,6 @@ void MPDInterface::handleOutputsCommand(const String& args) {
  * @param args Command arguments (not used for save command)
  */
 void MPDInterface::handleSaveCommand(const String& args) {
-  // Save command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -614,7 +584,6 @@ void MPDInterface::handleSaveCommand(const String& args) {
  * @param args Command arguments (not used for load command)
  */
 void MPDInterface::handleLoadCommand(const String& args) {
-  // Load command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -637,7 +606,6 @@ void MPDInterface::handleLoadCommand(const String& args) {
  * @param args Command arguments (not used for delete command)
  */
 void MPDInterface::handleDeleteCommand(const String& args) {
-  // Delete command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -660,7 +628,6 @@ void MPDInterface::handleDeleteCommand(const String& args) {
  * @param args Command arguments (not used for add command)
  */
 void MPDInterface::handleAddCommand(const String& args) {
-  // Add command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -682,7 +649,6 @@ void MPDInterface::handleAddCommand(const String& args) {
  * @param args Command arguments (not used for clear command)
  */
 void MPDInterface::handleClearCommand(const String& args) {
-  // Clear command (not implemented for this player)
   mpdClient.print(mpdResponseOK());
 }
 
@@ -707,7 +673,6 @@ void MPDInterface::handleClearCommand(const String& args) {
  * @param args Command arguments (not used for getvol command)
  */
 void MPDInterface::handleGetVolCommand(const String& args) {
-  // Get volume command
   int volPercent = map(volumeRef, 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print(mpdResponseOK());
@@ -736,7 +701,6 @@ void MPDInterface::handleGetVolCommand(const String& args) {
  * @param args Command arguments (not used for lsinfo command)
  */
 void MPDInterface::handleLsInfoCommand(const String& args) {
-  // List info command
   sendPlaylistInfo(1); // Simple detail
   mpdClient.print(mpdResponseOK());
 }
@@ -768,7 +732,6 @@ void MPDInterface::handleLsInfoCommand(const String& args) {
  * @param args Command arguments (optional playlist ID)
  */
 void MPDInterface::handlePlaylistIdCommand(const String& args) {
-  // Playlist ID command
   int id = -1;
   if (args.length() > 0) {
     id = parseValue(args);
@@ -780,6 +743,7 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   }
   // Check if the ID is valid
   if (id >= 0 && id < playlistCountRef) {
+    // Return specific entry
     mpdClient.print("file: " + String(playlistRef[id + 1].url) + "\n");
     mpdClient.print("Title: " + String(playlistRef[id + 1].name) + "\n");
     mpdClient.print("Artist: WebRadio\n");
@@ -816,7 +780,6 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
  * @param args Command arguments (not used for playlistinfo command)
  */
 void MPDInterface::handlePlaylistInfoCommand(const String& args) {
-  // Playlist info command
   sendPlaylistInfo(3);
   mpdClient.print(mpdResponseOK());
 }
@@ -849,7 +812,6 @@ void MPDInterface::handlePlaylistInfoCommand(const String& args) {
  * @param args Command arguments (not used for currentsong command)
  */
 void MPDInterface::handleCurrentSongCommand(const String& args) {
-  // Current song command
   if (isPlayingRef && strlen(streamNameRef) > 0) {
     mpdClient.print("file: " + String(streamURLRef) + "\n");
     if (strlen(streamTitleRef) > 0) {
@@ -903,6 +865,7 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
  * @param args Command arguments (not used for status command)
  */
 void MPDInterface::handleStatusCommand(const String& args) {
+  int index = currentSelectionRef + 1; // 1-based index for MPD
   int volPercent = map(volumeRef, 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print("repeat: 0\n");
@@ -914,8 +877,8 @@ void MPDInterface::handleStatusCommand(const String& args) {
   mpdClient.print("mixrampdb: 0.000000\n");
   mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
   if (isPlayingRef && strlen(streamNameRef) > 0) {
-    mpdClient.print("song: " + String(currentSelectionRef + 1) + "\n");
-    mpdClient.print("songid: " + String(currentSelectionRef + 1) + "\n");
+    mpdClient.print("song: " + String(index) + "\n");
+    mpdClient.print("songid: " + String(index) + "\n");
     // Calculate elapsed time since playback started
     extern unsigned long playStartTime;
     unsigned long elapsed = 0;
@@ -925,65 +888,12 @@ void MPDInterface::handleStatusCommand(const String& args) {
     mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
     mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
     mpdClient.print("audio: 44100:16:2\n");
-    mpdClient.print("nextsong: " + String((currentSelectionRef + 2) % playlistCountRef) + "\n");
-    mpdClient.print("nextsongid: " + String((currentSelectionRef + 2) % playlistCountRef) + "\n");
+    index++;
+    mpdClient.print("nextsong: " + String(index) + "\n");
+    mpdClient.print("nextsongid: " + String(index) + "\n");
   }
   mpdClient.print("updating_db: 0\n");
   mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePlaylistInfoCommand(const String& args) {
-  // Playlist info command
-  sendPlaylistInfo(3);
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePlaylistIdCommand(const String& args) {
-  // Playlist ID command
-  int id = -1;
-  if (args.length() > 0) {
-    id = parseValue(args);
-    // Validate ID range
-    if (id < 0 || id >= playlistCountRef) {
-      mpdClient.print(mpdResponseError("playlistid", "Invalid playlist ID"));
-      return;
-    }
-  }
-  // Check if the ID is valid
-  if (id >= 0 && id < playlistCountRef) {
-    mpdClient.print("file: " + String(playlistRef[id + 1].url) + "\n");
-    mpdClient.print("Title: " + String(playlistRef[id + 1].name) + "\n");
-    mpdClient.print("Artist: WebRadio\n");
-    mpdClient.print("Album: WebRadio\n");
-    mpdClient.print("Id: " + String(id) + "\n");
-    mpdClient.print("Pos: " + String(id) + "\n");
-  } else {
-    // Return all if no specific ID
-    sendPlaylistInfo(3);
-  }
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePlayCommand(const String& args) {
-  // Play and Play ID commands
-  int playlistIndex = -1;
-  if (args.length() > 0) {
-    playlistIndex = parseValue(args) - 1; // Convert to 0-based index
-    // Validate index if provided
-    if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
-      mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
-      return;
-    }
-  }
-  if (handlePlayback(playlistIndex)) {
-    mpdClient.print(mpdResponseOK());
-  } else {
-    mpdClient.print(mpdResponseError("play", "No playlist"));
-    return;
-  }
 }
 
 /**
@@ -1011,7 +921,6 @@ void MPDInterface::handlePlayCommand(const String& args) {
  * @param args Command arguments (optional "all" or "clear")
  */
 void MPDInterface::handleTagTypesCommand(const String& args) {
-  // Tag types command
   if (args.equals("\"all\"") || args.equals("\"clear\"")) {
     // These commands simply return OK
     mpdClient.print(mpdResponseOK());
@@ -1021,6 +930,7 @@ void MPDInterface::handleTagTypesCommand(const String& args) {
       mpdClient.print("tagtype: ");
       mpdClient.print(tagType.c_str());
       mpdClient.print("\n");
+      yield();
     }
     mpdClient.print(mpdResponseOK());
   }
@@ -1049,7 +959,6 @@ void MPDInterface::handleTagTypesCommand(const String& args) {
  * @param args Command arguments (output ID to enable)
  */
 void MPDInterface::handleEnableOutputCommand(const String& args) {
-  // Enable output command
   if (args.length() > 0) {
     int outputId = parseValue(args);
     if (outputId == 0) {
@@ -1089,7 +998,6 @@ void MPDInterface::handleEnableOutputCommand(const String& args) {
  * @param args Command arguments (output ID to disable)
  */
 void MPDInterface::handleDisableOutputCommand(const String& args) {
-  // Disable output command
   if (args.length() > 0) {
     int outputId = parseValue(args);
     // Validate output ID (only 0 is supported)
@@ -1130,7 +1038,6 @@ void MPDInterface::handleDisableOutputCommand(const String& args) {
  * @param args Command arguments (not used for previous command)
  */
 void MPDInterface::handlePreviousCommand(const String& args) {
-  // Previous command
   if (playlistCountRef > 0) {
     int prevIndex = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
     if (handlePlayback(prevIndex)) {
@@ -1319,16 +1226,17 @@ void MPDInterface::handleSetVolCommand(const String& args) {
  * @param args Command arguments (optional playlist index/ID)
  */
 void MPDInterface::handlePlayCommand(const String& args) {
-  // Play and Play ID commands
   int playlistIndex = -1;
   if (args.length() > 0) {
-    playlistIndex = parseValue(args) - 1; // Convert to 0-based index
+    // Convert to 0-based index
+    playlistIndex = parseValue(args) - 1;
     // Validate index if provided
     if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
   }
+  // If no index provided, use current selection
   if (handlePlayback(playlistIndex)) {
     mpdClient.print(mpdResponseOK());
   } else {
@@ -1337,247 +1245,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
   }
 }
 
-// Improve function documentation, AI!
-void MPDInterface::handleLsInfoCommand(const String& args) {
-  // List info command
-  sendPlaylistInfo(1); // Simple detail
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleSetVolCommand(const String& args) {
-  // Set volume command
-  if (args.length() > 0) {
-    // Parse volume value, handling quotes if present
-    int newVolume = parseValue(args);
-    // Validate volume range (0-100 for MPD compatibility)
-    if (newVolume >= 0 && newVolume <= 100) {
-      // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
-      volumeRef = map(newVolume, 0, 100, 0, 22);
-      if (audioRef) {
-        audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
-      }
-      updateDisplay();
-      sendStatusToClients();  // Notify WebSocket clients of volume change
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
-      return;
-    }
-  } else {
-    mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleGetVolCommand(const String& args) {
-  // Get volume command
-  int volPercent = map(volumeRef, 0, 22, 0, 100);
-  mpdClient.print("volume: " + String(volPercent) + "\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleVolumeCommand(const String& args) {
-  // Volume command - change volume by relative amount
-  if (args.length() > 0) {
-    // Parse volume change value (can be negative for decrease)
-    int volumeChange = parseValue(args);
-    
-    // Get current volume as percentage for MPD compatibility
-    int currentVolPercent = map(volumeRef, 0, 22, 0, 100);
-    
-    // Apply change and clamp to 0-100 range
-    int newVolPercent = currentVolPercent + volumeChange;
-    if (newVolPercent < 0) newVolPercent = 0;
-    if (newVolPercent > 100) newVolPercent = 100;
-    
-    // Convert back to 0-22 scale for ESP32-audioI2S and set
-    volumeRef = map(newVolPercent, 0, 100, 0, 22);
-    if (audioRef) {
-      audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
-    }
-    updateDisplay();
-    sendStatusToClients();  // Notify WebSocket clients of volume change
-    mpdClient.print(mpdResponseOK());
-  } else {
-    mpdClient.print(mpdResponseError("volume", "Missing volume change value"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleNextCommand(const String& args) {
-  // Next command
-  if (playlistCountRef > 0) {
-    int nextIndex = (currentSelectionRef + 1) % playlistCountRef;
-    if (handlePlayback(nextIndex)) {
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("next", "Playback failed"));
-      return;
-    }
-  } else {
-    mpdClient.print(mpdResponseError("next", "No playlist"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePreviousCommand(const String& args) {
-  // Previous command
-  if (playlistCountRef > 0) {
-    int prevIndex = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
-    if (handlePlayback(prevIndex)) {
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("previous", "Playback failed"));
-      return;
-    }
-  } else {
-    mpdClient.print(mpdResponseError("previous", "No playlist"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleClearCommand(const String& args) {
-  // Clear command (not implemented for this player)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleAddCommand(const String& args) {
-  // Add command (not implemented for this player)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleDeleteCommand(const String& args) {
-  // Delete command (not implemented for this player)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleLoadCommand(const String& args) {
-  // Load command (not implemented for this player)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleSaveCommand(const String& args) {
-  // Save command (not implemented for this player)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleOutputsCommand(const String& args) {
-  // Outputs command - with ESP32-audioI2S, we only have I2S output
-  mpdClient.print("outputid: 0\n");
-  mpdClient.print("outputname: I2S (External DAC)\n");
-  mpdClient.print("outputenabled: 1\n");
-  //mpdClient.print("attribute: allowed_formats=\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleDisableOutputCommand(const String& args) {
-  // Disable output command
-  if (args.length() > 0) {
-    int outputId = parseValue(args);
-    // Validate output ID (only 0 is supported)
-    if (outputId != 0) {
-      mpdClient.print(mpdResponseError("disableoutput", "Invalid output ID"));
-      return;
-    }
-    // We don't actually disable outputs, just acknowledge the command
-    mpdClient.print(mpdResponseOK());
-  } else {
-    mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleEnableOutputCommand(const String& args) {
-  // Enable output command
-  if (args.length() > 0) {
-    int outputId = parseValue(args);
-    if (outputId == 0) {
-      // Only output 0 (I2S) is supported with ESP32-audioI2S
-      mpdClient.print(mpdResponseOK());
-    } else {
-      mpdClient.print(mpdResponseError("enableoutput", "Invalid output ID"));
-      return;
-    }
-  } else {
-    mpdClient.print(mpdResponseError("enableoutput", "Missing output ID"));
-    return;
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleCommandsCommand(const String& args) {
-  // Commands command
-  // Send the list of supported commands
-  for (const auto& cmd : supportedCommands) {
-    mpdClient.print("command: ");
-    mpdClient.print(cmd.c_str());
-    mpdClient.print("\n");
-    delay(0);
-  }
-  // End of command list
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleNotCommandsCommand(const String& args) {
-  // Not commands command
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleStatsCommand(const String& args) {
-  // Stats command
-  unsigned long uptime = (millis() / 1000) - startTime;
-  unsigned long playtime = totalPlayTime;
-  if (isPlayingRef && playStartTime > 0) {
-    playtime += (millis() / 1000) - playStartTime;
-  }
-  // Send stats information
-  mpdClient.print("artists: 1\n");
-  mpdClient.print("albums: 1\n");
-  mpdClient.print("songs: " + String(playlistCountRef) + "\n");
-  mpdClient.print("uptime: " + String(uptime) + "\n");
-  mpdClient.print("playtime: " + String(playtime) + "\n");
-  mpdClient.print("db_playtime: " + String(playtime) + "\n");
-  mpdClient.print("db_update: " + String(BUILD_TIME_UNIX) + "\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePingCommand(const String& args) {
-  // Ping command
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePasswordCommand(const String& args) {
-  // Password command (not implemented)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleKillCommand(const String& args) {
-  // Kill command - trigger system restart
-  mpdClient.print(mpdResponseOK());
-  mpdClient.flush();
-  // Use ESP32 restart function
-  ESP.restart();
-}
-
-/**
+ /**
  * @brief Handle the MPD kill command
  * @details This function processes the MPD "kill" command by restarting the
  * ESP32 device. This provides a way for MPD clients to trigger a system
@@ -1600,136 +1268,10 @@ void MPDInterface::handleKillCommand(const String& args) {
  * @param args Command arguments (not used for kill command)
  */
 void MPDInterface::handleKillCommand(const String& args) {
-  // Kill command - trigger system restart
   mpdClient.print(mpdResponseOK());
   mpdClient.flush();
   // Use ESP32 restart function
   ESP.restart();
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleUpdateCommand(const String& args) {
-  // Update command (not implemented for this player)
-  mpdClient.print("updating_db: 1\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleListAllInfoCommand(const String& args) {
-  // List all info command
-  sendPlaylistInfo(1); // Simple detail
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleListPlaylistInfoCommand(const String& args) {
-  // List playlist info command
-  sendPlaylistInfo(0); // Minimal detail
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleListPlaylistsCommand(const String& args) {
-  // List playlists command
-  // For this implementation, we only have one playlist (the main playlist)
-  mpdClient.print("playlist: WebRadio\n");
-  mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleListCommand(const String& args) {
-  // List command
-  if (args.length() > 0) {
-    String tagType = args;
-    tagType.toLowerCase();
-    String tag = "Title: ";
-    tagType.trim();
-    if (tagType.startsWith("artist")) {
-      tag = "Artist: ";
-      mpdClient.print("Artist: WebRadio\n");
-    } else if (tagType.startsWith("album")) {
-      tag = "Album: ";
-      mpdClient.print("Album: WebRadio\n");
-    } else if (tagType.startsWith("title")) {
-      tag = "Title: ";
-      // Return the playlist
-      for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print(tag + String(playlistRef[i].name) + "\n");
-      }
-    }
-  }
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleSearchCommand(const String& args) {
-  // Search command (partial match)
-  // Reconstruct the full command for compatibility with existing function
-  String fullCommand = "search " + args;
-  handleMPDSearchCommand(fullCommand, false);
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleFindCommand(const String& args) {
-  // Find command (exact match)
-  // Reconstruct the full command for compatibility with existing function
-  String fullCommand = "find " + args;
-  handleMPDSearchCommand(fullCommand, true);
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleSeekCommand(const String& args) {
-  // Seek command (not implemented for streaming)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleSeekIdCommand(const String& args) {
-  // Seek ID command (not implemented for streaming)
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleTagTypesCommand(const String& args) {
-  // Tag types command
-  if (args.equals("\"all\"") || args.equals("\"clear\"")) {
-    // These commands simply return OK
-    mpdClient.print(mpdResponseOK());
-  } else {
-    // Send the list of supported tag types
-    for (const auto& tagType : supportedTagTypes) {
-      mpdClient.print("tagtype: ");
-      mpdClient.print(tagType.c_str());
-      mpdClient.print("\n");
-    }
-    mpdClient.print(mpdResponseOK());
-  }
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handlePlChangesCommand(const String& args) {
-  // Playlist changes command
-  // For simplicity, we'll return the entire playlist (as if all entries changed)
-  sendPlaylistInfo(3);
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleIdleCommand(const String& args) {
-  // Idle command - enter idle mode and wait for changes
-  inIdleMode = true;
-  // Initialize hashes for tracking changes
-  lastTitleHash = 0;
-  for (int i = 0; streamTitleRef[i]; i++) {
-    lastTitleHash = lastTitleHash * 31 + streamTitleRef[i];
-  }
-  lastStatusHash = isPlayingRef ? 1 : 0;
-  lastStatusHash = lastStatusHash * 31 + volumeRef;
-  lastStatusHash = lastStatusHash * 31 + bitrateRef;
-  // Don't send immediate response - wait for changes
 }
 
 /**
@@ -1758,7 +1300,6 @@ void MPDInterface::handleIdleCommand(const String& args) {
  * @param args Command arguments (not used for idle command)
  */
 void MPDInterface::handleIdleCommand(const String& args) {
-  // Idle command - enter idle mode and wait for changes
   inIdleMode = true;
   // Initialize hashes for tracking changes
   lastTitleHash = 0;
@@ -1769,20 +1310,6 @@ void MPDInterface::handleIdleCommand(const String& args) {
   lastStatusHash = lastStatusHash * 31 + volumeRef;
   lastStatusHash = lastStatusHash * 31 + bitrateRef;
   // Don't send immediate response - wait for changes
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleNoIdleCommand(const String& args) {
-  // Noidle command
-  inIdleMode = false;
-  mpdClient.print(mpdResponseOK());
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleCloseCommand(const String& args) {
-  // Close command
-  mpdClient.print(mpdResponseOK());
-  mpdClient.stop();
 }
 
 /**
@@ -1811,6 +1338,8 @@ void MPDInterface::handleCloseCommand(const String& args) {
 void MPDInterface::handleCloseCommand(const String& args) {
   // Close command
   mpdClient.print(mpdResponseOK());
+  mpdClient.flush();
+  // Close the client connection
   mpdClient.stop();
 }
 
@@ -2313,7 +1842,7 @@ void MPDInterface::handleCommandList(const String& command) {
     // Execute all buffered commands
     for (int i = 0; i < commandListCount; i++) {
       // Yield to allow other tasks to run
-      delay(0);
+      yield();
       handleMPDCommand(commandList[i]);
     }
     // Reset command list state
@@ -2482,60 +2011,57 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
  * @param command The full command string
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
  */
-void MPDInterface::handleMPDSearchCommand(const String& command, bool exactMatch) {
-  // Determine command prefix length (search=6, find=4)
-  int prefixLength = command.startsWith("search") ? 6 : 4;
-  if (command.length() > prefixLength + 1) {
-    // Extract search filter and term
-    String searchFilter = command.substring(prefixLength + 1);
+void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
+  // Extract search filter and term
+  String searchFilter = args;
+  searchFilter.trim();
+  String searchTerm;
+  // Extract search filter (after the first space and before the next space)
+  int firstSpace = searchFilter.indexOf(' ');
+  if (firstSpace != -1) {
+    // Extract search term (everything after the next space)
+    searchTerm = searchFilter.substring(firstSpace + 1);
+    searchTerm.trim();
+    // Extract search filter (everything before the next space)
+    searchFilter = searchFilter.substring(0, firstSpace);
     searchFilter.trim();
-    String searchTerm;
-    // Extract search filter (after the first space and before the next space)
-    int firstSpace = searchFilter.indexOf(' ');
-    if (firstSpace != -1) {
-      // Extract search term (everything after the next space)
-      searchTerm = searchFilter.substring(firstSpace + 1);
-      searchTerm.trim();
-      // Extract search filter (everything before the next space)
-      searchFilter = searchFilter.substring(0, firstSpace);
-      searchFilter.trim();
+  }
+  // Remove quotes if present
+  if (searchFilter.startsWith("\"") && searchFilter.endsWith("\"") && searchFilter.length() >= 2) {
+    searchFilter = searchFilter.substring(1, searchFilter.length() - 1);
+  }
+  if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
+    searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
+  }
+  // Handle special cases for artist/album searches
+  if (searchFilter == "album" || searchFilter == "artist") {
+    sendPlaylistInfo(1); // Send simple info for album search
+    return;
+  }
+  // Search in playlist names
+  for (int i = 0; i < playlistCountRef; i++) {
+    String playlistName = String(playlistRef[i].name);
+    // Convert both to lowercase for case-insensitive comparison
+    String lowerName = playlistName;
+    lowerName.toLowerCase();
+    String lowerSearch = searchTerm;
+    lowerSearch.toLowerCase();
+    bool match = false;
+    if (exactMatch) {
+      // Exact match for find command
+      match = (lowerName == lowerSearch);
+    } else {
+      // Partial match for search command
+      match = (lowerName.indexOf(lowerSearch) != -1);
     }
-    // Remove quotes if present
-    if (searchFilter.startsWith("\"") && searchFilter.endsWith("\"") && searchFilter.length() >= 2) {
-      searchFilter = searchFilter.substring(1, searchFilter.length() - 1);
+    // If a match is found, send the metadata
+    if (match) {
+      mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
+      mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+      mpdClient.print("Track: " + String(i + 1) + "\n");
+      mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     }
-    if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
-      searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
-    }
-    // Handle special cases for artist/album searches
-    if (searchFilter == "album" || searchFilter == "artist") {
-      sendPlaylistInfo(1); // Send simple info for album search
-      return;
-    }
-    // Search in playlist names
-    for (int i = 0; i < playlistCountRef; i++) {
-      String playlistName = String(playlistRef[i].name);
-      // Convert both to lowercase for case-insensitive comparison
-      String lowerName = playlistName;
-      lowerName.toLowerCase();
-      String lowerSearch = searchTerm;
-      lowerSearch.toLowerCase();
-      bool match = false;
-      if (exactMatch) {
-        // Exact match for find command
-        match = (lowerName == lowerSearch);
-      } else {
-        // Partial match for search command
-        match = (lowerName.indexOf(lowerSearch) != -1);
-      }
-      // If a match is found, send the metadata
-      if (match) {
-        mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
-        mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
-        mpdClient.print("Track: " + String(i + 1) + "\n");
-        mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
-      }
-    }
+    yield(); // Allow other tasks to run
   }
 }
 
@@ -2593,7 +2119,7 @@ bool MPDInterface::executeCommand(const String& command) {
   // Search for matching command in registry
   for (size_t i = 0; i < commandCount; i++) {
     // Yield to allow other tasks to run
-    delay(0);
+    yield();
     const MPDCommand& cmd = commandRegistry[i];
     // Check for exact or prefix match
     if (cmd.exactMatch) {
