@@ -125,6 +125,11 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   int id = -1;
   if (args.length() > 0) {
     id = parseValue(args);
+    // Validate ID range
+    if (id < 0 || id >= playlistCountRef) {
+      mpdClient.print(mpdResponseError("playlistid", "Invalid playlist ID"));
+      return;
+    }
   }
   // Check if the ID is valid
   if (id >= 0 && id < playlistCountRef) {
@@ -146,12 +151,18 @@ void MPDInterface::handlePlayCommand(const String& args) {
   int playlistIndex = -1;
   if (args.length() > 0) {
     playlistIndex = parseValue(args);
+    // Validate index if provided
+    if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
+      mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
+      return;
+    }
   }
   
   if (handlePlayback(playlistIndex)) {
     mpdClient.print(mpdResponseOK());
   } else {
     mpdClient.print(mpdResponseError("play", "No playlist"));
+    return;
   }
 }
 
@@ -166,6 +177,7 @@ void MPDInterface::handleSetVolCommand(const String& args) {
   if (args.length() > 0) {
     // Parse volume value, handling quotes if present
     int newVolume = parseValue(args);
+    // Validate volume range (0-100 for MPD compatibility)
     if (newVolume >= 0 && newVolume <= 100) {
       // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
       volumeRef = map(newVolume, 0, 100, 0, 22);
@@ -177,9 +189,11 @@ void MPDInterface::handleSetVolCommand(const String& args) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("setvol", "Volume out of range"));
+      return;
     }
   } else {
     mpdClient.print(mpdResponseError("setvol", "Missing volume value"));
+    return;
   }
 }
 
@@ -214,6 +228,7 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     mpdClient.print(mpdResponseOK());
   } else {
     mpdClient.print(mpdResponseError("volume", "Missing volume change value"));
+    return;
   }
 }
 
@@ -225,9 +240,11 @@ void MPDInterface::handleNextCommand(const String& args) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("next", "Playback failed"));
+      return;
     }
   } else {
     mpdClient.print(mpdResponseError("next", "No playlist"));
+    return;
   }
 }
 
@@ -239,9 +256,11 @@ void MPDInterface::handlePreviousCommand(const String& args) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("previous", "Playback failed"));
+      return;
     }
   } else {
     mpdClient.print(mpdResponseError("previous", "No playlist"));
+    return;
   }
 }
 
@@ -283,10 +302,16 @@ void MPDInterface::handleDisableOutputCommand(const String& args) {
   // Disable output command
   if (args.length() > 0) {
     int outputId = parseValue(args);
+    // Validate output ID (only 0 is supported)
+    if (outputId != 0) {
+      mpdClient.print(mpdResponseError("disableoutput", "Invalid output ID"));
+      return;
+    }
     // We don't actually disable outputs, just acknowledge the command
     mpdClient.print(mpdResponseOK());
   } else {
-    mpdClient.print(mpdResponseError("disableoutput", "Invalid output ID"));
+    mpdClient.print(mpdResponseError("disableoutput", "Missing output ID"));
+    return;
   }
 }
 
@@ -299,9 +324,11 @@ void MPDInterface::handleEnableOutputCommand(const String& args) {
       mpdClient.print(mpdResponseOK());
     } else {
       mpdClient.print(mpdResponseError("enableoutput", "Invalid output ID"));
+      return;
     }
   } else {
     mpdClient.print(mpdResponseError("enableoutput", "Missing output ID"));
+    return;
   }
 }
 
@@ -943,12 +970,17 @@ String MPDInterface::mpdResponseOK() {
  * @details Generates a properly formatted MPD error response following the
  * MPD protocol specification: ACK [error_code@command_list_num] {current_command} message
  * 
- * This implementation uses error code 5 (ACK_ERROR_NO_EXIST) and command list
- * number 0 as these are appropriate for most general errors.
+ * This implementation uses appropriate error codes based on the error type:
+ * - Error code 5 (ACK_ERROR_NO_EXIST) for "No such song" or resource not found
+ * - Error code 2 (ACK_ERROR_ARG) for argument errors
+ * - Error code 1 (ACK_ERROR_NOT_LIST) for command list errors
+ * - Error code 0 (ACK_ERROR_UNKNOWN) for unknown errors
+ * 
+ * Command list number 0 indicates error in current command.
  * 
  * Error response format follows MPD specification:
- * - Error code 5 indicates "No such song"
- * - Command list number 0 indicates error in current command
+ * - Appropriate error codes for different error types
+ * - Command list number indicating where error occurred
  * - Current command name is included in braces
  * - Human-readable message follows the command name
  * 
@@ -957,7 +989,19 @@ String MPDInterface::mpdResponseOK() {
  * @return Error response string in MPD format
  */
 String MPDInterface::mpdResponseError(const String& command, const String& message) {
-  return "ACK [5@0] {" + command + "} " + message + "\n";
+  // Determine appropriate error code based on message content
+  int errorCode = 5; // Default to ACK_ERROR_NO_EXIST
+  
+  // Map common error conditions to appropriate MPD error codes
+  if (message.indexOf("argument") != -1 || message.indexOf("missing") != -1 || message.indexOf("range") != -1) {
+    errorCode = 2; // ACK_ERROR_ARG
+  } else if (message.indexOf("command list") != -1) {
+    errorCode = 1; // ACK_ERROR_NOT_LIST
+  } else if (message.indexOf("unknown") != -1) {
+    errorCode = 0; // ACK_ERROR_UNKNOWN
+  }
+  
+  return "ACK [" + String(errorCode) + "@0] {" + command + "} " + message + "\n";
 }
 
 /**
@@ -1142,6 +1186,13 @@ void MPDInterface::handleMPDCommand(const String& command) {
  * @return true if command was found and executed, false otherwise
  */
 bool MPDInterface::executeCommand(const String& command) {
+  // Validate command string
+  if (command.length() == 0) {
+    mpdClient.print(mpdResponseOK());
+    return true;
+  }
+  
+  // Search for matching command in registry
   for (size_t i = 0; i < commandCount; i++) {
     const MPDCommand& cmd = commandRegistry[i];
     
@@ -1161,12 +1212,6 @@ bool MPDInterface::executeCommand(const String& command) {
         return true;
       }
     }
-  }
-  
-  // Handle empty command
-  if (command.length() == 0) {
-    mpdClient.print(mpdResponseOK());
-    return true;
   }
   
   // Unknown command
