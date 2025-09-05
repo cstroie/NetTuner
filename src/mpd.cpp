@@ -1198,7 +1198,7 @@ bool MPDInterface::executeCommand(const String& command) {
     
     if (cmd.exactMatch) {
       if (command.equals(cmd.name)) {
-        (this->*(cmd.handler))("");
+        (this->*cmd.handler)("");
         return true;
       }
     } else {
@@ -1208,7 +1208,7 @@ bool MPDInterface::executeCommand(const String& command) {
         if (command.length() > strlen(cmd.name)) {
           args = command.substring(strlen(cmd.name) + 1); // +1 for space
         }
-        (this->*(cmd.handler))(args);
+        (this->*cmd.handler)(args);
         return true;
       }
     }
