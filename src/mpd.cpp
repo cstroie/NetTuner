@@ -538,6 +538,9 @@ void MPDInterface::handleDecodersCommand(const String& args) {
   mpdClient.print("plugin: ESP-I2S\n");
   mpdClient.print("suffix: mp3\n");
   mpdClient.print("mime_type: audio/mpeg\n");
+  mpdClient.print("plugin: ESP-I2S\n");
+  mpdClient.print("suffix: aac\n");
+  mpdClient.print("mime_type: audio/aac\n");
   mpdClient.print(mpdResponseOK());
 }
 
