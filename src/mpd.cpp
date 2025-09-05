@@ -531,6 +531,38 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
   mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
 }
 
+/**
+ * @brief Handle the MPD decoders command
+ * @details This function responds to the MPD "decoders" command by returning a list
+ * of supported audio decoders and their capabilities. The ESP32-audioI2S library
+ * supports multiple audio formats which are reported through this command.
+ * 
+ * For each supported decoder, the function reports:
+ * - Plugin name (identifier for the decoder)
+ * - Supported file suffixes/extensions
+ * - MIME types for the supported formats
+ * 
+ * This information allows MPD clients to understand what audio formats
+ * the NetTuner can decode and play.
+ * 
+ * Currently supported formats:
+ * - MP3: Using the HelixMP3 decoder
+ * - AAC: Using the HelixAAC decoder
+ * 
+ * @param args Command arguments (not used for this command)
+ */
+void MPDInterface::handleDecodersCommand(const String& args) {
+  // Decoders command - return supported audio decoders
+  // ESP32-audioI2S supports these formats
+  mpdClient.print("plugin: HelixMP3\n");
+  mpdClient.print("suffix: mp3\n");
+  mpdClient.print("mime_type: audio/mpeg\n");
+  mpdClient.print("plugin: HelixAAC\n");
+  mpdClient.print("suffix: aac\n");
+  mpdClient.print("mime_type: audio/aac\n");
+  mpdClient.print(mpdResponseOK());
+}
+
 // Improve function ducumentation, AI!
 void MPDInterface::handleDecodersCommand(const String& args) {
   // Decoders command - return supported audio decoders
