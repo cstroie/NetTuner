@@ -589,6 +589,8 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
 }
 
 // Command registry definition
+// Improve the documentation, describing the structure and purpose, AI!
+
 const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"stop", &MPDInterface::handleStopCommand, true},
   {"pause", &MPDInterface::handleStopCommand, true},
