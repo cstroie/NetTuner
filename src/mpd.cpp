@@ -542,18 +542,13 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
   mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
 }
 
+// Improve function documentation, AI!
 void MPDInterface::handleCommandListOkBeginCommand(const String& args) {
   // Start command list mode with OK responses
   inCommandList = true;
   commandListOK = true;
   commandListCount = 0;
   // Don't send OK yet, wait for command_list_end
-}
-
-// Improve function documentation, AI!
-void MPDInterface::handleCommandListEndCommand(const String& args) {
-  // This should not happen outside of command list mode
-  mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
 }
 
 /**
