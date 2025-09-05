@@ -735,6 +735,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
       mpdClient.print("command: ");
       mpdClient.print(supportedCommands[i]);
       mpdClient.print("\n");
+      delay(0);
     }
     // End of command list
     mpdClient.print(mpdResponseOK());
@@ -755,7 +756,7 @@ void MPDInterface::handleMPDCommand(const String& command) {
     mpdClient.print("uptime: " + String(uptime) + "\n");
     mpdClient.print("playtime: " + String(playtime) + "\n");
     mpdClient.print("db_playtime: " + String(playtime) + "\n");
-    mpdClient.print("db_update: " + String(BUILD_TIME) + "\n");
+    mpdClient.print("db_update: 0\n");
     mpdClient.print(mpdResponseOK());
   } else if (command.startsWith("ping")) {
     // Ping command
