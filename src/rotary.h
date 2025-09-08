@@ -21,6 +21,13 @@
 
 #include <Arduino.h>
 
+// Forward declarations
+class RotaryEncoder;
+
+// Function declarations
+void setupRotaryEncoder();
+void rotaryISR();
+
 /**
  * @brief Rotary Encoder Handler Class
  * @details This class manages the rotary encoder hardware for volume control

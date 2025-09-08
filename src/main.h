@@ -149,7 +149,6 @@ void sendStatusToClients();
 void setupAudioOutput();
 void loadPlaylist();
 void savePlaylist();
-void setupRotaryEncoder();
 void handleRotary();
 void handleDisplayTimeout();
 void audioTask(void *pvParameters);
