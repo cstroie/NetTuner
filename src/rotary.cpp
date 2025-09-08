@@ -23,6 +23,33 @@
 extern RotaryEncoder rotaryEncoder;
 
 /**
+ * @brief Interrupt service routine for rotary encoder
+ * Handles rotary encoder rotation events
+ */
+void rotaryISR() {
+  rotaryEncoder.handleRotation();
+}
+
+/**
+ * @brief Initialize rotary encoder hardware
+ * Configures pins and attaches interrupt handlers for the rotary encoder
+ * This function sets up the rotary encoder pins with internal pull-up resistors
+ * and attaches interrupt handlers for rotation and button press events.
+ */
+void setupRotaryEncoder() {
+  // Configure rotary encoder pins with internal pull-up resistors
+  pinMode(config.rotary_clk, INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.rotary_dt, INPUT_PULLUP);    // Enable internal pull-up resistor
+  pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
+  // Attach interrupt handler for rotary encoder rotation
+  attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
+  // Attach interrupt handler for rotary encoder button press
+  attachInterrupt(digitalPinToInterrupt(config.rotary_sw), []() {
+    rotaryEncoder.handleButtonPress();
+  }, FALLING);
+}
+
+/**
  * @brief Handle rotary encoder rotation
  * @details Processes rotation events by detecting CLK signal edges and 
  * determining rotation direction based on the DT signal state. Implements 5ms 
