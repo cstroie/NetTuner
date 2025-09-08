@@ -1297,7 +1297,7 @@ void handleSimpleWebPage() {
             currentSelection = streamIndex;
             startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
-        } else if (strlen(streamURL) > 0) {
+        } else if (strlen(streamInfo.url) > 0) {
           // Resume current stream
           startStream();
         } else if (playlistCount > 0 && currentSelection < playlistCount) {
