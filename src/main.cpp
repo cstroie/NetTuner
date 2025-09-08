@@ -32,11 +32,6 @@
 MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
                           playlistCount, currentSelection, playlist, audio);
 
-// Forward declarations
-void sendStatusToClients();
-void updateDisplay();
-void handlePicoCSS();
-void handlePicoClasslessCSS();
 
 /**
  * @brief Audio stream title callback function
@@ -190,21 +185,6 @@ unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
 bool audioConnected = false;
-Config config = {
-  DEFAULT_I2S_DOUT,
-  DEFAULT_I2S_BCLK,
-  DEFAULT_I2S_LRC,
-  DEFAULT_LED_PIN,
-  DEFAULT_ROTARY_CLK,
-  DEFAULT_ROTARY_DT,
-  DEFAULT_ROTARY_SW,
-  DEFAULT_BOARD_BUTTON,
-  DEFAULT_DISPLAY_SDA,
-  DEFAULT_DISPLAY_SCL,
-  DEFAULT_DISPLAY_WIDTH,
-  DEFAULT_DISPLAY_HEIGHT,
-  DEFAULT_DISPLAY_ADDR
-};
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
@@ -214,15 +194,142 @@ int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
 // Stream information variables
+// TODO Convert to struct
 char streamURL[256] = "";
 char streamName[128] = "";
 char streamTitle[128] = "";
 char streamIcyURL[256] = "";
 char streamIconURL[256] = "";
 
-// Forward declarations for JSON helper functions
-bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
-bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
+// Player state tracking
+struct PlayerState {
+  bool playing = false;
+  int volume = 11;
+  int bass = 0;
+  int midrange = 0;
+  int treble = 0;
+  int playlistIndex = 0;
+  unsigned long lastSaveTime = 0;
+  bool dirty = false;
+};
+PlayerState playerState;
+
+
+/**
+ * @brief Read JSON file from SPIFFS
+ * Helper function to read and parse JSON files from SPIFFS
+ * @param filename Path to the file in SPIFFS
+ * @param maxFileSize Maximum allowed file size
+ * @param doc JsonDocument to populate with parsed data
+ * @return true if successful, false otherwise
+ */
+bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc) {
+  // Check if the file exists
+  if (!SPIFFS.exists(filename)) {
+    Serial.printf("JSON file not found: %s\n", filename);
+    return false;
+  }
+  // Open the file
+  File file = SPIFFS.open(filename, "r");
+  if (!file) {
+    Serial.printf("Failed to open JSON file: %s\n", filename);
+    return false;
+  }
+  // Get the size of the file
+  size_t size = file.size();
+  if (size > maxFileSize) {
+    Serial.printf("JSON file too large: %s\n", filename);
+    file.close();
+    return false;
+  }
+  // Check if the file is empty
+  if (size == 0) {
+    Serial.printf("JSON file is empty: %s\n", filename);
+    file.close();
+    return false;
+  }
+  // Allocate buffer for file content
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  if (!buf) {
+    Serial.printf("Error: Failed to allocate memory for JSON file: %s\n", filename);
+    file.close();
+    return false;
+  }
+  // Read the file content
+  if (file.readBytes(buf.get(), size) != size) {
+    Serial.printf("Failed to read JSON file: %s\n", filename);
+    file.close();
+    return false;
+  }
+  // Null-terminate the buffer
+  buf[size] = '\0';
+  file.close();
+  // Parse the JSON document
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.printf("Failed to parse JSON file %s: %s\n", filename, error.c_str());
+    return false;
+  }
+  // Successfully read and parsed the JSON file
+  return true;
+}
+
+/**
+ * @brief Write JSON file to SPIFFS
+ * Helper function to serialize and write JSON files to SPIFFS
+ * @param filename Path to the file in SPIFFS
+ * @param doc JsonDocument to serialize
+ * @return true if successful, false otherwise
+ */
+bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
+  // Create backup of existing file
+  String backupFilename = String(filename) + ".bak";
+  if (SPIFFS.exists(filename)) {
+    if (SPIFFS.exists(backupFilename)) {
+      SPIFFS.remove(backupFilename);
+    }
+    if (!SPIFFS.rename(filename, backupFilename)) {
+      Serial.printf("Warning: Failed to create backup of %s\n", filename);
+    }
+  }
+  // Open the file for writing
+  File file = SPIFFS.open(filename, "w");
+  if (!file) {
+    Serial.printf("Failed to open JSON file for writing: %s\n", filename);
+    // Try to restore from backup
+    if (SPIFFS.exists(backupFilename)) {
+      if (SPIFFS.rename(backupFilename, filename)) {
+        Serial.printf("Restored %s from backup\n", filename);
+      } else {
+        Serial.printf("Error: Failed to restore %s from backup\n", filename);
+      }
+    }
+    return false;
+  }
+  // Serialize the JSON document to the file
+  size_t bytesWritten = serializeJson(doc, file);
+  if (bytesWritten == 0) {
+    Serial.printf("Failed to write JSON to file: %s\n", filename);
+    file.close();
+    // Try to restore from backup
+    if (SPIFFS.exists(backupFilename)) {
+      SPIFFS.remove(filename); // Remove the failed file
+      if (SPIFFS.rename(backupFilename, filename)) {
+        Serial.printf("Restored %s from backup\n", filename);
+      } else {
+        Serial.printf("Error: Failed to restore %s from backup\n", filename);
+      }
+    }
+    return false;
+  }
+  file.close();
+  // Remove backup file after successful save
+  if (SPIFFS.exists(backupFilename)) {
+    SPIFFS.remove(backupFilename);
+  }
+  // Successfully wrote the JSON file
+  return true;
+}
 
 /**
  * @brief Send JSON response with status and message
@@ -245,18 +352,6 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
   server.send(code, "application/json", json);
 }
 
-// Player state tracking
-struct PlayerState {
-  bool playing = false;
-  int volume = 11;
-  int bass = 0;
-  int midrange = 0;
-  int treble = 0;
-  int playlistIndex = 0;
-  unsigned long lastSaveTime = 0;
-  bool dirty = false;
-};
-PlayerState playerState;
 
 /**
  * @brief Load player state from SPIFFS
@@ -319,223 +414,6 @@ void markPlayerStateDirty() {
   playerState.dirty = true;
 }
 
-/**
- * @brief Arduino setup function
- * Initializes all system components including WiFi, audio, display, and servers
- * This function is called once at startup to configure the hardware and software components.
- */
-void setup() {
-  Serial.begin(115200);
-  // Print program name and build timestamp
-  Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
-  Serial.print("Build timestamp: ");
-  Serial.println(BUILD_TIME);
-  // Initialize start time for uptime tracking
-  startTime = millis() / 1000;  // Store in seconds
-  // Initialize SPIFFS with error recovery
-  if (!initializeSPIFFS()) {
-    Serial.println("ERROR: Failed to initialize SPIFFS");
-    return;
-  }
-  // Load configuration
-  loadConfig();
-  // Initialize LED pin
-  pinMode(config.led_pin, OUTPUT);
-  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
-  // Initialize board button with pull-up resistor
-  pinMode(config.board_button, INPUT_PULLUP);
-  // Initialize OLED display
-  // Configure I2C pins
-  Wire.begin(config.display_sda, config.display_scl);
-  display.begin();
-  // Load WiFi credentials with error recovery
-  loadWiFiCredentials();
-  // Connect to WiFi with improved error handling
-  bool connected = false;
-  if (wifiNetworkCount > 0) {
-    WiFi.setHostname("NetTuner");
-    // Try each configured network
-    for (int i = 0; i < wifiNetworkCount; i++) {
-      if (strlen(ssid[i]) > 0) {
-        Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
-        WiFi.begin(ssid[i], password[i]);
-        int wifiAttempts = 0;
-        const int maxAttempts = 15; // Increased attempts per network
-        while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-          delay(500);
-          Serial.print(".");
-          wifiAttempts++;
-        }
-        if (WiFi.status() == WL_CONNECTED) {
-          Serial.printf("Connected to %s\n", ssid[i]);
-          connected = true;
-          break;
-        } else {
-          Serial.printf("Failed to connect to %s\n", ssid[i]);
-          // Reset WiFi before trying next network
-          WiFi.disconnect();
-          delay(1000);
-        }
-      }
-    }
-  }
-  // If not connected to any network, start access point mode
-  if (connected) {
-    Serial.println("Connected to WiFi");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP().toString());
-    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
-  } else {
-    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
-    display.showStatus("Starting AP Mode", "", "");
-    
-    // Start WiFi access point mode with error handling
-    if (WiFi.softAP("NetTuner-Setup")) {
-      Serial.println("Access Point Started");
-      Serial.print("AP IP Address: ");
-      Serial.println(WiFi.softAPIP().toString());
-      display.showStatus("Starting AP Mode", "", WiFi.softAPIP().toString());
-    } else {
-      Serial.println("Failed to start Access Point");
-      display.showStatus("Starting AP Mode", "", "AP Start Failed");
-    }
-  }
-
-  // Setup audio output with error handling
-  setupAudioOutput();
-  // Setup rotary encoder with error handling
-  setupRotaryEncoder();
-  // Load playlist with error recovery
-  loadPlaylist();
-
-  // Validate loaded playlist
-  if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
-    Serial.println("Warning: Invalid playlist count detected, resetting to 0");
-    playlistCount = 0;
-  }
-  if (currentSelection < 0 || currentSelection >= playlistCount) {
-    currentSelection = 0;
-  }
-  
-  // Load player state
-  loadPlayerState();
-  
-  // Setup web server routes
-  server.on("/", HTTP_GET, handleHomePage);
-  server.on("/playlist", HTTP_GET, handlePlaylistPage);
-  server.on("/config", HTTP_GET, handleConfigPage);
-  server.on("/wifi", HTTP_GET, handleWiFiPage);
-  server.on("/about", HTTP_GET, handleAboutPage);
-  server.on("/api/streams", HTTP_GET, handleGetStreams);
-  server.on("/api/streams", HTTP_POST, handlePostStreams);
-  server.on("/api/play", HTTP_POST, handlePlay);
-  server.on("/api/stop", HTTP_POST, handleStop);
-  server.on("/api/volume", HTTP_POST, handleVolume);
-  server.on("/api/tone", HTTP_POST, handleTone);
-  server.on("/api/status", HTTP_GET, handleStatus);
-  server.on("/api/config", HTTP_GET, handleGetConfig);
-  server.on("/api/config", HTTP_POST, handlePostConfig);
-  server.on("/api/config/export", HTTP_GET, handleExportConfig);
-  server.on("/api/config/import", HTTP_POST, handleImportConfig);
-  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
-  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
-  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
-  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
-  server.on("/w", HTTP_GET, handleSimpleWebPage);
-  server.on("/w", HTTP_POST, handleSimpleWebPage);
-  server.serveStatic("/", SPIFFS, "/index.html");
-  server.serveStatic("/styles.css", SPIFFS, "/styles.css");
-  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.on("/pico.min.css", HTTP_GET, handlePicoCSS);
-  server.on("/pico.classless.min.css", HTTP_GET, handlePicoClasslessCSS);
-  
-  // Start server
-  server.begin();
-  Serial.println("Web server started");
-  
-  // Setup WebSocket server
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
-  
-  // Start MPD server
-  mpdServer.begin();
-  Serial.println("MPD server started");
-  
-  // Create audio task on core 0 with error checking
-  BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
-  if (result != pdPASS) {
-    Serial.println("ERROR: Failed to create AudioTask");
-  } else {
-    Serial.println("AudioTask created successfully");
-  }
-  
-  // Update display
-  updateDisplay();
-}
-
-
-/**
- * @brief Initialize SPIFFS with error recovery
- * Mounts SPIFFS filesystem with error recovery mechanisms
- * @return true if successful, false otherwise
- */
-bool initializeSPIFFS() {
-  // Initialize SPIFFS with error recovery
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    // Try to reformat SPIFFS
-    if (!SPIFFS.format()) {
-      Serial.println("ERROR: Failed to format SPIFFS");
-      return false;
-    }
-    // Try to mount again after formatting
-    if (!SPIFFS.begin(true)) {
-      Serial.println("ERROR: Failed to mount SPIFFS after formatting");
-      return false;
-    }
-    Serial.println("SPIFFS formatted and mounted successfully");
-  }
-  
-  // Test SPIFFS write capability
-  if (!SPIFFS.exists("/spiffs_test")) {
-    Serial.println("Testing SPIFFS write capability...");
-    File testFile = SPIFFS.open("/spiffs_test", "w");
-    if (!testFile) {
-      Serial.println("ERROR: Failed to create SPIFFS test file!");
-    } else {
-      if (testFile.println("SPIFFS write test - OK")) {
-        Serial.println("SPIFFS write test successful");
-      } else {
-        Serial.println("ERROR: Failed to write to SPIFFS test file!");
-      }
-      testFile.close();
-    }
-  } else {
-    Serial.println("SPIFFS write test file already exists - SPIFFS is working");
-  }
-  
-  return true;
-}
-
-/**
- * @brief Handle static file requests
- * Serves static HTML files with yield points for better async behavior
- * @param filename Path to the file in SPIFFS
- */
-void handleStaticFile(const char* filename) {
-  // Yield to other tasks before processing
-  yield();
-  File file = SPIFFS.open(filename, "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.streamFile(file, "text/html");
-  file.close();
-  // Yield to other tasks after processing
-  yield();
-}
 
 /**
  * @brief Audio task function
@@ -693,15 +571,6 @@ void loop() {
 }
 
 /**
- * @brief Handle WiFi configuration page
- * Serves the WiFi configuration page
- * This function reads the wifi.html file from SPIFFS and sends it to the client
- */
-void handleWiFiPage() {
-  handleStaticFile("/wifi.html");
-}
-
-/**
  * @brief Handle WiFi configuration API request
  * Returns the current WiFi configuration as JSON
  * This function provides the list of configured WiFi networks in JSON format
@@ -852,122 +721,6 @@ void handleWiFiStatus() {
   server.send(200, "application/json", json);
   // Yield to other tasks after processing
   yield();
-}
-
-/**
- * @brief Read JSON file from SPIFFS
- * Helper function to read and parse JSON files from SPIFFS
- * @param filename Path to the file in SPIFFS
- * @param maxFileSize Maximum allowed file size
- * @param doc JsonDocument to populate with parsed data
- * @return true if successful, false otherwise
- */
-bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc) {
-  // Check if the file exists
-  if (!SPIFFS.exists(filename)) {
-    Serial.printf("JSON file not found: %s\n", filename);
-    return false;
-  }
-  // Open the file
-  File file = SPIFFS.open(filename, "r");
-  if (!file) {
-    Serial.printf("Failed to open JSON file: %s\n", filename);
-    return false;
-  }
-  // Get the size of the file
-  size_t size = file.size();
-  if (size > maxFileSize) {
-    Serial.printf("JSON file too large: %s\n", filename);
-    file.close();
-    return false;
-  }
-  // Check if the file is empty
-  if (size == 0) {
-    Serial.printf("JSON file is empty: %s\n", filename);
-    file.close();
-    return false;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.printf("Error: Failed to allocate memory for JSON file: %s\n", filename);
-    file.close();
-    return false;
-  }
-  // Read the file content
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.printf("Failed to read JSON file: %s\n", filename);
-    file.close();
-    return false;
-  }
-  // Null-terminate the buffer
-  buf[size] = '\0';
-  file.close();
-  // Parse the JSON document
-  DeserializationError error = deserializeJson(doc, buf.get());
-  if (error) {
-    Serial.printf("Failed to parse JSON file %s: %s\n", filename, error.c_str());
-    return false;
-  }
-  // Successfully read and parsed the JSON file
-  return true;
-}
-
-/**
- * @brief Write JSON file to SPIFFS
- * Helper function to serialize and write JSON files to SPIFFS
- * @param filename Path to the file in SPIFFS
- * @param doc JsonDocument to serialize
- * @return true if successful, false otherwise
- */
-bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
-  // Create backup of existing file
-  String backupFilename = String(filename) + ".bak";
-  if (SPIFFS.exists(filename)) {
-    if (SPIFFS.exists(backupFilename)) {
-      SPIFFS.remove(backupFilename);
-    }
-    if (!SPIFFS.rename(filename, backupFilename)) {
-      Serial.printf("Warning: Failed to create backup of %s\n", filename);
-    }
-  }
-  // Open the file for writing
-  File file = SPIFFS.open(filename, "w");
-  if (!file) {
-    Serial.printf("Failed to open JSON file for writing: %s\n", filename);
-    // Try to restore from backup
-    if (SPIFFS.exists(backupFilename)) {
-      if (SPIFFS.rename(backupFilename, filename)) {
-        Serial.printf("Restored %s from backup\n", filename);
-      } else {
-        Serial.printf("Error: Failed to restore %s from backup\n", filename);
-      }
-    }
-    return false;
-  }
-  // Serialize the JSON document to the file
-  size_t bytesWritten = serializeJson(doc, file);
-  if (bytesWritten == 0) {
-    Serial.printf("Failed to write JSON to file: %s\n", filename);
-    file.close();
-    // Try to restore from backup
-    if (SPIFFS.exists(backupFilename)) {
-      SPIFFS.remove(filename); // Remove the failed file
-      if (SPIFFS.rename(backupFilename, filename)) {
-        Serial.printf("Restored %s from backup\n", filename);
-      } else {
-        Serial.printf("Error: Failed to restore %s from backup\n", filename);
-      }
-    }
-    return false;
-  }
-  file.close();
-  // Remove backup file after successful save
-  if (SPIFFS.exists(backupFilename)) {
-    SPIFFS.remove(backupFilename);
-  }
-  // Successfully wrote the JSON file
-  return true;
 }
 
 /**
@@ -1518,15 +1271,6 @@ void handleRotary() {
 }
 
 /**
- * @brief Handle home page request
- * Serves the main index.html file
- * This function reads the index.html file from SPIFFS and sends it to the client
- */
-void handleHomePage() {
-  handleStaticFile("/index.html");
-}
-
-/**
  * @brief Handle simple web page request
  * Serves a minimal HTML page for controlling the radio
  * This function provides a simple interface with play/stop controls
@@ -1630,72 +1374,6 @@ void handleSimpleWebPage() {
   server.send(200, "text/html", html);
 }
 
-/**
- * @brief Handle playlist page request
- * Serves the playlist.html file
- * This function reads the playlist.html file from SPIFFS and sends it to the client
- */
-void handlePlaylistPage() {
-  handleStaticFile("/playlist.html");
-}
-
-/**
- * @brief Handle configuration page request
- * Serves the config.html file
- * This function reads the config.html file from SPIFFS and sends it to the client
- */
-void handleConfigPage() {
-  handleStaticFile("/config.html");
-}
-
-/**
- * @brief Handle about page request
- * Serves the about.html file
- * This function reads the about.html file from SPIFFS and sends it to the client
- */
-void handleAboutPage() {
-  handleStaticFile("/about.html");
-}
-
-
-
-/**
- * @brief Handle pico.min.css request
- * Serves the compressed pico.min.css.gz file with proper Content-Encoding header
- */
-void handlePicoCSS() {
-  // Yield to other tasks before processing
-  yield();
-  File file = SPIFFS.open("/pico.min.css.gz", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.sendHeader("Content-Encoding", "gzip");
-  server.streamFile(file, "text/css");
-  file.close();
-  // Yield to other tasks after processing
-  yield();
-}
-
-/**
- * @brief Handle pico.classless.min.css request
- * Serves the compressed pico.classless.min.css.gz file with proper Content-Encoding header
- */
-void handlePicoClasslessCSS() {
-  // Yield to other tasks before processing
-  yield();
-  File file = SPIFFS.open("/pico.classless.min.css.gz", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.sendHeader("Content-Encoding", "gzip");
-  server.streamFile(file, "text/css");
-  file.close();
-  // Yield to other tasks after processing
-  yield();
-}
 
 /**
  * @brief Handle GET request for streams
@@ -2329,4 +2007,202 @@ void updateDisplay() {
   }
   // Update the display with current status
   display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
+}
+
+
+/**
+ * @brief Initialize SPIFFS with error recovery
+ * Mounts SPIFFS filesystem with error recovery mechanisms
+ * @return true if successful, false otherwise
+ */
+bool initializeSPIFFS() {
+  // Initialize SPIFFS with error recovery
+  if (!SPIFFS.begin(true)) {
+    Serial.println("An Error has occurred while mounting SPIFFS");
+    // Try to reformat SPIFFS
+    if (!SPIFFS.format()) {
+      Serial.println("ERROR: Failed to format SPIFFS");
+      return false;
+    }
+    // Try to mount again after formatting
+    if (!SPIFFS.begin(true)) {
+      Serial.println("ERROR: Failed to mount SPIFFS after formatting");
+      return false;
+    }
+    Serial.println("SPIFFS formatted and mounted successfully");
+  }
+  
+  // Test SPIFFS write capability
+  if (!SPIFFS.exists("/spiffs_test")) {
+    Serial.println("Testing SPIFFS write capability...");
+    File testFile = SPIFFS.open("/spiffs_test", "w");
+    if (!testFile) {
+      Serial.println("ERROR: Failed to create SPIFFS test file!");
+    } else {
+      if (testFile.println("SPIFFS write test - OK")) {
+        Serial.println("SPIFFS write test successful");
+      } else {
+        Serial.println("ERROR: Failed to write to SPIFFS test file!");
+      }
+      testFile.close();
+    }
+  } else {
+    Serial.println("SPIFFS write test file already exists - SPIFFS is working");
+  }
+  
+  return true;
+}
+
+/**
+ * @brief Arduino setup function
+ * Initializes all system components including WiFi, audio, display, and servers
+ * This function is called once at startup to configure the hardware and software components.
+ */
+void setup() {
+  Serial.begin(115200);
+  // Print program name and build timestamp
+  Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
+  Serial.print("Build timestamp: ");
+  Serial.println(BUILD_TIME);
+  // Initialize start time for uptime tracking
+  startTime = millis() / 1000;  // Store in seconds
+  // Initialize SPIFFS with error recovery
+  if (!initializeSPIFFS()) {
+    Serial.println("ERROR: Failed to initialize SPIFFS");
+    return;
+  }
+  // Load configuration
+  loadConfig();
+  // Initialize LED pin
+  pinMode(config.led_pin, OUTPUT);
+  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
+  // Initialize board button with pull-up resistor
+  pinMode(config.board_button, INPUT_PULLUP);
+  // Initialize OLED display
+  // Configure I2C pins
+  Wire.begin(config.display_sda, config.display_scl);
+  display.begin();
+  // Load WiFi credentials with error recovery
+  loadWiFiCredentials();
+  // Connect to WiFi with improved error handling
+  bool connected = false;
+  if (wifiNetworkCount > 0) {
+    WiFi.setHostname("NetTuner");
+    // Try each configured network
+    for (int i = 0; i < wifiNetworkCount; i++) {
+      if (strlen(ssid[i]) > 0) {
+        Serial.printf("Attempting to connect to %s...\n", ssid[i]);
+        display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
+        WiFi.begin(ssid[i], password[i]);
+        int wifiAttempts = 0;
+        const int maxAttempts = 15; // Increased attempts per network
+        while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
+          delay(500);
+          Serial.print(".");
+          wifiAttempts++;
+        }
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.printf("Connected to %s\n", ssid[i]);
+          connected = true;
+          break;
+        } else {
+          Serial.printf("Failed to connect to %s\n", ssid[i]);
+          // Reset WiFi before trying next network
+          WiFi.disconnect();
+          delay(1000);
+        }
+      }
+    }
+  }
+  // If not connected to any network, start access point mode
+  if (connected) {
+    Serial.println("Connected to WiFi");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP().toString());
+    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+  } else {
+    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
+    display.showStatus("Starting AP Mode", "", "");
+    
+    // Start WiFi access point mode with error handling
+    if (WiFi.softAP("NetTuner-Setup")) {
+      Serial.println("Access Point Started");
+      Serial.print("AP IP Address: ");
+      Serial.println(WiFi.softAPIP().toString());
+      display.showStatus("Starting AP Mode", "", WiFi.softAPIP().toString());
+    } else {
+      Serial.println("Failed to start Access Point");
+      display.showStatus("Starting AP Mode", "", "AP Start Failed");
+    }
+  }
+
+  // Setup audio output with error handling
+  setupAudioOutput();
+  // Setup rotary encoder with error handling
+  setupRotaryEncoder();
+  // Load playlist with error recovery
+  loadPlaylist();
+
+  // Validate loaded playlist
+  if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
+    Serial.println("Warning: Invalid playlist count detected, resetting to 0");
+    playlistCount = 0;
+  }
+  if (currentSelection < 0 || currentSelection >= playlistCount) {
+    currentSelection = 0;
+  }
+  
+  // Load player state
+  loadPlayerState();
+  
+  // Setup web server routes
+  server.on("/api/streams", HTTP_GET, handleGetStreams);
+  server.on("/api/streams", HTTP_POST, handlePostStreams);
+  server.on("/api/play", HTTP_POST, handlePlay);
+  server.on("/api/stop", HTTP_POST, handleStop);
+  server.on("/api/volume", HTTP_POST, handleVolume);
+  server.on("/api/tone", HTTP_POST, handleTone);
+  server.on("/api/status", HTTP_GET, handleStatus);
+  server.on("/api/config", HTTP_GET, handleGetConfig);
+  server.on("/api/config", HTTP_POST, handlePostConfig);
+  server.on("/api/config/export", HTTP_GET, handleExportConfig);
+  server.on("/api/config/import", HTTP_POST, handleImportConfig);
+  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
+  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
+  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
+  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
+  server.on("/w", HTTP_GET, handleSimpleWebPage);
+  server.on("/w", HTTP_POST, handleSimpleWebPage);
+  server.serveStatic("/", SPIFFS, "/index.html");
+  server.serveStatic("/playlist", SPIFFS, "/playlist.html");
+  server.serveStatic("/wifi", SPIFFS, "/wifi.html");
+  server.serveStatic("/config", SPIFFS, "/config.html");
+  server.serveStatic("/about", SPIFFS, "/about.html");
+  server.serveStatic("/styles.css", SPIFFS, "/styles.css");
+  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
+  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
+  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css");
+ 
+  // Start server
+  server.begin();
+  Serial.println("Web server started");
+  
+  // Setup WebSocket server
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+  
+  // Start MPD server
+  mpdServer.begin();
+  Serial.println("MPD server started");
+  
+  // Create audio task on core 0 with error checking
+  BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
+  if (result != pdPASS) {
+    Serial.println("ERROR: Failed to create AudioTask");
+  } else {
+    Serial.println("AudioTask created successfully");
+  }
+  
+  // Update display
+  updateDisplay();
 }
