@@ -1048,7 +1048,6 @@ void savePlaylist() {
     item["name"] = playlist[i].name;
     item["url"] = playlist[i].url;
   }
-  
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/playlist.json", doc)) {
     Serial.println("Saved playlist to SPIFFS");
@@ -1056,6 +1055,7 @@ void savePlaylist() {
     Serial.println("Failed to save playlist to SPIFFS");
   }
 }
+
 
 /**
  * @brief Interrupt service routine for rotary encoder
@@ -1155,6 +1155,7 @@ void handleRotary() {
     updateDisplay();  // Refresh display
   }
 }
+
 
 /**
  * @brief Handle simple web page request
