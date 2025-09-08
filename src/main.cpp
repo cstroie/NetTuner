@@ -445,6 +445,8 @@ void setup() {
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
+  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
+  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css");
   
   // Start server
   server.begin();
