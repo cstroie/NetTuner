@@ -214,6 +214,23 @@ struct PlayerState {
 };
 PlayerState playerState;
 
+// Configuration structure definition
+Config config = {
+  DEFAULT_I2S_DOUT,
+  DEFAULT_I2S_BCLK,
+  DEFAULT_I2S_LRC,
+  DEFAULT_LED_PIN,
+  DEFAULT_ROTARY_CLK,
+  DEFAULT_ROTARY_DT,
+  DEFAULT_ROTARY_SW,
+  DEFAULT_BOARD_BUTTON,
+  DEFAULT_DISPLAY_SDA,
+  DEFAULT_DISPLAY_SCL,
+  DEFAULT_DISPLAY_WIDTH,
+  DEFAULT_DISPLAY_HEIGHT,
+  DEFAULT_DISPLAY_ADDR
+};
+
 
 /**
  * @brief Read JSON file from SPIFFS
@@ -2009,6 +2026,35 @@ void updateDisplay() {
   display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
 }
 
+/**
+ * @brief Handle pico CSS requests
+ * Serves the compressed CSS files with proper Content-Encoding header
+ * Falls back to uncompressed files if compressed files are not found
+ * @param filename The requested filename
+ * @param filepathGz The path to the compressed file
+ * @param filepath The path to the uncompressed file
+ */
+void handlePicoCSS(const String& filename, const String& filepathGz, const String& filepath) {
+  // Yield to other tasks before processing
+  yield();
+  File file = SPIFFS.open(filepathGz, "r");
+  if (!file) {
+    // Fallback to uncompressed file
+    file = SPIFFS.open(filepath, "r");
+    if (!file) {
+      server.send(404, "text/plain", "File not found");
+      return;
+    }
+    server.streamFile(file, "text/css");
+  } else {
+    server.sendHeader("Content-Encoding", "gzip");
+    server.streamFile(file, "text/css");
+  }
+  file.close();
+  // Yield to other tasks after processing
+  yield();
+}
+
 
 /**
  * @brief Initialize SPIFFS with error recovery
@@ -2180,8 +2226,12 @@ void setup() {
   server.serveStatic("/about", SPIFFS, "/about.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
-  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css");
+  server.on("/pico.min.css", HTTP_GET, []() {
+    handlePicoCSS("/pico.min.css", "/pico.min.css.gz", "/pico.min.css");
+  });
+  server.on("/pico.classless.min.css", HTTP_GET, []() {
+    handlePicoCSS("/pico.classless.min.css", "/pico.classless.min.css.gz", "/pico.classless.min.css");
+  });
  
   // Start server
   server.begin();
