@@ -79,7 +79,7 @@ public:
    * counter-clockwise rotation.
    * @return Current position value
    */
-  int getPosition() const volatile;
+  volatile int getPosition() const;
   
   /**
    * @brief Set position
