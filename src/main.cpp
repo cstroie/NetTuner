@@ -29,7 +29,7 @@
 
 
 // MPD Interface instance
-MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlaying, volume, bitrate, 
+MPDInterface mpdInterface(mpdServer, streamInfo.title, streamInfo.name, streamInfo.url, isPlaying, volume, bitrate, 
                           playlistCount, currentSelection, playlist, audio);
 
 
@@ -43,9 +43,9 @@ void audio_showstreamtitle(const char *info) {
     Serial.print("Stream title: ");
     Serial.println(info);
     // Update stream title if it has changed
-    if (strcmp(streamTitle, info) != 0) {
-      strncpy(streamTitle, info, sizeof(streamTitle) - 1);
-      streamTitle[sizeof(streamTitle) - 1] = '\0';
+    if (strcmp(streamInfo.title, info) != 0) {
+      strncpy(streamInfo.title, info, sizeof(streamInfo.title) - 1);
+      streamInfo.title[sizeof(streamInfo.title) - 1] = '\0';
       updateDisplay();
       // Notify clients of stream title change
       sendStatusToClients();
@@ -63,9 +63,9 @@ void audio_showstation(const char *info) {
     Serial.print("Station name: ");
     Serial.println(info);
     // Update current stream name if it has changed and we're not already using a custom name
-    if (strcmp(streamName, info) != 0) {
-      strncpy(streamName, info, sizeof(streamName) - 1);
-      streamName[sizeof(streamName) - 1] = '\0';
+    if (strcmp(streamInfo.name, info) != 0) {
+      strncpy(streamInfo.name, info, sizeof(streamInfo.name) - 1);
+      streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
       updateDisplay();
       // Notify clients of station name change
       sendStatusToClients();
@@ -115,10 +115,10 @@ void audio_info(const char *info) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       }
       // Store the stream icon URL
-      strncpy(streamIconURL, urlPart.c_str(), sizeof(streamIconURL) - 1);
-      streamIconURL[sizeof(streamIconURL) - 1] = '\0';
+      strncpy(streamInfo.iconUrl, urlPart.c_str(), sizeof(streamInfo.iconUrl) - 1);
+      streamInfo.iconUrl[sizeof(streamInfo.iconUrl) - 1] = '\0';
       Serial.print("Stream Icon URL: ");
-      Serial.println(streamIconURL);
+      Serial.println(streamInfo.iconUrl);
       // Notify clients of the new stream icon
       sendStatusToClients();
     }
@@ -135,8 +135,8 @@ void audio_icyurl(const char *info) {
     Serial.print("ICY URL: ");
     Serial.println(info);
     // Store the ICY URL for later use
-    strncpy(streamIcyURL, info, sizeof(streamIcyURL) - 1);
-    streamIcyURL[sizeof(streamIcyURL) - 1] = '\0';
+    strncpy(streamInfo.icyUrl, info, sizeof(streamInfo.icyUrl) - 1);
+    streamInfo.icyUrl[sizeof(streamInfo.icyUrl) - 1] = '\0';
   }
 }
 
@@ -194,12 +194,13 @@ int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
 // Stream information variables
-// TODO Convert to struct
-char streamURL[256] = "";
-char streamName[128] = "";
-char streamTitle[128] = "";
-char streamIcyURL[256] = "";
-char streamIconURL[256] = "";
+StreamInfoData streamInfo = {
+  "",  // url
+  "",  // name
+  "",  // title
+  "",  // icyUrl
+  ""   // iconUrl
+};
 
 PlayerState playerState;
 
@@ -464,7 +465,7 @@ void handleBoardButton() {
         markPlayerStateDirty();
       } else {
         // If we have a current stream, resume it
-        if (strlen(streamURL) > 0) {
+        if (strlen(streamInfo.url) > 0) {
           startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
@@ -511,7 +512,7 @@ void loop() {
       if (!audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
-        if (strlen(streamURL) > 0) {
+        if (strlen(streamInfo.url) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
           if (streamStoppedTime == 0) {
             // First time detecting the stream has stopped
@@ -913,12 +914,12 @@ void startStream(const char* url, const char* name) {
   }
   // If no URL provided, check if we have a current stream to resume
   if (!url || strlen(url) == 0) {
-    if (strlen(streamURL) > 0) {
+    if (strlen(streamInfo.url) > 0) {
       // Resume playback of current stream
-      url = streamURL;
+      url = streamInfo.url;
       // Use current name if available, otherwise use a default
       if (!name || strlen(name) == 0) {
-        name = (strlen(streamName) > 0) ? streamName : "Unknown Station";
+        name = (strlen(streamInfo.name) > 0) ? streamInfo.name : "Unknown Station";
       }
       // We are resuming playback
       resume = true;
@@ -948,10 +949,10 @@ void startStream(const char* url, const char* name) {
   }
   // Keep the stream url and name if they are new
   if (not resume) {
-    strncpy(streamURL, url, sizeof(streamURL) - 1);
-    streamURL[sizeof(streamURL) - 1] = '\0';
-    strncpy(streamName, name, sizeof(streamName) - 1);
-    streamName[sizeof(streamName) - 1] = '\0';
+    strncpy(streamInfo.url, url, sizeof(streamInfo.url) - 1);
+    streamInfo.url[sizeof(streamInfo.url) - 1] = '\0';
+    strncpy(streamInfo.name, name, sizeof(streamInfo.name) - 1);
+    streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
   };
   // Set playback status to playing
   isPlaying = true;
@@ -988,11 +989,11 @@ void stopStream() {
   }
   audioConnected = false;
   isPlaying = false;             // Set playback status to stopped
-  streamURL[0] = '\0';       // Clear current stream URL
-  streamName[0] = '\0';   // Clear current stream name
-  streamTitle[0] = '\0';         // Clear stream title
-  streamIcyURL[0] = '\0';        // Clear ICY URL
-  streamIconURL[0] = '\0';       // Clear stream icon URL
+  streamInfo.url[0] = '\0';       // Clear current stream URL
+  streamInfo.name[0] = '\0';   // Clear current stream name
+  streamInfo.title[0] = '\0';         // Clear stream title
+  streamInfo.icyUrl[0] = '\0';        // Clear ICY URL
+  streamInfo.iconUrl[0] = '\0';       // Clear stream icon URL
   bitrate = 0;                   // Clear bitrate
   // Update total play time when stopping
   if (playStartTime > 0) {
@@ -1328,9 +1329,9 @@ void handleSimpleWebPage() {
   html += isPlaying ? "Playing" : "Stopped";
   html += "</p>";
   // Show current stream name
-  if (isPlaying && streamName[0]) {
+  if (isPlaying && streamInfo.name[0]) {
     html += "<p><b>Current Stream:</b> ";
-    html += streamName;
+    html += streamInfo.name;
     html += "</p>";
   } else if (!isPlaying && playlistCount > 0 && currentSelection < playlistCount) {
     html += "<p><b>Selected Stream:</b> ";
@@ -1720,8 +1721,8 @@ void handleStatus() {
   DynamicJsonDocument doc(256);
   // Populate JSON document with status values
   doc["playing"] = isPlaying;
-  doc["streamURL"] = streamURL;
-  doc["streamName"] = streamName;
+  doc["streamURL"] = streamInfo.url;
+  doc["streamName"] = streamInfo.name;
   doc["volume"] = volume;
   // Serialize JSON to string
   String json;
@@ -1927,11 +1928,11 @@ String generateStatusJSON() {
   DynamicJsonDocument doc(512);
   // Populate JSON document with status values
   doc["playing"] = isPlaying;
-  doc["streamURL"] = streamURL;
-  doc["streamName"] = streamName;
-  doc["streamTitle"] = streamTitle;
-  doc["streamIcyURL"] = streamIcyURL;
-  doc["streamIconURL"] = streamIconURL;
+  doc["streamURL"] = streamInfo.url;
+  doc["streamName"] = streamInfo.name;
+  doc["streamTitle"] = streamInfo.title;
+  doc["streamIcyURL"] = streamInfo.icyUrl;
+  doc["streamIconURL"] = streamInfo.iconUrl;
   doc["bitrate"] = bitrate;
   doc["volume"] = volume;
   doc["bass"] = bass;
@@ -2012,7 +2013,7 @@ void updateDisplay() {
     ipString = "No IP";
   }
   // Update the display with current status
-  display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
+  display.update(isPlaying, streamInfo.title, streamInfo.name, volume, bitrate, ipString);
 }
 
 /**
