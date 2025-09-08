@@ -2664,13 +2664,15 @@ async function loadWiFiConfiguration() {
                     firstSSID.value = configNetworks[0].ssid || '';
                 }
                 if (firstPassword) {
-                    // Display dummy characters for existing passwords
-                    if (configNetworks[0].password && configNetworks[0].password.length > 0) {
-                        firstPassword.value = '•'.repeat(Math.min(configNetworks[0].password.length, 10));
-                        firstPassword.dataset.actualPassword = configNetworks[0].password;
+                    // Since we don't receive passwords from the server, leave password field empty
+                    // but mark it as having a saved password
+                    if (configNetworks[0].password) {
+                        firstPassword.placeholder = 'Password saved (leave blank to keep)';
+                        firstPassword.dataset.hasPassword = 'true';
                     } else {
-                        firstPassword.value = '';
+                        firstPassword.placeholder = 'Enter password';
                     }
+                    firstPassword.value = '';
                 }
                 
                 // Add additional entries for each configured network
@@ -2682,13 +2684,15 @@ async function loadWiFiConfiguration() {
                         ssidElement.value = configNetworks[i].ssid || '';
                     }
                     if (passwordElement) {
-                        // Display dummy characters for existing passwords
-                        if (configNetworks[i].password && configNetworks[i].password.length > 0) {
-                            passwordElement.value = '•'.repeat(Math.min(configNetworks[i].password.length, 10));
-                            passwordElement.dataset.actualPassword = configNetworks[i].password;
+                        // Since we don't receive passwords from the server, leave password field empty
+                        // but mark it as having a saved password
+                        if (configNetworks[i].password) {
+                            passwordElement.placeholder = 'Password saved (leave blank to keep)';
+                            passwordElement.dataset.hasPassword = 'true';
                         } else {
-                            passwordElement.value = '';
+                            passwordElement.placeholder = 'Enter password';
                         }
+                        passwordElement.value = '';
                     }
                 }
                 networkCount = configNetworks.length;
@@ -2739,16 +2743,6 @@ function addNetworkField() {
     // Add drag and drop event listeners to the new entry
     addDragAndDropToWiFiNetworks();
     
-    // Add event listener to clear dummy password when user starts typing
-    const passwordInput = document.getElementById(`password${networkCount - 1}`);
-    if (passwordInput) {
-        passwordInput.addEventListener('focus', function() {
-            if (this.dataset.actualPassword) {
-                this.value = '';
-                delete this.dataset.actualPassword;
-            }
-        });
-    }
 }
 
 function removeNetworkField(button) {
@@ -2803,14 +2797,13 @@ function handleWiFiFormSubmit(event) {
             
             // Use actual password if available (for existing networks with dummy display)
             if (passwordInput) {
-                if (passwordInput.dataset.actualPassword) {
-                    // This is an existing network with a real password
-                    network.password = passwordInput.dataset.actualPassword;
-                } else if (passwordInput.value && !passwordInput.value.startsWith('•')) {
-                    // This is a new network with a typed password
+                if (passwordInput.dataset.hasPassword && !passwordInput.value) {
+                    // This is an existing network with a saved password that wasn't changed
+                    // Don't send the password field to keep the existing one
+                } else if (passwordInput.value) {
+                    // This is a new network or an existing one with a changed password
                     network.password = passwordInput.value;
                 }
-                // If it starts with '•', it's an unchanged existing password, so we don't send it
             }
             
             networks.push(network);
