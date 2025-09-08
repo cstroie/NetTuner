@@ -1334,6 +1334,9 @@ void handleSimpleWebPage() {
 <button name='action' value='play' type='submit'>Play Selected</button>
 </form>
 )rawliteral";
+  } else {
+    html += "<p>No streams in playlist.</p>";
+  }
   // Add instant play input for custom stream URL even when no playlist
   html += "<h2>Play Custom Stream</h2>\n";
   html += "<form method='post'>\n";
