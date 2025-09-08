@@ -1657,7 +1657,11 @@ async function importRemotePlaylist() {
     const urlInput = document.getElementById('remotePlaylistUrl');
     const url = urlInput.value.trim();
     
+    // Reset aria-invalid attribute
+    urlInput.setAttribute('aria-invalid', 'false');
+    
     if (!url) {
+        urlInput.setAttribute('aria-invalid', 'true');
         showModal('Import Error', 'Please enter a playlist URL');
         return;
     }
@@ -1666,6 +1670,7 @@ async function importRemotePlaylist() {
     try {
         new URL(url);
     } catch (e) {
+        urlInput.setAttribute('aria-invalid', 'true');
         showModal('Import Error', 'Invalid URL format');
         return;
     }
