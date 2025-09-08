@@ -1563,8 +1563,12 @@ void handleSimpleWebPage() {
   String html;
   html.reserve(2048); // Reserve space to reduce memory fragmentation
   // Serve the HTML page
-  html = R"rawliteral(<!DOCTYPE html><html>
-<head><title>NetTuner</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"></head>
+  html = R"rawliteral(<!DOCTYPE html>
+<html>
+<head>
+<title>NetTuner</title>
+<link rel="stylesheet" href="pico.classless.min.css">
+</head>
 <body>
 <header><h1>NetTuner</h1></header>
 <main>
