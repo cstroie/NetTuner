@@ -88,8 +88,7 @@ void audio_bitrate(const char *info) {
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
       updateDisplay();
-      // Notify clients of bitrate change
-      sendStatusToClients();
+      // Don't send status immediately, it will be sent by the periodic update
     }
   }
 }
@@ -2048,8 +2047,7 @@ void loop() {
           bitrate = newBitrate;
           // Update the bitrate on display
           updateDisplay();
-          // Notify clients of bitrate change
-          sendStatusToClients();
+          // Don't send status immediately, it will be sent by the periodic update
         }
       }
     }
@@ -2082,6 +2080,12 @@ void loop() {
         }
       }
     }
+  }
+  // Send status to clients every 500ms
+  static unsigned long lastStatusUpdate = 0;
+  if (millis() - lastStatusUpdate > 500) {
+    sendStatusToClients();
+    lastStatusUpdate = millis();
   }
   // Handle display timeout
   display.handleTimeout(isPlaying, millis());
