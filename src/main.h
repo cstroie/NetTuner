@@ -126,6 +126,18 @@ extern char streamTitle[128];
 extern char streamIcyURL[256];
 extern char streamIconURL[256];
 
+// Player state tracking
+extern struct PlayerState {
+  bool playing;
+  int volume;
+  int bass;
+  int midrange;
+  int treble;
+  int playlistIndex;
+  unsigned long lastSaveTime;
+  bool dirty;
+} playerState;
+
 // Forward declarations for global functions
 void stopStream();
 void startStream(const char* url = nullptr, const char* name = nullptr); 

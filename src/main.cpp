@@ -201,17 +201,6 @@ char streamTitle[128] = "";
 char streamIcyURL[256] = "";
 char streamIconURL[256] = "";
 
-// Player state tracking
-struct PlayerState {
-  bool playing = false;
-  int volume = 11;
-  int bass = 0;
-  int midrange = 0;
-  int treble = 0;
-  int playlistIndex = 0;
-  unsigned long lastSaveTime = 0;
-  bool dirty = false;
-};
 PlayerState playerState;
 
 // Configuration structure definition
