@@ -445,8 +445,8 @@ void setup() {
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css.gz").setHeader("Content-Encoding", "gzip");
-  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css.gz").setHeader("Content-Encoding", "gzip");
+  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css.gz").setDefaultFile("/pico.min.css.gz");
+  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css.gz").setDefaultFile("/pico.classless.min.css.gz");
   
   // Start server
   server.begin();
