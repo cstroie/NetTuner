@@ -2664,7 +2664,13 @@ async function loadWiFiConfiguration() {
                     firstSSID.value = configNetworks[0].ssid || '';
                 }
                 if (firstPassword) {
-                    firstPassword.value = configNetworks[0].password || '';
+                    // Display dummy characters for existing passwords
+                    if (configNetworks[0].password && configNetworks[0].password.length > 0) {
+                        firstPassword.value = '•'.repeat(Math.min(configNetworks[0].password.length, 10));
+                        firstPassword.dataset.actualPassword = configNetworks[0].password;
+                    } else {
+                        firstPassword.value = '';
+                    }
                 }
                 
                 // Add additional entries for each configured network
@@ -2676,7 +2682,13 @@ async function loadWiFiConfiguration() {
                         ssidElement.value = configNetworks[i].ssid || '';
                     }
                     if (passwordElement) {
-                        passwordElement.value = configNetworks[i].password || '';
+                        // Display dummy characters for existing passwords
+                        if (configNetworks[i].password && configNetworks[i].password.length > 0) {
+                            passwordElement.value = '•'.repeat(Math.min(configNetworks[i].password.length, 10));
+                            passwordElement.dataset.actualPassword = configNetworks[i].password;
+                        } else {
+                            passwordElement.value = '';
+                        }
                     }
                 }
                 networkCount = configNetworks.length;
@@ -2726,6 +2738,17 @@ function addNetworkField() {
     
     // Add drag and drop event listeners to the new entry
     addDragAndDropToWiFiNetworks();
+    
+    // Add event listener to clear dummy password when user starts typing
+    const passwordInput = document.getElementById(`password${networkCount - 1}`);
+    if (passwordInput) {
+        passwordInput.addEventListener('focus', function() {
+            if (this.dataset.actualPassword) {
+                this.value = '';
+                delete this.dataset.actualPassword;
+            }
+        });
+    }
 }
 
 function removeNetworkField(button) {
@@ -2778,8 +2801,16 @@ function handleWiFiFormSubmit(event) {
                 ssid: ssidInput.value.trim()
             };
             
-            if (passwordInput && passwordInput.value) {
-                network.password = passwordInput.value;
+            // Use actual password if available (for existing networks with dummy display)
+            if (passwordInput) {
+                if (passwordInput.dataset.actualPassword) {
+                    // This is an existing network with a real password
+                    network.password = passwordInput.dataset.actualPassword;
+                } else if (passwordInput.value && !passwordInput.value.startsWith('•')) {
+                    // This is a new network with a typed password
+                    network.password = passwordInput.value;
+                }
+                // If it starts with '•', it's an unchanged existing password, so we don't send it
             }
             
             networks.push(network);
