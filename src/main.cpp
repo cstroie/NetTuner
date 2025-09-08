@@ -1247,6 +1247,15 @@ void handleSimpleWebPage() {
             sendStatusToClients();
           }
         }
+      } else if (action == "instant_play") {
+        // Instant play a stream directly
+        if (server.hasArg("stream") && playlistCount > 0) {
+          int streamIndex = server.arg("stream").toInt();
+          if (streamIndex >= 0 && streamIndex < playlistCount) {
+            currentSelection = streamIndex;
+            startStream(playlist[streamIndex].url, playlist[streamIndex].name);
+          }
+        }
       }
     }
   }
