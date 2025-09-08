@@ -1342,6 +1342,10 @@ function addStream() {
         return;
     }
     
+    // Reset aria-invalid attributes
+    name.setAttribute('aria-invalid', 'false');
+    url.setAttribute('aria-invalid', 'false');
+    
     // Check if playlist is already at maximum capacity
     if (streams.length >= 20) {
         showModal('Error', 'Playlist is full. Maximum 20 streams allowed.');
@@ -1353,12 +1357,14 @@ function addStream() {
     // Trim and validate name
     const trimmedName = name.value.trim();
     if (!trimmedName) {
+        name.setAttribute('aria-invalid', 'true');
         name.focus();
         return;
     }
     
     // Validate name length
     if (trimmedName.length > 128) {
+        name.setAttribute('aria-invalid', 'true');
         name.focus();
         return;
     }
@@ -1366,12 +1372,14 @@ function addStream() {
     // Trim and validate URL
     const trimmedUrl = url.value.trim();
     if (!trimmedUrl) {
+        url.setAttribute('aria-invalid', 'true');
         url.focus();
         return;
     }
     
     // Validate URL format
     if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+        url.setAttribute('aria-invalid', 'true');
         url.focus();
         return;
     }
@@ -1380,12 +1388,14 @@ function addStream() {
     try {
         new URL(trimmedUrl);
     } catch (e) {
+        url.setAttribute('aria-invalid', 'true');
         url.focus();
         return;
     }
     
     // Validate URL length
     if (trimmedUrl.length > 256) {
+        url.setAttribute('aria-invalid', 'true');
         url.focus();
         return;
     }
@@ -2662,6 +2672,7 @@ async function loadWiFiConfiguration() {
                 const firstPassword = document.getElementById('password0');
                 if (firstSSID) {
                     firstSSID.value = configNetworks[0].ssid || '';
+                    firstSSID.setAttribute('aria-invalid', 'false');
                 }
                 if (firstPassword) {
                     // Since we don't receive passwords from the server, leave password field empty
@@ -2673,6 +2684,7 @@ async function loadWiFiConfiguration() {
                         firstPassword.placeholder = 'Enter password';
                     }
                     firstPassword.value = '';
+                    firstPassword.setAttribute('aria-invalid', 'false');
                 }
                 
                 // Add additional entries for each configured network
@@ -2682,6 +2694,7 @@ async function loadWiFiConfiguration() {
                     const passwordElement = document.getElementById(`password${i}`);
                     if (ssidElement) {
                         ssidElement.value = configNetworks[i].ssid || '';
+                        ssidElement.setAttribute('aria-invalid', 'false');
                     }
                     if (passwordElement) {
                         // Since we don't receive passwords from the server, leave password field empty
@@ -2693,6 +2706,7 @@ async function loadWiFiConfiguration() {
                             passwordElement.placeholder = 'Enter password';
                         }
                         passwordElement.value = '';
+                        passwordElement.setAttribute('aria-invalid', 'false');
                     }
                 }
                 networkCount = configNetworks.length;
@@ -2733,8 +2747,8 @@ function addNetworkField() {
     newEntry.draggable = true;
     newEntry.innerHTML = `
         <div class="drag-handle">⋮⋮</div>
-        <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
-        <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
+        <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID" aria-invalid="false">
+        <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password" aria-invalid="false">
         <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
     `;
     networkFields.appendChild(newEntry);
