@@ -928,17 +928,9 @@ void stopStream() {
  */
 void loadPlaylist() {
   playlistCount = 0;  // Reset playlist count
-  // If playlist file doesn't exist, create a default empty one
+  // If playlist file doesn't exist, just return without creating an empty one
   if (!SPIFFS.exists("/playlist.json")) {
-    // Create default playlist
-    File file = SPIFFS.open("/playlist.json", "w");
-    if (file) {
-      file.println("[]");
-      file.close();
-      Serial.println("Created default playlist file");
-    } else {
-      Serial.println("Error: Failed to create default playlist file");
-    }
+    Serial.println("Playlist file not found, continuing with empty playlist");
     return;
   }
   // Open the playlist file for reading
