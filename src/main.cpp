@@ -35,6 +35,8 @@ MPDInterface mpdInterface(mpdServer, streamTitle, streamName, streamURL, isPlayi
 // Forward declarations
 void sendStatusToClients();
 void updateDisplay();
+void handlePicoCSS();
+void handlePicoClasslessCSS();
 
 /**
  * @brief Audio stream title callback function
@@ -445,8 +447,8 @@ void setup() {
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css.gz").setDefaultFile("/pico.min.css.gz");
-  server.serveStatic("/pico.classless.min.css", SPIFFS, "/pico.classless.min.css.gz").setDefaultFile("/pico.classless.min.css.gz");
+  server.on("/pico.min.css", HTTP_GET, handlePicoCSS);
+  server.on("/pico.classless.min.css", HTTP_GET, handlePicoClasslessCSS);
   
   // Start server
   server.begin();
@@ -2283,4 +2285,34 @@ void updateDisplay() {
   }
   // Update the display with current status
   display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
+}
+
+/**
+ * @brief Handle pico.min.css request
+ * Serves the compressed pico.min.css.gz file with proper Content-Encoding header
+ */
+void handlePicoCSS() {
+  File file = SPIFFS.open("/pico.min.css.gz", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.sendHeader("Content-Encoding", "gzip");
+  server.streamFile(file, "text/css");
+  file.close();
+}
+
+/**
+ * @brief Handle pico.classless.min.css request
+ * Serves the compressed pico.classless.min.css.gz file with proper Content-Encoding header
+ */
+void handlePicoClasslessCSS() {
+  File file = SPIFFS.open("/pico.classless.min.css.gz", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.sendHeader("Content-Encoding", "gzip");
+  server.streamFile(file, "text/css");
+  file.close();
 }
