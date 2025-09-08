@@ -1247,19 +1247,10 @@ void handleSimpleWebPage() {
             sendStatusToClients();
           }
         }
-      } else if (action == "instant_play") {
-        // Instant play a stream directly
-        if (server.hasArg("stream") && playlistCount > 0) {
-          int streamIndex = server.arg("stream").toInt();
-          if (streamIndex >= 0 && streamIndex < playlistCount) {
-            currentSelection = streamIndex;
-            startStream(playlist[streamIndex].url, playlist[streamIndex].name);
-          }
-        }
-      } else if (action == "play_custom") {
+      } else if (action == "instant") {
         // Play a custom stream URL
-        if (server.hasArg("custom_url")) {
-          String customUrl = server.arg("custom_url");
+        if (server.hasArg("url")) {
+          String customUrl = server.arg("url");
           if (customUrl.length() > 0 && 
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             // Use a generic name for the custom stream
@@ -1343,33 +1334,13 @@ void handleSimpleWebPage() {
 <button name='action' value='play' type='submit'>Play Selected</button>
 </form>
 )rawliteral";
-    // Add instant play buttons for each stream
-    html += "<h3>Instant Play</h3>\n";
-    for (int i = 0; i < playlistCount; i++) {
-      html += "<form method='post' style='display:inline-block; margin: 5px;'>";
-      html += "<input type='hidden' name='stream' value='" + String(i) + "'>";
-      html += "<button name='action' value='instant_play' type='submit'>" + String(playlist[i].name) + "</button>";
-      html += "</form>\n";
-    }
-    
-    // Add instant play input for custom stream URL
-    html += "<h3>Play Custom Stream</h3>\n";
-    html += "<form method='post'>\n";
-    html += "<label for='custom_url'>Stream URL:</label>\n";
-    html += "<input type='url' name='custom_url' id='custom_url' placeholder='http://example.com/stream' style='width: 100%;'>\n";
-    html += "<button name='action' value='play_custom' type='submit'>Play Stream</button>\n";
-    html += "</form>\n";
-  } else {
-    html += "<p>No streams available</p>";
-    
-    // Add instant play input for custom stream URL even when no playlist
-    html += "<h3>Play Custom Stream</h3>\n";
-    html += "<form method='post'>\n";
-    html += "<label for='custom_url'>Stream URL:</label>\n";
-    html += "<input type='url' name='custom_url' id='custom_url' placeholder='http://example.com/stream' style='width: 100%;'>\n";
-    html += "<button name='action' value='play_custom' type='submit'>Play Stream</button>\n";
-    html += "</form>\n";
-  }
+  // Add instant play input for custom stream URL even when no playlist
+  html += "<h2>Play Custom Stream</h2>\n";
+  html += "<form method='post'>\n";
+  html += "<label for='url'>Stream URL:</label>\n";
+  html += "<input type='url' name='url' id='url' placeholder='http://example.com/stream'>\n";
+  html += "<button name='action' value='instant' type='submit'>Play Stream</button>\n";
+  html += "</form>\n";
   // Close the HTML
   html += R"rawliteral(</section>
 </main>
