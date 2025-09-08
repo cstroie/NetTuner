@@ -963,20 +963,20 @@ async function playInstantStream() {
     const url = urlInput.value.trim();
     
     if (!url) {
-        urlInput.focus();
+        showModal('Play Error', 'Please enter a stream URL');
         return;
     }
     
     // Validate URL format
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        urlInput.focus();
+        showModal('Play Error', 'Invalid URL format. Must start with http:// or https://');
         return;
     }
     
     try {
         new URL(url);
     } catch (e) {
-        urlInput.focus();
+        showModal('Play Error', 'Invalid URL format');
         return;
     }
     
@@ -999,6 +999,7 @@ async function playInstantStream() {
                 if (playlistData.length === 1) {
                     // Only one stream, play it directly
                     await sendPlayRequest(playlistData[0].url, playlistData[0].name, 0);
+                    showModal('Success', 'Stream is now playing');
                 } else {
                     // Multiple streams, show selection modal
                     showPlaylistSelectionModalForInstantPlay(playlistData, url);
@@ -1015,11 +1016,13 @@ async function playInstantStream() {
         } else {
             // Not a playlist, play directly
             await sendPlayRequest(url, 'Instant Stream', 0);
+            showModal('Success', 'Stream is now playing');
         }
         // Clear the input field after successful play
         urlInput.value = '';
     } catch (error) {
-        handlePlayError(error);
+        console.error('Error playing instant stream:', error);
+        showModal('Play Error', 'Error playing stream: ' + error.message);
     } finally {
         // Restore button state
         if (playButton) {
@@ -1699,6 +1702,7 @@ async function importRemotePlaylist() {
     const url = urlInput.value.trim();
     
     if (!url) {
+        showModal('Import Error', 'Please enter a playlist URL');
         return;
     }
     
@@ -1706,6 +1710,7 @@ async function importRemotePlaylist() {
     try {
         new URL(url);
     } catch (e) {
+        showModal('Import Error', 'Invalid URL format');
         return;
     }
     
@@ -1808,6 +1813,7 @@ async function importRemotePlaylist() {
         urlInput.value = '';
     } catch (error) {
         console.error('Error importing remote playlist:', error);
+        showModal('Import Error', 'Error importing remote playlist: ' + error.message);
     } finally {
         // Restore button state
         if (importButton) {
@@ -2019,12 +2025,14 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     // Validate playlist data
     if (!playlistData || !Array.isArray(playlistData)) {
         console.error('Invalid playlist data:', playlistData);
+        showModal('Play Error', 'Invalid playlist data');
         return;
     }
     
     // Validate index
     if (index < 0 || index >= playlistData.length) {
         console.error('Invalid stream index:', { index, playlistLength: playlistData.length });
+        showModal('Play Error', 'Invalid stream selection');
         return;
     }
     
@@ -2034,12 +2042,14 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     // Validate the selected stream
     if (!selectedStream || typeof selectedStream !== 'object') {
         console.error('Invalid stream object at index:', { index, stream: selectedStream });
+        showModal('Play Error', 'Invalid stream data');
         return;
     }
     
     // Check if stream has required properties
     if (!selectedStream.url) {
         console.error('Stream missing URL at index:', { index, stream: selectedStream });
+        showModal('Play Error', 'Selected stream is missing URL');
         return;
     }
     
@@ -2048,6 +2058,7 @@ async function playInstantSelectedStreamFromPlaylist(index) {
         new URL(selectedStream.url);
     } catch (e) {
         console.error('Invalid stream URL at index:', { index, url: selectedStream.url });
+        showModal('Play Error', 'Invalid stream URL');
         return;
     }
     
@@ -2076,8 +2087,12 @@ async function playInstantSelectedStreamFromPlaylist(index) {
         if (urlInput) {
             urlInput.value = '';
         }
+        
+        // Show success message
+        showModal('Success', 'Stream is now playing');
     } catch (error) {
-        handlePlayError(error);
+        console.error('Error playing stream:', error);
+        showModal('Play Error', 'Error playing stream: ' + error.message);
     } finally {
         // Restore button state
         if (playButton) {
