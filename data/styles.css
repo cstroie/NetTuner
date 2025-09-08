@@ -193,6 +193,50 @@ fieldset input[type="number"]:focus {
 }
 
 /**
+ * @section Drag and drop styles for WiFi networks
+ * @description Visual feedback for WiFi network drag and drop operations
+ * These styles provide visual feedback during drag and drop operations:
+ * - Visual indication of dragged items
+ * - Drop target highlighting
+ * - Consistent styling with the rest of the interface
+ */
+.network-entry {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background-color: var(--pico-background-color);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.network-entry.dragging {
+    opacity: 0.5;
+    background-color: var(--pico-primary-background);
+}
+
+.network-entry.drag-over {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+}
+
+.network-entry .drag-handle {
+    cursor: move;
+    padding: 0 0.5rem;
+    user-select: none;
+    color: var(--pico-muted-color);
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.network-entry input[type="text"],
+.network-entry input[type="password"] {
+    flex: 1;
+    margin: 0 0.25rem;
+}
+
+/**
  * @section Drag and drop styles
  * @description Visual feedback for playlist item drag and drop operations
  * These styles provide visual feedback during drag and drop operations:

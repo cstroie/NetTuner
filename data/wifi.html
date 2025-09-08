@@ -51,16 +51,17 @@
         <article>
             <hgroup>
                 <h2>Configure WiFi networks</h2>
-                <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference.</p>
+                <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference. Drag and drop to reorder networks.</p>
             </hgroup>
             <!-- Form for WiFi network configuration -->
             <form id="wifiForm">
                 <fieldset id="networkFields">
                     <!-- Initial network entry field -->
-                    <div role="group" class="network-entry">
+                    <div role="group" class="network-entry" draggable="true">
+                        <div class="drag-handle">⋮⋮</div>
                         <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
                         <input type="password" id="password0" name="password0" placeholder="Enter password">
-                        <button type="button" id="addNetwork" onclick="addNetworkField()">Add</button>
+                        <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
                     </div>
                 </fieldset>
             </form>

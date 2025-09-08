@@ -2659,6 +2659,7 @@ function convertJSONToPLS(jsonData) {
 // WiFi functions
 let networkCount = 1;
 let configuredNetworks = [];
+let wifiNetworks = []; // Store WiFi networks with full data
 
 async function loadWiFiConfiguration() {
     try {
@@ -2700,6 +2701,9 @@ async function loadWiFiConfiguration() {
             configNetworks = [];
         }
         
+        // Store the full network data for drag and drop reordering
+        wifiNetworks = [...configNetworks];
+        
         // Also populate the form with configured networks
         // Clear existing fields except the first one
         const networkFields = document.getElementById('networkFields');
@@ -2715,26 +2719,38 @@ async function loadWiFiConfiguration() {
             if (configNetworks.length > 0) {
                 // Fill the first entry
                 const firstSSID = document.getElementById('ssid0');
+                const firstPassword = document.getElementById('password0');
                 if (firstSSID) {
                     firstSSID.value = configNetworks[0].ssid || '';
+                }
+                if (firstPassword) {
+                    firstPassword.value = configNetworks[0].password || '';
                 }
                 
                 // Add additional entries for each configured network
                 for (let i = 1; i < configNetworks.length && i < 5; i++) {
                     addNetworkField();
                     const ssidElement = document.getElementById(`ssid${i}`);
+                    const passwordElement = document.getElementById(`password${i}`);
                     if (ssidElement) {
                         ssidElement.value = configNetworks[i].ssid || '';
+                    }
+                    if (passwordElement) {
+                        passwordElement.value = configNetworks[i].password || '';
                     }
                 }
                 networkCount = configNetworks.length;
             }
         }
         
+        // Add drag and drop event listeners to existing network entries
+        addDragAndDropToWiFiNetworks();
+        
         return data;
     } catch (error) {
         console.error('Error loading WiFi configuration:', error);
         configuredNetworks = [];
+        wifiNetworks = [];
         return [];
     }
 }
@@ -2758,13 +2774,18 @@ function addNetworkField() {
     const newEntry = document.createElement('div');
     newEntry.className = "network-entry"
     newEntry.role = "group"
+    newEntry.draggable = true;
     newEntry.innerHTML = `
+        <div class="drag-handle">⋮⋮</div>
         <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
         <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
         <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
     `;
     networkFields.appendChild(newEntry);
     networkCount++;
+    
+    // Add drag and drop event listeners to the new entry
+    addDragAndDropToWiFiNetworks();
 }
 
 function removeNetworkField(button) {
@@ -2774,6 +2795,30 @@ function removeNetworkField(button) {
     
     button.parentElement.remove();
     networkCount = document.querySelectorAll('.network-entry').length;
+    
+    // Re-index the network fields after removal
+    reindexNetworkFields();
+    
+    // Update drag and drop event listeners
+    addDragAndDropToWiFiNetworks();
+}
+
+function reindexNetworkFields() {
+    const networkEntries = document.querySelectorAll('.network-entry');
+    networkEntries.forEach((entry, index) => {
+        const ssidInput = entry.querySelector('input[type="text"]');
+        const passwordInput = entry.querySelector('input[type="password"]');
+        
+        if (ssidInput) {
+            ssidInput.id = `ssid${index}`;
+            ssidInput.name = `ssid${index}`;
+        }
+        
+        if (passwordInput) {
+            passwordInput.id = `password${index}`;
+            passwordInput.name = `password${index}`;
+        }
+    });
 }
 
 function handleWiFiFormSubmit(event) {
@@ -2834,6 +2879,92 @@ function handleWiFiFormSubmit(event) {
             saveButton.textContent = originalText;
             saveButton.disabled = false;
         }
+    });
+}
+
+// Drag and drop functions for WiFi networks
+let dragSrcWiFiElement = null;
+
+function handleWiFiDragStart(e) {
+    dragSrcWiFiElement = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+    this.classList.add('dragging');
+}
+
+function handleWiFiDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    
+    // Add visual indicator for drop target
+    if (this !== dragSrcWiFiElement) {
+        this.classList.add('drag-over');
+    }
+    
+    return false;
+}
+
+function handleWiFiDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleWiFiDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    if (dragSrcWiFiElement !== this) {
+        // Get the network entries container
+        const networkFields = document.getElementById('networkFields');
+        const entries = Array.from(networkFields.querySelectorAll('.network-entry'));
+        
+        // Find source and target indices
+        const srcIndex = entries.indexOf(dragSrcWiFiElement);
+        const targetIndex = entries.indexOf(this);
+        
+        if (srcIndex !== -1 && targetIndex !== -1) {
+            // Reorder the DOM elements
+            if (srcIndex < targetIndex) {
+                networkFields.insertBefore(dragSrcWiFiElement, this.nextSibling);
+            } else {
+                networkFields.insertBefore(dragSrcWiFiElement, this);
+            }
+            
+            // Re-index the fields
+            reindexNetworkFields();
+        }
+    }
+    
+    this.classList.remove('drag-over');
+    return false;
+}
+
+function handleWiFiDragEnd(e) {
+    const items = document.querySelectorAll('.network-entry');
+    items.forEach(item => {
+        item.classList.remove('dragging');
+        item.classList.remove('drag-over');
+    });
+}
+
+function addDragAndDropToWiFiNetworks() {
+    const networkEntries = document.querySelectorAll('.network-entry');
+    networkEntries.forEach(entry => {
+        // Remove existing event listeners to prevent duplicates
+        entry.removeEventListener('dragstart', handleWiFiDragStart);
+        entry.removeEventListener('dragover', handleWiFiDragOver);
+        entry.removeEventListener('dragleave', handleWiFiDragLeave);
+        entry.removeEventListener('drop', handleWiFiDrop);
+        entry.removeEventListener('dragend', handleWiFiDragEnd);
+        
+        // Add drag and drop event listeners
+        entry.addEventListener('dragstart', handleWiFiDragStart);
+        entry.addEventListener('dragover', handleWiFiDragOver);
+        entry.addEventListener('dragleave', handleWiFiDragLeave);
+        entry.addEventListener('drop', handleWiFiDrop);
+        entry.addEventListener('dragend', handleWiFiDragEnd);
     });
 }
 
