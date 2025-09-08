@@ -187,6 +187,12 @@ async function loadConfig() {
             document.getElementById('display_width').value = config.display_width || 128;
             document.getElementById('display_height').value = config.display_height || 64;
             document.getElementById('display_address').value = config.display_address || 60;
+            
+            // Reset aria-invalid attributes
+            const configInputs = document.querySelectorAll('#configForm input');
+            configInputs.forEach(input => {
+                input.setAttribute('aria-invalid', 'false');
+            });
         }
     } catch (error) {
         console.error('Error loading config:', error);
@@ -199,6 +205,14 @@ async function loadConfig() {
  * @returns {Promise<void>}
  */
 async function saveConfig() {
+    const configInputs = document.querySelectorAll('#configForm input');
+    let hasErrors = false;
+    
+    // Reset all aria-invalid attributes
+    configInputs.forEach(input => {
+        input.setAttribute('aria-invalid', 'false');
+    });
+    
     const config = {
         i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
         i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
@@ -214,6 +228,19 @@ async function saveConfig() {
         display_height: parseInt(document.getElementById('display_height').value),
         display_address: parseInt(document.getElementById('display_address').value)
     };
+    
+    // Validate all inputs
+    configInputs.forEach(input => {
+        if (!input.checkValidity()) {
+            input.setAttribute('aria-invalid', 'true');
+            hasErrors = true;
+        }
+    });
+    
+    if (hasErrors) {
+        showModal('Validation Error', 'Please correct the highlighted fields.');
+        return;
+    }
     
     try {
         const response = await fetch('/api/config', {

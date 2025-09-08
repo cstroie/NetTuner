@@ -46,13 +46,13 @@
                     <legend>I2S audio pins</legend>
                     <span></span>
                     <label for="i2s_bclk">I2S BCLK
-                        <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required>
+                        <input type="number" id="i2s_bclk" name="i2s_bclk" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="i2s_lrc">I2S LRC
-                        <input type="number" id="i2s_lrc" name="i2s_lrc" min="0" max="39" required>
+                        <input type="number" id="i2s_lrc" name="i2s_lrc" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="i2s_dout">I2S DOUT
-                        <input type="number" id="i2s_dout" name="i2s_dout" min="0" max="39" required>
+                        <input type="number" id="i2s_dout" name="i2s_dout" min="0" max="39" required aria-invalid="false">
                     </label>
                     <span></span>
                 </fieldset>
@@ -61,19 +61,19 @@
                 <fieldset class="grid">
                     <legend>Control pins</legend>
                     <label for="led_pin">Onboard LED
-                        <input type="number" id="led_pin" name="led_pin" min="0" max="39" required>
+                        <input type="number" id="led_pin" name="led_pin" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="board_button">Onboard Button
-                        <input type="number" id="board_button" name="board_button" min="0" max="39" required>
+                        <input type="number" id="board_button" name="board_button" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="rotary_clk">Rotary CLK
-                        <input type="number" id="rotary_clk" name="rotary_clk" min="0" max="39" required>
+                        <input type="number" id="rotary_clk" name="rotary_clk" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="rotary_dt">Rotary DT
-                        <input type="number" id="rotary_dt" name="rotary_dt" min="0" max="39" required>
+                        <input type="number" id="rotary_dt" name="rotary_dt" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="rotary_sw">Rotary SW
-                        <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required>
+                        <input type="number" id="rotary_sw" name="rotary_sw" min="0" max="39" required aria-invalid="false">
                     </label>
                 </fieldset>
                 
@@ -81,19 +81,19 @@
                 <fieldset class="grid">
                     <legend>Display settings</legend>
                     <label for="display_sda">I2C SDA
-                        <input type="number" id="display_sda" name="display_sda" min="0" max="39" required>
+                        <input type="number" id="display_sda" name="display_sda" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="display_scl">I2C SCL
-                        <input type="number" id="display_scl" name="display_scl" min="0" max="39" required>
+                        <input type="number" id="display_scl" name="display_scl" min="0" max="39" required aria-invalid="false">
                     </label>
                     <label for="display_address">I2C address (decimal)
-                        <input type="number" id="display_address" name="display_address" min="0" max="127" required>
+                        <input type="number" id="display_address" name="display_address" min="0" max="127" required aria-invalid="false">
                     </label>
                     <label for="display_width">Display Width
-                        <input type="number" id="display_width" name="display_width" min="32" max="256" required>
+                        <input type="number" id="display_width" name="display_width" min="32" max="256" required aria-invalid="false">
                     </label>
                     <label for="display_height">Display Height
-                        <input type="number" id="display_height" name="display_height" min="32" max="256" required>
+                        <input type="number" id="display_height" name="display_height" min="32" max="256" required aria-invalid="false">
                     </label>
                 </fieldset>
             </form>
