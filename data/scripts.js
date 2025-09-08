@@ -1642,106 +1642,6 @@ async function savePlaylistInternal() {
     }
 }
 
-async function uploadJSON() {
-    const fileInput = document.getElementById('playlistFile');
-    const file = fileInput.files[0];
-    
-    console.log('Uploading JSON playlist file:', file);
-    
-    if (!file) {
-        return;
-    }
-    
-    // Check file extension
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.json')) {
-        // Clear file input on error
-        fileInput.value = '';
-        return;
-    }
-    
-    // Show loading state
-    const uploadButton = document.querySelector('button[onclick="uploadJSON()"]');
-    const originalText = uploadButton ? uploadButton.textContent : null;
-    if (uploadButton) {
-        uploadButton.textContent = 'Uploading...';
-        uploadButton.disabled = true;
-    }
-    
-    // Read file content
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const fileContent = e.target.result;
-        console.log('File content:', fileContent);
-        
-        try {
-            // Parse JSON content
-            const jsonData = JSON.parse(fileContent);
-            
-            // Validate the JSON structure
-            if (!Array.isArray(jsonData)) {
-                throw new Error('Invalid playlist format: expected array of streams');
-            }
-            
-            // Validate each stream in the playlist and skip invalid ones
-            const validStreams = [];
-            for (let i = 0; i < jsonData.length; i++) {
-                const stream = jsonData[i];
-                if (!stream || typeof stream !== 'object') {
-                    console.warn(`Skipping invalid stream at position ${i+1}: not an object`);
-                    continue;
-                }
-                
-                if (!stream.name || !stream.name.trim()) {
-                    console.warn(`Skipping stream at position ${i+1}: empty name`);
-                    continue;
-                }
-                
-                if (!stream.url) {
-                    console.warn(`Skipping stream at position ${i+1}: no URL`);
-                    continue;
-                }
-                
-                if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
-                    console.warn(`Skipping stream at position ${i+1}: invalid URL format`);
-                    continue;
-                }
-                
-                try {
-                    new URL(stream.url);
-                } catch (e) {
-                    console.warn(`Skipping stream at position ${i+1}: invalid URL`);
-                    continue;
-                }
-                
-                // If we get here, the stream is valid
-                validStreams.push(stream);
-            }
-            
-            // Show selection modal
-            showPlaylistSelectionModal(validStreams);
-        } catch (error) {
-            console.error('Error processing playlist:', error);
-        } finally {
-            // Clear file input in all cases
-            fileInput.value = '';
-            // Restore button state
-            if (uploadButton) {
-                uploadButton.textContent = originalText || 'Upload JSON';
-                uploadButton.disabled = false;
-            }
-        }
-    };
-    reader.onerror = function() {
-        fileInput.value = '';
-        // Restore button state
-        if (uploadButton) {
-            uploadButton.textContent = originalText || 'Upload JSON';
-            uploadButton.disabled = false;
-        }
-    };
-    reader.readAsText(file);
-}
 
 async function importRemotePlaylist() {
     const urlInput = document.getElementById('remotePlaylistUrl');
@@ -2148,76 +2048,12 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     }
 }
 
-async function uploadM3U() {
-    const fileInput = document.getElementById('playlistFile');
-    const file = fileInput.files[0];
-    
-    console.log('Uploading M3U playlist file:', file);
-    
-    if (!file) {
-        return;
-    }
-    
-    // Check file extension
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.m3u') && !fileName.endsWith('.m3u8')) {
-        // Clear file input on error
-        fileInput.value = '';
-        return;
-    }
-    
-    // Show loading state
-    const uploadButton = document.querySelector('button[onclick="uploadM3U()"]');
-    const originalText = uploadButton ? uploadButton.textContent : null;
-    if (uploadButton) {
-        uploadButton.textContent = 'Uploading...';
-        uploadButton.disabled = true;
-    }
-    
-    // Read file content
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const fileContent = e.target.result;
-        console.log('File content:', fileContent);
-        
-        try {
-            // Convert M3U to JSON
-            const jsonData = convertM3UToJSON(fileContent);
-            console.log('JSON content:', jsonData);
-            
-            // Parse JSON content
-            const playlistData = JSON.parse(jsonData);
-            
-            // Show selection modal
-            showPlaylistSelectionModal(playlistData);
-        } catch (error) {
-            console.error('Error processing playlist:', error);
-        } finally {
-            // Clear file input in all cases
-            fileInput.value = '';
-            // Restore button state
-            if (uploadButton) {
-                uploadButton.textContent = originalText || 'Upload M3U';
-                uploadButton.disabled = false;
-            }
-        }
-    };
-    reader.onerror = function() {
-        fileInput.value = '';
-        // Restore button state
-        if (uploadButton) {
-            uploadButton.textContent = originalText || 'Upload M3U';
-            uploadButton.disabled = false;
-        }
-    };
-    reader.readAsText(file);
-}
 
-async function uploadPLS() {
+async function uploadPlaylist() {
     const fileInput = document.getElementById('playlistFile');
     const file = fileInput.files[0];
     
-    console.log('Uploading PLS playlist file:', file);
+    console.log('Uploading playlist file:', file);
     
     if (!file) {
         return;
@@ -2225,14 +2061,21 @@ async function uploadPLS() {
     
     // Check file extension
     const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.pls')) {
+    let fileType;
+    if (fileName.endsWith('.json')) {
+        fileType = 'json';
+    } else if (fileName.endsWith('.m3u') || fileName.endsWith('.m3u8')) {
+        fileType = 'm3u';
+    } else if (fileName.endsWith('.pls')) {
+        fileType = 'pls';
+    } else {
         // Clear file input on error
         fileInput.value = '';
         return;
     }
     
     // Show loading state
-    const uploadButton = document.querySelector('button[onclick="uploadPLS()"]');
+    const uploadButton = document.querySelector('button[onclick="uploadPlaylist()"]');
     const originalText = uploadButton ? uploadButton.textContent : null;
     if (uploadButton) {
         uploadButton.textContent = 'Uploading...';
@@ -2246,12 +2089,69 @@ async function uploadPLS() {
         console.log('File content:', fileContent);
         
         try {
-            // Convert PLS to JSON
-            const jsonData = convertPLSToJSON(fileContent);
-            console.log('JSON content:', jsonData);
+            let playlistData;
             
-            // Parse JSON content
-            const playlistData = JSON.parse(jsonData);
+            // Process based on file type
+            if (fileType === 'json') {
+                // Parse JSON content
+                const jsonData = JSON.parse(fileContent);
+                
+                // Validate the JSON structure
+                if (!Array.isArray(jsonData)) {
+                    throw new Error('Invalid playlist format: expected array of streams');
+                }
+                
+                // Validate each stream in the playlist and skip invalid ones
+                const validStreams = [];
+                for (let i = 0; i < jsonData.length; i++) {
+                    const stream = jsonData[i];
+                    if (!stream || typeof stream !== 'object') {
+                        console.warn(`Skipping invalid stream at position ${i+1}: not an object`);
+                        continue;
+                    }
+                    
+                    if (!stream.name || !stream.name.trim()) {
+                        console.warn(`Skipping stream at position ${i+1}: empty name`);
+                        continue;
+                    }
+                    
+                    if (!stream.url) {
+                        console.warn(`Skipping stream at position ${i+1}: no URL`);
+                        continue;
+                    }
+                    
+                    if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+                        console.warn(`Skipping stream at position ${i+1}: invalid URL format`);
+                        continue;
+                    }
+                    
+                    try {
+                        new URL(stream.url);
+                    } catch (e) {
+                        console.warn(`Skipping stream at position ${i+1}: invalid URL`);
+                        continue;
+                    }
+                    
+                    // If we get here, the stream is valid
+                    validStreams.push(stream);
+                }
+                
+                playlistData = validStreams;
+            } else if (fileType === 'm3u') {
+                // Convert M3U to JSON
+                const jsonData = convertM3UToJSON(fileContent);
+                console.log('JSON content:', jsonData);
+                
+                // Parse JSON content
+                playlistData = JSON.parse(jsonData);
+            } else if (fileType === 'pls') {
+                // Convert PLS to JSON
+                const jsonData = convertPLSToJSON(fileContent);
+                console.log('JSON content:', jsonData);
+                
+                // Parse JSON content
+                playlistData = JSON.parse(jsonData);
+            }
             
             // Show selection modal
             showPlaylistSelectionModal(playlistData);
@@ -2262,7 +2162,7 @@ async function uploadPLS() {
             fileInput.value = '';
             // Restore button state
             if (uploadButton) {
-                uploadButton.textContent = originalText || 'Upload PLS';
+                uploadButton.textContent = originalText || 'Upload Playlist';
                 uploadButton.disabled = false;
             }
         }
@@ -2271,7 +2171,7 @@ async function uploadPLS() {
         fileInput.value = '';
         // Restore button state
         if (uploadButton) {
-            uploadButton.textContent = originalText || 'Upload PLS';
+            uploadButton.textContent = originalText || 'Upload Playlist';
             uploadButton.disabled = false;
         }
     };
