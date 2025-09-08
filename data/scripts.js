@@ -475,109 +475,149 @@ function connectWebSocket() {
                 const status = data;
                 console.log('Received status update:', status);
                 
-                // Update status element
-                const statusElement = document.getElementById('status');
-                if (statusElement) {
-                    statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
-                    statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                // Keep track of previous status to avoid unnecessary updates
+                if (!window.previousStatus) {
+                    window.previousStatus = {};
                 }
                 
-                // Update stream name element
-                const streamNameElement = document.getElementById('streamName');
-                if (streamNameElement) {
-                    // Show stream name when playing
-                    let displayText = status.streamName || 'No station selected';
-                    // Update text content but preserve the favicon element
-                    const faviconElement = document.getElementById('stationFavicon');
-                    if (faviconElement) {
-                        streamNameElement.innerHTML = faviconElement.outerHTML + displayText;
-                    } else {
-                        streamNameElement.textContent = displayText;
+                const prev = window.previousStatus;
+                
+                // Update status element only if playing state changed
+                if (status.playing !== prev.playing) {
+                    const statusElement = document.getElementById('status');
+                    if (statusElement) {
+                        statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
+                        statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                    }
+                }
+                
+                // Update stream name element only if it changed
+                if (status.streamName !== prev.streamName) {
+                    const streamNameElement = document.getElementById('streamName');
+                    if (streamNameElement) {
+                        // Show stream name when playing
+                        let displayText = status.streamName || 'No station selected';
+                        // Update text content but preserve the favicon element
+                        const faviconElement = document.getElementById('stationFavicon');
+                        if (faviconElement) {
+                            streamNameElement.innerHTML = faviconElement.outerHTML + displayText;
+                        } else {
+                            streamNameElement.textContent = displayText;
+                        }
                     }
                 }
 
-                // Update stream title element
-                const streamTitleElement = document.getElementById('streamTitle');
-                if (streamTitleElement) {
-                    // Show stream title when playing
-                    let displayText = status.streamTitle || 'No stream selected';
-                    if (status.playing) {
-                        if (status.bitrate) {
-                            displayText += ' (' + status.bitrate + ' kbps)';
-                        }
-                    }
-                    streamTitleElement.textContent = displayText;
-                }
-                
-                // Handle ICY URL if available
-                if (status.streamIcyURL) {
-                    console.log('Received ICY URL:', status.streamIcyURL);
-                    // Try to get favicon from the ICY URL
-                    findFaviconUrl(status.streamIcyURL).then(faviconUrl => {
-                        if (faviconUrl) {
-                            console.log('Found favicon:', faviconUrl);
-                            // Update the favicon image element
-                            const faviconElement = document.getElementById('stationFavicon');
-                            if (faviconElement) {
-                                faviconElement.src = faviconUrl;
-                                faviconElement.style.display = 'inline';
+                // Update stream title element only if it changed
+                if (status.streamTitle !== prev.streamTitle || 
+                    status.bitrate !== prev.bitrate || 
+                    status.playing !== prev.playing) {
+                    const streamTitleElement = document.getElementById('streamTitle');
+                    if (streamTitleElement) {
+                        // Show stream title when playing
+                        let displayText = status.streamTitle || 'No stream selected';
+                        if (status.playing) {
+                            if (status.bitrate) {
+                                displayText += ' (' + status.bitrate + ' kbps)';
                             }
                         }
-                    });
-                } else {
-                    // Hide favicon if no ICY URL
-                    const faviconElement = document.getElementById('stationFavicon');
-                    if (faviconElement) {
-                        faviconElement.style.display = 'none';
+                        streamTitleElement.textContent = displayText;
                     }
                 }
                 
-                // Update volume controls
-                const volumeControl = document.getElementById('volume');
-                const volumeValue = document.getElementById('volumeValue');
-                
-                if (volumeControl) {
-                    volumeControl.value = status.volume;
+                // Handle ICY URL if available and changed
+                if (status.streamIcyURL !== prev.streamIcyURL) {
+                    if (status.streamIcyURL) {
+                        console.log('Received ICY URL:', status.streamIcyURL);
+                        // Try to get favicon from the ICY URL
+                        findFaviconUrl(status.streamIcyURL).then(faviconUrl => {
+                            if (faviconUrl) {
+                                console.log('Found favicon:', faviconUrl);
+                                // Update the favicon image element
+                                const faviconElement = document.getElementById('stationFavicon');
+                                if (faviconElement) {
+                                    faviconElement.src = faviconUrl;
+                                    faviconElement.style.display = 'inline';
+                                }
+                            }
+                        });
+                    } else {
+                        // Hide favicon if no ICY URL
+                        const faviconElement = document.getElementById('stationFavicon');
+                        if (faviconElement) {
+                            faviconElement.style.display = 'none';
+                        }
+                    }
                 }
                 
-                if (volumeValue) {
-                    volumeValue.textContent = status.volume;
+                // Update volume controls only if volume changed
+                if (status.volume !== prev.volume) {
+                    const volumeControl = document.getElementById('volume');
+                    const volumeValue = document.getElementById('volumeValue');
+                    
+                    if (volumeControl) {
+                        volumeControl.value = status.volume;
+                    }
+                    
+                    if (volumeValue) {
+                        volumeValue.textContent = status.volume;
+                    }
                 }
                 
-                // Update tone controls
-                const bassControl = document.getElementById('bass');
-                const bassValue = document.getElementById('bassValue');
-                const midrangeControl = document.getElementById('midrange');
-                const midrangeValue = document.getElementById('midrangeValue');
-                const trebleControl = document.getElementById('treble');
-                const trebleValue = document.getElementById('trebleValue');
-                
-                if (bassControl && status.bass !== undefined) {
-                    bassControl.value = status.bass;
-                    bass = status.bass;
+                // Update tone controls only if values changed
+                if (status.bass !== prev.bass) {
+                    const bassControl = document.getElementById('bass');
+                    const bassValue = document.getElementById('bassValue');
+                    
+                    if (bassControl && status.bass !== undefined) {
+                        bassControl.value = status.bass;
+                        bass = status.bass;
+                    }
+                    
+                    if (bassValue && status.bass !== undefined) {
+                        bassValue.textContent = status.bass + 'dB';
+                    }
                 }
                 
-                if (bassValue && status.bass !== undefined) {
-                    bassValue.textContent = status.bass + 'dB';
+                if (status.midrange !== prev.midrange) {
+                    const midrangeControl = document.getElementById('midrange');
+                    const midrangeValue = document.getElementById('midrangeValue');
+                    
+                    if (midrangeControl && status.midrange !== undefined) {
+                        midrangeControl.value = status.midrange;
+                        midrange = status.midrange;
+                    }
+                    
+                    if (midrangeValue && status.midrange !== undefined) {
+                        midrangeValue.textContent = status.midrange + 'dB';
+                    }
                 }
                 
-                if (midrangeControl && status.midrange !== undefined) {
-                    midrangeControl.value = status.midrange;
-                    midrange = status.midrange;
+                if (status.treble !== prev.treble) {
+                    const trebleControl = document.getElementById('treble');
+                    const trebleValue = document.getElementById('trebleValue');
+                    
+                    if (trebleControl && status.treble !== undefined) {
+                        trebleControl.value = status.treble;
+                        treble = status.treble;
+                    }
+                    
+                    if (trebleValue && status.treble !== undefined) {
+                        trebleValue.textContent = status.treble + 'dB';
+                    }
                 }
                 
-                if (midrangeValue && status.midrange !== undefined) {
-                    midrangeValue.textContent = status.midrange + 'dB';
-                }
-                
-                if (trebleControl && status.treble !== undefined) {
-                    trebleControl.value = status.treble;
-                    treble = status.treble;
-                }
-                
-                if (trebleValue && status.treble !== undefined) {
-                    trebleValue.textContent = status.treble + 'dB';
-                }
+                // Update previous status
+                window.previousStatus = {
+                    playing: status.playing,
+                    streamName: status.streamName,
+                    streamTitle: status.streamTitle,
+                    bitrate: status.bitrate,
+                    streamIcyURL: status.streamIcyURL,
+                    volume: status.volume,
+                    bass: status.bass,
+                    midrange: status.midrange,
+                    treble: status.treble
+                };
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
             }
