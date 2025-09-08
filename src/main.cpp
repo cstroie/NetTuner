@@ -780,6 +780,79 @@ void saveConfig() {
   }
 }
 
+/**
+ * @brief Handle GET request for configuration
+ * Returns the current configuration as JSON
+ * This function serves the current configuration in JSON format.
+ */
+void handleGetConfig() {
+  // Yield to other tasks before processing
+  yield();
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(512);
+  // Populate JSON document with configuration values
+  doc["i2s_dout"] = config.i2s_dout;
+  doc["i2s_bclk"] = config.i2s_bclk;
+  doc["i2s_lrc"] = config.i2s_lrc;
+  doc["led_pin"] = config.led_pin;
+  doc["rotary_clk"] = config.rotary_clk;
+  doc["rotary_dt"] = config.rotary_dt;
+  doc["rotary_sw"] = config.rotary_sw;
+  doc["board_button"] = config.board_button;
+  doc["display_sda"] = config.display_sda;
+  doc["display_scl"] = config.display_scl;
+  doc["display_width"] = config.display_width;
+  doc["display_height"] = config.display_height;
+  doc["display_address"] = config.display_address;
+  // Serialize JSON to string
+  String json;
+  serializeJson(doc, json);
+  // Return configuration as JSON
+  server.send(200, "application/json", json);
+  // Yield to other tasks after processing
+  yield();
+}
+
+/**
+ * @brief Handle POST request for configuration
+ * Updates the configuration with new JSON data and saves to SPIFFS
+ * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
+ */
+void handlePostConfig() {
+  // Check for JSON data
+  if (!server.hasArg("plain")) {
+    sendJsonResponse("error", "Missing JSON data");
+    return;
+  }
+  // Parse the JSON data
+  String jsonData = server.arg("plain");
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, jsonData);
+  // Check for JSON parsing errors
+  if (error) {
+    sendJsonResponse("error", "Invalid JSON");
+    return;
+  }
+  // Update configuration values
+  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
+  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
+  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
+  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
+  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
+  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
+  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
+  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
+  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
+  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
+  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  // Save to SPIFFS
+  saveConfig();
+  // Return status as JSON
+  sendJsonResponse("success", "Configuration updated successfully");
+}
+
 
 /**
  * @brief Initialize audio output interface
@@ -1272,12 +1345,6 @@ void handlePostStreams() {
     sendJsonResponse("error", "Missing JSON data");
     return;
   }
-  // Validate JSON format (should be an array)
-  jsonData.trim();
-  if (!jsonData.startsWith("[") || !jsonData.endsWith("]")) {
-    sendJsonResponse("error", "Invalid JSON format - expected array");
-    return;
-  }
   // Parse the JSON data
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, jsonData);
@@ -1588,79 +1655,6 @@ void handleStatus() {
 }
 
 /**
- * @brief Handle GET request for configuration
- * Returns the current configuration as JSON
- * This function serves the current configuration in JSON format.
- */
-void handleGetConfig() {
-  // Yield to other tasks before processing
-  yield();
-  // Create JSON document with appropriate size
-  DynamicJsonDocument doc(512);
-  // Populate JSON document with configuration values
-  doc["i2s_dout"] = config.i2s_dout;
-  doc["i2s_bclk"] = config.i2s_bclk;
-  doc["i2s_lrc"] = config.i2s_lrc;
-  doc["led_pin"] = config.led_pin;
-  doc["rotary_clk"] = config.rotary_clk;
-  doc["rotary_dt"] = config.rotary_dt;
-  doc["rotary_sw"] = config.rotary_sw;
-  doc["board_button"] = config.board_button;
-  doc["display_sda"] = config.display_sda;
-  doc["display_scl"] = config.display_scl;
-  doc["display_width"] = config.display_width;
-  doc["display_height"] = config.display_height;
-  doc["display_address"] = config.display_address;
-  // Serialize JSON to string
-  String json;
-  serializeJson(doc, json);
-  // Return configuration as JSON
-  server.send(200, "application/json", json);
-  // Yield to other tasks after processing
-  yield();
-}
-
-/**
- * @brief Handle POST request for configuration
- * Updates the configuration with new JSON data and saves to SPIFFS
- * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
- */
-void handlePostConfig() {
-  // Check for JSON data
-  if (!server.hasArg("plain")) {
-    sendJsonResponse("error", "Missing JSON data");
-    return;
-  }
-  // Parse the JSON data
-  String jsonData = server.arg("plain");
-  DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, jsonData);
-  // Check for JSON parsing errors
-  if (error) {
-    sendJsonResponse("error", "Invalid JSON");
-    return;
-  }
-  // Update configuration values
-  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
-  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
-  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
-  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
-  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
-  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
-  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
-  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
-  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
-  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
-  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
-  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
-  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
-  // Save to SPIFFS
-  saveConfig();
-  // Return status as JSON
-  sendJsonResponse("success", "Configuration updated successfully");
-}
-
-/**
  * @brief Handle export configuration request
  * Exports all JSON configuration files from SPIFFS as a single JSON object
  * This function reads all JSON files from SPIFFS and combines them into a single
@@ -1772,6 +1766,7 @@ void handleImportConfig() {
   }
 }
 
+
 /**
  * @brief Generate JSON status string
  * Creates a JSON string with current player status information
@@ -1852,6 +1847,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
   }
 }
 
+
 /**
  * @brief Update the OLED display with current status
  * Shows playback status, current stream, volume level, and playlist selection
@@ -1868,35 +1864,6 @@ void updateDisplay() {
   }
   // Update the display with current status
   display.update(isPlaying, streamInfo.title, streamInfo.name, volume, bitrate, ipString);
-}
-
-/**
- * @brief Handle pico CSS requests
- * Serves the compressed CSS files with proper Content-Encoding header
- * Falls back to uncompressed files if compressed files are not found
- * @param filename The requested filename
- * @param filepathGz The path to the compressed file
- * @param filepath The path to the uncompressed file
- */
-void handlePicoCSS(const String& filename, const String& filepathGz, const String& filepath) {
-  // Yield to other tasks before processing
-  yield();
-  File file = SPIFFS.open(filepathGz, "r");
-  if (!file) {
-    // Fallback to uncompressed file
-    file = SPIFFS.open(filepath, "r");
-    if (!file) {
-      server.send(404, "text/plain", "File not found");
-      return;
-    }
-    server.streamFile(file, "text/css");
-  } else {
-    server.sendHeader("Content-Encoding", "gzip");
-    server.streamFile(file, "text/css");
-  }
-  file.close();
-  // Yield to other tasks after processing
-  yield();
 }
 
 
