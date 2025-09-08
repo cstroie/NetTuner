@@ -19,6 +19,9 @@
 #include "rotary.h"
 #include "main.h"
 
+// Forward declaration of the global rotary encoder instance
+extern RotaryEncoder rotaryEncoder;
+
 /**
  * @brief Handle rotary encoder rotation
  * @details Processes rotation events by detecting CLK signal edges and 
