@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
+#include "pins.h"
 #include "main.h"
 #include "mpd.h"
 #include "display.h"

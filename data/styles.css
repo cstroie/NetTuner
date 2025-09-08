@@ -229,15 +229,15 @@ fieldset input[type="number"]:focus {
     line-height: 1;
 }
 
+.playlist-item,
+.network-entry {
+    align-items: center;
+}
+
 .playlist-item button {
     margin-left: 0.5rem;
 }
 
-.network-entry input[type="text"],
-.network-entry input[type="password"] {
-    flex: 1;
-    margin: 0 0.25rem;
-}
 
 /**
  * @section Theme toggle button
