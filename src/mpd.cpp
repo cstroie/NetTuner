@@ -268,7 +268,7 @@ void MPDInterface::handleListCommand(const String& args) {
     } else if (tagType.startsWith("title")) {
       // Return the playlist
       for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print("Title:" + String(playlistRef[i].name) + "\n");
+        mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
       }
     }
   }
@@ -1519,7 +1519,7 @@ MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamNa
  */
 const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"stop", &MPDInterface::handleStopCommand, true},
-  {"pause", &MPDInterface::handleStopCommand, true},
+  {"pause", &MPDInterface::handleStopCommand, false},
   {"status", &MPDInterface::handleStatusCommand, true},
   {"currentsong", &MPDInterface::handleCurrentSongCommand, true},
   {"playlistinfo", &MPDInterface::handlePlaylistInfoCommand, true},
