@@ -1287,7 +1287,7 @@ void handleSimpleWebPage() {
 </form>
 <form method='post'>
 <label for='volume'>Volume:</label>
-<select name='volume' id='volume' onchange='this.form.submit()'>
+<select name='volume' id='volume'>
 )rawliteral";
   // Add volume options (0-22)
   for (int i = 0; i <= 22; i++) {
@@ -1298,7 +1298,7 @@ void handleSimpleWebPage() {
     html += ">" + String(i) + "</option>";
   }
   html += R"rawliteral(</select>
-<input type='hidden' name='action' value='volume'>
+<button name='action' value='volume' type='submit'>Set Volume</button>
 </form>
 </section>
 <section>
