@@ -67,8 +67,10 @@
             </form>
             <!-- Save configuration button -->
             <footer>
-                <button type="button" onclick="addNetworkField()">Add</button>
-                <button type="submit" form="wifiForm">Save configuration</button>
+                <div class="grid">
+                    <button type="button" onclick="addNetworkField()">Add network</button>
+                    <button type="submit" form="wifiForm">Save configuration</button>
+                </div>
             </footer>
         </article>
     </main>
@@ -84,7 +86,7 @@
         </div>
     </footer>
     <!-- JavaScript includes -->
-    <script src="/scripts.js"></script>
+    <script src="scripts.js"></script>
     <script>
         // Initialize the WiFi page when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
