@@ -1657,6 +1657,46 @@ void handleAboutPage() {
   handleStaticFile("/about.html");
 }
 
+
+
+/**
+ * @brief Handle pico.min.css request
+ * Serves the compressed pico.min.css.gz file with proper Content-Encoding header
+ */
+void handlePicoCSS() {
+  // Yield to other tasks before processing
+  yield();
+  File file = SPIFFS.open("/pico.min.css.gz", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.sendHeader("Content-Encoding", "gzip");
+  server.streamFile(file, "text/css");
+  file.close();
+  // Yield to other tasks after processing
+  yield();
+}
+
+/**
+ * @brief Handle pico.classless.min.css request
+ * Serves the compressed pico.classless.min.css.gz file with proper Content-Encoding header
+ */
+void handlePicoClasslessCSS() {
+  // Yield to other tasks before processing
+  yield();
+  File file = SPIFFS.open("/pico.classless.min.css.gz", "r");
+  if (!file) {
+    server.send(404, "text/plain", "File not found");
+    return;
+  }
+  server.sendHeader("Content-Encoding", "gzip");
+  server.streamFile(file, "text/css");
+  file.close();
+  // Yield to other tasks after processing
+  yield();
+}
+
 /**
  * @brief Handle GET request for streams
  * Returns the current playlist as JSON
@@ -2289,34 +2329,4 @@ void updateDisplay() {
   }
   // Update the display with current status
   display.update(isPlaying, streamTitle, streamName, volume, bitrate, ipString);
-}
-
-/**
- * @brief Handle pico.min.css request
- * Serves the compressed pico.min.css.gz file with proper Content-Encoding header
- */
-void handlePicoCSS() {
-  File file = SPIFFS.open("/pico.min.css.gz", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.sendHeader("Content-Encoding", "gzip");
-  server.streamFile(file, "text/css");
-  file.close();
-}
-
-/**
- * @brief Handle pico.classless.min.css request
- * Serves the compressed pico.classless.min.css.gz file with proper Content-Encoding header
- */
-void handlePicoClasslessCSS() {
-  File file = SPIFFS.open("/pico.classless.min.css.gz", "r");
-  if (!file) {
-    server.send(404, "text/plain", "File not found");
-    return;
-  }
-  server.sendHeader("Content-Encoding", "gzip");
-  server.streamFile(file, "text/css");
-  file.close();
 }
