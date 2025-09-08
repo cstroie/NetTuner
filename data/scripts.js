@@ -3032,7 +3032,44 @@ function loadConnectionStatus() {
 }
 
 function selectNetwork(ssid) {
-    document.getElementById('ssid0').value = ssid;
+    // Check if this network is already in the configured networks
+    const networkEntries = document.querySelectorAll('.network-entry');
+    for (let i = 0; i < networkEntries.length; i++) {
+        const ssidInput = networkEntries[i].querySelector('input[type="text"]');
+        if (ssidInput && ssidInput.value === ssid) {
+            // Network already exists, focus on it
+            ssidInput.focus();
+            return;
+        }
+    }
+    
+    // If we have less than 5 networks, add a new entry
+    if (networkCount < 5) {
+        addNetworkField();
+        // Set the SSID in the new entry
+        const newIndex = networkCount - 1;
+        const ssidInput = document.getElementById(`ssid${newIndex}`);
+        if (ssidInput) {
+            ssidInput.value = ssid;
+            // Focus on the password field for the new entry
+            const passwordInput = document.getElementById(`password${newIndex}`);
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        }
+    } else {
+        // If we already have 5 networks, update the last one
+        const lastIndex = 4;
+        const ssidInput = document.getElementById(`ssid${lastIndex}`);
+        if (ssidInput) {
+            ssidInput.value = ssid;
+            // Focus on the password field
+            const passwordInput = document.getElementById(`password${lastIndex}`);
+            if (passwordInput) {
+                passwordInput.focus();
+            }
+        }
+    }
 }
 
 // Configuration import/export functions
