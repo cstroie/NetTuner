@@ -1256,6 +1256,17 @@ void handleSimpleWebPage() {
             startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
         }
+      } else if (action == "play_custom") {
+        // Play a custom stream URL
+        if (server.hasArg("custom_url")) {
+          String customUrl = server.arg("custom_url");
+          if (customUrl.length() > 0 && 
+              (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
+            // Use a generic name for the custom stream
+            String streamName = "Custom Stream";
+            startStream(customUrl.c_str(), streamName.c_str());
+          }
+        }
       }
     }
   }
@@ -1340,8 +1351,24 @@ void handleSimpleWebPage() {
       html += "<button name='action' value='instant_play' type='submit'>" + String(playlist[i].name) + "</button>";
       html += "</form>\n";
     }
+    
+    // Add instant play input for custom stream URL
+    html += "<h3>Play Custom Stream</h3>\n";
+    html += "<form method='post'>\n";
+    html += "<label for='custom_url'>Stream URL:</label>\n";
+    html += "<input type='url' name='custom_url' id='custom_url' placeholder='http://example.com/stream' style='width: 100%;'>\n";
+    html += "<button name='action' value='play_custom' type='submit'>Play Stream</button>\n";
+    html += "</form>\n";
   } else {
     html += "<p>No streams available</p>";
+    
+    // Add instant play input for custom stream URL even when no playlist
+    html += "<h3>Play Custom Stream</h3>\n";
+    html += "<form method='post'>\n";
+    html += "<label for='custom_url'>Stream URL:</label>\n";
+    html += "<input type='url' name='custom_url' id='custom_url' placeholder='http://example.com/stream' style='width: 100%;'>\n";
+    html += "<button name='action' value='play_custom' type='submit'>Play Stream</button>\n";
+    html += "</form>\n";
   }
   // Close the HTML
   html += R"rawliteral(</section>
