@@ -973,43 +973,15 @@ void loadPlaylist() {
   if (error) {
     Serial.print("Error: Failed to parse playlist JSON: ");
     Serial.println(error.c_str());
-    // Try to recover by creating a backup and a new empty playlist
-    Serial.println("Attempting to recover by creating backup and new playlist");
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      SPIFFS.remove("/playlist.json.bak");
-    }
-    if (SPIFFS.rename("/playlist.json", "/playlist.json.bak")) {
-      Serial.println("Created backup of playlist file");
-    }
-    // Create a new empty playlist
-    File newFile = SPIFFS.open("/playlist.json", "w");
-    if (newFile) {
-      newFile.println("[]");
-      newFile.close();
-      Serial.println("Created new empty playlist file");
-    } else {
-      Serial.println("Error: Failed to create new playlist file during recovery");
-    }
+    // Don't create an empty playlist, just return with empty playlist
+    Serial.println("Continuing with empty playlist");
     return;
   }
   // Check if the JSON document is an array
   if (!doc.is<JsonArray>()) {
     Serial.println("Error: Playlist JSON is not an array");
-    // Try to recover by creating a backup and a new empty playlist
-    Serial.println("Attempting to recover by creating backup and new playlist");
-    if (SPIFFS.exists("/playlist.json.bak")) {
-      SPIFFS.remove("/playlist.json.bak");
-    }
-    SPIFFS.rename("/playlist.json", "/playlist.json.bak");
-    // Create a new empty playlist
-    File newFile = SPIFFS.open("/playlist.json", "w");
-    if (newFile) {
-      newFile.println("[]");
-      newFile.close();
-      Serial.println("Created new empty playlist file");
-    } else {
-      Serial.println("Error: Failed to create new playlist file during recovery");
-    }
+    // Don't create an empty playlist, just return with empty playlist
+    Serial.println("Continuing with empty playlist");
     return;
   }
   // Populate the playlist array
