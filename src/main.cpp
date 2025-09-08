@@ -2012,7 +2012,7 @@ void loop() {
   handleBoardButton();     // Process board button input
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
-  if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
+  if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
     updateDisplay();
     lastDisplayUpdate = millis();
   }
@@ -2045,9 +2045,6 @@ void loop() {
         int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
         if (newBitrate > 0 && newBitrate != bitrate) {
           bitrate = newBitrate;
-          // Update the bitrate on display
-          updateDisplay();
-          // Don't send status immediately, it will be sent by the periodic update
         }
       }
     }
