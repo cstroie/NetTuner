@@ -185,6 +185,7 @@ unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
 bool audioConnected = false;
+
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
@@ -423,22 +424,6 @@ void markPlayerStateDirty() {
 
 
 /**
- * @brief Audio task function
- * Handles audio streaming on core 0
- * @param pvParameters Task parameters (not used)
- */
-void audioTask(void *pvParameters) {
-  while (true) {
-    // Process audio streaming with error handling
-    if (audio) {
-      audio->loop();
-    }
-    // Very small delay to prevent busy waiting but allow frequent processing
-    delay(1);
-  }
-}
-
-/**
  * @brief Handle board button input
  * Processes the built-in button (GPIO 0) for play/stop toggle functionality
  * This function implements debouncing and toggles playback state when pressed.
@@ -485,96 +470,6 @@ void handleBoardButton() {
   }
   // Save the reading for next loop
   lastButtonState = buttonReading;
-}
-
-/**
- * @brief Arduino main loop function
- * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
- * This is the main application loop that runs continuously after setup()
- */
-void loop() {
-  static unsigned long streamStoppedTime = 0;
-  handleRotary();          // Process rotary encoder input
-  server.handleClient();   // Process incoming web requests
-  webSocket.loop();        // Process WebSocket events
-  mpdInterface.handleClient();       // Process MPD commands
-  handleBoardButton();     // Process board button input
-  // Periodically update display for scrolling text animation
-  static unsigned long lastDisplayUpdate = 0;
-  if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
-    updateDisplay();
-    lastDisplayUpdate = millis();
-  }
-  // Check audio connection status with improved error recovery
-  if (audio) {
-    // Check if audio is still connected
-    if (isPlaying) {
-      if (!audio->isRunning()) {
-        Serial.println("Audio stream stopped unexpectedly");
-        // Attempt to restart the stream if it was playing
-        if (strlen(streamInfo.url) > 0) {
-          // Wait 1 second before attempting to restart (non-blocking)
-          if (streamStoppedTime == 0) {
-            // First time detecting the stream has stopped
-            streamStoppedTime = millis();
-            Serial.println("Waiting 1 second before restart attempt...");
-          } else if (millis() - streamStoppedTime >= 1000) {
-            // 1 second has passed, attempt to restart
-            Serial.println("Attempting to restart stream...");
-            // With the updated startStream function, we can now call it
-            // without parameters to resume the current stream
-            startStream();
-            streamStoppedTime = 0; // Reset the timer
-          }
-        }
-      } else {
-        // Stream is running, reset the stopped time
-        streamStoppedTime = 0;
-        // Update bitrate if it has changed
-        int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
-        if (newBitrate > 0 && newBitrate != bitrate) {
-          bitrate = newBitrate;
-          // Update the bitrate on display
-          updateDisplay();
-          // Notify clients of bitrate change
-          sendStatusToClients();
-        }
-      }
-    }
-  }
-  // Periodic cleanup with error recovery
-  static unsigned long lastCleanup = 0;
-  if (millis() - lastCleanup > 30000) {  // Every 30 seconds
-    lastCleanup = millis();
-    // Check and recover from potential WiFi disconnections
-    if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
-      Serial.println("WiFi disconnected, attempting to reconnect...");
-      // Try to reconnect to WiFi
-      for (int i = 0; i < wifiNetworkCount; i++) {
-        if (strlen(ssid[i]) > 0) {
-          WiFi.begin(ssid[i], password[i]);
-          int wifiAttempts = 0;
-          const int maxAttempts = 5;
-          while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-            delay(500);
-            wifiAttempts++;
-          }
-          if (WiFi.status() == WL_CONNECTED) {
-            Serial.printf("Reconnected to %s\n", ssid[i]);
-            // Update display with new IP
-            display.showStatus("WiFi Reconnect", "", WiFi.localIP().toString());
-            delay(2000);
-            updateDisplay();
-            break;
-          }
-        }
-      }
-    }
-  }
-  // Handle display timeout
-  display.handleTimeout(isPlaying, millis());
-  // Small delay to prevent busy waiting
-  delay(50);
 }
 
 /**
@@ -811,6 +706,7 @@ void saveWiFiCredentials() {
   }
 }
 
+
 /**
  * @brief Load configuration from SPIFFS
  * This function reads configuration from config.json in SPIFFS
@@ -884,6 +780,7 @@ void saveConfig() {
   }
 }
 
+
 /**
  * @brief Initialize audio output interface
  * Configures the selected audio output method
@@ -897,6 +794,23 @@ void setupAudioOutput() {
   audio->setVolume(volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
+
+/**
+ * @brief Audio task function
+ * Handles audio streaming on core 0
+ * @param pvParameters Task parameters (not used)
+ */
+void audioTask(void *pvParameters) {
+  while (true) {
+    // Process audio streaming with error handling
+    if (audio) {
+      audio->loop();
+    }
+    // Very small delay to prevent busy waiting but allow frequent processing
+    delay(1);
+  }
+}
+
 
 /**
  * @brief Start streaming an audio stream
@@ -1123,6 +1037,7 @@ void loadPlaylist() {
       if (name && url && strlen(name) > 0 && strlen(url) > 0) {
         // Validate URL format
         if (VALIDATE_URL(url)) {
+          // Add item to playlist
           strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
           playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
           strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
@@ -2088,6 +2003,98 @@ bool initializeSPIFFS() {
   
   return true;
 }
+
+
+/**
+ * @brief Arduino main loop function
+ * Handles web server requests, WebSocket events, rotary encoder input, and MPD commands
+ * This is the main application loop that runs continuously after setup()
+ */
+void loop() {
+  static unsigned long streamStoppedTime = 0;
+  handleRotary();          // Process rotary encoder input
+  server.handleClient();   // Process incoming web requests
+  webSocket.loop();        // Process WebSocket events
+  mpdInterface.handleClient();       // Process MPD commands
+  handleBoardButton();     // Process board button input
+  // Periodically update display for scrolling text animation
+  static unsigned long lastDisplayUpdate = 0;
+  if (millis() - lastDisplayUpdate > 100) {  // Update every 100ms for smooth scrolling
+    updateDisplay();
+    lastDisplayUpdate = millis();
+  }
+  // Check audio connection status with improved error recovery
+  if (audio) {
+    // Check if audio is still connected
+    if (isPlaying) {
+      if (!audio->isRunning()) {
+        Serial.println("Audio stream stopped unexpectedly");
+        // Attempt to restart the stream if it was playing
+        if (strlen(streamInfo.url) > 0) {
+          // Wait 1 second before attempting to restart (non-blocking)
+          if (streamStoppedTime == 0) {
+            // First time detecting the stream has stopped
+            streamStoppedTime = millis();
+            Serial.println("Waiting 1 second before restart attempt...");
+          } else if (millis() - streamStoppedTime >= 1000) {
+            // 1 second has passed, attempt to restart
+            Serial.println("Attempting to restart stream...");
+            // With the updated startStream function, we can now call it
+            // without parameters to resume the current stream
+            startStream();
+            streamStoppedTime = 0; // Reset the timer
+          }
+        }
+      } else {
+        // Stream is running, reset the stopped time
+        streamStoppedTime = 0;
+        // Update bitrate if it has changed
+        int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
+        if (newBitrate > 0 && newBitrate != bitrate) {
+          bitrate = newBitrate;
+          // Update the bitrate on display
+          updateDisplay();
+          // Notify clients of bitrate change
+          sendStatusToClients();
+        }
+      }
+    }
+  }
+  // Periodic cleanup with error recovery
+  static unsigned long lastCleanup = 0;
+  if (millis() - lastCleanup > 30000) {  // Every 30 seconds
+    lastCleanup = millis();
+    // Check and recover from potential WiFi disconnections
+    if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
+      Serial.println("WiFi disconnected, attempting to reconnect...");
+      // Try to reconnect to WiFi
+      for (int i = 0; i < wifiNetworkCount; i++) {
+        if (strlen(ssid[i]) > 0) {
+          WiFi.begin(ssid[i], password[i]);
+          int wifiAttempts = 0;
+          const int maxAttempts = 5;
+          while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
+            delay(500);
+            wifiAttempts++;
+          }
+          if (WiFi.status() == WL_CONNECTED) {
+            Serial.printf("Reconnected to %s\n", ssid[i]);
+            // Update display with new IP
+            display.showStatus("WiFi Reconnect", "", WiFi.localIP().toString());
+            delay(2000);
+            updateDisplay();
+            break;
+          }
+        }
+      }
+    }
+  }
+  // Handle display timeout
+  display.handleTimeout(isPlaying, millis());
+  // Small delay to prevent busy waiting
+  delay(50);
+}
+
 
 /**
  * @brief Arduino setup function
