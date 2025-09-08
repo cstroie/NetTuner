@@ -1221,13 +1221,20 @@ void handleSimpleWebPage() {
         if (server.hasArg("stream") && playlistCount > 0) {
           int streamIndex = server.arg("stream").toInt();
           if (streamIndex >= 0 && streamIndex < playlistCount) {
+            // Stop playback
+            stopStream();
+            // Play selected stream
             currentSelection = streamIndex;
             startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
         } else if (strlen(streamInfo.url) > 0) {
+          // Stop current playback
+          stopStream();
           // Resume current stream
           startStream();
         } else if (playlistCount > 0 && currentSelection < playlistCount) {
+          // Stop playback
+          stopStream();
           // Play currently selected stream
           startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         }
@@ -1248,13 +1255,15 @@ void handleSimpleWebPage() {
           }
         }
       } else if (action == "instant") {
-        // Play a custom stream URL
+        // Play a stream URL
         if (server.hasArg("url")) {
           String customUrl = server.arg("url");
           if (customUrl.length() > 0 && 
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
-            // Use a generic name for the custom stream
-            String streamName = "Custom Stream";
+            // Stop current playback
+            stopStream();
+            // Use a generic name for the stream
+            String streamName = "Stream";
             startStream(customUrl.c_str(), streamName.c_str());
           }
         }

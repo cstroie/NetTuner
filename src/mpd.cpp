@@ -1751,6 +1751,8 @@ bool MPDInterface::handlePlayback(int index) {
   if (index < 0 || index >= playlistCountRef) {
     return false;
   }
+  // Stop any current playback
+  stopStream();
   // Update current selection
   currentSelectionRef = index;
   // Start playback
