@@ -2003,6 +2003,43 @@ void loop() {
 
 
 /**
+ * @brief Setup web server routes and static file serving
+ * Configures all HTTP routes and static file mappings for the web server
+ */
+void setupWebServer() {
+  server.on("/api/streams", HTTP_GET, handleGetStreams);
+  server.on("/api/streams", HTTP_POST, handlePostStreams);
+  server.on("/api/play", HTTP_POST, handlePlay);
+  server.on("/api/stop", HTTP_POST, handleStop);
+  server.on("/api/volume", HTTP_POST, handleVolume);
+  server.on("/api/tone", HTTP_POST, handleTone);
+  server.on("/api/status", HTTP_GET, handleStatus);
+  server.on("/api/config", HTTP_GET, handleGetConfig);
+  server.on("/api/config", HTTP_POST, handlePostConfig);
+  server.on("/api/config/export", HTTP_GET, handleExportConfig);
+  server.on("/api/config/import", HTTP_POST, handleImportConfig);
+  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
+  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
+  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
+  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
+  server.on("/w", HTTP_GET, handleSimpleWebPage);
+  server.on("/w", HTTP_POST, handleSimpleWebPage);
+  server.serveStatic("/", SPIFFS, "/index.html");
+  server.serveStatic("/playlist", SPIFFS, "/playlist.html");
+  server.serveStatic("/wifi", SPIFFS, "/wifi.html");
+  server.serveStatic("/config", SPIFFS, "/config.html");
+  server.serveStatic("/about", SPIFFS, "/about.html");
+  server.serveStatic("/styles.css", SPIFFS, "/styles.css");
+  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
+  server.on("/pico.min.css", HTTP_GET, []() {
+    handlePicoCSS("/pico.min.css", "/pico.min.css.gz", "/pico.min.css");
+  });
+  server.on("/pico.classless.min.css", HTTP_GET, []() {
+    handlePicoCSS("/pico.classless.min.css", "/pico.classless.min.css.gz", "/pico.classless.min.css");
+  });
+}
+
+/**
  * @brief Arduino setup function
  * Initializes all system components including WiFi, audio, display, and servers
  * This function is called once at startup to configure the hardware and software components.
@@ -2105,36 +2142,7 @@ void setup() {
   loadPlayerState();
   
   // Setup web server routes
-  server.on("/api/streams", HTTP_GET, handleGetStreams);
-  server.on("/api/streams", HTTP_POST, handlePostStreams);
-  server.on("/api/play", HTTP_POST, handlePlay);
-  server.on("/api/stop", HTTP_POST, handleStop);
-  server.on("/api/volume", HTTP_POST, handleVolume);
-  server.on("/api/tone", HTTP_POST, handleTone);
-  server.on("/api/status", HTTP_GET, handleStatus);
-  server.on("/api/config", HTTP_GET, handleGetConfig);
-  server.on("/api/config", HTTP_POST, handlePostConfig);
-  server.on("/api/config/export", HTTP_GET, handleExportConfig);
-  server.on("/api/config/import", HTTP_POST, handleImportConfig);
-  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
-  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
-  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
-  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
-  server.on("/w", HTTP_GET, handleSimpleWebPage);
-  server.on("/w", HTTP_POST, handleSimpleWebPage);
-  server.serveStatic("/", SPIFFS, "/index.html");
-  server.serveStatic("/playlist", SPIFFS, "/playlist.html");
-  server.serveStatic("/wifi", SPIFFS, "/wifi.html");
-  server.serveStatic("/config", SPIFFS, "/config.html");
-  server.serveStatic("/about", SPIFFS, "/about.html");
-  server.serveStatic("/styles.css", SPIFFS, "/styles.css");
-  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.on("/pico.min.css", HTTP_GET, []() {
-    handlePicoCSS("/pico.min.css", "/pico.min.css.gz", "/pico.min.css");
-  });
-  server.on("/pico.classless.min.css", HTTP_GET, []() {
-    handlePicoCSS("/pico.classless.min.css", "/pico.classless.min.css.gz", "/pico.classless.min.css");
-  });
+  setupWebServer();
  
   // Start server
   server.begin();
