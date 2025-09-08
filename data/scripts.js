@@ -2075,7 +2075,7 @@ async function uploadPlaylist() {
     }
     
     // Show loading state
-    const uploadButton = document.querySelector('button[onclick="uploadPlaylist()"]');
+    const uploadButton = document.getElementById('uploadPlaylistBtn');
     const originalText = uploadButton ? uploadButton.textContent : null;
     if (uploadButton) {
         uploadButton.textContent = 'Uploading...';
@@ -2180,7 +2180,7 @@ async function uploadPlaylist() {
 
 async function downloadJSON() {
     // Show loading state
-    const downloadButton = document.querySelector('button[onclick="downloadJSON()"]');
+    const downloadButton = document.getElementById('downloadJsonBtn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
@@ -2224,7 +2224,7 @@ async function downloadJSON() {
 
 async function downloadM3U() {
     // Show loading state
-    const downloadButton = document.querySelector('button[onclick="downloadM3U()"]');
+    const downloadButton = document.getElementById('downloadM3uBtn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
@@ -2269,7 +2269,7 @@ async function downloadM3U() {
 
 async function downloadPLS() {
     // Show loading state
-    const downloadButton = document.querySelector('button[onclick="downloadPLS()"]');
+    const downloadButton = document.getElementById('downloadPlsBtn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
