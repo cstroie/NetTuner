@@ -2758,8 +2758,8 @@ function addNetworkField() {
     newEntry.draggable = true;
     newEntry.innerHTML = `
         <div class="drag-handle">⋮⋮</div>
-        <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID" aria-invalid="false">
-        <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password" aria-invalid="false">
+        <input type="text" id="ssid${networkCount}" name="ssid${networkCount}" placeholder="Enter SSID">
+        <input type="password" id="password${networkCount}" name="password${networkCount}" placeholder="Enter Password">
         <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
     `;
     networkFields.appendChild(newEntry);
