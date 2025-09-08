@@ -87,18 +87,14 @@
                 <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8,.pls">
                 <small>Supported formats: JSON, M3U, M3U8, PLS</small>
             </label>
-            <!-- Format-specific import/export buttons -->
+            <!-- Import/export buttons -->
             <footer class="grid">
                 <div role="group">
-                    <button onclick="uploadJSON()">Upload JSON</button>
+                    <button onclick="uploadPlaylist()">Upload Playlist</button>
+                </div>
+                <div role="group">
                     <button onclick="downloadJSON()">Download JSON</button>
-                </div>
-                <div role="group">
-                    <button class="secondary" onclick="uploadM3U()">Upload M3U</button>
                     <button class="secondary" onclick="downloadM3U()">Download M3U</button>
-                </div>
-                <div role="group">
-                    <button class="secondary" onclick="uploadPLS()">Upload PLS</button>
                     <button class="secondary" onclick="downloadPLS()">Download PLS</button>
                 </div>
             </footer>
