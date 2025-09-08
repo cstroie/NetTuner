@@ -1302,6 +1302,12 @@ function addStream() {
         return;
     }
     
+    // Check if playlist is already at maximum capacity
+    if (streams.length >= 20) {
+        showModal('Error', 'Playlist is full. Maximum 20 streams allowed.');
+        return;
+    }
+    
     console.log('Adding stream:', { name: name.value, url: url.value });
     
     // Trim and validate name
