@@ -1234,6 +1234,19 @@ void handleSimpleWebPage() {
       } else if (action == "stop") {
         // Stop playback
         stopStream();
+      } else if (action == "volume") {
+        // Set volume
+        if (server.hasArg("volume")) {
+          int newVolume = server.arg("volume").toInt();
+          if (newVolume >= 0 && newVolume <= 22) {
+            volume = newVolume;
+            if (audio) {
+              audio->setVolume(volume);
+            }
+            updateDisplay();
+            sendStatusToClients();
+          }
+        }
       }
     }
   }
@@ -1271,6 +1284,21 @@ void handleSimpleWebPage() {
 <form method='post'>
 <button name='action' value='play' type='submit'>Play</button> 
 <button name='action' value='stop' type='submit'>Stop</button>
+</form>
+<form method='post'>
+<label for='volume'>Volume:</label>
+<select name='volume' id='volume' onchange='this.form.submit()'>
+)rawliteral";
+  // Add volume options (0-22)
+  for (int i = 0; i <= 22; i++) {
+    html += "<option value='" + String(i) + "'";
+    if (i == volume) {
+      html += " selected";
+    }
+    html += ">" + String(i) + "</option>";
+  }
+  html += R"rawliteral(</select>
+<input type='hidden' name='action' value='volume'>
 </form>
 </section>
 <section>
