@@ -1332,6 +1332,14 @@ void handleSimpleWebPage() {
 <button name='action' value='play' type='submit'>Play Selected</button>
 </form>
 )rawliteral";
+    // Add instant play buttons for each stream
+    html += "<h3>Instant Play</h3>\n";
+    for (int i = 0; i < playlistCount; i++) {
+      html += "<form method='post' style='display:inline-block; margin: 5px;'>";
+      html += "<input type='hidden' name='stream' value='" + String(i) + "'>";
+      html += "<button name='action' value='instant_play' type='submit'>" + String(playlist[i].name) + "</button>";
+      html += "</form>\n";
+    }
   } else {
     html += "<p>No streams available</p>";
   }
