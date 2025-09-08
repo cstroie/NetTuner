@@ -1626,30 +1626,53 @@ async function uploadJSON() {
         console.log('File content:', fileContent);
         
         try {
-            const response = await fetch('/api/streams', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: fileContent
-            });
+            // Parse JSON content
+            const jsonData = JSON.parse(fileContent);
             
-            console.log('Upload response status:', response.status);
-            
-            if (response.ok) {
-                // Handle JSON response
-                const result = await response.json();
-                if (result.status === 'success') {
-                    // Reload streams after successful upload
-                    loadStreams();
-                }
-            } else {
-                const error = await response.text();
-                console.error('Error uploading playlist: ' + error);
+            // Validate the JSON structure
+            if (!Array.isArray(jsonData)) {
+                throw new Error('Invalid playlist format: expected array of streams');
             }
+            
+            // Validate each stream in the playlist and skip invalid ones
+            const validStreams = [];
+            for (let i = 0; i < jsonData.length; i++) {
+                const stream = jsonData[i];
+                if (!stream || typeof stream !== 'object') {
+                    console.warn(`Skipping invalid stream at position ${i+1}: not an object`);
+                    continue;
+                }
+                
+                if (!stream.name || !stream.name.trim()) {
+                    console.warn(`Skipping stream at position ${i+1}: empty name`);
+                    continue;
+                }
+                
+                if (!stream.url) {
+                    console.warn(`Skipping stream at position ${i+1}: no URL`);
+                    continue;
+                }
+                
+                if (!stream.url.startsWith('http://') && !stream.url.startsWith('https://')) {
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL format`);
+                    continue;
+                }
+                
+                try {
+                    new URL(stream.url);
+                } catch (e) {
+                    console.warn(`Skipping stream at position ${i+1}: invalid URL`);
+                    continue;
+                }
+                
+                // If we get here, the stream is valid
+                validStreams.push(stream);
+            }
+            
+            // Show selection modal
+            showPlaylistSelectionModal(validStreams);
         } catch (error) {
-            console.error('Error uploading playlist:', error);
+            console.error('Error processing playlist:', error);
         } finally {
             // Clear file input in all cases
             fileInput.value = '';
@@ -2100,31 +2123,14 @@ async function uploadM3U() {
             // Convert M3U to JSON
             const jsonData = convertM3UToJSON(fileContent);
             console.log('JSON content:', jsonData);
-        
-            const response = await fetch('/api/streams', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: jsonData
-            });
             
-            console.log('Upload response status:', response.status);
+            // Parse JSON content
+            const playlistData = JSON.parse(jsonData);
             
-            if (response.ok) {
-                // Handle JSON response
-                const result = await response.json();
-                if (result.status === 'success') {
-                    // Reload streams after successful upload
-                    loadStreams();
-                }
-            } else {
-                const error = await response.text();
-                console.error('Error uploading playlist: ' + error);
-            }
+            // Show selection modal
+            showPlaylistSelectionModal(playlistData);
         } catch (error) {
-            console.error('Error uploading playlist:', error);
+            console.error('Error processing playlist:', error);
         } finally {
             // Clear file input in all cases
             fileInput.value = '';
@@ -2182,31 +2188,14 @@ async function uploadPLS() {
             // Convert PLS to JSON
             const jsonData = convertPLSToJSON(fileContent);
             console.log('JSON content:', jsonData);
-        
-            const response = await fetch('/api/streams', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: jsonData
-            });
             
-            console.log('Upload response status:', response.status);
+            // Parse JSON content
+            const playlistData = JSON.parse(jsonData);
             
-            if (response.ok) {
-                // Handle JSON response
-                const result = await response.json();
-                if (result.status === 'success') {
-                    // Reload streams after successful upload
-                    loadStreams();
-                }
-            } else {
-                const error = await response.text();
-                console.error('Error uploading playlist: ' + error);
-            }
+            // Show selection modal
+            showPlaylistSelectionModal(playlistData);
         } catch (error) {
-            console.error('Error uploading playlist:', error);
+            console.error('Error processing playlist:', error);
         } finally {
             // Clear file input in all cases
             fileInput.value = '';
