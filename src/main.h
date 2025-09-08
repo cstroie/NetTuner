@@ -129,7 +129,7 @@ extern struct PlayerState {
 
 // Forward declarations for global functions
 void stopStream();
-void startStream(const char* url = nullptr, const char* name = nullptr); 
+void startStream(const char* url, const char* name); 
 void updateDisplay();
 void sendStatusToClients();
 void setupAudioOutput();
