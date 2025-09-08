@@ -113,33 +113,19 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Scroll every 500ms for smooth animation
             if (millis() - lastTitleScrollTime > 500) {
                 titleScrollOffset++;
-                titleScrollOffset++;
                 // Reset scroll when we've shown the entire text plus " ~~~ "
-                // Calculate based on pixels: each character is 8 pixels wide in Spleen8x16 font
-                int totalPixels = (title.length() + 4) * 8;  // +4 for " ~~~ "
-                int displayWidth = maxDisplayChars * 8;  // 14 characters * 8 pixels
-                if (titleScrollOffset > (totalPixels + displayWidth)) {
+                if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " ~~~ "
                     titleScrollOffset = 0;
                 }
                 lastTitleScrollTime = millis();
             }
             
-            // Display scrolled text with pixel positioning for smooth scrolling
+            // Display scrolled text
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            
-            // Calculate starting position based on scroll offset
-            int startPixel = titleScrollOffset % (displayText.length() * 8);  // 8 pixels per char
-            int startChar = startPixel / 8;
-            int pixelOffset = startPixel % 8;
-            
-            // Instead of substring, we'll use pixel positioning
-            displayRef.setCursor(16 - pixelOffset, 12);
-
-            // Display text with pixel offset
-            String visibleText = tempText.substring(startChar, startChar + maxDisplayChars);
-            displayRef.print(visibleText);
+            displayRef.setCursor(16, 12);
+            displayRef.print(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars));
         } else {
             // Display title without scrolling for short titles
             displayRef.setCursor(16, 12);
