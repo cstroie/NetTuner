@@ -2081,9 +2081,9 @@ void loop() {
       }
     }
   }
-  // Send status to clients every 500ms
+  // Send status to clients every second
   static unsigned long lastStatusUpdate = 0;
-  if (millis() - lastStatusUpdate > 500) {
+  if (millis() - lastStatusUpdate > 1000) {
     sendStatusToClients();
     lastStatusUpdate = millis();
   }
