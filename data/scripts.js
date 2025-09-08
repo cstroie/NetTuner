@@ -1002,13 +1002,18 @@ async function playInstantStream() {
     const urlInput = document.getElementById('instantUrl');
     const url = urlInput.value.trim();
     
+    // Reset aria-invalid attribute
+    urlInput.setAttribute('aria-invalid', 'false');
+    
     if (!url) {
+        urlInput.setAttribute('aria-invalid', 'true');
         showModal('Play Error', 'Please enter a stream URL');
         return;
     }
     
     // Validate URL format
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        urlInput.setAttribute('aria-invalid', 'true');
         showModal('Play Error', 'Invalid URL format. Must start with http:// or https://');
         return;
     }
@@ -1016,6 +1021,7 @@ async function playInstantStream() {
     try {
         new URL(url);
     } catch (e) {
+        urlInput.setAttribute('aria-invalid', 'true');
         showModal('Play Error', 'Invalid URL format');
         return;
     }
