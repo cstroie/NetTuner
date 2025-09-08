@@ -2116,9 +2116,35 @@ void setup() {
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
-    // Try each configured network
+    
+    // First, scan for available networks
+    Serial.println("Scanning for available WiFi networks...");
+    display.showStatus("NetTuner", "WiFi scanning", "");
+    int n = WiFi.scanNetworks();
+    Serial.printf("Found %d networks\n", n);
+    
+    // Create array to track which configured networks are available
+    bool networkAvailable[MAX_WIFI_NETWORKS] = {false};
+    
+    // Check which configured networks are available
     for (int i = 0; i < wifiNetworkCount; i++) {
       if (strlen(ssid[i]) > 0) {
+        for (int j = 0; j < n; j++) {
+          if (strcmp(WiFi.SSID(j).c_str(), ssid[i]) == 0) {
+            networkAvailable[i] = true;
+            Serial.printf("Network %s is available\n", ssid[i]);
+            break;
+          }
+        }
+        if (!networkAvailable[i]) {
+          Serial.printf("Network %s is not available\n", ssid[i]);
+        }
+      }
+    }
+    
+    // Try to connect to available configured networks
+    for (int i = 0; i < wifiNetworkCount; i++) {
+      if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
         display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
         WiFi.begin(ssid[i], password[i]);
