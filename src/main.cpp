@@ -1636,8 +1636,17 @@ void handlePlayer() {
  * @brief Handle mixer request
  * Gets or sets the volume and tone levels
  * This function handles HTTP requests to get or set the volume and/or tone levels. 
- * For GET requests, it returns the current mixer status.
+ * For GET requests, it returns the current mixer status as JSON.
  * For POST requests, it supports both JSON payload and form data, validates the input, and updates the settings.
+ * 
+ * GET /api/mixer:
+ *   Returns: {"volume": 11, "bass": 0, "midrange": 0, "treble": 0}
+ * 
+ * POST /api/mixer:
+ *   JSON payload: {"volume": 10}
+ *   JSON payload: {"bass": 4, "treble": -2}
+ *   Form data: volume=10
+ *   Form data: bass=4&treble=-2
  */
 void handleMixer() {
   // Handle GET request - return current mixer status
