@@ -1634,11 +1634,30 @@ void handlePlayer() {
 
 /**
  * @brief Handle mixer request
- * Sets the volume and tone levels
- * This function handles HTTP requests to set the volume and/or tone levels. 
- * It supports both JSON payload and form data, validates the input, and updates the settings.
+ * Gets or sets the volume and tone levels
+ * This function handles HTTP requests to get or set the volume and/or tone levels. 
+ * For GET requests, it returns the current mixer status.
+ * For POST requests, it supports both JSON payload and form data, validates the input, and updates the settings.
  */
 void handleMixer() {
+  // Handle GET request - return current mixer status
+  if (server.method() == HTTP_GET) {
+    // Create JSON document with appropriate size
+    DynamicJsonDocument doc(256);
+    // Add mixer status
+    doc["volume"] = volume;
+    doc["bass"] = bass;
+    doc["midrange"] = midrange;
+    doc["treble"] = treble;
+    // Serialize JSON to string
+    String json;
+    serializeJson(doc, json);
+    // Return status as JSON
+    server.send(200, "application/json", json);
+    return;
+  }
+  
+  // Handle POST request - update mixer settings
   DynamicJsonDocument doc(256);
   bool hasData = false;
   
@@ -2038,6 +2057,7 @@ void setupWebServer() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/player", HTTP_POST, handlePlayer);
+  server.on("/api/mixer", HTTP_GET, handleMixer);
   server.on("/api/mixer", HTTP_POST, handleMixer);
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
