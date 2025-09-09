@@ -1463,7 +1463,7 @@ void handlePostStreams() {
  * @brief Handle player request
  * Controls stream playback (play/stop) or returns player status
  * This function handles HTTP requests to control playback or get player status.
- * For POST requests, it supports JSON payload with action parameter.
+ * For POST requests, it supports both JSON payload and form data with action parameter.
  * For GET requests, it returns player status and stream information.
  */
 void handlePlayer() {
@@ -1503,36 +1503,26 @@ void handlePlayer() {
   }
   
   // Handle POST request - control playback
-  // Check for JSON payload
-  if (!server.hasArg("plain")) {
-    sendJsonResponse("error", "Missing JSON data");
-    return;
-  }
+  String action, url, name;
+  int index = -1;
   
-  // Handle JSON payload
-  String json = server.arg("plain");
-  DynamicJsonDocument doc(512);
-  DeserializationError error = deserializeJson(doc, json);
-  
-  // Check for JSON parsing errors
-  if (error) {
-    sendJsonResponse("error", "Invalid JSON");
-    return;
-  }
-  
-  // Check for required action parameter
-  if (!doc.containsKey("action")) {
-    sendJsonResponse("error", "Missing required parameter: action");
-    return;
-  }
-  
-  String action = doc["action"].as<String>();
-  
-  if (action == "play") {
-    String url, name;
-    int index = -1;
+  // Check if request has JSON payload
+  if (server.hasArg("plain")) {
+    // Handle JSON payload
+    String json = server.arg("plain");
+    DynamicJsonDocument doc(512);
+    DeserializationError error = deserializeJson(doc, json);
     
-    // Extract URL and name if provided
+    // Check for JSON parsing errors
+    if (error) {
+      sendJsonResponse("error", "Invalid JSON");
+      return;
+    }
+    
+    // Extract parameters from JSON
+    if (doc.containsKey("action")) {
+      action = doc["action"].as<String>();
+    }
     if (doc.containsKey("url")) {
       url = doc["url"].as<String>();
     }
@@ -1542,7 +1532,33 @@ void handlePlayer() {
     if (doc.containsKey("index")) {
       index = doc["index"].as<int>();
     }
-    
+  } 
+  // Check if request has form data
+  else if (server.hasArg("action")) {
+    // Handle form data
+    action = server.arg("action");
+    if (server.hasArg("url")) {
+      url = server.arg("url");
+    }
+    if (server.hasArg("name")) {
+      name = server.arg("name");
+    }
+    if (server.hasArg("index")) {
+      index = server.arg("index").toInt();
+    }
+  } 
+  else {
+    sendJsonResponse("error", "Missing action parameter");
+    return;
+  }
+  
+  // Check for required action parameter
+  if (action.length() == 0) {
+    sendJsonResponse("error", "Missing required parameter: action");
+    return;
+  }
+  
+  if (action == "play") {
     // If no URL provided, check if we have a current stream to resume
     if (url.length() == 0 && strlen(streamInfo.url) > 0) {
       url = String(streamInfo.url);
