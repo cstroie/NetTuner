@@ -1559,38 +1559,49 @@ void handlePlayer() {
   }
   
   if (action == "play") {
-    // If no URL provided, check if we have a current stream to resume
-    if (url.length() == 0 && strlen(streamInfo.url) > 0) {
-      url = String(streamInfo.url);
-      if (name.length() == 0) {
+    // Handle case where only index is provided
+    if (url.length() == 0 && name.length() == 0 && index >= 0) {
+      // Validate index
+      if (index >= playlistCount) {
+        sendJsonResponse("error", "Invalid playlist index");
+        return;
+      }
+      
+      // Extract stream data from playlist
+      url = String(playlist[index].url);
+      name = String(playlist[index].name);
+      currentSelection = index;
+    } 
+    // Handle case where URL is provided (with optional name)
+    else if (url.length() > 0) {
+      // If no name provided, check if we have a current stream name
+      if (name.length() == 0 && strlen(streamInfo.url) > 0 && url == String(streamInfo.url)) {
         name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
       }
-    }
-    
-    // Validate that we have a URL if trying to play
-    if (url.length() == 0) {
-      sendJsonResponse("error", "Missing URL for play action");
-      return;
-    }
-    
-    // Validate URL format
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
-      return;
-    }
-    
-    // Update currentSelection based on index
-    if (index > 0) {
-      // If index is valid, update currentSelection
-      currentSelection = index - 1;
-    } else if (url.length() > 0) {
-      // Find the stream in the playlist and update currentSelection
+      
+      // Validate URL format
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
+        return;
+      }
+      
+      // Update currentSelection based on URL
       for (int i = 0; i < playlistCount; i++) {
         if (strcmp(playlist[i].url, url.c_str()) == 0) {
           currentSelection = i;
           break;
         }
       }
+    }
+    // Handle case where we're resuming playback
+    else if (url.length() == 0 && strlen(streamInfo.url) > 0) {
+      url = String(streamInfo.url);
+      name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
+    }
+    // No valid play parameters
+    else {
+      sendJsonResponse("error", "Missing required parameters for play action");
+      return;
     }
     
     // Start the stream
