@@ -80,10 +80,6 @@ extern Config config;
 // Global variables
 extern int bitrate;
 extern volatile bool isPlaying;
-extern int volume;
-extern int bass;
-extern int midrange;
-extern int treble;
 extern unsigned long lastActivityTime;
 extern bool displayOn;
 extern unsigned long startTime;
@@ -121,22 +117,13 @@ struct PlayerState {
   bool playing;
   int volume;
   int bass;
-  int midrange;
+  int mid;
   int treble;
   int playlistIndex;
   unsigned long lastSaveTime;
   bool dirty;
 };
 extern PlayerState playerState;
-
-// Mixer settings structure
-struct MixerSettings {
-  int volume;
-  int bass;
-  int midrange;
-  int treble;
-};
-extern MixerSettings mixerSettings;
 
 // Forward declarations for global functions
 void stopStream();

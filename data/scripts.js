@@ -8,12 +8,12 @@
  * Global variables to store application state
  * @type {Array<Object>} streams - Array of stream objects containing name and URL
  * @type {number} bass - Current bass level (-6 to 6 dB)
- * @type {number} midrange - Current midrange level (-6 to 6 dB)
+ * @type {number} mid - Current mid level (-6 to 6 dB)
  * @type {number} treble - Current treble level (-6 to 6 dB)
  */
 let streams = [];
 let bass = 0;
-let midrange = 0;
+let mid = 0;
 let treble = 0;
 
 /**
@@ -597,17 +597,17 @@ function connectWebSocket() {
                     }
                 }
 
-                if (status.midrange !== prev.midrange) {
-                    const midrangeControl = document.getElementById('midrange');
-                    const midrangeValue = document.getElementById('midrangeValue');
+                if (status.mid !== prev.mid) {
+                    const midControl = document.getElementById('mid');
+                    const midValue = document.getElementById('midValue');
     
-                    if (midrangeControl && status.midrange !== undefined) {
-                        midrangeControl.value = status.midrange;
-                        midrange = status.midrange;
+                    if (midControl && status.mid !== undefined) {
+                        midControl.value = status.mid;
+                        mid = status.mid;
                     }
     
-                    if (midrangeValue && status.midrange !== undefined) {
-                        midrangeValue.textContent = status.midrange + 'dB';
+                    if (midValue && status.mid !== undefined) {
+                        midValue.textContent = status.mid + 'dB';
                     }
                 }
 
@@ -634,7 +634,7 @@ function connectWebSocket() {
                     streamIcyURL: status.streamIcyURL,
                     volume: status.volume,
                     bass: status.bass,
-                    midrange: status.midrange,
+                    mid: status.mid,
                     treble: status.treble
                 };
             } catch (error) {
@@ -1015,10 +1015,10 @@ async function setMixer(settings) {
         }
     }
     
-    if (settings.midrange !== undefined) {
-        const midrangeValue = parseInt(settings.midrange, 10);
-        if (isNaN(midrangeValue) || midrangeValue < -6 || midrangeValue > 6) {
-            console.error('Invalid midrange value:', settings.midrange);
+    if (settings.mid !== undefined) {
+        const midValue = parseInt(settings.mid, 10);
+        if (isNaN(midValue) || midValue < -6 || midValue > 6) {
+            console.error('Invalid mid value:', settings.mid);
             return;
         }
     }
@@ -1050,7 +1050,7 @@ async function setMixer(settings) {
     let toneValueElements = {};
     let originalValues = {};
     
-    ['bass', 'midrange', 'treble'].forEach(type => {
+    ['bass', 'mid', 'treble'].forEach(type => {
         if (settings[type] !== undefined) {
             toneControls[type] = document.getElementById(type);
             toneValueElements[type] = document.getElementById(type + 'Value');
@@ -1083,7 +1083,7 @@ async function setMixer(settings) {
                     volumeValue.textContent = settings.volume;
                 }
                 
-                ['bass', 'midrange', 'treble'].forEach(type => {
+                ['bass', 'mid', 'treble'].forEach(type => {
                     if (settings[type] !== undefined && toneValueElements[type]) {
                         toneValueElements[type].textContent = settings[type] + 'dB';
                         // Update global variable
@@ -1106,7 +1106,7 @@ async function setMixer(settings) {
             volumeValue.textContent = originalVolume;
         }
         
-        ['bass', 'midrange', 'treble'].forEach(type => {
+        ['bass', 'mid', 'treble'].forEach(type => {
             if (settings[type] !== undefined && toneControls[type]) {
                 toneControls[type].value = originalValues[type];
             }
