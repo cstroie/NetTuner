@@ -1476,7 +1476,7 @@ void handlePostStreams() {
  * 
  * GET /api/player:
  *   Returns: {"status": "play|stop", "stream": {...}}
- *   When playing: stream object contains name, title, url, playlist_index, bitrate, elapsed_time
+ *   When playing: stream object contains name, title, url, index, bitrate, elapsed
  *   When stopped: stream object is omitted
  */
 void handlePlayer() {
@@ -1484,29 +1484,25 @@ void handlePlayer() {
   if (server.method() == HTTP_GET) {
     // Create JSON document with appropriate size
     DynamicJsonDocument doc(512);
-    
     // Add player status
     doc["status"] = isPlaying ? "play" : "stop";
-    
     // If playing, add stream information
     if (isPlaying) {
       JsonObject streamObj = doc.createNestedObject("stream");
       streamObj["name"] = streamInfo.name;
       streamObj["title"] = streamInfo.title;
       streamObj["url"] = streamInfo.url;
-      streamObj["playlist_index"] = currentSelection;
+      streamObj["index"] = currentSelection;
       streamObj["bitrate"] = bitrate;
-      
       // Calculate elapsed time
       if (playStartTime > 0) {
         unsigned long currentTime = millis() / 1000;
         unsigned long elapsedTime = currentTime - playStartTime;
-        streamObj["elapsed_time"] = elapsedTime;
+        streamObj["elapsed"] = elapsedTime;
       } else {
-        streamObj["elapsed_time"] = 0;
+        streamObj["elapsed"] = 0;
       }
     }
-    
     // Serialize JSON to string
     String json;
     serializeJson(doc, json);
@@ -1514,24 +1510,20 @@ void handlePlayer() {
     server.send(200, "application/json", json);
     return;
   }
-  
   // Handle POST request - control playback
   String action, url, name;
   int index = -1;
-  
   // Check if request has JSON payload
   if (server.hasArg("plain")) {
     // Handle JSON payload
     String json = server.arg("plain");
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
-    
     // Check for JSON parsing errors
     if (error) {
       sendJsonResponse("error", "Invalid JSON");
       return;
     }
-    
     // Extract parameters from JSON
     if (doc.containsKey("action")) {
       action = doc["action"].as<String>();
@@ -1564,13 +1556,11 @@ void handlePlayer() {
     sendJsonResponse("error", "Missing action parameter");
     return;
   }
-  
   // Check for required action parameter
   if (action.length() == 0) {
     sendJsonResponse("error", "Missing required parameter: action");
     return;
   }
-  
   if (action == "play") {
     // Handle case where only index is provided
     if (url.length() == 0 && name.length() == 0 && index >= 0) {
@@ -1579,7 +1569,6 @@ void handlePlayer() {
         sendJsonResponse("error", "Invalid playlist index");
         return;
       }
-      
       // Extract stream data from playlist
       url = String(playlist[index].url);
       name = String(playlist[index].name);
@@ -1591,13 +1580,11 @@ void handlePlayer() {
       if (name.length() == 0 && strlen(streamInfo.url) > 0 && url == String(streamInfo.url)) {
         name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
       }
-      
       // Validate URL format
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
         sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
         return;
       }
-      
       // Update currentSelection based on URL
       for (int i = 0; i < playlistCount; i++) {
         if (strcmp(playlist[i].url, url.c_str()) == 0) {
@@ -1616,7 +1603,6 @@ void handlePlayer() {
       sendJsonResponse("error", "Missing required parameters for play action");
       return;
     }
-    
     // Start the stream
     startStream(url.c_str(), name.c_str());
     // Save player state when user requests to play
@@ -1779,30 +1765,6 @@ void handleTone() {
   }
 }
 
-/**
- * @brief Handle status request
- * Returns the current player status as JSON
- * This function provides the current player status including playback state,
- * current stream information, and volume level in JSON format.
- */
-void handleStatus() {
-  // Yield to other tasks before processing
-  delay(1);
-  // Create JSON document with appropriate size
-  DynamicJsonDocument doc(256);
-  // Populate JSON document with status values
-  doc["playing"] = isPlaying;
-  doc["streamURL"] = streamInfo.url;
-  doc["streamName"] = streamInfo.name;
-  doc["volume"] = volume;
-  // Serialize JSON to string
-  String json;
-  serializeJson(doc, json);
-  // Return status as JSON
-  server.send(200, "application/json", json);
-  // Yield to other tasks after processing
-  yield();
-}
 
 /**
  * @brief Handle export configuration request
@@ -2071,7 +2033,6 @@ void setupWebServer() {
   server.on("/api/player", HTTP_POST, handlePlayer);
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/tone", HTTP_POST, handleTone);
-  server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
   server.on("/api/config/export", HTTP_GET, handleExportConfig);
