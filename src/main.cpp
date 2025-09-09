@@ -2122,6 +2122,21 @@ void setup() {
   display.begin();
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
+  // Always start AP mode as a control mechanism
+  Serial.println("Starting Access Point mode...");
+  display.showStatus("Starting AP Mode", "", "");
+  
+  // Start WiFi access point mode with error handling
+  if (WiFi.softAP("NetTuner-Setup")) {
+    Serial.println("Access Point Started");
+    Serial.print("AP IP Address: ");
+    Serial.println(WiFi.softAPIP().toString());
+    display.showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
+  } else {
+    Serial.println("Failed to start Access Point");
+    display.showStatus("AP Start Failed", "", "");
+  }
+  
   // Connect to WiFi with improved error handling
   bool connected = false;
   if (wifiNetworkCount > 0) {
@@ -2150,21 +2165,6 @@ void setup() {
           Serial.printf("Network %s is not available\n", ssid[i]);
         }
       }
-    }
-    
-    // Start AP mode immediately while trying to connect
-    Serial.println("Starting Access Point mode...");
-    display.showStatus("Starting AP Mode", "", "");
-    
-    // Start WiFi access point mode with error handling
-    if (WiFi.softAP("NetTuner-Setup")) {
-      Serial.println("Access Point Started");
-      Serial.print("AP IP Address: ");
-      Serial.println(WiFi.softAPIP().toString());
-      display.showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
-    } else {
-      Serial.println("Failed to start Access Point");
-      display.showStatus("AP Start Failed", "", "");
     }
     
     // Try to connect to available configured networks in background
