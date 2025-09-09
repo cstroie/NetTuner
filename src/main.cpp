@@ -1461,11 +1461,47 @@ void handlePostStreams() {
 
 /**
  * @brief Handle player request
- * Controls stream playback (play/stop) 
- * This function handles HTTP requests to control playback. It supports both
- * JSON payload with action parameter, validates the input, and controls the stream.
+ * Controls stream playback (play/stop) or returns player status
+ * This function handles HTTP requests to control playback or get player status.
+ * For POST requests, it supports JSON payload with action parameter.
+ * For GET requests, it returns player status and stream information.
  */
 void handlePlayer() {
+  // Handle GET request - return player status
+  if (server.method() == HTTP_GET) {
+    // Create JSON document with appropriate size
+    DynamicJsonDocument doc(512);
+    
+    // Add player status
+    doc["status"] = isPlaying ? "play" : "stop";
+    
+    // If playing, add stream information
+    if (isPlaying) {
+      doc["name"] = streamInfo.name;
+      doc["title"] = streamInfo.title;
+      doc["url"] = streamInfo.url;
+      doc["playlist_index"] = currentSelection;
+      doc["bitrate"] = bitrate;
+      
+      // Calculate elapsed time
+      if (playStartTime > 0) {
+        unsigned long currentTime = millis() / 1000;
+        unsigned long elapsedTime = currentTime - playStartTime;
+        doc["elapsed_time"] = elapsedTime;
+      } else {
+        doc["elapsed_time"] = 0;
+      }
+    }
+    
+    // Serialize JSON to string
+    String json;
+    serializeJson(doc, json);
+    // Return status as JSON
+    server.send(200, "application/json", json);
+    return;
+  }
+  
+  // Handle POST request - control playback
   // Check for JSON payload
   if (!server.hasArg("plain")) {
     sendJsonResponse("error", "Missing JSON data");
