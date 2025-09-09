@@ -2057,6 +2057,7 @@ bool initializeSPIFFS() {
 void setupWebServer() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
+  server.on("/api/player", HTTP_GET, handlePlayer);
   server.on("/api/player", HTTP_POST, handlePlayer);
   server.on("/api/mixer", HTTP_GET, handleMixer);
   server.on("/api/mixer", HTTP_POST, handleMixer);
