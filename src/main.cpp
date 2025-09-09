@@ -2208,7 +2208,7 @@ void loop() {
         // Only send if there are connected clients
         if (webSocket.connectedClients() > 0) {
           // Send minimal status update
-          sendStatusToClients(false);
+          sendStatusToClients(true);
         }
         lastStatusUpdate = millis();
       }

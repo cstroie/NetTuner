@@ -517,6 +517,7 @@ function connectWebSocket() {
                     if (statusElement) {
                         statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
                         statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
+                        prev['playing'] = status.playing;
                     }
                 }
                 
@@ -526,6 +527,7 @@ function connectWebSocket() {
                     if (streamNameElement) {
                         // Show stream name when playing
                         let displayText = status.streamName || 'No station selected';
+                        prev['streamName'] = status.streamName;
                         // Update text content
                         streamNameElement.textContent = displayText;
                     }
@@ -544,6 +546,8 @@ function connectWebSocket() {
                                 displayText += ' (' + status.bitrate + ' kbps)';
                             }
                         }
+                        prev['streamTitle'] = status.streamTitle;
+                        prev['bitrate'] = status.bitrate;
                         streamTitleElement.textContent = displayText;
                     }
                 }
@@ -552,6 +556,7 @@ function connectWebSocket() {
                 if (status.streamIcyURL !== prev.streamIcyURL) {
                     if (status.streamIcyURL) {
                         console.log('Received ICY URL:', status.streamIcyURL);
+                        prev['streamIcyURL'] = status.streamIcyURL;
                     }
                 }
                 
@@ -575,6 +580,7 @@ function connectWebSocket() {
                     
                     if (volumeControl) {
                         volumeControl.value = status.volume;
+                        prev['volume'] = status.volume;
                     }
     
                     if (volumeValue) {
@@ -590,6 +596,7 @@ function connectWebSocket() {
                     if (bassControl && status.bass !== undefined) {
                         bassControl.value = status.bass;
                         bass = status.bass;
+                        prev['bass'] = status.bass;
                     }
     
                     if (bassValue && status.bass !== undefined) {
@@ -604,6 +611,7 @@ function connectWebSocket() {
                     if (midControl && status.mid !== undefined) {
                         midControl.value = status.mid;
                         mid = status.mid;
+                        prev['mid'] = status.mid;
                     }
     
                     if (midValue && status.mid !== undefined) {
@@ -618,25 +626,14 @@ function connectWebSocket() {
                     if (trebleControl && status.treble !== undefined) {
                         trebleControl.value = status.treble;
                         treble = status.treble;
+                        prev['treble'] = status.treble;
                     }
     
                     if (trebleValue && status.treble !== undefined) {
                         trebleValue.textContent = status.treble + 'dB';
                     }
                 }
-                
-                // Update previous status
-                window.previousStatus = {
-                    playing: status.playing,
-                    streamName: status.streamName,
-                    streamTitle: status.streamTitle,
-                    bitrate: status.bitrate,
-                    streamIcyURL: status.streamIcyURL,
-                    volume: status.volume,
-                    bass: status.bass,
-                    mid: status.mid,
-                    treble: status.treble
-                };
+
             } catch (error) {
                 console.error('Error parsing WebSocket message:', error);
             }
