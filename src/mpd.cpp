@@ -1522,7 +1522,7 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"pause", &MPDInterface::handleStopCommand, false},
   {"status", &MPDInterface::handleStatusCommand, true},
   {"currentsong", &MPDInterface::handleCurrentSongCommand, true},
-  {"playlistinfo", &MPDInterface::handlePlaylistInfoCommand, true},
+  {"playlistinfo", &MPDInterface::handlePlaylistInfoCommand, false},
   {"playlistid", &MPDInterface::handlePlaylistIdCommand, false},
   {"play", &MPDInterface::handlePlayCommand, false},
   {"lsinfo", &MPDInterface::handleLsInfoCommand, true},
