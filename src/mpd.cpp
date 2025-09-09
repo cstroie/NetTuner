@@ -1591,55 +1591,60 @@ const size_t MPDInterface::commandCount = sizeof(commandRegistry) / sizeof(MPDCo
 void MPDInterface::handleClient() {
     // Handle new client connections
     if (mpdServer.hasClient()) {
-      if (!mpdClient || !mpdClient.connected()) {
-        if (mpdClient) {
-          mpdClient.stop();  // Ensure previous client is properly closed
+        if (!mpdClient || !mpdClient.connected()) {
+            // Properly close existing client first
+            if (mpdClient && mpdClient.connected()) {
+                mpdClient.flush();
+                delay(1);
+                mpdClient.stop();
+            }
+            mpdClient = mpdServer.available();
+            
+            // Send MPD welcome message with error checking
+            if (mpdClient && mpdClient.connected()) {
+                mpdClient.print("OK MPD 0.23.0\n");
+            }
+            
+            // Reset all state variables
+            inCommandList = false;
+            commandListOK = false;
+            commandListCount = 0;
+            inIdleMode = false;
+            commandBuffer = "";
+        } else {
+            // Reject new connection if we already have one
+            WiFiClient newClient = mpdServer.available();
+            if (newClient && newClient.connected()) {
+                newClient.print("OK MPD 0.23.0\n");
+                newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
+                newClient.flush();
+                delay(1);
+                newClient.stop();
+            }
         }
-        mpdClient = mpdServer.available();
-        // Send MPD welcome message
-        if (mpdClient && mpdClient.connected()) {
-          mpdClient.print("OK MPD 0.23.0\n");
-        }
-        // Reset command list state when new client connects
+    }
+    
+    // Check if client disconnected unexpectedly
+    if (mpdClient && !mpdClient.connected()) {
+        mpdClient.flush();
+        delay(1);
+        mpdClient.stop();
+        // Reset all state variables
         inCommandList = false;
         commandListOK = false;
         commandListCount = 0;
         inIdleMode = false;
         commandBuffer = "";
-      } else {
-        // Accept connection even if we already have a client
-        WiFiClient newClient = mpdServer.available();
-        // Send MPD welcome message
-        if (newClient && newClient.connected()) {
-          newClient.print("OK MPD 0.23.0\n");
-          // Send error message
-          newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
-          // Close the connection
-          newClient.stop();
-        }
-      }
+        return;
     }
-    // Check if client disconnected unexpectedly
-    if (mpdClient && !mpdClient.connected()) {
-      mpdClient.stop();
-      // Reset command list state when client disconnects
-      inCommandList = false;
-      commandListOK = false;
-      commandListCount = 0;
-      inIdleMode = false;
-      commandBuffer = "";
-      return;
-    }
+    
     // Process client if connected
     if (mpdClient && mpdClient.connected()) {
-      // Handle idle mode
-      if (inIdleMode) {
-        // Check for changes that would trigger idle notifications
-        handleIdleMode();
-        return;
-      }
-      // Handle incoming commands asynchronously
-      handleAsyncCommands();
+        if (inIdleMode) {
+            handleIdleMode();
+        } else {
+            handleAsyncCommands();
+        }
     }
 }
 
@@ -1698,20 +1703,24 @@ void MPDInterface::handleIdleMode() {
   }
   // Send idle response if there are changes
   if (sendIdleResponse) {
-    mpdClient.print(idleChanges);
-    mpdClient.print(mpdResponseOK());
+    if (mpdClient && mpdClient.connected()) {
+        mpdClient.print(idleChanges);
+        mpdClient.print(mpdResponseOK());
+    }
     inIdleMode = false;
     return;
   }
   // Check if there's data available (for noidle command)
-  if (mpdClient.available()) {
+  if (mpdClient && mpdClient.connected() && mpdClient.available()) {
     String command = mpdClient.readStringUntil('\n');
     command.trim();
     Serial.println("MPD Command: " + command);
     // Handle noidle command to exit idle mode
     if (command == "noidle") {
       inIdleMode = false;
-      mpdClient.print(mpdResponseOK());
+      if (mpdClient && mpdClient.connected()) {
+          mpdClient.print(mpdResponseOK());
+      }
     }
   }
 }

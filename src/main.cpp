@@ -1938,11 +1938,10 @@ String generateStatusJSON() {
  * The status includes playback state, stream information, bitrate, and volume.
  */
 void sendStatusToClients() {
-  // Only broadcast if WebSocket server has clients
+  // Only broadcast if WebSocket server has clients AND they are connected
   if (webSocket.connectedClients() > 0) {
-    // Get current status
     String status = generateStatusJSON();
-    // Broadcast status to all connected clients
+    // Use broadcastTXT with error handling
     webSocket.broadcastTXT(status);
   }
 }
@@ -1956,29 +1955,27 @@ void sendStatusToClients() {
  * @param length Length of the payload
  */
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  // Handle WebSocket events
   switch(type) {
     case WStype_CONNECTED:
-      // Client connected
       Serial.printf("WebSocket client #%u connected from %d.%d.%d.%d\n", num,
                     webSocket.remoteIP(num)[0], webSocket.remoteIP(num)[1],
                     webSocket.remoteIP(num)[2], webSocket.remoteIP(num)[3]);
-      // Send current status to newly connected client
       {
-        // Get current status
+        // Add a small delay before sending to ensure connection is established
+        delay(10);
         String status = generateStatusJSON();
-        // Send status to newly connected client
-        webSocket.sendTXT(num, status);
+        // Send status to newly connected client with error checking
+        if (webSocket.clientIsConnected(num)) {
+            webSocket.sendTXT(num, status);
+        }
       }
       break;
     case WStype_DISCONNECTED:
-      // Client disconnected
       Serial.printf("WebSocket client #%u disconnected\n", num);
       // Add a small delay to ensure proper cleanup
       delay(10);
       break;
     case WStype_TEXT:
-      // Text message received
       Serial.printf("WebSocket client #%u text: %s\n", num, payload);
       break;
     default:
@@ -2089,17 +2086,21 @@ void setupWebServer() {
  */
 void loop() {
   static unsigned long streamStoppedTime = 0;
+  static unsigned long lastNetworkCheck = 0;
+  
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
+  
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
     updateDisplay();
     lastDisplayUpdate = millis();
   }
+  
   // Check audio connection status with improved error recovery
   if (audio) {
     // Check if audio is still connected
@@ -2133,14 +2134,15 @@ void loop() {
       }
     }
   }
-  // Periodic cleanup with error recovery
+  
+  // Periodic cleanup with error recovery - add network status check
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
-    // Check and recover from potential WiFi disconnections
+    
+    // Check WiFi status and reconnect if needed
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi disconnected, attempting to reconnect...");
-      // Try to reconnect to WiFi
       for (int i = 0; i < wifiNetworkCount; i++) {
         if (strlen(ssid[i]) > 0) {
           WiFi.begin(ssid[i], password[i]);
@@ -2152,26 +2154,33 @@ void loop() {
           }
           if (WiFi.status() == WL_CONNECTED) {
             Serial.printf("Reconnected to %s\n", ssid[i]);
-            // Update display with new IP
             display.showStatus("WiFi Reconnect", "", WiFi.localIP().toString());
             delay(2000);
             updateDisplay();
             break;
           }
+          WiFi.disconnect(); // Important: disconnect before trying next network
+          delay(1000);
         }
       }
     }
   }
-  // Send status to clients every second
+  
+  // Send status to clients every 2 seconds instead of 1 to reduce load
   static unsigned long lastStatusUpdate = 0;
-  if (millis() - lastStatusUpdate > 1000) {
-    sendStatusToClients();
+  if (millis() - lastStatusUpdate > 2000) {  // Changed from 1000 to 2000
+    // Only send if there are connected clients
+    if (webSocket.connectedClients() > 0) {
+      sendStatusToClients();
+    }
     lastStatusUpdate = millis();
   }
+  
   // Handle display timeout
   display.handleTimeout(isPlaying, millis());
-  // Small delay to prevent busy waiting
-  delay(50);
+  
+  // Small delay to prevent busy waiting and reduce network load
+  delay(100);  // Increased from 50 to 100
 }
 
 
