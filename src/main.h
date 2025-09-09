@@ -33,8 +33,6 @@
 #include <ESPmDNS.h>
 
 
-
-
 // Forward declarations
 class Audio;
 class WebServer;
@@ -51,6 +49,7 @@ struct StreamInfo {
   char url[256];
 };
 
+// Configuration structure
 struct Config {
   int i2s_dout;        ///< I2S Data Out pin
   int i2s_bclk;        ///< I2S Bit Clock pin
@@ -66,16 +65,12 @@ struct Config {
   int display_height;  ///< OLED display height
   int display_address; ///< OLED display I2C address
 };
-
-// Configuration structure
 extern Config config;
 
 // Constants
 #define MAX_WIFI_NETWORKS 5
 #define MAX_PLAYLIST_SIZE 20
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
-
-
 
 // Global variables
 extern int bitrate;

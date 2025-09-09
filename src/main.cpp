@@ -29,8 +29,8 @@
 
 
 // MPD Interface instance
-MPDInterface mpdInterface(mpdServer, streamInfo.title, streamInfo.name, streamInfo.url, isPlaying, playerState.volume, bitrate, 
-                          playlistCount, currentSelection, playlist, audio);
+MPDInterface mpdInterface(mpdServer, streamInfo.title, streamInfo.name, streamInfo.url,
+  isPlaying, playerState.volume, bitrate, playlistCount, currentSelection, playlist, audio);
 
 
 /**
