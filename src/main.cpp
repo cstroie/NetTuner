@@ -185,6 +185,7 @@ unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
 bool audioConnected = false;
+String previousStatus = "";
 
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
@@ -1938,13 +1939,19 @@ String generateStatusJSON() {
  * @brief Send status to all connected WebSocket clients
  * This function broadcasts the current player status to all connected WebSocket clients.
  * The status includes playback state, stream information, bitrate, and volume.
+ * It only sends the status if it has changed from the previous status.
  */
 void sendStatusToClients() {
   // Only broadcast if WebSocket server has clients AND they are connected
   if (webSocket.connectedClients() > 0) {
     String status = generateStatusJSON();
-    // Use broadcastTXT with error handling
-    webSocket.broadcastTXT(status);
+    // Only send if status has changed
+    if (status != previousStatus) {
+      // Use broadcastTXT with error handling
+      webSocket.broadcastTXT(status);
+      // Update previous status
+      previousStatus = status;
+    }
   }
 }
 
