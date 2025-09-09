@@ -173,7 +173,6 @@ WiFiServer mpdServer(6600);
 int bitrate = 0;
 volatile bool isPlaying = false;
 unsigned long lastActivityTime = 0;
-bool displayOn = true;
 unsigned long startTime = 0;
 unsigned long playStartTime = 0;
 unsigned long totalPlayTime = 0;

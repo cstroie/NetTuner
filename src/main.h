@@ -76,7 +76,6 @@ extern Config config;
 extern int bitrate;
 extern volatile bool isPlaying;
 extern unsigned long lastActivityTime;
-extern bool displayOn;
 extern unsigned long startTime;
 extern unsigned long playStartTime;
 extern unsigned long totalPlayTime;
