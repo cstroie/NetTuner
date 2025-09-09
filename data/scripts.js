@@ -570,6 +570,19 @@ function connectWebSocket() {
                     }
                 }
                 
+                // Fetch and display artist image from MusicBrainz when stream title changes
+                if (status.streamTitle !== prev.streamTitle) {
+                    if (status.streamTitle && status.streamTitle !== 'No stream selected') {
+                        fetchArtistImageFromMusicBrainz(status.streamTitle);
+                    } else {
+                        // Reset to default CD image when no stream is playing
+                        const coverArtElement = document.getElementById('coverArt');
+                        if (coverArtElement) {
+                            coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
+                        }
+                    }
+                }
+                
                 // Update volume controls only if volume changed
                 if (status.volume !== prev.volume) {
                     const volumeControl = document.getElementById('volume');
@@ -709,6 +722,125 @@ function forceReconnect() {
     // Reset attempts for manual reconnection
     reconnectAttempts = 0;
     connectWebSocket();
+}
+
+/**
+ * Fetch artist image from MusicBrainz
+ * @param {string} artistName - The name of the artist to search for
+ */
+function fetchArtistImageFromMusicBrainz(artistName) {
+    // Clean up the artist name for better search results
+    const cleanArtistName = artistName
+        .replace(/\(.*?\)/g, '') // Remove text in parentheses
+        .replace(/\[.*?\]/g, '') // Remove text in brackets
+        .trim();
+    
+    if (!cleanArtistName) {
+        return;
+    }
+    
+    // First, search for the artist
+    const searchUrl = `https://musicbrainz.org/ws/2/artist/?query=artist:"${encodeURIComponent(cleanArtistName)}"&fmt=json`;
+    
+    fetch(searchUrl, {
+        headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'NetTuner/1.0 (https://github.com/your-repo)'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.artists && data.artists.length > 0) {
+            // Get the first artist's MBID
+            const artistMbid = data.artists[0].id;
+            // Fetch artist details including cover art
+            return fetchCoverArtForArtist(artistMbid);
+        } else {
+            // If no artist found, use default
+            resetToDefaultCoverArt();
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching artist from MusicBrainz:', error);
+        // Use default image on error
+        resetToDefaultCoverArt();
+    });
+}
+
+/**
+ * Fetch cover art for artist using their MBID
+ * @param {string} artistMbid - The MusicBrainz ID of the artist
+ */
+function fetchCoverArtForArtist(artistMbid) {
+    // Use Cover Art Archive to get artist images
+    const coverArtUrl = `https://coverartarchive.org/artist/${artistMbid}`;
+    
+    fetch(coverArtUrl, {
+        headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'NetTuner/1.0 (https://github.com/your-repo)'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            // If no cover art found, use default
+            resetToDefaultCoverArt();
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.images && data.images.length > 0) {
+            // Find the front image or use the first available
+            let imageUrl = null;
+            for (let image of data.images) {
+                if (image.front) {
+                    imageUrl = image.image;
+                    break;
+                }
+            }
+            
+            // If no front image found, use the first one
+            if (!imageUrl && data.images[0].image) {
+                imageUrl = data.images[0].image;
+            }
+            
+            if (imageUrl) {
+                const coverArtElement = document.getElementById('coverArt');
+                if (coverArtElement) {
+                    coverArtElement.src = imageUrl;
+                    coverArtElement.style.display = "block";
+                }
+            } else {
+                // If no image found, use default
+                resetToDefaultCoverArt();
+            }
+        } else {
+            // If no images found, use default
+            resetToDefaultCoverArt();
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching cover art:', error);
+        // Use default image on error
+        resetToDefaultCoverArt();
+    });
+}
+
+/**
+ * Reset cover art to default CD image
+ */
+function resetToDefaultCoverArt() {
+    const coverArtElement = document.getElementById('coverArt');
+    if (coverArtElement) {
+        coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
+        coverArtElement.style.display = "block";
+    }
 }
 
 /**
