@@ -1608,6 +1608,8 @@ void handlePlayer() {
       sendJsonResponse("error", "Missing required parameters for play action");
       return;
     }
+    // Stop any currently playing stream
+    stopStream();
     // Start the stream
     startStream(url.c_str(), name.c_str());
     // Save player state when user requests to play
