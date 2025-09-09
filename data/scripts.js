@@ -550,30 +550,13 @@ function connectWebSocket() {
                 if (status.streamIcyURL !== prev.streamIcyURL) {
                     if (status.streamIcyURL) {
                         console.log('Received ICY URL:', status.streamIcyURL);
-                        // Try to get favicon from the ICY URL
-                        findFaviconUrl(status.streamIcyURL).then(faviconUrl => {
-                            if (faviconUrl) {
-                                console.log('Found favicon:', faviconUrl);
-                                // Update the cover art image element
-                                const coverArtElement = document.getElementById('coverArt');
-                                if (coverArtElement) {
-                                    coverArtElement.src = faviconUrl;
-                                }
-                            }
-                        });
-                    } else {
-                        // Hide cover art if no ICY URL
-                        const coverArtElement = document.getElementById('coverArt');
-                        if (coverArtElement) {
-                            coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
-                        }
                     }
                 }
                 
                 // Fetch and display artist image from TheAudioDB when stream title changes
                 if (status.streamTitle !== prev.streamTitle) {
                     if (status.streamTitle && status.streamTitle !== 'No stream selected') {
-                        fetchArtistImageFromTheAudioDB(status.streamTitle);
+                        fetchArtistImageFromTheAudioDB(status.streamTitle, status.streamIconURL, status.streamIcyURL);
                     } else {
                         // Reset to default CD image when no stream is playing
                         const coverArtElement = document.getElementById('coverArt');
@@ -727,8 +710,10 @@ function forceReconnect() {
 /**
  * Fetch artist image from TheAudioDB
  * @param {string} artistName - The name of the artist to search for
+ * @param {string} iconUrl - The stream icon URL (fallback)
+ * @param {string} icyUrl - The ICY URL (fallback for favicon)
  */
-function fetchArtistImageFromTheAudioDB(artistName) {
+function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
     // Clean up the artist name for better search results
     const cleanArtistName = artistName
         .replace(/\(.*?\)/g, '') // Remove text in parentheses
@@ -737,6 +722,8 @@ function fetchArtistImageFromTheAudioDB(artistName) {
         .trim();
     
     if (!cleanArtistName) {
+        // Try icon URL first, then favicon
+        handleImageFallback(iconUrl, icyUrl);
         return;
     }
     
@@ -761,15 +748,68 @@ function fetchArtistImageFromTheAudioDB(artistName) {
                 coverArtElement.style.display = "block";
             }
         } else {
-            // If no artist found or no image available, use default
-            resetToDefaultCoverArt();
+            // If no artist found or no image available, try fallbacks
+            handleImageFallback(iconUrl, icyUrl);
         }
     })
     .catch(error => {
         console.error('Error fetching artist from TheAudioDB:', error);
-        // Use default image on error
-        resetToDefaultCoverArt();
+        // Try fallbacks on error
+        handleImageFallback(iconUrl, icyUrl);
     });
+}
+
+/**
+ * Handle fallback images when TheAudioDB fails
+ * @param {string} iconUrl - The stream icon URL
+ * @param {string} icyUrl - The ICY URL for favicon detection
+ */
+function handleImageFallback(iconUrl, icyUrl) {
+    // First try the stream icon URL
+    if (iconUrl) {
+        // Check if icon URL is a valid image
+        checkImageExists(iconUrl).then(exists => {
+            if (exists) {
+                const coverArtElement = document.getElementById('coverArt');
+                if (coverArtElement) {
+                    coverArtElement.src = iconUrl;
+                    coverArtElement.style.display = "block";
+                }
+            } else {
+                // If icon URL is not a valid image, try favicon
+                tryFaviconFallback(icyUrl);
+            }
+        });
+    } else {
+        // No icon URL, try favicon directly
+        tryFaviconFallback(icyUrl);
+    }
+}
+
+/**
+ * Try to get favicon as final fallback
+ * @param {string} icyUrl - The ICY URL for favicon detection
+ */
+function tryFaviconFallback(icyUrl) {
+    if (icyUrl) {
+        // Try to get favicon from the ICY URL
+        findFaviconUrl(icyUrl).then(faviconUrl => {
+            if (faviconUrl) {
+                console.log('Found favicon:', faviconUrl);
+                // Update the cover art image element
+                const coverArtElement = document.getElementById('coverArt');
+                if (coverArtElement) {
+                    coverArtElement.src = faviconUrl;
+                }
+            } else {
+                // No favicon found, use default
+                resetToDefaultCoverArt();
+            }
+        });
+    } else {
+        // No ICY URL, use default
+        resetToDefaultCoverArt();
+    }
 }
 
 /**
