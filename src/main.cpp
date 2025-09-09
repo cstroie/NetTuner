@@ -2132,6 +2132,16 @@ void loop() {
           bitrate = newBitrate;
         }
       }
+
+      // Send status to clients every 2 seconds instead of 1 to reduce load
+      static unsigned long lastStatusUpdate = 0;
+      if (millis() - lastStatusUpdate > 2000) {  // Changed from 1000 to 2000
+        // Only send if there are connected clients
+        if (webSocket.connectedClients() > 0) {
+          sendStatusToClients();
+        }
+        lastStatusUpdate = millis();
+      }
     }
   }
   
@@ -2164,16 +2174,6 @@ void loop() {
         }
       }
     }
-  }
-  
-  // Send status to clients every 2 seconds instead of 1 to reduce load
-  static unsigned long lastStatusUpdate = 0;
-  if (millis() - lastStatusUpdate > 2000) {  // Changed from 1000 to 2000
-    // Only send if there are connected clients
-    if (webSocket.connectedClients() > 0) {
-      sendStatusToClients();
-    }
-    lastStatusUpdate = millis();
   }
   
   // Handle display timeout

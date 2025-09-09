@@ -524,13 +524,8 @@ function connectWebSocket() {
                     if (streamNameElement) {
                         // Show stream name when playing
                         let displayText = status.streamName || 'No station selected';
-                        // Update text content but preserve the favicon element
-                        const faviconElement = document.getElementById('stationFavicon');
-                        if (faviconElement) {
-                            streamNameElement.innerHTML = faviconElement.outerHTML + displayText;
-                        } else {
-                            streamNameElement.textContent = displayText;
-                        }
+                        // Update text content
+                        streamNameElement.textContent = displayText;
                     }
                 }
 
@@ -559,19 +554,18 @@ function connectWebSocket() {
                         findFaviconUrl(status.streamIcyURL).then(faviconUrl => {
                             if (faviconUrl) {
                                 console.log('Found favicon:', faviconUrl);
-                                // Update the favicon image element
-                                const faviconElement = document.getElementById('stationFavicon');
-                                if (faviconElement) {
-                                    faviconElement.src = faviconUrl;
-                                    faviconElement.style.display = 'inline';
+                                // Update the cover art image element
+                                const coverArtElement = document.getElementById('coverArt');
+                                if (coverArtElement) {
+                                    coverArtElement.src = faviconUrl;
                                 }
                             }
                         });
                     } else {
-                        // Hide favicon if no ICY URL
-                        const faviconElement = document.getElementById('stationFavicon');
-                        if (faviconElement) {
-                            faviconElement.style.display = 'none';
+                        // Hide cover art if no ICY URL
+                        const coverArtElement = document.getElementById('coverArt');
+                        if (coverArtElement) {
+                            coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
                         }
                     }
                 }
