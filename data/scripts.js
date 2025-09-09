@@ -733,6 +733,7 @@ function fetchArtistImageFromMusicBrainz(artistName) {
     const cleanArtistName = artistName
         .replace(/\(.*?\)/g, '') // Remove text in parentheses
         .replace(/\[.*?\]/g, '') // Remove text in brackets
+        .replace(/ +- +.*$/g, ' ') // Remove " - " patterns and following text
         .trim();
     
     if (!cleanArtistName) {
@@ -745,7 +746,7 @@ function fetchArtistImageFromMusicBrainz(artistName) {
     fetch(searchUrl, {
         headers: {
             'Accept': 'application/json',
-            'User-Agent': 'NetTuner/1.0 (https://github.com/your-repo)'
+            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
         }
     })
     .then(response => {
@@ -778,12 +779,12 @@ function fetchArtistImageFromMusicBrainz(artistName) {
  */
 function fetchCoverArtForArtist(artistMbid) {
     // Use Cover Art Archive to get artist images
-    const coverArtUrl = `https://coverartarchive.org/artist/${artistMbid}`;
+    const coverArtUrl = `https://coverartarchive.org/release/${artistMbid}`;
     
     fetch(coverArtUrl, {
         headers: {
             'Accept': 'application/json',
-            'User-Agent': 'NetTuner/1.0 (https://github.com/your-repo)'
+            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
         }
     })
     .then(response => {
