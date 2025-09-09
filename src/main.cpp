@@ -1465,6 +1465,19 @@ void handlePostStreams() {
  * This function handles HTTP requests to control playback or get player status.
  * For POST requests, it supports both JSON payload and form data with action parameter.
  * For GET requests, it returns player status and stream information.
+ * 
+ * POST /api/player:
+ *   JSON payload: {"action": "play", "url": "...", "name": "...", "index": 0}
+ *   JSON payload: {"action": "play", "index": 0}
+ *   JSON payload: {"action": "stop"}
+ *   Form data: action=play&url=...&name=...&index=0
+ *   Form data: action=play&index=0
+ *   Form data: action=stop
+ * 
+ * GET /api/player:
+ *   Returns: {"status": "play|stop", "stream": {...}}
+ *   When playing: stream object contains name, title, url, playlist_index, bitrate, elapsed_time
+ *   When stopped: stream object is omitted
  */
 void handlePlayer() {
   // Handle GET request - return player status
