@@ -1633,12 +1633,12 @@ void handlePlayer() {
 }
 
 /**
- * @brief Handle volume request
- * Sets the volume level
- * This function handles HTTP requests to set the volume level. It supports both
- * JSON payload and form data, validates the input, and updates the volume.
+ * @brief Handle mixer request
+ * Sets the volume and tone levels
+ * This function handles HTTP requests to set the volume and/or tone levels. 
+ * It supports JSON payload and validates the input before updating the settings.
  */
-void handleVolume() {
+void handleMixer() {
   if (server.hasArg("plain")) {
     // Handle JSON payload
     String json = server.arg("plain");
@@ -1649,72 +1649,24 @@ void handleVolume() {
       sendJsonResponse("error", "Invalid JSON");
       return;
     }
-    // Check for required parameters
-    if (!doc.containsKey("volume")) {
-      sendJsonResponse("error", "Missing required parameter: volume");
-      return;
-    }
-    // Extract volume value
-    int newVolume = doc["volume"];
-    // Validate volume range
-    if (newVolume < 0 || newVolume > 22) {
-      sendJsonResponse("error", "Volume must be between 0 and 22");
-      return;
-    }
-    // Update volume
-    volume = newVolume;
-    if (audio) {
-      audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
-    }
-    // Update display and notify clients
-    updateDisplay();
-    sendStatusToClients();
-    // Send success response
-    sendJsonResponse("success", "Volume set successfully");
-  } else if (server.hasArg("volume")) {
-    // Handle form data
-    String vol = server.arg("volume");
-    int newVolume = vol.toInt();
-    // Validate volume range
-    if (newVolume < 0 || newVolume > 22) {
-      sendJsonResponse("error", "Volume must be between 0 and 22");
-      return;
-    }
-    // Update volume
-    volume = newVolume;
-    if (audio) {
-      audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
-    }
-    // Update display and notify clients
-    updateDisplay();
-    sendStatusToClients();
-    // Send success response
-    sendJsonResponse("success", "Volume set successfully");
-  } else {
-    // Missing required parameter
-    sendJsonResponse("error", "Missing required parameter: volume");
-    return;
-  }
-}
-
-/**
- * @brief Handle tone request
- * Sets the bass/treble levels
- * This function handles HTTP requests to set the bass/treble levels. It supports
- * JSON payload, validates the input, and updates the tone settings.
- */
-void handleTone() {
-  if (server.hasArg("plain")) {
-    // Handle JSON payload
-    String json = server.arg("plain");
-    DynamicJsonDocument doc(256);
-    DeserializationError error = deserializeJson(doc, json);
-    // Check for JSON parsing errors
-    if (error) {
-      sendJsonResponse("error", "Invalid JSON");
-      return;
-    }
+    
     bool updated = false;
+    
+    // Handle volume setting
+    if (doc.containsKey("volume")) {
+      int newVolume = doc["volume"];
+      // Validate volume range
+      if (newVolume < 0 || newVolume > 22) {
+        sendJsonResponse("error", "Volume must be between 0 and 22");
+        return;
+      }
+      volume = newVolume;
+      if (audio) {
+        audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
+      }
+      updated = true;
+    }
+    
     // Handle bass setting
     if (doc.containsKey("bass")) {
       int newBass = doc["bass"];
@@ -1725,6 +1677,7 @@ void handleTone() {
       bass = newBass;
       updated = true;
     }
+    
     // Handle midrange setting
     if (doc.containsKey("midrange")) {
       int newMidrange = doc["midrange"];
@@ -1735,6 +1688,7 @@ void handleTone() {
       midrange = newMidrange;
       updated = true;
     }
+    
     // Handle treble setting
     if (doc.containsKey("treble")) {
       int newTreble = doc["treble"];
@@ -1745,20 +1699,25 @@ void handleTone() {
       treble = newTreble;
       updated = true;
     }
-    // Check for missing parameters
+    
+    // Check if any parameters were provided
     if (!updated) {
-      sendJsonResponse("error", "Missing required parameter: bass, midrange, or treble");
+      sendJsonResponse("error", "Missing required parameter: volume, bass, midrange, or treble");
       return;
     }
+    
     // Apply tone settings to audio using the Audio library's setTone function
-    if (audio) {
+    if (audio && (doc.containsKey("bass") || doc.containsKey("midrange") || doc.containsKey("treble"))) {
       // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
       audio->setTone(bass, midrange, treble);
     }
+    
     // Update display and notify clients
     updateDisplay();
     sendStatusToClients();  // Notify clients of status change
-    sendJsonResponse("success", "Tone settings updated successfully");
+    
+    // Send success response
+    sendJsonResponse("success", "Mixer settings updated successfully");
   } else {
     sendJsonResponse("error", "Missing JSON data");
     return;
@@ -2031,8 +1990,7 @@ void setupWebServer() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
   server.on("/api/player", HTTP_POST, handlePlayer);
-  server.on("/api/volume", HTTP_POST, handleVolume);
-  server.on("/api/tone", HTTP_POST, handleTone);
+  server.on("/api/mixer", HTTP_POST, handleMixer);
   server.on("/api/config", HTTP_GET, handleGetConfig);
   server.on("/api/config", HTTP_POST, handlePostConfig);
   server.on("/api/config/export", HTTP_GET, handleExportConfig);
