@@ -1996,10 +1996,10 @@ String generateStatusJSON(bool fullStatus = true) {
  * The status includes playback state, stream information, bitrate, and volume.
  * It only sends the status if it has changed from the previous status.
  */
-void sendStatusToClients() {
+void sendStatusToClients(bool fullStatus = true) {
   // Only broadcast if WebSocket server has clients AND they are connected
   if (webSocket.connectedClients() > 0) {
-    String status = generateStatusJSON(true);
+    String status = generateStatusJSON(fullStatus);
     // Only send if status has changed
     if (status != previousStatus) {
       // Use broadcastTXT with error handling
@@ -2202,7 +2202,8 @@ void loop() {
       if (millis() - lastStatusUpdate > 2000) {  // Changed from 1000 to 2000
         // Only send if there are connected clients
         if (webSocket.connectedClients() > 0) {
-          sendStatusToClients();
+          // Send minimal status update
+          sendStatusToClients(false);
         }
         lastStatusUpdate = millis();
       }
