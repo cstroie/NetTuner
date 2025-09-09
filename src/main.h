@@ -117,7 +117,7 @@ struct StreamInfoData {
 extern StreamInfoData streamInfo;
 
 // Player state tracking
-extern struct PlayerState {
+struct PlayerState {
   bool playing;
   int volume;
   int bass;
@@ -126,7 +126,17 @@ extern struct PlayerState {
   int playlistIndex;
   unsigned long lastSaveTime;
   bool dirty;
-} playerState;
+};
+extern PlayerState playerState;
+
+// Mixer settings structure
+struct MixerSettings {
+  int volume;
+  int bass;
+  int midrange;
+  int treble;
+};
+extern MixerSettings mixerSettings;
 
 // Forward declarations for global functions
 void stopStream();

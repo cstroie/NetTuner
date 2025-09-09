@@ -176,6 +176,7 @@ int volume = 11;
 int bass = 0;
 int midrange = 0;
 int treble = 0;
+MixerSettings mixerSettings = {11, 0, 0, 0};
 unsigned long lastActivityTime = 0;
 bool displayOn = true;
 unsigned long startTime = 0;
@@ -377,6 +378,10 @@ void loadPlayerState() {
     bass = playerState.bass;
     midrange = playerState.midrange;
     treble = playerState.treble;
+    mixerSettings.volume = volume;
+    mixerSettings.bass = bass;
+    mixerSettings.midrange = midrange;
+    mixerSettings.treble = treble;
     if (audio) {
       audio->setVolume(volume);
       audio->setTone(bass, midrange, treble);
@@ -401,10 +406,10 @@ void loadPlayerState() {
 void savePlayerState() {
   DynamicJsonDocument doc(512);
   doc["playing"] = isPlaying;
-  doc["volume"] = volume;
-  doc["bass"] = bass;
-  doc["midrange"] = midrange;
-  doc["treble"] = treble;
+  doc["volume"] = mixerSettings.volume;
+  doc["bass"] = mixerSettings.bass;
+  doc["midrange"] = mixerSettings.midrange;
+  doc["treble"] = mixerSettings.treble;
   doc["playlistIndex"] = currentSelection;
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
