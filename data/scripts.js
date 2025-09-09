@@ -85,6 +85,8 @@ async function checkImageExists(url) {
         img.onerror = () => resolve(false);
         // Add crossorigin attribute to handle CORS issues
         img.crossOrigin = 'anonymous';
+        // Set referrer policy to prevent issues with some servers
+        img.referrerPolicy = 'no-referrer';
         img.src = url;
     });
 }
