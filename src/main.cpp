@@ -1477,19 +1477,20 @@ void handlePlayer() {
     
     // If playing, add stream information
     if (isPlaying) {
-      doc["name"] = streamInfo.name;
-      doc["title"] = streamInfo.title;
-      doc["url"] = streamInfo.url;
-      doc["playlist_index"] = currentSelection;
-      doc["bitrate"] = bitrate;
+      JsonObject streamObj = doc.createNestedObject("stream");
+      streamObj["name"] = streamInfo.name;
+      streamObj["title"] = streamInfo.title;
+      streamObj["url"] = streamInfo.url;
+      streamObj["playlist_index"] = currentSelection;
+      streamObj["bitrate"] = bitrate;
       
       // Calculate elapsed time
       if (playStartTime > 0) {
         unsigned long currentTime = millis() / 1000;
         unsigned long elapsedTime = currentTime - playStartTime;
-        doc["elapsed_time"] = elapsedTime;
+        streamObj["elapsed_time"] = elapsedTime;
       } else {
-        doc["elapsed_time"] = 0;
+        streamObj["elapsed_time"] = 0;
       }
     }
     
