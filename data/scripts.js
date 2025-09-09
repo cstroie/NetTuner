@@ -779,7 +779,7 @@ function fetchArtistImageFromMusicBrainz(artistName) {
  */
 function fetchCoverArtForArtist(artistMbid) {
     // Use Cover Art Archive to get artist images
-    const coverArtUrl = `https://coverartarchive.org/release/${artistMbid}`;
+    const coverArtUrl = `https://coverartarchive.org/artist/${artistMbid}`;
     
     fetch(coverArtUrl, {
         headers: {
@@ -789,9 +789,92 @@ function fetchCoverArtForArtist(artistMbid) {
     })
     .then(response => {
         if (!response.ok) {
-            // If no cover art found, use default
+            // If no cover art found, try to get a release group image
+            return fetchReleaseGroupImage(artistMbid);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.images && data.images.length > 0) {
+            // Find the front image or use the first available
+            let imageUrl = null;
+            for (let image of data.images) {
+                if (image.front) {
+                    imageUrl = image.image;
+                    break;
+                }
+            }
+            
+            // If no front image found, use the first one
+            if (!imageUrl && data.images[0].image) {
+                imageUrl = data.images[0].image;
+            }
+            
+            if (imageUrl) {
+                const coverArtElement = document.getElementById('coverArt');
+                if (coverArtElement) {
+                    coverArtElement.src = imageUrl;
+                    coverArtElement.style.display = "block";
+                }
+            } else {
+                // If no image found, try to get a release group image
+                return fetchReleaseGroupImage(artistMbid);
+            }
+        } else {
+            // If no images found, try to get a release group image
+            return fetchReleaseGroupImage(artistMbid);
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching cover art:', error);
+        // Try to get a release group image as fallback
+        fetchReleaseGroupImage(artistMbid).catch(() => {
+            // Use default image if all methods fail
             resetToDefaultCoverArt();
-            return;
+        });
+    });
+}
+
+/**
+ * Fetch release group image as fallback when artist image is not available
+ * @param {string} artistMbid - The MusicBrainz ID of the artist
+ */
+function fetchReleaseGroupImage(artistMbid) {
+    // First get release groups for the artist
+    const releaseGroupUrl = `https://musicbrainz.org/ws/2/release-group/?artist=${artistMbid}&type=album&fmt=json`;
+    
+    return fetch(releaseGroupUrl, {
+        headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.releaseGroups && data.releaseGroups.length > 0) {
+            // Get the first release group's MBID
+            const releaseGroupMbid = data.releaseGroups[0].id;
+            // Fetch cover art for this release group
+            const coverArtUrl = `https://coverartarchive.org/release-group/${releaseGroupMbid}`;
+            
+            return fetch(coverArtUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
+                }
+            });
+        } else {
+            throw new Error('No release groups found');
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         return response.json();
     })
@@ -825,11 +908,6 @@ function fetchCoverArtForArtist(artistMbid) {
             // If no images found, use default
             resetToDefaultCoverArt();
         }
-    })
-    .catch(error => {
-        console.error('Error fetching cover art:', error);
-        // Use default image on error
-        resetToDefaultCoverArt();
     });
 }
 
