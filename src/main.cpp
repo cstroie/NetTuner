@@ -1636,92 +1636,140 @@ void handlePlayer() {
  * @brief Handle mixer request
  * Sets the volume and tone levels
  * This function handles HTTP requests to set the volume and/or tone levels. 
- * It supports JSON payload and validates the input before updating the settings.
+ * It supports both JSON payload and form data, validates the input, and updates the settings.
  */
 void handleMixer() {
+  DynamicJsonDocument doc(256);
+  bool hasData = false;
+  
+  // Handle JSON payload
   if (server.hasArg("plain")) {
-    // Handle JSON payload
     String json = server.arg("plain");
-    DynamicJsonDocument doc(256);
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
       sendJsonResponse("error", "Invalid JSON");
       return;
     }
-    
-    bool updated = false;
-    
-    // Handle volume setting
-    if (doc.containsKey("volume")) {
-      int newVolume = doc["volume"];
-      // Validate volume range
-      if (newVolume < 0 || newVolume > 22) {
-        sendJsonResponse("error", "Volume must be between 0 and 22");
-        return;
+    hasData = true;
+  } 
+  // Handle form data
+  else {
+    // Check if any form parameters are present
+    if (server.hasArg("volume") || server.hasArg("bass") || 
+        server.hasArg("midrange") || server.hasArg("treble")) {
+      hasData = true;
+      
+      // Add form data to JSON document
+      if (server.hasArg("volume")) {
+        doc["volume"] = server.arg("volume");
       }
-      volume = newVolume;
-      if (audio) {
-        audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
+      if (server.hasArg("bass")) {
+        doc["bass"] = server.arg("bass");
       }
-      updated = true;
-    }
-    
-    // Handle bass setting
-    if (doc.containsKey("bass")) {
-      int newBass = doc["bass"];
-      if (newBass < -6 || newBass > 6) {
-        sendJsonResponse("error", "Bass must be between -6 and 6");
-        return;
+      if (server.hasArg("midrange")) {
+        doc["midrange"] = server.arg("midrange");
       }
-      bass = newBass;
-      updated = true;
-    }
-    
-    // Handle midrange setting
-    if (doc.containsKey("midrange")) {
-      int newMidrange = doc["midrange"];
-      if (newMidrange < -6 || newMidrange > 6) {
-        sendJsonResponse("error", "Midrange must be between -6 and 6");
-        return;
+      if (server.hasArg("treble")) {
+        doc["treble"] = server.arg("treble");
       }
-      midrange = newMidrange;
-      updated = true;
     }
-    
-    // Handle treble setting
-    if (doc.containsKey("treble")) {
-      int newTreble = doc["treble"];
-      if (newTreble < -6 || newTreble > 6) {
-        sendJsonResponse("error", "Treble must be between -6 and 6");
-        return;
-      }
-      treble = newTreble;
-      updated = true;
-    }
-    
-    // Check if any parameters were provided
-    if (!updated) {
-      sendJsonResponse("error", "Missing required parameter: volume, bass, midrange, or treble");
-      return;
-    }
-    
-    // Apply tone settings to audio using the Audio library's setTone function
-    if (audio && (doc.containsKey("bass") || doc.containsKey("midrange") || doc.containsKey("treble"))) {
-      // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
-      audio->setTone(bass, midrange, treble);
-    }
-    
-    // Update display and notify clients
-    updateDisplay();
-    sendStatusToClients();  // Notify clients of status change
-    
-    // Send success response
-    sendJsonResponse("success", "Mixer settings updated successfully");
-  } else {
-    sendJsonResponse("error", "Missing JSON data");
+  }
+  
+  // Check if any data was provided
+  if (!hasData) {
+    sendJsonResponse("error", "Missing data: volume, bass, midrange, or treble");
     return;
   }
+  
+  bool updated = false;
+  
+  // Handle volume setting
+  if (doc.containsKey("volume")) {
+    int newVolume;
+    if (doc["volume"].is<const char*>()) {
+      newVolume = atoi(doc["volume"].as<const char*>());
+    } else {
+      newVolume = doc["volume"];
+    }
+    // Validate volume range
+    if (newVolume < 0 || newVolume > 22) {
+      sendJsonResponse("error", "Volume must be between 0 and 22");
+      return;
+    }
+    volume = newVolume;
+    if (audio) {
+      audio->setVolume(volume);  // ESP32-audioI2S uses 0-22 scale
+    }
+    updated = true;
+  }
+  
+  // Handle bass setting
+  if (doc.containsKey("bass")) {
+    int newBass;
+    if (doc["bass"].is<const char*>()) {
+      newBass = atoi(doc["bass"].as<const char*>());
+    } else {
+      newBass = doc["bass"];
+    }
+    if (newBass < -6 || newBass > 6) {
+      sendJsonResponse("error", "Bass must be between -6 and 6");
+      return;
+    }
+    bass = newBass;
+    updated = true;
+  }
+  
+  // Handle midrange setting
+  if (doc.containsKey("midrange")) {
+    int newMidrange;
+    if (doc["midrange"].is<const char*>()) {
+      newMidrange = atoi(doc["midrange"].as<const char*>());
+    } else {
+      newMidrange = doc["midrange"];
+    }
+    if (newMidrange < -6 || newMidrange > 6) {
+      sendJsonResponse("error", "Midrange must be between -6 and 6");
+      return;
+    }
+    midrange = newMidrange;
+    updated = true;
+  }
+  
+  // Handle treble setting
+  if (doc.containsKey("treble")) {
+    int newTreble;
+    if (doc["treble"].is<const char*>()) {
+      newTreble = atoi(doc["treble"].as<const char*>());
+    } else {
+      newTreble = doc["treble"];
+    }
+    if (newTreble < -6 || newTreble > 6) {
+      sendJsonResponse("error", "Treble must be between -6 and 6");
+      return;
+    }
+    treble = newTreble;
+    updated = true;
+  }
+  
+  // Check if any parameters were provided
+  if (!updated) {
+    sendJsonResponse("error", "Missing required parameter: volume, bass, midrange, or treble");
+    return;
+  }
+  
+  // Apply tone settings to audio using the Audio library's setTone function
+  if (audio && (doc.containsKey("bass") || doc.containsKey("midrange") || doc.containsKey("treble"))) {
+    // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
+    audio->setTone(bass, midrange, treble);
+  }
+  
+  // Update display and notify clients
+  updateDisplay();
+  sendStatusToClients();  // Notify clients of status change
+  
+  // Send success response
+  sendJsonResponse("success", "Mixer settings updated successfully");
 }
 
 
