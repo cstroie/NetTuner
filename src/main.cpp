@@ -1460,94 +1460,113 @@ void handlePostStreams() {
 }
 
 /**
- * @brief Handle play request
- * Starts playing a stream with the given URL and name
- * This function handles HTTP requests to start playing a stream. It supports both
- * JSON payload and form data, validates the input, and starts the stream.
+ * @brief Handle player request
+ * Controls stream playback (play/stop) 
+ * This function handles HTTP requests to control playback. It supports both
+ * JSON payload with action parameter, validates the input, and controls the stream.
  */
-void handlePlay() {
-  String url, name;
-  int index = -1;
+void handlePlayer() {
   // Check for JSON payload
-  if (server.hasArg("plain")) {
-    // Handle JSON payload
-    String json = server.arg("plain");
-    DynamicJsonDocument doc(512);
-    DeserializationError error = deserializeJson(doc, json);
-    // Check for JSON parsing errors
-    if (error) {
-      sendJsonResponse("error", "Invalid JSON");
-      return;
+  if (!server.hasArg("plain")) {
+    sendJsonResponse("error", "Missing JSON data");
+    return;
+  }
+  
+  // Handle JSON payload
+  String json = server.arg("plain");
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, json);
+  
+  // Check for JSON parsing errors
+  if (error) {
+    sendJsonResponse("error", "Invalid JSON");
+    return;
+  }
+  
+  // Check for required action parameter
+  if (!doc.containsKey("action")) {
+    sendJsonResponse("error", "Missing required parameter: action");
+    return;
+  }
+  
+  String action = doc["action"].as<String>();
+  
+  if (action == "play") {
+    String url, name;
+    int index = -1;
+    
+    // Extract URL and name if provided
+    if (doc.containsKey("url")) {
+      url = doc["url"].as<String>();
     }
-    // Check for required parameters
-    if (!doc.containsKey("url") || !doc.containsKey("name")) {
-      sendJsonResponse("error", "Missing required parameters: url and name");
-      return;
+    if (doc.containsKey("name")) {
+      name = doc["name"].as<String>();
     }
-    // Extract URL and name
-    url = doc["url"].as<String>();
-    name = doc["name"].as<String>();
-    index = doc["index"].as<int>();
-  } else if (server.hasArg("url") && server.hasArg("name")) {
-    // Handle form data for the simple web page
-    url = server.arg("url");
-    name = server.arg("name");
-  } else {
-    // Missing required parameters
-    sendJsonResponse("error", "Missing required parameters: url and name");
-    return;
-  }
-  // Validate extracted values
-  if (url.length() == 0 || name.length() == 0) {
-    sendJsonResponse("error", "URL and name cannot be empty");
-    return;
-  }
-  // Validate URL format
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
-    return;
-  }
-  // Update currentSelection based on index
-  if (index > 0) {
-    // If index is valid, update currentSelection
-    currentSelection = index - 1;
-  } else {
-    // Find the stream in the playlist and update currentSelection
-    for (int i = 0; i < playlistCount; i++) {
-      if (strcmp(playlist[i].url, url.c_str()) == 0) {
-        currentSelection = i;
-        break;
+    if (doc.containsKey("index")) {
+      index = doc["index"].as<int>();
+    }
+    
+    // If no URL provided, check if we have a current stream to resume
+    if (url.length() == 0 && strlen(streamInfo.url) > 0) {
+      url = String(streamInfo.url);
+      if (name.length() == 0) {
+        name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
       }
     }
+    
+    // Validate that we have a URL if trying to play
+    if (url.length() == 0) {
+      sendJsonResponse("error", "Missing URL for play action");
+      return;
+    }
+    
+    // Validate URL format
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
+      return;
+    }
+    
+    // Update currentSelection based on index
+    if (index > 0) {
+      // If index is valid, update currentSelection
+      currentSelection = index - 1;
+    } else if (url.length() > 0) {
+      // Find the stream in the playlist and update currentSelection
+      for (int i = 0; i < playlistCount; i++) {
+        if (strcmp(playlist[i].url, url.c_str()) == 0) {
+          currentSelection = i;
+          break;
+        }
+      }
+    }
+    
+    // Start the stream
+    startStream(url.c_str(), name.c_str());
+    // Save player state when user requests to play
+    markPlayerStateDirty();
+    savePlayerState();
+    // Update display and notify clients
+    updateDisplay();
+    sendStatusToClients();
+    // Send success response
+    sendJsonResponse("success", "Stream started successfully");
+  } 
+  else if (action == "stop") {
+    // Stop any currently playing stream
+    stopStream();
+    // Save player state when user stops the stream
+    markPlayerStateDirty();
+    savePlayerState();
+    // Update display and notify clients
+    updateDisplay();
+    sendStatusToClients();
+    // Send success response
+    sendJsonResponse("success", "Stream stopped successfully");
+  } 
+  else {
+    sendJsonResponse("error", "Invalid action. Supported actions: play, stop");
+    return;
   }
-  // Start the stream
-  startStream(url.c_str(), name.c_str());
-  // Save player state when user requests to play
-  markPlayerStateDirty();
-  savePlayerState();
-  // Update display and notify clients
-  updateDisplay();
-  sendStatusToClients();
-  // Send success response
-  sendJsonResponse("success", "Stream started successfully");
-}
-
-/**
- * @brief Handle stop request
- * Stops the currently playing stream
- * This function handles HTTP requests to stop the currently playing stream.
- */
-void handleStop() {
-  // Stop any currently playing stream
-  stopStream();
-  // Save player state when user stops the stream
-  markPlayerStateDirty();
-  savePlayerState();
-  // Update display and notify clients
-  updateDisplay();
-  sendStatusToClients();
-  // Send success response
-  sendJsonResponse("success", "Stream stopped successfully");
 }
 
 /**
@@ -1972,8 +1991,7 @@ bool initializeSPIFFS() {
 void setupWebServer() {
   server.on("/api/streams", HTTP_GET, handleGetStreams);
   server.on("/api/streams", HTTP_POST, handlePostStreams);
-  server.on("/api/play", HTTP_POST, handlePlay);
-  server.on("/api/stop", HTTP_POST, handleStop);
+  server.on("/api/player", HTTP_POST, handlePlayer);
   server.on("/api/volume", HTTP_POST, handleVolume);
   server.on("/api/tone", HTTP_POST, handleTone);
   server.on("/api/status", HTTP_GET, handleStatus);

@@ -791,15 +791,15 @@ function validateStreamSelection(url) {
 }
 
 async function sendPlayRequest(url, name, index) {
-    const response = await fetch('/api/play', {
+    const response = await fetch('/api/player', {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ url: url, name: name, index: index })
+        body: JSON.stringify({ action: 'play', url: url, name: name, index: index })
     });
-    console.log('Play response status:', response.status);
+    console.log('Player response status:', response.status);
     if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`);
@@ -857,14 +857,15 @@ async function stopStream() {
 
 async function sendStopRequest() {
     console.log('Stopping current stream');
-    const response = await fetch('/api/stop', { 
+    const response = await fetch('/api/player', { 
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest'
-        }
+        },
+        body: JSON.stringify({ action: 'stop' })
     });
-    console.log('Stop response status:', response.status);
+    console.log('Player response status:', response.status);
     if (response.ok) {
         const result = await response.json();
         if (result.status !== 'success') {
