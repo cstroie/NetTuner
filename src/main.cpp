@@ -1665,11 +1665,9 @@ void handleMixer() {
     server.send(200, "application/json", json);
     return;
   }
-  
   // Handle POST request - update mixer settings
   DynamicJsonDocument doc(256);
   bool hasData = false;
-  
   // Handle JSON payload
   if (server.hasArg("plain")) {
     String json = server.arg("plain");
@@ -1680,14 +1678,13 @@ void handleMixer() {
       return;
     }
     hasData = true;
-  } 
+  }
   // Handle form data
   else {
     // Check if any form parameters are present
     if (server.hasArg("volume") || server.hasArg("bass") || 
         server.hasArg("midrange") || server.hasArg("treble")) {
       hasData = true;
-      
       // Add form data to JSON document
       if (server.hasArg("volume")) {
         doc["volume"] = server.arg("volume");
@@ -1703,15 +1700,12 @@ void handleMixer() {
       }
     }
   }
-  
   // Check if any data was provided
   if (!hasData) {
     sendJsonResponse("error", "Missing data: volume, bass, midrange, or treble");
     return;
   }
-  
   bool updated = false;
-  
   // Handle volume setting
   if (doc.containsKey("volume")) {
     int newVolume;
@@ -1731,7 +1725,6 @@ void handleMixer() {
     }
     updated = true;
   }
-  
   // Handle bass setting
   if (doc.containsKey("bass")) {
     int newBass;
@@ -1747,7 +1740,6 @@ void handleMixer() {
     bass = newBass;
     updated = true;
   }
-  
   // Handle midrange setting
   if (doc.containsKey("midrange")) {
     int newMidrange;
@@ -1763,7 +1755,6 @@ void handleMixer() {
     midrange = newMidrange;
     updated = true;
   }
-  
   // Handle treble setting
   if (doc.containsKey("treble")) {
     int newTreble;
@@ -1779,23 +1770,19 @@ void handleMixer() {
     treble = newTreble;
     updated = true;
   }
-  
   // Check if any parameters were provided
   if (!updated) {
     sendJsonResponse("error", "Missing required parameter: volume, bass, midrange, or treble");
     return;
   }
-  
   // Apply tone settings to audio using the Audio library's setTone function
   if (audio && (doc.containsKey("bass") || doc.containsKey("midrange") || doc.containsKey("treble"))) {
     // For setTone: gainLowPass (bass), gainBandPass (midrange), gainHighPass (treble)
     audio->setTone(bass, midrange, treble);
   }
-  
   // Update display and notify clients
   updateDisplay();
   sendStatusToClients();  // Notify clients of status change
-  
   // Send success response
   sendJsonResponse("success", "Mixer settings updated successfully");
 }
