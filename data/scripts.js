@@ -741,7 +741,7 @@ function fetchArtistImageFromTheAudioDB(artistName) {
     }
     
     // Use TheAudioDB API to search for artist
-    const apiKey = '523532'; // TheAudioDB free API key
+    const apiKey = '123'; // TheAudioDB free API key
     const searchUrl = `https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`;
     
     fetch(searchUrl)
