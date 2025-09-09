@@ -729,9 +729,9 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
         return;
     }
     
-    // Use TheAudioDB API to search for artist
+    // Use TheAudioDB API to search for artist through a CORS proxy
     const apiKey = '123'; // TheAudioDB free API key
-    const searchUrl = `https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`;
+    const searchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`)}`;
     
     fetch(searchUrl)
     .then(response => {
