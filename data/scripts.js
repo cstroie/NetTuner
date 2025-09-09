@@ -570,10 +570,10 @@ function connectWebSocket() {
                     }
                 }
                 
-                // Fetch and display artist image from MusicBrainz when stream title changes
+                // Fetch and display artist image from TheAudioDB when stream title changes
                 if (status.streamTitle !== prev.streamTitle) {
                     if (status.streamTitle && status.streamTitle !== 'No stream selected') {
-                        fetchArtistImageFromMusicBrainz(status.streamTitle);
+                        fetchArtistImageFromTheAudioDB(status.streamTitle);
                     } else {
                         // Reset to default CD image when no stream is playing
                         const coverArtElement = document.getElementById('coverArt');
@@ -725,10 +725,10 @@ function forceReconnect() {
 }
 
 /**
- * Fetch artist image from MusicBrainz
+ * Fetch artist image from TheAudioDB
  * @param {string} artistName - The name of the artist to search for
  */
-function fetchArtistImageFromMusicBrainz(artistName) {
+function fetchArtistImageFromTheAudioDB(artistName) {
     // Clean up the artist name for better search results
     const cleanArtistName = artistName
         .replace(/\(.*?\)/g, '') // Remove text in parentheses
@@ -740,15 +740,11 @@ function fetchArtistImageFromMusicBrainz(artistName) {
         return;
     }
     
-    // First, search for the artist
-    const searchUrl = `https://musicbrainz.org/ws/2/artist/?query=artist:"${encodeURIComponent(cleanArtistName)}"&fmt=json`;
+    // Use TheAudioDB API to search for artist
+    const apiKey = '523532'; // TheAudioDB free API key
+    const searchUrl = `https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`;
     
-    fetch(searchUrl, {
-        headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
-        }
-    })
+    fetch(searchUrl)
     .then(response => {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -756,158 +752,23 @@ function fetchArtistImageFromMusicBrainz(artistName) {
         return response.json();
     })
     .then(data => {
-        if (data.artists && data.artists.length > 0) {
-            // Get the first artist's MBID
-            const artistMbid = data.artists[0].id;
-            // Fetch artist details including cover art
-            return fetchCoverArtForArtist(artistMbid);
+        if (data.artists && data.artists.length > 0 && data.artists[0].strArtistThumb) {
+            // Use the thumbnail image URL
+            const imageUrl = data.artists[0].strArtistThumb;
+            const coverArtElement = document.getElementById('coverArt');
+            if (coverArtElement) {
+                coverArtElement.src = imageUrl;
+                coverArtElement.style.display = "block";
+            }
         } else {
-            // If no artist found, use default
+            // If no artist found or no image available, use default
             resetToDefaultCoverArt();
         }
     })
     .catch(error => {
-        console.error('Error fetching artist from MusicBrainz:', error);
+        console.error('Error fetching artist from TheAudioDB:', error);
         // Use default image on error
         resetToDefaultCoverArt();
-    });
-}
-
-/**
- * Fetch cover art for artist using their MBID
- * @param {string} artistMbid - The MusicBrainz ID of the artist
- */
-function fetchCoverArtForArtist(artistMbid) {
-    // Use Cover Art Archive to get artist images
-    const coverArtUrl = `https://coverartarchive.org/artist/${artistMbid}`;
-    
-    fetch(coverArtUrl, {
-        headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            // If no cover art found, try to get a release group image
-            return fetchReleaseGroupImage(artistMbid);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.images && data.images.length > 0) {
-            // Find the front image or use the first available
-            let imageUrl = null;
-            for (let image of data.images) {
-                if (image.front) {
-                    imageUrl = image.image;
-                    break;
-                }
-            }
-            
-            // If no front image found, use the first one
-            if (!imageUrl && data.images[0].image) {
-                imageUrl = data.images[0].image;
-            }
-            
-            if (imageUrl) {
-                const coverArtElement = document.getElementById('coverArt');
-                if (coverArtElement) {
-                    coverArtElement.src = imageUrl;
-                    coverArtElement.style.display = "block";
-                }
-            } else {
-                // If no image found, try to get a release group image
-                return fetchReleaseGroupImage(artistMbid);
-            }
-        } else {
-            // If no images found, try to get a release group image
-            return fetchReleaseGroupImage(artistMbid);
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching cover art:', error);
-        // Try to get a release group image as fallback
-        fetchReleaseGroupImage(artistMbid).catch(() => {
-            // Use default image if all methods fail
-            resetToDefaultCoverArt();
-        });
-    });
-}
-
-/**
- * Fetch release group image as fallback when artist image is not available
- * @param {string} artistMbid - The MusicBrainz ID of the artist
- */
-function fetchReleaseGroupImage(artistMbid) {
-    // First get release groups for the artist
-    const releaseGroupUrl = `https://musicbrainz.org/ws/2/release-group/?artist=${artistMbid}&type=album&fmt=json`;
-    
-    return fetch(releaseGroupUrl, {
-        headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.releaseGroups && data.releaseGroups.length > 0) {
-            // Get the first release group's MBID
-            const releaseGroupMbid = data.releaseGroups[0].id;
-            // Fetch cover art for this release group
-            const coverArtUrl = `https://coverartarchive.org/release-group/${releaseGroupMbid}`;
-            
-            return fetch(coverArtUrl, {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'NetTuner/1.0 (https://github.com/cstroie/NetTuner)'
-                }
-            });
-        } else {
-            throw new Error('No release groups found');
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.images && data.images.length > 0) {
-            // Find the front image or use the first available
-            let imageUrl = null;
-            for (let image of data.images) {
-                if (image.front) {
-                    imageUrl = image.image;
-                    break;
-                }
-            }
-            
-            // If no front image found, use the first one
-            if (!imageUrl && data.images[0].image) {
-                imageUrl = data.images[0].image;
-            }
-            
-            if (imageUrl) {
-                const coverArtElement = document.getElementById('coverArt');
-                if (coverArtElement) {
-                    coverArtElement.src = imageUrl;
-                    coverArtElement.style.display = "block";
-                }
-            } else {
-                // If no image found, use default
-                resetToDefaultCoverArt();
-            }
-        } else {
-            // If no images found, use default
-            resetToDefaultCoverArt();
-        }
     });
 }
 
