@@ -181,6 +181,12 @@ Audio *audio = nullptr;
 bool audioConnected = false;
 String previousStatus = "";
 
+// Previous values for partial status updates
+static StreamInfoData prevStreamInfo = {"", "", "", "", ""};
+static PlayerState prevPlayerState = {false, 0, 0, 0, 0, 0, 0, false};
+static int prevBitrate = 0;
+static bool prevIsPlaying = false;
+
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
@@ -1904,22 +1910,80 @@ void handleImportConfig() {
 String generateStatusJSON(bool fullStatus = true) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-  // Populate JSON document with status values
-  doc["playing"] = isPlaying;
   
   if (fullStatus) {
+    // Populate JSON document with all status values
+    doc["playing"] = isPlaying;
     doc["streamURL"] = streamInfo.url;
     doc["streamName"] = streamInfo.name;
     doc["streamTitle"] = streamInfo.title;
     doc["streamIcyURL"] = streamInfo.icyUrl;
     doc["streamIconURL"] = streamInfo.iconUrl;
+    doc["bitrate"] = bitrate;
+    doc["volume"] = playerState.volume;
+    doc["bass"] = playerState.bass;
+    doc["mid"] = playerState.mid;
+    doc["treble"] = playerState.treble;
+  } else {
+    // Only include values that have changed
+    if (isPlaying != prevIsPlaying) {
+      doc["playing"] = isPlaying;
+    }
+    
+    if (strcmp(streamInfo.url, prevStreamInfo.url) != 0) {
+      doc["streamURL"] = streamInfo.url;
+    }
+    
+    if (strcmp(streamInfo.name, prevStreamInfo.name) != 0) {
+      doc["streamName"] = streamInfo.name;
+    }
+    
+    if (strcmp(streamInfo.title, prevStreamInfo.title) != 0) {
+      doc["streamTitle"] = streamInfo.title;
+    }
+    
+    if (strcmp(streamInfo.icyUrl, prevStreamInfo.icyUrl) != 0) {
+      doc["streamIcyURL"] = streamInfo.icyUrl;
+    }
+    
+    if (strcmp(streamInfo.iconUrl, prevStreamInfo.iconUrl) != 0) {
+      doc["streamIconURL"] = streamInfo.iconUrl;
+    }
+    
+    if (bitrate != prevBitrate) {
+      doc["bitrate"] = bitrate;
+    }
+    
+    if (playerState.volume != prevPlayerState.volume) {
+      doc["volume"] = playerState.volume;
+    }
+    
+    if (playerState.bass != prevPlayerState.bass) {
+      doc["bass"] = playerState.bass;
+    }
+    
+    if (playerState.mid != prevPlayerState.mid) {
+      doc["mid"] = playerState.mid;
+    }
+    
+    if (playerState.treble != prevPlayerState.treble) {
+      doc["treble"] = playerState.treble;
+    }
   }
   
-  doc["bitrate"] = bitrate;
-  doc["volume"] = playerState.volume;
-  doc["bass"] = playerState.bass;
-  doc["mid"] = playerState.mid;
-  doc["treble"] = playerState.treble;
+  // Update previous values
+  prevIsPlaying = isPlaying;
+  strcpy(prevStreamInfo.url, streamInfo.url);
+  strcpy(prevStreamInfo.name, streamInfo.name);
+  strcpy(prevStreamInfo.title, streamInfo.title);
+  strcpy(prevStreamInfo.icyUrl, streamInfo.icyUrl);
+  strcpy(prevStreamInfo.iconUrl, streamInfo.iconUrl);
+  prevBitrate = bitrate;
+  prevPlayerState.volume = playerState.volume;
+  prevPlayerState.bass = playerState.bass;
+  prevPlayerState.mid = playerState.mid;
+  prevPlayerState.treble = playerState.treble;
+  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
