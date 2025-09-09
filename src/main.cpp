@@ -1898,18 +1898,23 @@ void handleImportConfig() {
 /**
  * @brief Generate JSON status string
  * Creates a JSON string with current player status information
+ * @param fullStatus If true, generates full status; if false, generates partial status
  * @return JSON formatted status string
  */
-String generateStatusJSON() {
+String generateStatusJSON(bool fullStatus = true) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
   // Populate JSON document with status values
   doc["playing"] = isPlaying;
-  doc["streamURL"] = streamInfo.url;
-  doc["streamName"] = streamInfo.name;
-  doc["streamTitle"] = streamInfo.title;
-  doc["streamIcyURL"] = streamInfo.icyUrl;
-  doc["streamIconURL"] = streamInfo.iconUrl;
+  
+  if (fullStatus) {
+    doc["streamURL"] = streamInfo.url;
+    doc["streamName"] = streamInfo.name;
+    doc["streamTitle"] = streamInfo.title;
+    doc["streamIcyURL"] = streamInfo.icyUrl;
+    doc["streamIconURL"] = streamInfo.iconUrl;
+  }
+  
   doc["bitrate"] = bitrate;
   doc["volume"] = playerState.volume;
   doc["bass"] = playerState.bass;
@@ -1930,7 +1935,7 @@ String generateStatusJSON() {
 void sendStatusToClients() {
   // Only broadcast if WebSocket server has clients AND they are connected
   if (webSocket.connectedClients() > 0) {
-    String status = generateStatusJSON();
+    String status = generateStatusJSON(true);
     // Only send if status has changed
     if (status != previousStatus) {
       // Use broadcastTXT with error handling
@@ -1958,7 +1963,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       {
         // Add a small delay before sending to ensure connection is established
         delay(10);
-        String status = generateStatusJSON();
+        String status = generateStatusJSON(true);
         // Send status to newly connected client with error checking
         if (webSocket.clientIsConnected(num)) {
             webSocket.sendTXT(num, status);
