@@ -40,15 +40,21 @@
         <article>
             <!-- Stream title and name display -->
             <hgroup>
-                <h2 id="streamTitle">No stream selected</h2>
-                <p id="streamName">
-                    <!-- Station favicon image (hidden by default) -->
-                    <img id="stationFavicon" src="" alt="Station Favicon" style="display: none; width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">
-                    No station selected
-                </p>
-                <aside>
-                    <img id="stationArtwork" src="" alt="Station Artwork" style="display: none; max-width: 100%; height: auto;">
-                </aside>
+                <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                    <!-- Cover art image (hidden by default) -->
+                    <img id="coverArt" src="" alt="Cover Art" style="display: none; width: 120px; height: auto; flex-shrink: 0;">
+                    <div>
+                        <h2 id="streamTitle">No stream selected</h2>
+                        <p id="streamName">
+                            <!-- Station favicon image (hidden by default) -->
+                            <img id="stationFavicon" src="" alt="Station Favicon" style="display: none; width: 16px; height: 16px; vertical-align: middle; margin-right: 8px;">
+                            No station selected
+                        </p>
+                        <aside>
+                            <img id="stationArtwork" src="" alt="Station Artwork" style="display: none; max-width: 100%; height: auto;">
+                        </aside>
+                    </div>
+                </div>
             </hgroup>
             <!-- Audio controls footer -->
             <footer>
