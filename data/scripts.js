@@ -16,6 +16,9 @@ let bass = 0;
 let mid = 0;
 let treble = 0;
 
+// Helper function to replace document.getElementById
+const $ = (id) => document.getElementById(id);
+
 
 
 /**
