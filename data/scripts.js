@@ -1,6 +1,6 @@
 /**
  * @fileoverview Main JavaScript functions for the NetTuner web interface
- * @author NetTuner Team
+ * @author Costin Stroie <costinstroie@eridu.eu.org>
  * @version 1.0
  */
 
@@ -15,6 +15,198 @@ let streams = [];
 let bass = 0;
 let mid = 0;
 let treble = 0;
+
+
+
+/**
+ * @brief Initialize theme based on saved preference or default
+ * @description Sets the theme based on localStorage value or defaults to light theme
+ */
+function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  updateThemeToggle();
+}
+
+/**
+ * @brief Toggle between light and dark themes
+ * @description Switches the current theme and saves the preference to localStorage
+ */
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  localStorage.setItem("theme", newTheme);
+  updateThemeToggle();
+}
+
+/**
+ * @brief Update theme toggle button appearance
+ * @description Updates the theme toggle button text and title based on current theme
+ */
+function updateThemeToggle() {
+  const themeToggle = document.getElementById("theme-toggle");
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  if (themeToggle) {
+    themeToggle.textContent = currentTheme === "dark" ? "◑" : "◐";
+    themeToggle.title = currentTheme === "dark" ? "Light theme" : "Dark theme";
+  }
+}
+
+
+
+/**
+ * @brief Initialize the main page
+ * @description Sets up the main page by loading streams and connecting WebSocket
+ */
+function initMainPage() {
+  // Load existing playlist when page loads
+  loadStreams();
+  // Connect to WebSocket
+  connectWebSocket();
+}
+
+/**
+ * @brief Initialize the playlist page
+ * @description Loads the existing playlist when the playlist page loads
+ */
+function initPlaylistPage() {
+  // Load existing playlist when page loads
+  loadStreams();
+}
+
+/**
+ * @brief Initialize the WiFi configuration page
+ * @description Loads existing WiFi configuration when the WiFi page loads
+ */
+function initWiFiPage() {
+  // Load existing WiFi configuration when page loads
+  loadConnectionStatus();
+  loadConfiguredNetworks();
+}
+
+/**
+ * @brief Initialize the configuration page
+ * @description Loads existing configuration and sets up form submit handler
+ */
+function initConfigPage() {
+  // Load existing configuration when page loads
+  loadConfig();
+
+  // Set up form submit handler
+  const configForm = document.getElementById("config-form");
+  if (configForm) {
+    configForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      saveConfig();
+    });
+  }
+}
+
+
+
+/**
+ * @brief Load configuration from server
+ * @description Fetches the current device configuration and populates the form fields
+ * @returns {Promise<void>}
+ */
+async function loadConfig() {
+  try {
+    const response = await fetch("/api/config");
+    if (response.ok) {
+      const config = await response.json();
+      document.getElementById("i2s-bclk").value = config.i2s_bclk;
+      document.getElementById("i2s-lrc").value = config.i2s_lrc;
+      document.getElementById("i2s-dout").value = config.i2s_dout;
+      document.getElementById("led-pin").value = config.led_pin;
+      document.getElementById("rotary-clk").value = config.rotary_clk;
+      document.getElementById("rotary-dt").value = config.rotary_dt;
+      document.getElementById("rotary-sw").value = config.rotary_sw;
+      document.getElementById("board-button").value = config.board_button;
+      document.getElementById("display-sda").value = config.display_sda;
+      document.getElementById("display-scl").value = config.display_scl;
+      document.getElementById("display-width").value = config.display_width;
+      document.getElementById("display-height").value = config.display_height;
+      document.getElementById("display-address").value = config.display_address;
+
+      // FIXME Reset aria-invalid attributes
+      //const configInputs = document.querySelectorAll("#config-form input");
+      //configInputs.forEach((input) => {
+      //  input.setAttribute("aria-invalid", "false");
+      //});
+    }
+  } catch (error) {
+    console.error("Error loading hardware configuration:", error);
+  }
+}
+
+/**
+ * @brief Save configuration to server
+ * @description Collects form data and sends it to the server to save device configuration
+ * @returns {Promise<void>}
+ */
+async function saveConfig() {
+  const configInputs = document.querySelectorAll("#config-form input");
+  let hasErrors = false;
+
+  // Reset all aria-invalid attributes
+  configInputs.forEach((input) => {
+    input.removeAttribute("aria-invalid");
+  });
+
+  const config = {
+    i2s_bclk: parseInt(document.getElementById("i2s-bclk").value),
+    i2s_lrc: parseInt(document.getElementById("i2s-lrc").value),
+    i2s_dout: parseInt(document.getElementById("i2s-dout").value),
+    led_pin: parseInt(document.getElementById("led-pin").value),
+    rotary_clk: parseInt(document.getElementById("rotary-clk").value),
+    rotary_dt: parseInt(document.getElementById("rotary-dt").value),
+    rotary_sw: parseInt(document.getElementById("rotary-sw").value),
+    board_button: parseInt(document.getElementById("board-button").value),
+    display_sda: parseInt(document.getElementById("display-sda").value),
+    display_scl: parseInt(document.getElementById("display-scl").value),
+    display_width: parseInt(document.getElementById("display-width").value),
+    display_height: parseInt(document.getElementById("display-height").value),
+    display_address: parseInt(document.getElementById("display-address").value),
+  };
+
+  // Validate all inputs
+  configInputs.forEach((input) => {
+    if (!input.checkValidity()) {
+      input.setAttribute("aria-invalid", "true");
+      hasErrors = true;
+    }
+  });
+
+  if (hasErrors) {
+    showModal("Validation Error", "Please correct the highlighted fields.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (response.ok) {
+      showModal(
+        "Configuration Saved",
+        "Configuration saved successfully. Device restart required for changes to take effect.",
+      );
+    } else {
+      showModal("Error", "Error saving configuration.");
+    }
+  } catch (error) {
+    console.error("Error saving config:", error);
+    showModal("Error", "Error saving configuration.");
+  }
+}
+
+
 
 /**
  * @brief Find favicon URL from a website
@@ -89,212 +281,6 @@ async function checkImageExists(url) {
     img.referrerPolicy = "no-referrer";
     img.src = url;
   });
-}
-
-/**
- * @brief Initialize theme based on saved preference or default
- * @description Sets the theme based on localStorage value or defaults to light theme
- */
-function initTheme() {
-  const savedTheme = localStorage.getItem("theme") || "light";
-  document.documentElement.setAttribute("data-theme", savedTheme);
-  updateThemeToggle();
-}
-
-/**
- * @brief Toggle between light and dark themes
- * @description Switches the current theme and saves the preference to localStorage
- */
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute("data-theme");
-  const newTheme = currentTheme === "dark" ? "light" : "dark";
-  document.documentElement.setAttribute("data-theme", newTheme);
-  localStorage.setItem("theme", newTheme);
-  updateThemeToggle();
-}
-
-/**
- * @brief Update theme toggle button appearance
- * @description Updates the theme toggle button text and title based on current theme
- */
-function updateThemeToggle() {
-  const themeToggle = document.getElementById("theme-toggle");
-  const currentTheme = document.documentElement.getAttribute("data-theme");
-  if (themeToggle) {
-    themeToggle.textContent = currentTheme === "dark" ? "◑" : "◐";
-    themeToggle.title =
-      currentTheme === "dark"
-        ? "Switch to light theme"
-        : "Switch to dark theme";
-  }
-}
-
-/**
- * @brief Initialize the main page
- * @description Sets up the main page by loading streams and connecting WebSocket
- */
-function initMainPage() {
-  loadStreams();
-  connectWebSocket();
-
-  // Add visibility change listener to handle tab switching
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") {
-      // Page became visible, check if we need to reconnect
-      if (
-        !ws ||
-        (ws.readyState !== WebSocket.OPEN &&
-          ws.readyState !== WebSocket.CONNECTING)
-      ) {
-        console.log("Page became visible, checking WebSocket connection");
-        connectWebSocket();
-      }
-    }
-  });
-}
-
-/**
- * @brief Initialize the playlist page
- * @description Loads the existing playlist when the playlist page loads
- */
-function initPlaylistPage() {
-  // Load existing playlist when page loads
-  loadStreams();
-}
-
-/**
- * @brief Initialize the WiFi configuration page
- * @description Loads existing WiFi configuration when the WiFi page loads
- */
-function initWiFiPage() {
-  // Load existing WiFi configuration when page loads
-  loadConnectionStatus();
-  loadConfiguredNetworks();
-}
-
-/**
- * @brief Load configuration from server
- * @description Fetches the current device configuration and populates the form fields
- * @returns {Promise<void>}
- */
-async function loadConfig() {
-  try {
-    const response = await fetch("/api/config");
-    if (response.ok) {
-      const config = await response.json();
-      document.getElementById("i2s-bclk").value = config.i2s_bclk || 27;
-      document.getElementById("i2s-lrc").value = config.i2s_lrc || 25;
-      document.getElementById("i2s-dout").value = config.i2s_dout || 26;
-      document.getElementById("led-pin").value = config.led_pin || 2;
-      document.getElementById("rotary-clk").value = config.rotary_clk || 18;
-      document.getElementById("rotary-dt").value = config.rotary_dt || 19;
-      document.getElementById("rotary-sw").value = config.rotary_sw || 23;
-      document.getElementById("board-button").value =
-        config.board_button || 0;
-      document.getElementById("display-sda").value = config.display_sda || 5;
-      document.getElementById("display-scl").value = config.display_scl || 4;
-      document.getElementById("display-width").value =
-        config.display_width || 128;
-      document.getElementById("display-height").value =
-        config.display_height || 64;
-      document.getElementById("display-address").value =
-        config.display_address || 60;
-
-      // Reset aria-invalid attributes
-      const configInputs = document.querySelectorAll("#config-form input");
-      configInputs.forEach((input) => {
-        input.setAttribute("aria-invalid", "false");
-      });
-    }
-  } catch (error) {
-    console.error("Error loading config:", error);
-  }
-}
-
-/**
- * @brief Save configuration to server
- * @description Collects form data and sends it to the server to save device configuration
- * @returns {Promise<void>}
- */
-async function saveConfig() {
-  const configInputs = document.querySelectorAll("#config-form input");
-  let hasErrors = false;
-
-  // Reset all aria-invalid attributes
-  configInputs.forEach((input) => {
-    input.setAttribute("aria-invalid", "false");
-  });
-
-  const config = {
-    i2s_bclk: parseInt(document.getElementById("i2s-bclk").value),
-    i2s_lrc: parseInt(document.getElementById("i2s-lrc").value),
-    i2s_dout: parseInt(document.getElementById("i2s-dout").value),
-    led_pin: parseInt(document.getElementById("led-pin").value),
-    rotary_clk: parseInt(document.getElementById("rotary-clk").value),
-    rotary_dt: parseInt(document.getElementById("rotary-dt").value),
-    rotary_sw: parseInt(document.getElementById("rotary-sw").value),
-    board_button: parseInt(document.getElementById("board-button").value),
-    display_sda: parseInt(document.getElementById("display-sda").value),
-    display_scl: parseInt(document.getElementById("display-scl").value),
-    display_width: parseInt(document.getElementById("display-width").value),
-    display_height: parseInt(document.getElementById("display-height").value),
-    display_address: parseInt(
-      document.getElementById("display-address").value,
-    ),
-  };
-
-  // Validate all inputs
-  configInputs.forEach((input) => {
-    if (!input.checkValidity()) {
-      input.setAttribute("aria-invalid", "true");
-      hasErrors = true;
-    }
-  });
-
-  if (hasErrors) {
-    showModal("Validation Error", "Please correct the highlighted fields.");
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/config", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(config),
-    });
-
-    if (response.ok) {
-      showModal(
-        "Configuration Saved",
-        "Configuration saved successfully. Device restart required for changes to take effect.",
-      );
-    } else {
-      showModal("Error", "Error saving configuration.");
-    }
-  } catch (error) {
-    console.error("Error saving config:", error);
-    showModal("Error", "Error saving configuration.");
-  }
-}
-
-/**
- * @brief Initialize the configuration page
- * @description Loads existing configuration and sets up form submit handler
- */
-function initConfigPage() {
-  // Load existing configuration when page loads
-  loadConfig();
-
-  // Set up form submit handler
-  const configForm = document.getElementById("config-form");
-  if (configForm) {
-    configForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      saveConfig();
-    });
-  }
 }
 
 /**
