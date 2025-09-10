@@ -157,6 +157,21 @@ async function saveConfig() {
     input.removeAttribute("aria-invalid");
   });
 
+  // Validate all inputs
+  configInputs.forEach((input) => {
+    if (input.value && input.checkValidity()) {
+      input.setAttribute("aria-invalid", "false");
+    } else {
+      input.setAttribute("aria-invalid", "true");
+      hasErrors = true;
+    }
+  });
+
+  if (hasErrors) {
+    showModal("Validation Error", "Please correct the highlighted fields.");
+    return;
+  }
+
   const config = {
     i2s_bclk: parseInt($("i2s-bclk").value),
     i2s_lrc: parseInt($("i2s-lrc").value),
@@ -172,19 +187,6 @@ async function saveConfig() {
     display_height: parseInt($("display-height").value),
     display_address: parseInt($("display-address").value),
   };
-
-  // Validate all inputs
-  configInputs.forEach((input) => {
-    if (!input.checkValidity()) {
-      input.setAttribute("aria-invalid", "true");
-      hasErrors = true;
-    }
-  });
-
-  if (hasErrors) {
-    showModal("Validation Error", "Please correct the highlighted fields.");
-    return;
-  }
 
   try {
     const response = await fetch("/api/config", {
