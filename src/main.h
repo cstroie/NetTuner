@@ -165,6 +165,7 @@ bool initializeSPIFFS();
 
 // Utility functions
 String generateStatusJSON();
+bool connectToWiFi();
 
 
 // Timestamp

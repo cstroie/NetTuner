@@ -54,6 +54,87 @@ void audio_showstreamtitle(const char *info) {
 }
 
 /**
+ * @brief Connect to WiFi networks
+ * Handles connection to configured WiFi networks with scanning and fallback to AP mode
+ * @return true if connected to a network, false otherwise
+ */
+bool connectToWiFi() {
+  bool connected = false;
+  
+  if (wifiNetworkCount > 0) {
+    WiFi.setHostname("NetTuner");
+    
+    // First, scan for available networks
+    Serial.println("Scanning for available WiFi networks...");
+    display.showStatus("NetTuner", "WiFi scanning", "");
+    int n = WiFi.scanNetworks();
+    Serial.printf("Found %d networks\n", n);
+    
+    // Create array to track which configured networks are available
+    bool networkAvailable[MAX_WIFI_NETWORKS] = {false};
+    
+    // Check which configured networks are available
+    for (int i = 0; i < wifiNetworkCount; i++) {
+      if (strlen(ssid[i]) > 0) {
+        for (int j = 0; j < n; j++) {
+          if (strcmp(WiFi.SSID(j).c_str(), ssid[i]) == 0) {
+            networkAvailable[i] = true;
+            Serial.printf("Network %s is available\n", ssid[i]);
+            break;
+          }
+        }
+        if (!networkAvailable[i]) {
+          Serial.printf("Network %s is not available\n", ssid[i]);
+        }
+      }
+    }
+    
+    // Try to connect to available configured networks in background
+    for (int i = 0; i < wifiNetworkCount; i++) {
+      if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
+        Serial.printf("Attempting to connect to %s...\n", ssid[i]);
+        display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
+        WiFi.begin(ssid[i], password[i]);
+        int wifiAttempts = 0;
+        const int maxAttempts = 15; // Increased attempts per network
+        while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
+          delay(500);
+          Serial.print(".");
+          wifiAttempts++;
+        }
+        if (WiFi.status() == WL_CONNECTED) {
+          Serial.printf("Connected to %s\n", ssid[i]);
+          connected = true;
+          // Update display with connection info
+          Serial.print("IP Address: ");
+          Serial.println(WiFi.localIP().toString());
+          display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+          break;
+        } else {
+          Serial.printf("Failed to connect to %s\n", ssid[i]);
+          // Reset WiFi before trying next network
+          WiFi.disconnect();
+          delay(1000);
+        }
+      }
+    }
+  }
+  
+  // If not connected to any network, AP mode is already active
+  if (connected) {
+    Serial.println("Connected to WiFi");
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP().toString());
+    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+  } else {
+    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
+    // AP mode is already started above
+  }
+  
+  return connected;
+}
+
+/**
  * @brief Audio station name callback function
  * This function is called by the Audio library when station name information is available
  * @param info Pointer to the station name information
@@ -2223,27 +2304,7 @@ void loop() {
     // Check WiFi status and reconnect if needed
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
       Serial.println("WiFi disconnected, attempting to reconnect...");
-      for (int i = 0; i < wifiNetworkCount; i++) {
-        if (strlen(ssid[i]) > 0) {
-          Serial.printf("Connecting to %s\n", ssid[i]);
-          WiFi.begin(ssid[i], password[i]);
-          int wifiAttempts = 0;
-          const int maxAttempts = 5;
-          while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-            delay(500);
-            wifiAttempts++;
-          }
-          if (WiFi.status() == WL_CONNECTED) {
-            Serial.printf("Reconnected to %s\n", ssid[i]);
-            display.showStatus("WiFi Reconnect", "", WiFi.localIP().toString());
-            delay(2000);
-            updateDisplay();
-            break;
-          }
-          WiFi.disconnect(); // Important: disconnect before trying next network
-          delay(1000);
-        }
-      }
+      connectToWiFi();
     }
   }
   
@@ -2302,75 +2363,7 @@ void setup() {
   }
   
   // Connect to WiFi with improved error handling
-  bool connected = false;
-  if (wifiNetworkCount > 0) {
-    WiFi.setHostname("NetTuner");
-    
-    // First, scan for available networks
-    Serial.println("Scanning for available WiFi networks...");
-    display.showStatus("NetTuner", "WiFi scanning", "");
-    int n = WiFi.scanNetworks();
-    Serial.printf("Found %d networks\n", n);
-    
-    // Create array to track which configured networks are available
-    bool networkAvailable[MAX_WIFI_NETWORKS] = {false};
-    
-    // Check which configured networks are available
-    for (int i = 0; i < wifiNetworkCount; i++) {
-      if (strlen(ssid[i]) > 0) {
-        for (int j = 0; j < n; j++) {
-          if (strcmp(WiFi.SSID(j).c_str(), ssid[i]) == 0) {
-            networkAvailable[i] = true;
-            Serial.printf("Network %s is available\n", ssid[i]);
-            break;
-          }
-        }
-        if (!networkAvailable[i]) {
-          Serial.printf("Network %s is not available\n", ssid[i]);
-        }
-      }
-    }
-    
-    // Try to connect to available configured networks in background
-    for (int i = 0; i < wifiNetworkCount; i++) {
-      if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
-        Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display.showStatus("NetTuner", "WiFi connecting", String(ssid[i]));
-        WiFi.begin(ssid[i], password[i]);
-        int wifiAttempts = 0;
-        const int maxAttempts = 15; // Increased attempts per network
-        while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-          delay(500);
-          Serial.print(".");
-          wifiAttempts++;
-        }
-        if (WiFi.status() == WL_CONNECTED) {
-          Serial.printf("Connected to %s\n", ssid[i]);
-          connected = true;
-          // Update display with connection info
-          Serial.print("IP Address: ");
-          Serial.println(WiFi.localIP().toString());
-          display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
-          break;
-        } else {
-          Serial.printf("Failed to connect to %s\n", ssid[i]);
-          // Reset WiFi before trying next network
-          WiFi.disconnect();
-          delay(1000);
-        }
-      }
-    }
-  }
-  // If not connected to any network, AP mode is already active
-  if (connected) {
-    Serial.println("Connected to WiFi");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP().toString());
-    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
-  } else {
-    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
-    // AP mode is already started above
-  }
+  bool connected = connectToWiFi();
 
   // Setup audio output with error handling
   setupAudioOutput();
