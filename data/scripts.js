@@ -95,7 +95,6 @@ function initWiFiPage() {
 function initConfigPage() {
   // Load existing configuration when page loads
   loadConfig();
-
   // Set up form submit handler
   const configForm = $("config-form");
   if (configForm) {
@@ -149,6 +148,24 @@ async function playStream() {
   }
 }
 
+function playSelectedStream() {
+  const { select, url, name } = getSelectedStream();
+  if (!select || select.selectedIndex === 0) {
+    return; // No stream selected or it's the placeholder option
+  }
+  // Validate stream selection
+  if (!validateStreamURL(url)) {
+    return;
+  }
+  console.log("Playing selected stream:", { url, name });
+  // Play the selected stream without showing toast
+  sendPlayRequest(url, name, select.selectedIndex).catch((error) => {
+    showModal("Error playing stream", error.message);
+    console.error("Error playing stream:", error);
+  });
+}
+
+// Get selected stream from dropdown
 function getSelectedStream() {
   const select = $("stream-select");
   if (!select) {
@@ -161,6 +178,7 @@ function getSelectedStream() {
   return { select, url, name };
 }
 
+// Send play request to server
 async function sendPlayRequest(url, name, index) {
   const response = await fetch("/api/player", {
     method: "POST",
@@ -175,7 +193,7 @@ async function sendPlayRequest(url, name, index) {
       index: index,
     }),
   });
-  console.log("Player response status:", response.status);
+  console.log(`Playing ${url}:`, response.status);
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(
@@ -188,12 +206,14 @@ async function sendPlayRequest(url, name, index) {
   }
 }
 
+// Handle play errors
 function handlePlayError(error) {
   console.error("Error playing stream:", error);
   const errorMessage = error.message || "Unknown error occurred";
   showModal("Error playing stream", errorMessage + " Please check the stream URL and try again.");
 }
 
+// Stop current stream
 async function stopStream() {
   // Show loading state
   const stopButton = $("stop-stream-btn");
@@ -215,6 +235,7 @@ async function stopStream() {
   }
 }
 
+// Send stop request to server
 async function sendStopRequest() {
   const response = await fetch("/api/player", {
     method: "POST",
@@ -237,13 +258,14 @@ async function sendStopRequest() {
   }
 }
 
+// Handle stop errors
 function handleStopError(error) {
   console.error("Error stopping stream:", error);
   const errorMessage = error.message || "Unknown error occurred";
   showModal("Error stopping stream", errorMessage + ". Please try again.");
 }
 
-
+// Play instant stream from URL input
 async function playInstantStream() {
   const urlInput = $("instant-url");
   const url = urlInput.value.trim();
@@ -280,7 +302,6 @@ async function playInstantStream() {
         if (playlistData.length === 1) {
           // Only one stream, play it directly
           await sendPlayRequest(playlistData[0].url, playlistData[0].name, 0);
-          showModal("Success", "Stream is now playing");
         } else {
           // Multiple streams, show selection modal
           showInstantPlaySelectionModal(playlistData, url);
@@ -297,10 +318,9 @@ async function playInstantStream() {
     } else {
       // Not a playlist, play directly
       await sendPlayRequest(url, "Instant stream", 0);
-      showModal("Success", "Stream is now playing");
     }
     // Clear the input field after successful play
-    //urlInput.value = "";
+    urlInput.value = "";
   } catch (error) {
     console.error("Error playing instant stream:", error);
     showModal("Play error", "Error playing stream: " + error.message);
@@ -313,11 +333,11 @@ async function playInstantStream() {
   }
 }
 
+// Fetch and parse playlist data from URL
 async function getPlaylistData(url) {
   try {
     // Try direct fetch first
     let response = await fetch(url);
-
     // If direct fetch fails due to CORS, try with a proxy
     if (!response.ok) {
       console.log("Direct fetch failed, trying with CORS proxy");
@@ -325,18 +345,15 @@ async function getPlaylistData(url) {
         "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
       response = await fetch(proxyUrl);
     }
-
     if (!response.ok) {
       throw new Error(
         `Failed to fetch playlist: ${response.status} ${response.statusText}`,
       );
     }
-
+    // Determine content type and parse accordingly
     const contentType = response.headers.get("content-type") || "";
     const textContent = await response.text();
-
     let playlistData;
-
     // Detect format based on content type or content
     const lowerUrl = url.toLowerCase();
     if (
@@ -363,12 +380,11 @@ async function getPlaylistData(url) {
     ) {
       // JSON format
       const jsonData = JSON.parse(textContent);
-
       // Validate the JSON structure
       if (!Array.isArray(jsonData)) {
+        showModal("Play error", "Invalid playlist format: expected array of streams");
         throw new Error("Invalid playlist format: expected array of streams");
       }
-
       // Validate each stream in the playlist and skip invalid ones
       const validStreams = [];
       for (let i = 0; i < jsonData.length; i++) {
@@ -379,45 +395,28 @@ async function getPlaylistData(url) {
           );
           continue;
         }
-
         if (!stream.name || !stream.name.trim()) {
           console.warn(`Skipping stream at position ${i + 1}: empty name`);
           continue;
         }
-
-        if (!stream.url) {
-          console.warn(`Skipping stream at position ${i + 1}: no URL`);
-          continue;
-        }
-
-        if (
-          !stream.url.startsWith("http://") &&
-          !stream.url.startsWith("https://")
-        ) {
-          console.warn(
+        if (!validateStreamURL(stream.url)) {
+        console.warn(
             `Skipping stream at position ${i + 1}: invalid URL format`,
           );
           continue;
         }
-
-        try {
-          new URL(stream.url);
-        } catch (e) {
-          console.warn(`Skipping stream at position ${i + 1}: invalid URL`);
-          continue;
-        }
-
         // If we get here, the stream is valid
         validStreams.push(stream);
       }
-
+      // Keep only valid streams
       playlistData = validStreams;
     } else {
+      showModal("Play error", "Unsupported playlist format");
       throw new Error("Unsupported playlist format");
     }
-
     return playlistData;
   } catch (error) {
+    showModal("Play error", "Error processing playlist: " + error.message);
     console.error("Error processing playlist:", error);
     throw error;
   }
@@ -469,7 +468,6 @@ function showInstantPlaySelectionModal(playlistData, originalUrl) {
       </footer>
     </article>
   `;
-
   modal.innerHTML = modalContent;
   document.body.appendChild(modal);
   modal.showModal();
@@ -521,23 +519,8 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     return;
   }
   // Check if stream has required properties
-  if (!selectedStream.url) {
-    console.error("Stream missing URL at index:", {
-      index,
-      stream: selectedStream,
-    });
-    showModal("Play Error", "Selected stream is missing URL");
-    return;
-  }
-  // Validate URL format
-  try {
-    new URL(selectedStream.url);
-  } catch (e) {
-    console.error("Invalid stream URL at index:", {
-      index,
-      url: selectedStream.url,
-    });
-    showModal("Play Error", "Invalid stream URL");
+  if (!validateStreamURL(selectedStream.url)) {
+    showModal("Play Error", "Selected stream has invalid URL");
     return;
   }
   // Use stream name if available, otherwise generate one
@@ -551,27 +534,22 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     playButton.textContent = "Playing...";
     playButton.disabled = true;
   }
-
+  //
   try {
     await sendPlayRequest(selectedStream.url, streamName, index);
-
     // Close modal
     const modal = $("instant-play-selection-modal");
     if (modal) {
       modal.remove();
     }
-
     // Clear the input field
     const urlInput = $("instant-url");
     if (urlInput) {
       urlInput.value = "";
     }
-
-    // Show success message
-    showModal("Success", "Stream is now playing");
   } catch (error) {
     console.error("Error playing stream:", error);
-    showModal("Play Error", "Error playing stream: " + error.message);
+    showModal("Play error", "Error playing stream: " + error.message);
   } finally {
     // Restore button state
     if (playButton) {
@@ -806,7 +784,6 @@ function confirmDeleteStream(index) {
 }
 
 async function savePlaylist() {
-  // Validate playlist before saving
   if (streams.length === 0) {
     // Create modal for confirmation
     const modal = document.createElement("dialog");
@@ -853,19 +830,7 @@ async function savePlaylistInternal() {
     if (!stream.name || !stream.name.trim()) {
       return;
     }
-    if (!stream.url) {
-      return;
-    }
-    if (
-      !stream.url.startsWith("http://") &&
-      !stream.url.startsWith("https://")
-    ) {
-      return;
-    }
-    // More URL validation
-    try {
-      new URL(stream.url);
-    } catch (e) {
+    if (!validateStreamURL(stream.url)) {
       return;
     }
   }
@@ -873,7 +838,7 @@ async function savePlaylistInternal() {
   const saveButton = $("save-playlist-btn");
   const originalText = saveButton ? saveButton.textContent : null;
   if (saveButton) {
-    saveButton.textContent = "Saving...";
+    saveButton.textContent = "Saving playlist...";
     saveButton.disabled = true;
   }
   // Convert streams to JSON
@@ -1229,6 +1194,129 @@ async function checkImageExists(url) {
     img.src = url;
   });
 }
+
+/**
+ * Fetch artist image from TheAudioDB
+ * @param {string} artistName - The name of the artist to search for
+ * @param {string} iconUrl - The stream icon URL (fallback)
+ * @param {string} icyUrl - The ICY URL (fallback for favicon)
+ */
+function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
+  // Clean up the artist name for better search results
+  const cleanArtistName = artistName
+    .replace(/\(.*?\)/g, "") // Remove text in parentheses
+    .replace(/\[.*?\]/g, "") // Remove text in brackets
+    .replace(/ +- +.*$/g, " ") // Remove " - " patterns and following text
+    .trim();
+
+  if (!cleanArtistName) {
+    // Try icon URL first, then favicon
+    handleImageFallback(iconUrl, icyUrl);
+    return;
+  }
+
+  // Use TheAudioDB API to search for artist through a CORS proxy
+  const apiKey = "123"; // TheAudioDB free API key
+  const searchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`)}`;
+
+  fetch(searchUrl)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (
+        data.artists &&
+        data.artists.length > 0 &&
+        data.artists[0].strArtistThumb
+      ) {
+        // Use the thumbnail image URL
+        const imageUrl = data.artists[0].strArtistThumb;
+        const coverArtElement = $("cover-art");
+        if (coverArtElement) {
+          coverArtElement.src = imageUrl;
+          coverArtElement.style.display = "block";
+        }
+      } else {
+        // If no artist found or no image available, try fallbacks
+        handleImageFallback(iconUrl, icyUrl);
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching artist from TheAudioDB:", error);
+      // Try fallbacks on error
+      handleImageFallback(iconUrl, icyUrl);
+    });
+}
+
+/**
+ * Handle fallback images when TheAudioDB fails
+ * @param {string} iconUrl - The stream icon URL
+ * @param {string} icyUrl - The ICY URL for favicon detection
+ */
+function handleImageFallback(iconUrl, icyUrl) {
+  // First try the stream icon URL
+  if (iconUrl) {
+    // Check if icon URL is a valid image
+    checkImageExists(iconUrl).then((exists) => {
+      if (exists) {
+        const coverArtElement = $("cover-art");
+        if (coverArtElement) {
+          coverArtElement.src = iconUrl;
+          coverArtElement.style.display = "block";
+        }
+      } else {
+        // If icon URL is not a valid image, try favicon
+        tryFaviconFallback(icyUrl);
+      }
+    });
+  } else {
+    // No icon URL, try favicon directly
+    tryFaviconFallback(icyUrl);
+  }
+}
+
+/**
+ * Try to get favicon as final fallback
+ * @param {string} icyUrl - The ICY URL for favicon detection
+ */
+function tryFaviconFallback(icyUrl) {
+  if (icyUrl) {
+    // Try to get favicon from the ICY URL
+    findFaviconUrl(icyUrl).then((faviconUrl) => {
+      if (faviconUrl) {
+        console.log("Found favicon:", faviconUrl);
+        // Update the cover art image element
+        const coverArtElement = $("cover-art");
+        if (coverArtElement) {
+          coverArtElement.src = faviconUrl;
+        }
+      } else {
+        // No favicon found, use default
+        resetToDefaultCoverArt();
+      }
+    });
+  } else {
+    // No ICY URL, use default
+    resetToDefaultCoverArt();
+  }
+}
+
+/**
+ * Reset cover art to default CD image
+ */
+function resetToDefaultCoverArt() {
+  const coverArtElement = $("cover-art");
+  if (coverArtElement) {
+    coverArtElement.src =
+      "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
+    coverArtElement.style.display = "block";
+  }
+}
+
+
 
 
 /**
@@ -1593,142 +1681,7 @@ function forceReconnect() {
   connectWebSocket();
 }
 
-/**
- * Fetch artist image from TheAudioDB
- * @param {string} artistName - The name of the artist to search for
- * @param {string} iconUrl - The stream icon URL (fallback)
- * @param {string} icyUrl - The ICY URL (fallback for favicon)
- */
-function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
-  // Clean up the artist name for better search results
-  const cleanArtistName = artistName
-    .replace(/\(.*?\)/g, "") // Remove text in parentheses
-    .replace(/\[.*?\]/g, "") // Remove text in brackets
-    .replace(/ +- +.*$/g, " ") // Remove " - " patterns and following text
-    .trim();
 
-  if (!cleanArtistName) {
-    // Try icon URL first, then favicon
-    handleImageFallback(iconUrl, icyUrl);
-    return;
-  }
-
-  // Use TheAudioDB API to search for artist through a CORS proxy
-  const apiKey = "123"; // TheAudioDB free API key
-  const searchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`)}`;
-
-  fetch(searchUrl)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (
-        data.artists &&
-        data.artists.length > 0 &&
-        data.artists[0].strArtistThumb
-      ) {
-        // Use the thumbnail image URL
-        const imageUrl = data.artists[0].strArtistThumb;
-        const coverArtElement = $("cover-art");
-        if (coverArtElement) {
-          coverArtElement.src = imageUrl;
-          coverArtElement.style.display = "block";
-        }
-      } else {
-        // If no artist found or no image available, try fallbacks
-        handleImageFallback(iconUrl, icyUrl);
-      }
-    })
-    .catch((error) => {
-      console.error("Error fetching artist from TheAudioDB:", error);
-      // Try fallbacks on error
-      handleImageFallback(iconUrl, icyUrl);
-    });
-}
-
-/**
- * Handle fallback images when TheAudioDB fails
- * @param {string} iconUrl - The stream icon URL
- * @param {string} icyUrl - The ICY URL for favicon detection
- */
-function handleImageFallback(iconUrl, icyUrl) {
-  // First try the stream icon URL
-  if (iconUrl) {
-    // Check if icon URL is a valid image
-    checkImageExists(iconUrl).then((exists) => {
-      if (exists) {
-        const coverArtElement = $("cover-art");
-        if (coverArtElement) {
-          coverArtElement.src = iconUrl;
-          coverArtElement.style.display = "block";
-        }
-      } else {
-        // If icon URL is not a valid image, try favicon
-        tryFaviconFallback(icyUrl);
-      }
-    });
-  } else {
-    // No icon URL, try favicon directly
-    tryFaviconFallback(icyUrl);
-  }
-}
-
-/**
- * Try to get favicon as final fallback
- * @param {string} icyUrl - The ICY URL for favicon detection
- */
-function tryFaviconFallback(icyUrl) {
-  if (icyUrl) {
-    // Try to get favicon from the ICY URL
-    findFaviconUrl(icyUrl).then((faviconUrl) => {
-      if (faviconUrl) {
-        console.log("Found favicon:", faviconUrl);
-        // Update the cover art image element
-        const coverArtElement = $("cover-art");
-        if (coverArtElement) {
-          coverArtElement.src = faviconUrl;
-        }
-      } else {
-        // No favicon found, use default
-        resetToDefaultCoverArt();
-      }
-    });
-  } else {
-    // No ICY URL, use default
-    resetToDefaultCoverArt();
-  }
-}
-
-/**
- * Reset cover art to default CD image
- */
-function resetToDefaultCoverArt() {
-  const coverArtElement = $("cover-art");
-  if (coverArtElement) {
-    coverArtElement.src =
-      "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
-    coverArtElement.style.display = "block";
-  }
-}
-
-function playSelectedStream() {
-  const { select, url, name } = getSelectedStream();
-  if (!select || select.selectedIndex === 0) {
-    return; // No stream selected or it's the placeholder option
-  }
-  // Validate stream selection
-  if (!validateStreamURL(url)) {
-    return;
-  }
-  console.log("Playing selected stream:", { url, name });
-  // Play the selected stream without showing toast
-  sendPlayRequest(url, name, select.selectedIndex).catch((error) => {
-    console.error("Error playing stream:", error);
-  });
-}
 
 
 // Wrapper function for mixer changes to handle errors in inline event handlers
@@ -1747,7 +1700,6 @@ async function setMixer(settings) {
       return;
     }
   }
-
   if (settings.bass !== undefined) {
     const bassValue = parseInt(settings.bass, 10);
     if (isNaN(bassValue) || bassValue < -6 || bassValue > 6) {
@@ -1755,7 +1707,6 @@ async function setMixer(settings) {
       return;
     }
   }
-
   if (settings.mid !== undefined) {
     const midValue = parseInt(settings.mid, 10);
     if (isNaN(midValue) || midValue < -6 || midValue > 6) {
@@ -1763,7 +1714,6 @@ async function setMixer(settings) {
       return;
     }
   }
-
   if (settings.treble !== undefined) {
     const trebleValue = parseInt(settings.treble, 10);
     if (isNaN(trebleValue) || trebleValue < -6 || trebleValue > 6) {
@@ -1771,26 +1721,22 @@ async function setMixer(settings) {
       return;
     }
   }
-
   // Show loading state for volume if being changed
   let volumeControl, volumeValue, originalVolume;
   if (settings.volume !== undefined) {
     volumeControl = $("volume");
     volumeValue = $("volume-value");
-    originalVolume = volumeControl ? volumeControl.value : "50";
-
+    originalVolume = volumeControl ? volumeControl.value : "11";
     if (volumeControl) {
       volumeControl.disabled = true;
     } else {
       console.warn("Volume control not found");
     }
   }
-
   // Show loading state for tone controls if being changed
   let toneControls = {};
   let toneValueElements = {};
   let originalValues = {};
-
   ["bass", "mid", "treble"].forEach((type) => {
     if (settings[type] !== undefined) {
       toneControls[type] = $(type);
@@ -1798,7 +1744,6 @@ async function setMixer(settings) {
       originalValues[type] = toneControls[type]
         ? toneControls[type].value
         : "0";
-
       if (toneControls[type]) {
         toneControls[type].disabled = true;
       } else {
@@ -1806,7 +1751,7 @@ async function setMixer(settings) {
       }
     }
   });
-
+  // Send settings to server
   try {
     console.log("Setting mixer to:", settings);
     const response = await fetch("/api/mixer", {
@@ -1825,7 +1770,6 @@ async function setMixer(settings) {
         if (settings.volume !== undefined && volumeValue) {
           volumeValue.textContent = settings.volume;
         }
-
         ["bass", "mid", "treble"].forEach((type) => {
           if (settings[type] !== undefined && toneValueElements[type]) {
             toneValueElements[type].textContent = settings[type] + "dB";
@@ -1850,7 +1794,6 @@ async function setMixer(settings) {
     if (volumeValue && settings.volume !== undefined) {
       volumeValue.textContent = originalVolume;
     }
-
     ["bass", "mid", "treble"].forEach((type) => {
       if (settings[type] !== undefined && toneControls[type]) {
         toneControls[type].value = originalValues[type];
@@ -1859,14 +1802,12 @@ async function setMixer(settings) {
         toneValueElements[type].textContent = originalValues[type] + "dB";
       }
     });
-
     throw error; // Re-throw to allow caller to handle
   } finally {
     // Restore control states
     if (volumeControl) {
       volumeControl.disabled = false;
     }
-
     Object.keys(toneControls).forEach((type) => {
       if (toneControls[type]) {
         toneControls[type].disabled = false;
@@ -1875,17 +1816,6 @@ async function setMixer(settings) {
   }
 }
 
-
-// Helper function to escape HTML entities
-function escapeHtml(unsafe) {
-  if (typeof unsafe !== "string") return "";
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 // Drag and drop functions for playlist reordering
 let dragSrcElement = null;
@@ -2362,15 +2292,25 @@ function replaceWithSelectedStreams() {
   $("playlistSelectionModal").remove();
 }
 
+
+
+// Handle import playlist selection
+function handleImportFileSelect() {
+  const fileInput = $("playlist-file");
+  const importButton = $("upload-playlist-btn");
+  importButton.disabled = !fileInput.files.length;
+}
+
+
 async function uploadPlaylist() {
   const fileInput = $("playlist-file");
   const file = fileInput.files[0];
 
-  console.log("Uploading playlist file:", file);
-
   if (!file) {
     return;
   }
+
+  console.log("Uploading playlist file:", file);
 
   // Check file extension
   const fileName = file.name.toLowerCase();
@@ -3493,20 +3433,31 @@ function validateStreamURL(url) {
     return false;
   }
   if (
-    !trimmedValue.startsWith("http://") &&
-    !trimmedValue.startsWith("https://")
+    !url.startsWith("http://") &&
+    !url.startsWith("https://")
   ) {
     return false;
   }
   // Additional URL validation
   try {
-    new URL(trimmedValue);
+    new URL(url);
   } catch (e) {
     return false;
   }
   // Validate URL length
-  if (trimmedValue.length > 256) {
+  if (url.length > 256) {
     return false;
   }
   return true;
+}
+
+// Helper function to escape HTML entities
+function escapeHtml(unsafe) {
+  if (typeof unsafe !== "string") return "";
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
