@@ -1877,6 +1877,10 @@ function handleDragEnd(e) {
   });
 }
 
+
+
+
+
 /**
  * @brief Add a new station to the playlist
  * Validates user input and adds a new stream to the playlist
@@ -1893,23 +1897,20 @@ function handleDragEnd(e) {
 function addStation() {
   const name = $("name");
   const url = $("url");
-
+  // Checks needed, should never be null
   if (!name || !url) {
     return;
   }
-
   // Reset aria-invalid attributes
-  name.setAttribute("aria-invalid", "false");
-  url.setAttribute("aria-invalid", "false");
-
+  name.removeAttribute("aria-invalid");
+  url.removeAttribute("aria-invalid");
   // Check if playlist is already at maximum capacity
   if (streams.length >= 20) {
     showModal("Error", "Playlist is full. Maximum 20 streams allowed.");
     return;
   }
-
+  // Debug log
   console.log("Adding stream:", { name: name.value, url: url.value });
-
   // Trim and validate name
   const trimmedName = name.value.trim();
   if (!trimmedName) {
@@ -1917,14 +1918,12 @@ function addStation() {
     name.focus();
     return;
   }
-
   // Validate name length
   if (trimmedName.length > 128) {
     name.setAttribute("aria-invalid", "true");
     name.focus();
     return;
   }
-
   // Trim and validate URL
   const trimmedUrl = url.value.trim();
   if (!trimmedUrl) {
@@ -1932,28 +1931,8 @@ function addStation() {
     url.focus();
     return;
   }
-
   // Validate URL format
-  if (
-    !trimmedUrl.startsWith("http://") &&
-    !trimmedUrl.startsWith("https://")
-  ) {
-    url.setAttribute("aria-invalid", "true");
-    url.focus();
-    return;
-  }
-
-  // Additional URL validation
-  try {
-    new URL(trimmedUrl);
-  } catch (e) {
-    url.setAttribute("aria-invalid", "true");
-    url.focus();
-    return;
-  }
-
-  // Validate URL length
-  if (trimmedUrl.length > 256) {
+  if (!validateStreamURL(url)) {
     url.setAttribute("aria-invalid", "true");
     url.focus();
     return;
@@ -1961,7 +1940,6 @@ function addStation() {
 
   streams.push({ name: trimmedName, url: trimmedUrl });
   renderPlaylist();
-
   // Clear form
   name.value = "";
   url.value = "";
@@ -1972,12 +1950,10 @@ function playStreamFromPlaylist(index) {
   if (index < 0 || index >= streams.length) {
     return;
   }
-
   const stream = streams[index];
   if (!stream || !stream.url) {
     return;
   }
-
   // Play the stream directly
   sendPlayRequest(stream.url, stream.name, index).catch((error) => {
     console.error("Error playing stream from playlist:", error);
