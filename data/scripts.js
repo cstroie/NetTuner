@@ -1727,11 +1727,6 @@ async function setMixer(settings) {
     volumeControl = $("volume");
     volumeValue = $("volume-value");
     originalVolume = volumeControl ? volumeControl.value : "11";
-    if (volumeControl) {
-      volumeControl.disabled = true;
-    } else {
-      console.warn("Volume control not found");
-    }
   }
   // Show loading state for tone controls if being changed
   let toneControls = {};
@@ -1744,11 +1739,6 @@ async function setMixer(settings) {
       originalValues[type] = toneControls[type]
         ? toneControls[type].value
         : "0";
-      if (toneControls[type]) {
-        toneControls[type].disabled = true;
-      } else {
-        console.warn(type + " control not found");
-      }
     }
   });
   // Send settings to server
@@ -1803,16 +1793,6 @@ async function setMixer(settings) {
       }
     });
     throw error; // Re-throw to allow caller to handle
-  } finally {
-    // Restore control states
-    if (volumeControl) {
-      volumeControl.disabled = false;
-    }
-    Object.keys(toneControls).forEach((type) => {
-      if (toneControls[type]) {
-        toneControls[type].disabled = false;
-      }
-    });
   }
 }
 
