@@ -25,7 +25,8 @@
 // Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 
 #include "Spleen8x16.h" 
-#include "Spleen16x32.h" 
+#include "Spleen16x32.h"
+#include <ESPmDNS.h>
 
 
 // MPD Interface instance
@@ -2362,6 +2363,15 @@ void setup() {
   } else {
     Serial.println("Failed to start Access Point");
     display.showStatus("AP Start Failed", "", "");
+  }
+
+  // Start mDNS responder
+  if (MDNS.begin("NetTuner")) {
+    Serial.println("MDNS responder started");
+    MDNS.addService("http", "tcp", 80);
+    MDNS.addService("mpd", "tcp", 6600);
+  } else {
+    Serial.println("Error setting up MDNS responder!");
   }
   
   // Setup audio output with error handling
