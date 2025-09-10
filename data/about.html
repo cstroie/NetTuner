@@ -1,121 +1,176 @@
 <!DOCTYPE html>
-<html data-theme="dark">
-<head>
-    <meta charset="UTF-8">
+<html lang="en-US" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
     <title>About</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="pico.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body class="container">
-    <!-- Navigation bar with dropdown menu -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="pico.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="container">
     <nav>
-        <ul>
-            <li><strong>NetTuner</strong></li>
-        </ul>
-        <ul>
-            <!-- Dropdown menu for page navigation -->
-            <li>
-                <details class="dropdown">
-                    <summary>About</summary>
-                    <ul dir="rtl">
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/playlist">Playlist</a></li>
-                        <li><a href="/wifi">Wifi</a></li>
-                        <li><a href="/config">Config</a></li>
-                        <li><a href="/about" aria-current="page">About</a></li>
-                    </ul>
-                </details>
-            </li>
-            <!-- Theme toggle button -->
-            <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
-        </ul>
+      <ul>
+        <li><strong>NetTuner</strong></li>
+      </ul>
+      <ul>
+        <li>
+          <details class="dropdown">
+            <summary>About</summary>
+            <ul dir="rtl">
+              <li><a href="/">Home</a></li>
+              <li><a href="/playlist">Playlist</a></li>
+              <li><a href="/wifi">Wifi</a></li>
+              <li><a href="/config">Configuration</a></li>
+              <li><a href="/about" aria-current="page">About</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <button
+            id="themeToggle"
+            class="outline"
+            aria-label="Toggle theme"
+            onclick="toggleTheme()">
+            ◐
+          </button>
+        </li>
+      </ul>
     </nav>
-    <!-- Page header with project description -->
     <header>
-        <article>
-            <h1>About NetTuner</h1>
-            <p>NetTuner is an open-source ESP32-based internet radio player that allows you to stream your favorite radio stations directly from the internet with multiple control options.</p>
-        </article>
+      <article>
+        <h1>About NetTuner</h1>
+        <p>
+          NetTuner is an open-source ESP32-based internet radio player that
+          allows you to stream your favorite radio stations directly from the
+          internet with multiple control options.
+        </p>
+      </article>
     </header>
-    <!-- Main content with detailed information -->
     <main>
-        <!-- Features section -->
-        <article>
-            <h2>Features</h2>
-            <ul>
-                <li>Stream internet radio stations over WiFi</li>
-                <li>Manage a playlist of your favorite stations</li>
-                <li>Control playback through a responsive web interface</li>
-                <li>Adjust volume and tone controls (bass, midrange, treble) with intuitive sliders</li>
-                <li>Support for various audio formats including MP3, AAC, and more</li>
-                <li>Real-time status updates via WebSocket</li>
-                <li>MPD (Music Player Daemon) protocol compatibility (version 0.23.0)</li>
-                <li>Physical controls with rotary encoder and button</li>
-                <li>OLED display for local status feedback</li>
-                <li>Multiple WiFi network configuration with automatic fallback</li>
-                <li>Flexible hardware configuration through web interface</li>
-                <li>Playlist management with JSON/M3U import/export</li>
-            </ul>
-        </article>
-        
-        <!-- Usage instructions -->
-        <article>
-            <h2>How to Use</h2>
-            <ol>
-                <li><strong>Connect to WiFi:</strong> Configure your WiFi networks in the WiFi settings</li>
-                <li><strong>Configure Hardware:</strong> Set up your pin assignments in the Config page</li>
-                <li><strong>Add Stations:</strong> Go to the Playlist page to add your favorite radio stations</li>
-                <li><strong>Play:</strong> Select a station from the dashboard and press Play</li>
-                <li><strong>Control:</strong> Use the volume slider, rotary encoder, or MPD client to adjust audio levels</li>
-            </ol>
-        </article>
-        
-        <!-- Control methods explanation -->
-        <article>
-            <h2>Control Methods</h2>
-            <p>NetTuner can be controlled in multiple ways:</p>
-            <ul>
-                <li><strong>Web Interface:</strong> Responsive web UI accessible from any device on the same network</li>
-                <li><strong>MPD Clients:</strong> Control using any MPD-compatible client (connect to port 6600)</li>
-                <li><strong>Rotary Encoder:</strong> Physical volume control and navigation</li>
-                <li><strong>Physical Button:</strong> Play/pause functionality (GPIO 0 by default)</li>
-                <li><strong>OLED Display:</strong> Local status feedback with scrolling text</li>
-            </ul>
-        </article>
-        
-        <!-- Technical architecture details -->
-        <article>
-            <h2>Technical Details</h2>
-            <p>NetTuner is built on the following technologies:</p>
-            <ul>
-                <li><strong>Hardware:</strong> ESP32 microcontroller with I2S audio output</li>
-                <li><strong>Audio Library:</strong> ESP32-audioI2S for streaming audio decoding</li>
-                <li><strong>Web Framework:</strong> Arduino ESP32 with built-in web server</li>
-                <li><strong>Frontend:</strong> PicoCSS v2 for responsive UI design</li>
-                <li><strong>Communication:</strong> WebSocket for real-time updates and MPD protocol on port 6600</li>
-                <li><strong>Data Storage:</strong> SPIFFS for configuration and playlist storage</li>
-            </ul>
-        </article>
-        
-        <!-- Project information -->
-        <article>
-            <h2>Project Information</h2>
-            <p>NetTuner is an open-source project designed for hobbyists and makers who want to build their own internet radio player. The project is hosted on GitHub where you can find the source code, documentation, and instructions for building your own device.</p>
-        </article>
+      <article>
+        <h2>Features</h2>
+        <ul>
+          <li>Stream internet radio stations over WiFi</li>
+          <li>Manage a playlist of your favorite stations</li>
+          <li>Control playback through a responsive web interface</li>
+          <li>
+            Adjust volume and tone controls (bass, midrange, treble) with
+            intuitive sliders
+          </li>
+          <li>
+            Support for various audio formats including MP3, AAC, and more
+          </li>
+          <li>Real-time status updates via WebSocket</li>
+          <li>
+            MPD (Music Player Daemon) protocol compatibility (version 0.23.0)
+          </li>
+          <li>Physical controls with rotary encoder and button</li>
+          <li>OLED display for local status feedback</li>
+          <li>Multiple WiFi network configuration with automatic fallback</li>
+          <li>Flexible hardware configuration through web interface</li>
+          <li>Playlist management with JSON/M3U import/export</li>
+        </ul>
+      </article>
+      <article>
+        <h2>How to Use</h2>
+        <ol>
+          <li>
+            <strong>Connect to WiFi:</strong> Configure your WiFi networks in
+            the WiFi settings
+          </li>
+          <li>
+            <strong>Configure Hardware:</strong> Set up your pin assignments
+            in the Config page
+          </li>
+          <li>
+            <strong>Add Stations:</strong> Go to the Playlist page to add your
+            favorite radio stations
+          </li>
+          <li>
+            <strong>Play:</strong> Select a station from the dashboard and
+            press Play
+          </li>
+          <li>
+            <strong>Control:</strong> Use the volume slider, rotary encoder,
+            or MPD client to adjust audio levels
+          </li>
+        </ol>
+      </article>
+      <article>
+        <h2>Control Methods</h2>
+        <p>NetTuner can be controlled in multiple ways:</p>
+        <ul>
+          <li>
+            <strong>Web Interface:</strong> Responsive web UI accessible from
+            any device on the same network
+          </li>
+          <li>
+            <strong>MPD Clients:</strong> Control using any MPD-compatible
+            client (connect to port 6600)
+          </li>
+          <li>
+            <strong>Rotary Encoder:</strong> Physical volume control and
+            navigation
+          </li>
+          <li>
+            <strong>Physical Button:</strong> Play/pause functionality (GPIO 0
+            by default)
+          </li>
+          <li>
+            <strong>OLED Display:</strong> Local status feedback with
+            scrolling text
+          </li>
+        </ul>
+      </article>
+      <article>
+        <h2>Technical Details</h2>
+        <p>NetTuner is built on the following technologies:</p>
+        <ul>
+          <li>
+            <strong>Hardware:</strong> ESP32 microcontroller with I2S audio
+            output
+          </li>
+          <li>
+            <strong>Audio Library:</strong> ESP32-audioI2S for streaming audio
+            decoding
+          </li>
+          <li>
+            <strong>Web Framework:</strong> Arduino ESP32 with built-in web
+            server
+          </li>
+          <li>
+            <strong>Frontend:</strong> PicoCSS v2 for responsive UI design
+          </li>
+          <li>
+            <strong>Communication:</strong> WebSocket for real-time updates
+            and MPD protocol on port 6600
+          </li>
+          <li>
+            <strong>Data Storage:</strong> SPIFFS for configuration and
+            playlist storage
+          </li>
+        </ul>
+      </article>
+      <article>
+        <h2>Project Information</h2>
+        <p>
+          NetTuner is an open-source project designed for hobbyists and makers
+          who want to build their own internet radio player. The project is
+          hosted on GitHub where you can find the source code, documentation,
+          and instructions for building your own device.
+        </p>
+      </article>
     </main>
-    <!-- Footer with license and version information -->
-    <footer> 
-        <p><strong>License:</strong> GPL3</p>
-        <p><strong>Version:</strong> 1.0</p>
+    <footer>
+      <p><strong>License:</strong> GPL3</p>
+      <p><strong>Version:</strong> 1.0</p>
     </footer>
-    <!-- JavaScript includes -->
     <script src="scripts.js"></script>
     <script>
-        // Initialize theme toggle when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initTheme();
-        });
+      // Initialize theme toggle when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        initTheme();
+      });
     </script>
-</body>
+  </body>
 </html>
