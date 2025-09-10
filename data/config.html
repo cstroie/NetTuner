@@ -110,32 +110,22 @@
         <hgroup>
           <h2>Configuration export and import</h2>
           <p>
-            Export and import all configuration files as a single JSON package
+            Export or import all your NetTuner configuration files (config.json,
+            wifi.json, playlist.json) as a single JSON file for backup or
+            transfer purposes.
           </p>
         </hgroup>
-        <p>
-          Export or import all your NetTuner configuration files (config.json,
-          wifi.json, playlist.json) as a single JSON file for backup or
-          transfer purposes.
-        </p>
         <div>
-          <input
-            type="file"
-            id="import-file"
-            accept=".json"
-            onchange="handleImportFileSelect()" />
+          <input type="file" id="import-file" accept=".json"
+                 onchange="handleImportFileSelect()" />
+          <small>Supported formats: JSON</small>
         </div>
         <footer class="grid">
-          <button
-            type="button"
-            onclick="importAllConfiguration()"
-            id="import-button"
-            disabled>
+          <button type="button" onclick="importAllConfiguration()" 
+                  id="import-button" disabled>
             Import configuration
           </button>
-          <button
-            type="button"
-            onclick="exportAllConfiguration()">
+          <button type="button" onclick="exportAllConfiguration()">
             Export configuration
           </button>
         </footer>

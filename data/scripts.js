@@ -114,6 +114,12 @@ function initConfigPage() {
  * @returns {Promise<void>}
  */
 async function loadConfig() {
+  // Reset aria-invalid attributes
+  const configInputs = document.querySelectorAll("#config-form input");
+  configInputs.forEach((input) => {
+    input.removeAttribute("aria-invalid");
+  });
+  // Try to get the data from API
   try {
     const response = await fetch("/api/config");
     if (response.ok) {
@@ -131,15 +137,10 @@ async function loadConfig() {
       $("display-width").value = config.display_width;
       $("display-height").value = config.display_height;
       $("display-address").value = config.display_address;
-
-      // FIXME Reset aria-invalid attributes
-      //const configInputs = document.querySelectorAll("#config-form input");
-      //configInputs.forEach((input) => {
-      //  input.setAttribute("aria-invalid", "false");
-      //});
     }
   } catch (error) {
     console.error("Error loading hardware configuration:", error);
+    showModal("Error loading configuration", error.message);
   }
 }
 
@@ -151,12 +152,10 @@ async function loadConfig() {
 async function saveConfig() {
   const configInputs = document.querySelectorAll("#config-form input");
   let hasErrors = false;
-
   // Reset all aria-invalid attributes
   configInputs.forEach((input) => {
     input.removeAttribute("aria-invalid");
   });
-
   // Validate all inputs
   configInputs.forEach((input) => {
     if (input.value && input.checkValidity()) {
@@ -166,12 +165,11 @@ async function saveConfig() {
       hasErrors = true;
     }
   });
-
   if (hasErrors) {
     showModal("Validation Error", "Please correct the highlighted fields.");
     return;
   }
-
+  // Colect form data
   const config = {
     i2s_bclk: parseInt($("i2s-bclk").value),
     i2s_lrc: parseInt($("i2s-lrc").value),
@@ -187,7 +185,7 @@ async function saveConfig() {
     display_height: parseInt($("display-height").value),
     display_address: parseInt($("display-address").value),
   };
-
+  // Try to send the data to API
   try {
     const response = await fetch("/api/config", {
       method: "POST",
@@ -196,7 +194,6 @@ async function saveConfig() {
       },
       body: JSON.stringify(config),
     });
-
     if (response.ok) {
       showModal(
         "Configuration Saved",
@@ -207,86 +204,136 @@ async function saveConfig() {
     }
   } catch (error) {
     console.error("Error saving config:", error);
-    showModal("Error", "Error saving configuration.");
+    showModal("Error saving configuration", error.message);
   }
 }
 
-
-
-/**
- * @brief Find favicon URL from a website
- * @description Attempts to locate a favicon for a given website by checking common locations
- * @param {string} websiteUrl - The URL of the website to search for favicon
- * @returns {Promise<string|null>} The favicon URL if found, null otherwise
- */
-async function findFaviconUrl(websiteUrl) {
+// Configuration import/export functions
+async function exportAllConfiguration() {
   try {
-    // Handle cases where the URL might be a stream URL
-    let baseUrl;
-    try {
-      const urlObj = new URL(websiteUrl);
-      baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-    } catch (e) {
-      // If URL parsing fails, try to extract domain
-      const match = websiteUrl.match(/^(?:https?:\/\/)?([^\/\s]+)/);
-      if (match) {
-        baseUrl = `http://${match[1]}`;
-      } else {
-        return null;
-      }
-    }
-    // Common favicon locations to check
-    const faviconLocations = [
-      "/favicon.ico",
-      "/favicon.png",
-      "/apple-touch-icon.png",
-      "/apple-touch-icon-precomposed.png",
-    ];
-    // First, try to get favicon from HTML head by fetching the base URL
-    try {
-      const response = await fetch(baseUrl, { mode: "no-cors" });
-      // For no-cors requests, we can't access the response body
-      // So we'll skip HTML parsing and go directly to favicon locations
-    } catch (e) {
-      console.log("Could not fetch HTML for favicon detection");
-    }
-    // Check common locations
-    for (const location of faviconLocations) {
+    const response = await fetch("/api/config/export");
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "nettuner-config-export.json";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } else {
+      // Try to parse JSON error response
+      let errorMessage = response.status;
       try {
-        const faviconUrl = new URL(location, baseUrl).href;
-        if (await checkImageExists(faviconUrl)) {
-          return faviconUrl;
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
         }
       } catch (e) {
-        // Skip if URL construction fails
-        continue;
+        // If JSON parsing fails, use the status text
+        if (response.statusText) {
+          errorMessage = response.statusText;
+        }
       }
+      showModal("Error exporting configurations", errorMessage);
     }
-    return null;
   } catch (error) {
-    console.error("Error finding favicon:", error);
-    return null;
+    console.error("Error exporting configurations:", error);
+    showModal("Error exporting configurations", error.message);
   }
 }
 
-/**
- * @brief Check if an image exists at a given URL
- * @description Creates an image element and attempts to load the image to verify existence
- * @param {string} url - The URL of the image to check
- * @returns {Promise<boolean>} True if image exists, false otherwise
- */
-async function checkImageExists(url) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    // Add crossorigin attribute to handle CORS issues
-    img.crossOrigin = "anonymous";
-    // Set referrer policy to prevent issues with some servers
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
+// Handle import file selection
+function handleImportFileSelect() {
+  const fileInput = $("import-file");
+  const importButton = $("import-button");
+  importButton.disabled = !fileInput.files.length;
+}
+
+// Helper function to read file as text
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = (e) => reject(e);
+    reader.readAsText(file);
   });
 }
+
+// Import all configuration
+async function importAllConfiguration() {
+  const fileInput = $("import-file");
+  const importButton = $("import-button");
+  const file = fileInput.files[0];
+  if (!file) {
+    showModal("Import Error", "Please select a JSON file to import");
+    return;
+  }
+  // Show loading state
+  const originalText = importButton.textContent;
+  importButton.textContent = "Importing...";
+  importButton.disabled = true;
+  // Try to import
+  try {
+    // Read file content as text
+    const fileContent = await readFileAsText(file);
+    const response = await fetch("/api/config/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: fileContent,
+    });
+    if (response.ok) {
+      // Try to parse JSON success response
+      try {
+        const result = await response.json();
+        if (result.status === "success") {
+          showModal(
+            "Import successful",
+            result.message ||
+              "Configuration imported successfully. Device restart required for changes to take effect.",
+          );
+        } else {
+          showModal("Error importing configuration", result.message);
+        }
+      } catch (e) {
+        // If JSON parsing fails, use the status text
+        if (response.statusText) {
+          showModal("Error importing configuration", response.statusText);
+        }
+      }
+      // Clear the file input
+      fileInput.value = "";
+    } else {
+      // Try to parse JSON error response
+      let errorMessage = response.status;
+      try {
+        const errorData = await response.json();
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+      } catch (e) {
+        // If JSON parsing fails, use the status text
+        if (response.statusText) {
+          errorMessage = response.statusText;
+        }
+      }
+      showModal("Error importing configuration", errorMessage);
+    }
+  } catch (error) {
+    console.error("Error importing configurations:", error);
+    showModal("Error importing configurations", error.message);
+  } finally {
+    // Restore button state
+    importButton.textContent = originalText;
+    importButton.disabled = false;
+  }
+}
+
+
 
 /**
  * @brief Load streams from the server
@@ -379,6 +426,84 @@ async function loadStreams() {
     }
   }
 }
+
+
+
+/**
+ * @brief Find favicon URL from a website
+ * @description Attempts to locate a favicon for a given website by checking common locations
+ * @param {string} websiteUrl - The URL of the website to search for favicon
+ * @returns {Promise<string|null>} The favicon URL if found, null otherwise
+ */
+async function findFaviconUrl(websiteUrl) {
+  try {
+    // Handle cases where the URL might be a stream URL
+    let baseUrl;
+    try {
+      const urlObj = new URL(websiteUrl);
+      baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+    } catch (e) {
+      // If URL parsing fails, try to extract domain
+      const match = websiteUrl.match(/^(?:https?:\/\/)?([^\/\s]+)/);
+      if (match) {
+        baseUrl = `http://${match[1]}`;
+      } else {
+        return null;
+      }
+    }
+    // Common favicon locations to check
+    const faviconLocations = [
+      "/favicon.ico",
+      "/favicon.png",
+      "/apple-touch-icon.png",
+      "/apple-touch-icon-precomposed.png",
+    ];
+    // First, try to get favicon from HTML head by fetching the base URL
+    try {
+      const response = await fetch(baseUrl, { mode: "no-cors" });
+      // For no-cors requests, we can't access the response body
+      // So we'll skip HTML parsing and go directly to favicon locations
+    } catch (e) {
+      console.log("Could not fetch HTML for favicon detection");
+    }
+    // Check common locations
+    for (const location of faviconLocations) {
+      try {
+        const faviconUrl = new URL(location, baseUrl).href;
+        if (await checkImageExists(faviconUrl)) {
+          return faviconUrl;
+        }
+      } catch (e) {
+        // Skip if URL construction fails
+        continue;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error finding favicon:", error);
+    return null;
+  }
+}
+
+/**
+ * @brief Check if an image exists at a given URL
+ * @description Creates an image element and attempts to load the image to verify existence
+ * @param {string} url - The URL of the image to check
+ * @returns {Promise<boolean>} True if image exists, false otherwise
+ */
+async function checkImageExists(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    // Add crossorigin attribute to handle CORS issues
+    img.crossOrigin = "anonymous";
+    // Set referrer policy to prevent issues with some servers
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  });
+}
+
 
 /**
  * @file WebSocket connection management
@@ -3439,144 +3564,6 @@ function selectNetwork(ssid) {
       }
     }
   }
-}
-
-// Configuration import/export functions
-async function exportAllConfiguration() {
-  try {
-    const response = await fetch("/api/config/export");
-    if (response.ok) {
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "nettuner-config-export.json";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } else {
-      // Try to parse JSON error response
-      let errorMessage = "Error exporting configurations: " + response.status;
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-      } catch (e) {
-        // If JSON parsing fails, use the status text
-        if (response.statusText) {
-          errorMessage =
-            "Error exporting configurations: " + response.statusText;
-        }
-      }
-      showModal("Error", errorMessage);
-    }
-  } catch (error) {
-    console.error("Error exporting configurations:", error);
-    showModal("Error", "Error exporting configurations: " + error.message);
-  }
-}
-
-// Handle import file selection
-function handleImportFileSelect() {
-  const fileInput = $("import-file");
-  const importButton = $("import-button");
-  importButton.disabled = !fileInput.files.length;
-}
-
-// Import all configuration
-async function importAllConfiguration() {
-  const fileInput = $("import-file");
-  const importButton = $("import-button");
-  const file = fileInput.files[0];
-
-  if (!file) {
-    showModal("Import Error", "Please select a file to import");
-    return;
-  }
-
-  // Show loading state
-  const originalText = importButton.textContent;
-  importButton.textContent = "Importing...";
-  importButton.disabled = true;
-
-  try {
-    // Read file content as text
-    const fileContent = await readFileAsText(file);
-
-    const response = await fetch("/api/config/import", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: fileContent,
-    });
-
-    if (response.ok) {
-      // Try to parse JSON success response
-      try {
-        const result = await response.json();
-        if (result.status === "success") {
-          showModal(
-            "Import Successful",
-            result.message ||
-              "Configuration imported successfully. Device restart required for changes to take effect.",
-          );
-        } else {
-          showModal(
-            "Import Error",
-            result.message || "Error importing configuration",
-          );
-        }
-      } catch (e) {
-        // Fallback if JSON parsing fails
-        showModal(
-          "Import Successful",
-          "Configuration imported successfully. Device restart required for changes to take effect.",
-        );
-      }
-      // Clear the file input
-      fileInput.value = "";
-    } else {
-      // Try to parse JSON error response
-      let errorMessage = "Error importing configuration: " + response.status;
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-      } catch (e) {
-        // If JSON parsing fails, use the status text
-        if (response.statusText) {
-          errorMessage =
-            "Error importing configuration: " + response.statusText;
-        }
-      }
-      showModal("Import Error", errorMessage);
-    }
-  } catch (error) {
-    console.error("Error importing configurations:", error);
-    showModal(
-      "Import Error",
-      "Error importing configurations: " + error.message,
-    );
-  } finally {
-    // Restore button state
-    importButton.textContent = originalText;
-    importButton.disabled = false;
-  }
-}
-
-// Helper function to read file as text
-function readFileAsText(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.onerror = (e) => reject(e);
-    reader.readAsText(file);
-  });
 }
 
 // Simple modal dialog function
