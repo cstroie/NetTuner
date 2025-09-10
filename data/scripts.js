@@ -2178,7 +2178,7 @@ async function playInstantSelectedStreamFromPlaylist(index) {
         }
         
         // Clear the input field
-        const urlInput = document.getElementById('instantUrl');
+        const urlInput = document.getElementById('instant-url');
         if (urlInput) {
             urlInput.value = '';
         }
