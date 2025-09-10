@@ -1,130 +1,135 @@
 <!DOCTYPE html>
-<html data-theme="dark">
-<head>
-    <meta charset="UTF-8">
+<html lang="en-US" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
     <title>Playlist management</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="pico.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body class="container">
-    <!-- Navigation bar -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="pico.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="container">
     <nav>
-        <ul>
-            <li><strong>NetTuner</strong></li>
-        </ul>
-        <ul>
-            <!-- Dropdown menu for page navigation -->
-            <li>
-                <details class="dropdown">
-                    <summary>Playlist</summary>
-                    <ul dir="rtl">
-                        <li><a href="/" dir="ltr">Home</a></li>
-                        <li><a href="/playlist" aria-current="page">Playlist</a></li>
-                        <li><a href="/wifi">Wifi</a></li>
-                        <li><a href="/config">Config</a></li>
-                        <li><a href="/about">About</a></li>
-                    </ul>
-                </details>
-            </li>
-            <!-- Theme toggle button -->
-            <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
-        </ul>
+      <ul>
+        <li><strong>NetTuner</strong></li>
+      </ul>
+      <ul>
+        <li>
+          <details class="dropdown">
+            <summary>Playlist</summary>
+            <ul dir="rtl">
+              <li><a href="/" dir="ltr">Home</a></li>
+              <li><a href="/playlist" aria-current="page">Playlist</a></li>
+              <li><a href="/wifi">Wifi</a></li>
+              <li><a href="/config">Configuration</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <button id="theme-toggle" class="outline" aria-label="Toggle theme" 
+                  onclick="toggleTheme()">◐</button>
+        </li>
+      </ul>
     </nav>
-    <!-- Main content with playlist management features -->
-    <main> 
-        <!-- Current playlist display and management -->
-        <article>
-            <hgroup>
-                <h2>Current playlist</h2>
-                <p>Edit, remove, or reorder existing streams in your playlist.</p>
-            </hgroup>
-            <!-- Scrollable playlist container -->
-            <div class="overflow-auto" id="playlistBody">
-                <span class="empty-playlist">No streams in playlist. Add some streams to get started!</span>
-            </div>
-            <!-- Playlist action buttons -->
-            <footer>
-                <div role="group">
-                    <button type="submit" onclick="savePlaylist()">Send playlist</button>
-                    <button type="button" class="secondary" onclick="loadStreams()">Reset</button>
-                </div>
-            </footer>
-        </article>
-        
-        <!-- Add new station form -->
-        <article>
-            <hgroup>
-                <h2>Add new station</h2>
-                <p>Enter the details for a new radio stream to add to your playlist.</p>
-            </hgroup>
-            <div>
-                <!-- Stream URL input with validation -->
-                <label for="url">Stream URL
-                    <input type="url" id="url" placeholder="Enter stream URL (http://...)" required>
-                    <small>Must be a valid HTTP or HTTPS URL</small>
-                </label>
-                <!-- Station name input -->
-                <label for="name">Station name
-                    <input type="text" id="name" placeholder="Enter station name" required>
-                    <small>A descriptive name for this station</small>
-                </label>
-            </div>
-            <!-- Add stream button -->
-            <footer>
-                <button type="submit" onclick="addStream()">Add stream</button>
-            </footer>
-        </article>
-        
-        <!-- Playlist import/export management -->
-        <article>
-            <hgroup>
-                <h2>Playlist management</h2>
-                <p>Import or export your playlist in different formats.</p>
-            </hgroup>
-            <!-- File upload control for playlist import -->
-            <label for="playlistFile">Upload playlist file:
-                <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8,.pls">
-                <small>Supported formats: JSON, M3U, M3U8, PLS</small>
-            </label>
-            <!-- Import/export buttons -->
-            <footer class="grid">
-                <div role="group">
-                    <button id="uploadPlaylistBtn" onclick="uploadPlaylist()">Upload playlist</button>
-                </div>
-                <div role="group">
-                    <button id="downloadJsonBtn" class="secondary" onclick="downloadJSON()">Download JSON</button>
-                    <button id="downloadM3uBtn" class="secondary" onclick="downloadM3U()">Download M3U</button>
-                    <button id="downloadPlsBtn" class="secondary" onclick="downloadPLS()">Download PLS</button>
-                </div>
-            </footer>
-        </article>
-        
-        <!-- Remote playlist import -->
-        <article>
-            <hgroup>
-                <h2>Remote playlist</h2>
-                <p>Import items from a remote playlist in different formats (JSON, M3U, M3U8, PLS).</p>
-            </hgroup>
-            <!-- Remote playlist URL input -->
-            <label for="remotePlaylistUrl">Remote playlist URL</label>
-            <div role="group">
-                <input type="url" id="remotePlaylistUrl" placeholder="Enter remote playlist URL (http://...)" />
-                <button onclick="importRemotePlaylist()">Import</button>
-            </div>
-        </article> 
+    <main>
+      <article>
+        <hgroup>
+          <h2>Current playlist</h2>
+          <p>Edit, remove, or reorder existing streams in your playlist.</p>
+        </hgroup>
+        <div class="overflow-auto" id="playlistBody">
+          <span class="empty-playlist">No streams in playlist</span
+          >
+        </div>
+        <footer>
+          <div role="group">
+            <button type="submit" onclick="savePlaylist()">
+              Send playlist
+            </button>
+            <button type="button" class="secondary" onclick="loadStreams()">
+              Reset
+            </button>
+          </div>
+        </footer>
+      </article>
+      <article>
+        <hgroup>
+          <h2>Add new station</h2>
+          <p>
+            Enter the details for a new radio stream to add to your playlist.
+          </p>
+        </hgroup>
+        <div>
+          <label for="url">Stream URL
+            <input type="url" id="url"
+              placeholder="Enter stream URL (http://...)"
+              required />
+            <small>Must be a valid HTTP or HTTPS URL</small>
+          </label>
+          <label for="name">Station name
+            <input type="text" id="name"
+              placeholder="Enter station name"
+              required />
+            <small>A descriptive name for this station</small>
+          </label>
+        </div>
+        <footer>
+          <button type="submit" onclick="addStation()">Add station to playlist</button>
+        </footer>
+      </article>
+      <article>
+        <hgroup>
+          <h2>Playlist management</h2>
+          <p>Import or export your playlist in different formats.</p>
+        </hgroup>
+        <label for="playlistFile">Upload playlist file:
+          <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8,.pls" />
+          <small>Supported formats: JSON, M3U, PLS</small>
+        </label>
+        <footer class="grid">
+          <div role="group">
+            <button id="uploadPlaylistBtn" onclick="uploadPlaylist()">
+              Upload playlist
+            </button>
+          </div>
+          <div role="group">
+            <button
+              id="downloadJsonBtn" class="secondary" 
+              onclick="downloadJSON()"> Download JSON
+            </button>
+            <button
+              id="downloadM3uBtn" class="secondary" onclick="downloadM3U()"> 
+              Download M3U
+            </button>
+            <button
+              id="downloadPlsBtn" class="secondary" onclick="downloadPLS()"> 
+              Download PLS
+            </button>
+          </div>
+        </footer>
+      </article>
+      <article>
+        <hgroup>
+          <h2>Remote playlist</h2>
+          <p>
+            Import items from a remote playlist in JSON, M3U and PLS formats.
+          </p>
+        </hgroup>
+        <label for="remotePlaylistUrl">Remote playlist URL</label>
+        <div role="group">
+          <input type="url" id="remotePlaylistUrl"
+            placeholder="Enter remote playlist URL (http://...)" />
+          <button onclick="importRemotePlaylist()">Import</button>
+        </div>
+      </article>
     </main>
-    <!-- JavaScript includes -->
     <script src="scripts.js"></script>
     <script>
-        // Initialize the playlist page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verify we're on the correct page before initializing
-            if (document.getElementById('playlistBody')) {
-                initTheme();        // Initialize theme settings
-                initPlaylistPage(); // Initialize playlist page functionality
-            }
-        });
+      // Initialize the playlist page when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        initTheme();        // Initialize theme settings
+        initPlaylistPage(); // Initialize playlist page functionality
+      });
     </script>
-</body>
+  </body>
 </html>

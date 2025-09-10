@@ -512,12 +512,7 @@ function connectWebSocket() {
                 
                 // Update status element only if playing state changed
                 if (status.playing !== prev.playing) {
-                    const statusElement = document.getElementById('status');
-                    if (statusElement) {
-                        statusElement.textContent = status.playing ? 'Playing' : 'Stopped';
-                        statusElement.className = 'status ' + (status.playing ? 'playing' : 'stopped');
-                        prev['playing'] = status.playing;
-                    }
+                    prev['playing'] = status.playing;
                 }
                 
                 // Update stream name element only if it changed
@@ -1456,7 +1451,7 @@ function handleDragEnd(e) {
 }
 
 /**
- * @brief Add a new stream to the playlist
+ * @brief Add a new station to the playlist
  * Validates user input and adds a new stream to the playlist
  * 
  * This function handles the addition of a new stream to the playlist. It performs
@@ -1468,7 +1463,7 @@ function handleDragEnd(e) {
  * 
  * After successful validation, the stream is added to the playlist and the UI is updated.
  */
-function addStream() {
+function addStation() {
     const name = document.getElementById('name');
     const url = document.getElementById('url');
     
