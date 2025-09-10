@@ -109,6 +109,368 @@ function initConfigPage() {
 
 
 /**
+ * @brief Load streams from the server
+ * @description Fetches the playlist from the server and updates the UI
+ * Shows loading states and handles errors appropriately
+ *
+ * This function retrieves the current playlist from the server via the /api/streams endpoint.
+ * It updates both the main page stream selector and the playlist management page.
+ * The function handles loading states, error conditions, and data validation.
+ *
+ * Implementation details:
+ * - Shows loading indicators during fetch
+ * - Validates response format (must be array)
+ * - Validates each stream object (must have name and URL)
+ * - Handles network errors gracefully
+ * - Updates both main page and playlist page UI
+ *
+ * @returns {Promise<void>}
+ */
+async function loadStreams() {
+  // Show loading state
+  const select = $("stream-select");
+  if (select) {
+    select.innerHTML = '<option value="">Loading streams...</option>';
+    select.disabled = true;
+  }
+  const playlistBody = $("playlist-body");
+  if (playlistBody) {
+    playlistBody.innerHTML =
+      '<span aria-busy="true">Loading streams...</span>';
+  }
+  // Try to get the streams from API
+  try {
+    const response = await fetch("/api/streams");
+    console.log("Loading streams from /api/streams ...", response.status);
+    if (!response.ok) {
+        throw new Error(`${response.statusText}`);
+    }
+    const data = await response.json();
+    // Validate that we received an array
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid response format from server: expected array",);
+    }
+    streams = data;
+    console.log("Loaded streams:", streams);
+    // In homepage, populate the select element
+    if (select) {
+      select.innerHTML = '<option value="">Select a stream...</option>';
+      streams.forEach((stream) => {
+        // Validate stream object
+        if (!stream || typeof stream !== "object" || !stream.url || !stream.name) {
+          console.warn("Skipping invalid stream object:", stream);
+        } else {
+          const option = document.createElement("option");
+          option.value = stream.url;
+          option.textContent = stream.name;
+          option.dataset.name = stream.name;
+          select.appendChild(option);
+        }
+      });
+      select.disabled = false;
+    }
+    // Also update playlist if on playlist page
+    if (playlistBody) {
+      renderPlaylist();
+    }
+  } catch (error) {
+    const errorMessage = error.message || "Unknown error occurred";
+    if (select) {
+      select.innerHTML = '<option value="">⚠ Error loading streams from device</option>';
+      select.setAttribute("aria-invalid", "true");
+      select.disabled = true;
+    }
+    if (playlistBody) {
+      playlistBody.innerHTML = '<em>⚠ Error loading streams from device</em>';
+    }
+    console.error("Error loading streams:", error);
+    showModal("Error loading streams", errorMessage);
+  }
+}
+
+/**
+ * @brief Render the playlist in the UI
+ * Updates the playlist display with current streams and provides editing controls
+ *
+ * This function populates the playlist management interface with the current streams.
+ * For each stream, it creates editable input fields for name and URL, along with
+ * a delete button. It also handles the empty playlist case with a helpful message.
+ * The playlist items are draggable for reordering.
+ */
+function renderPlaylist() {
+  const playlistBody = $("playlist-body");
+  if (!playlistBody) {
+    console.warn("Playlist element not found");
+    return;
+  }
+  // Reset the content
+  playlistBody.innerHTML = "";
+  // No streams in playlist
+  if (streams.length === 0) {
+    const item = document.createElement("div");
+    item.innerHTML = '<em class="empty-playlist">No streams in playlist.</em>';
+    playlistBody.appendChild(item);
+    return;
+  }
+  // Make the playlist container a drop zone
+  playlistBody.setAttribute("data-dropzone", "true");
+  // Append the playlist items
+  streams.forEach((stream, index) => {
+    const item = document.createElement("div");
+    item.role = "group";
+    item.className = "playlist-item";
+    item.draggable = true;
+    item.dataset.index = index;
+    // Create favicon preview if available
+    let faviconHtml = "";
+    if (stream.icon) {
+      faviconHtml = `<img class="favicon" src="${stream.favicon}" alt="Favicon">`;
+    }
+    item.innerHTML = `
+      <div class="drag-handle">⋮⋮</div>
+      <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
+      <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
+      <button onclick="playStreamFromPlaylist(${index})">Play</button>
+      <button class="secondary" onclick="deleteStream(${index})">Delete</button>
+    `;
+    // Add drag and drop event listeners
+    item.addEventListener("dragstart", handleDragStart);
+    item.addEventListener("dragover", handleDragOver);
+    item.addEventListener("dragleave", handleDragLeave);
+    item.addEventListener("drop", handleDrop);
+    item.addEventListener("dragend", handleDragEnd);
+    // Append the item to the playlist
+    playlistBody.appendChild(item);
+  });
+  // Add drop event listener to the playlist container
+  playlistBody.addEventListener("dragover", handleDragOver);
+  playlistBody.addEventListener("dragleave", handleDragLeave);
+  playlistBody.addEventListener("drop", handleDropContainer);
+}
+
+/**
+ * @brief Update a stream field in the playlist
+ * Validates and updates a specific field (name or URL) of a stream
+ *
+ * This function updates either the name or URL field of a stream at the specified index.
+ * It performs appropriate validation based on the field being updated:
+ * - For URLs: Validates format, structure, and length (max 256 chars)
+ * - For names: Validates non-empty and length (max 128 chars)
+ *
+ * @param {number} index - The index of the stream to update
+ * @param {string} field - The field to update ('name' or 'url')
+ * @param {string} value - The new value for the field
+ */
+function updateStream(index, field, value) {
+  // Check the index
+  if (index < 0 || index >= streams.length) {
+    return;
+  }
+  if (!streams[index]) {
+    return;
+  }
+  // Trim the sent value
+  const trimmedValue = value.trim();
+  // Validate URL format if updating URL field
+  if (field === "url") {
+    // Empty
+    if (!trimmedValue) {
+      return;
+    }
+    if (
+      !trimmedValue.startsWith("http://") &&
+      !trimmedValue.startsWith("https://")
+    ) {
+      return;
+    }
+    // Additional URL validation
+    try {
+      new URL(trimmedValue);
+    } catch (e) {
+      return;
+    }
+    // Validate URL length
+    if (trimmedValue.length > 256) {
+      return;
+    }
+  }
+  // Validate name field
+  else if (field === "name") {
+    // Empty
+    if (!trimmedValue) {
+      return;
+    }
+    // Validate name length
+    if (trimmedValue.length > 128) {
+      return;
+    }
+  }
+  // Store the new value
+  streams[index][field] = trimmedValue;
+}
+
+function deleteStream(index) {
+  // Check the index
+  if (index < 0 || index >= streams.length) {
+    return;
+  }
+  // Create modal for confirmation
+  const modal = document.createElement("dialog");
+  modal.id = "deleteModal";
+  modal.innerHTML = `
+    <article>
+      <header>
+        <h2>Confirm deletion</h2>
+      </header>
+      <p>Are you sure you want to delete this stream?</p>
+      <footer>
+        <div role="group">
+          <button onclick="confirmDeleteStream(${index})">Delete</button>
+          <button class="secondary" onclick="$('deleteModal').remove()">Cancel</button>
+        </div>
+      </footer>
+    </article>
+  `;
+  document.body.appendChild(modal);
+  modal.showModal();
+}
+
+function confirmDeleteStream(index) {
+  // Close and remove modal
+  const modal = $("deleteModal");
+  if (modal) {
+    modal.remove();
+  }
+  // Perform deletion
+  streams.splice(index, 1);
+  renderPlaylist();
+}
+
+
+async function savePlaylist() {
+  // Validate playlist before saving
+  if (streams.length === 0) {
+    // Create modal for confirmation
+    const modal = document.createElement("dialog");
+    modal.id = "emptyPlaylistModal";
+    modal.innerHTML = `
+      <article>
+        <header>
+          <h2>Empty Playlist</h2>
+        </header>
+        <p>Playlist is empty. Do you want to save an empty playlist?</p>
+        <footer>
+          <div role="group">
+            <button onclick="confirmSaveEmptyPlaylist()">Save empty playlist</button>
+            <button class="secondary" onclick="$('emptyPlaylistModal').remove()">Cancel</button>
+          </div>
+        </footer>
+      </article>
+    `;
+    document.body.appendChild(modal);
+    modal.showModal();
+    return;
+  }
+  // If playlist is not empty, proceed with saving
+  savePlaylistInternal();
+}
+
+function confirmSaveEmptyPlaylist() {
+  // Close and remove modal
+  const modal = $("emptyPlaylistModal");
+  if (modal) {
+    modal.remove();
+  }
+  // Proceed with saving
+  savePlaylistInternal();
+}
+
+async function savePlaylistInternal() {
+  // Validate each stream in the playlist
+  for (let i = 0; i < streams.length; i++) {
+    const stream = streams[i];
+    if (!stream || typeof stream !== "object") {
+      return;
+    }
+    if (!stream.name || !stream.name.trim()) {
+      return;
+    }
+    if (!stream.url) {
+      return;
+    }
+    if (
+      !stream.url.startsWith("http://") &&
+      !stream.url.startsWith("https://")
+    ) {
+      return;
+    }
+    // More URL validation
+    try {
+      new URL(stream.url);
+    } catch (e) {
+      return;
+    }
+  }
+  // Show loading state
+  const saveButton = $("save-playlist-btn");
+  const originalText = saveButton ? saveButton.textContent : null;
+  if (saveButton) {
+    saveButton.textContent = "Saving...";
+    saveButton.disabled = true;
+  }
+  // Convert streams to JSON
+  let jsonData;
+  try {
+    jsonData = JSON.stringify(streams);
+  } catch (error) {
+    console.error("Error serializing playlist:", error);
+    showModal("Error serializing playlist", error);
+    if (saveButton) {
+      saveButton.textContent = originalText;
+      saveButton.disabled = false;
+    }
+    return;
+  }
+  // Debug
+  console.log("Saving playlist:", jsonData);
+  // Try to send to server
+  try {
+    const response = await fetch("/api/streams", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: jsonData,
+    });
+    if (response.ok) {
+      // Handle JSON response
+      const result = await response.json();
+      if (result.status === "success") {
+        // Success - no toast needed
+      } else {
+        throw new Error(result.message || "Unknown error");
+      }
+    } else {
+      const error = await response.text();
+      throw new Error(`${response.status} ${response.statusText} - ${error}`);
+    }
+  } catch (error) {
+    console.error("Error saving playlist:", error);
+    showModal("Error saving playlist", error);
+  } finally {
+    // Restore button state
+    if (saveButton) {
+      saveButton.textContent = originalText;
+      saveButton.disabled = false;
+    }
+  }
+}
+
+
+
+
+/**
  * @brief Load configuration from server
  * @description Fetches the current device configuration and populates the form fields
  * @returns {Promise<void>}
@@ -330,100 +692,6 @@ async function importAllConfiguration() {
     // Restore button state
     importButton.textContent = originalText;
     importButton.disabled = false;
-  }
-}
-
-
-
-/**
- * @brief Load streams from the server
- * @description Fetches the playlist from the server and updates the UI
- * Shows loading states and handles errors appropriately
- *
- * This function retrieves the current playlist from the server via the /api/streams endpoint.
- * It updates both the main page stream selector and the playlist management page.
- * The function handles loading states, error conditions, and data validation.
- *
- * Implementation details:
- * - Shows loading indicators during fetch
- * - Validates response format (must be array)
- * - Validates each stream object (must have name and URL)
- * - Handles network errors gracefully
- * - Updates both main page and playlist page UI
- *
- * @returns {Promise<void>}
- */
-async function loadStreams() {
-  // Show loading state
-  const select = $("stream-select");
-  if (select) {
-    select.innerHTML = '<option value="">Loading streams...</option>';
-    select.disabled = true;
-  }
-
-  const playlistBody = $("playlist-body");
-  if (playlistBody) {
-    playlistBody.innerHTML =
-      '<span aria-busy="true">Loading streams...</span>';
-  }
-
-  try {
-    console.log("Loading streams from /api/streams");
-    const response = await fetch("/api/streams");
-    console.log("Streams response status:", response.status);
-    if (!response.ok) {
-      throw new Error(
-        `Failed to load streams: ${response.status} ${response.statusText}`,
-      );
-    }
-    const data = await response.json();
-
-    // Validate that we received an array
-    if (!Array.isArray(data)) {
-      throw new Error(
-        "Invalid response format from server: expected array of streams",
-      );
-    }
-
-    streams = data;
-    console.log("Loaded streams:", streams);
-
-    if (select) {
-      select.innerHTML = '<option value="">Select a stream...</option>';
-      streams.forEach((stream) => {
-        // Validate stream object
-        if (
-          !stream ||
-          typeof stream !== "object" ||
-          !stream.url ||
-          !stream.name
-        ) {
-          console.warn("Skipping invalid stream object:", stream);
-          return;
-        }
-        const option = document.createElement("option");
-        option.value = stream.url;
-        option.textContent = stream.name;
-        option.dataset.name = stream.name;
-        select.appendChild(option);
-      });
-      select.disabled = false;
-    }
-
-    // Also update playlist if on playlist page
-    if (playlistBody) {
-      renderPlaylist();
-    }
-  } catch (error) {
-    console.error("Error loading streams:", error);
-    const errorMessage = error.message || "Unknown error occurred";
-    if (select) {
-      select.innerHTML = '<option value="">Error loading streams</option>';
-      select.disabled = true;
-    }
-    if (playlistBody) {
-      playlistBody.innerHTML = `<span>Error loading streams: ${errorMessage}</span>`;
-    }
   }
 }
 
@@ -1510,72 +1778,6 @@ async function getPlaylistData(url) {
   }
 }
 
-// Playlist functions
-/**
- * @brief Render the playlist in the UI
- * Updates the playlist display with current streams and provides editing controls
- *
- * This function populates the playlist management interface with the current streams.
- * For each stream, it creates editable input fields for name and URL, along with
- * a delete button. It also handles the empty playlist case with a helpful message.
- * The playlist items are draggable for reordering.
- */
-function renderPlaylist() {
-  const playlistBody = $("playlist-body");
-  if (!playlistBody) {
-    console.warn("Playlist element not found");
-    return;
-  }
-
-  playlistBody.innerHTML = "";
-
-  if (streams.length === 0) {
-    const item = document.createElement("div");
-    item.innerHTML =
-      '<span class="empty-playlist">No streams in playlist. Add some streams to get started!</span>';
-    playlistBody.appendChild(item);
-    return;
-  }
-
-  // Make the playlist container a drop zone
-  playlistBody.setAttribute("data-dropzone", "true");
-
-  streams.forEach((stream, index) => {
-    const item = document.createElement("div");
-    item.role = "group";
-    item.className = "playlist-item";
-    item.draggable = true;
-    item.dataset.index = index;
-
-    // Create favicon preview if available
-    let faviconHtml = "";
-    if (stream.favicon) {
-      faviconHtml = `<img src="${stream.favicon}" alt="Favicon" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">`;
-    }
-
-    item.innerHTML = `
-            <div class="drag-handle">⋮⋮</div>
-            <input type="text" value="${escapeHtml(stream.name)}" onchange="updateStream(${index}, 'name', this.value)">
-            <input type="text" value="${escapeHtml(stream.url)}" onchange="updateStream(${index}, 'url', this.value)">
-            <button onclick="playStreamFromPlaylist(${index})">Play</button>
-            <button class="secondary" onclick="deleteStream(${index})">Delete</button>
-        `;
-
-    // Add drag and drop event listeners
-    item.addEventListener("dragstart", handleDragStart);
-    item.addEventListener("dragover", handleDragOver);
-    item.addEventListener("dragleave", handleDragLeave);
-    item.addEventListener("drop", handleDrop);
-    item.addEventListener("dragend", handleDragEnd);
-
-    playlistBody.appendChild(item);
-  });
-
-  // Add drop event listener to the playlist container
-  playlistBody.addEventListener("dragover", handleDragOver);
-  playlistBody.addEventListener("dragleave", handleDragLeave);
-  playlistBody.addEventListener("drop", handleDropContainer);
-}
 
 // Helper function to escape HTML entities
 function escapeHtml(unsafe) {
@@ -1759,71 +1961,6 @@ function addStation() {
   name.focus(); // Focus back to name field for next entry
 }
 
-/**
- * @brief Update a stream field in the playlist
- * Validates and updates a specific field (name or URL) of a stream
- *
- * This function updates either the name or URL field of a stream at the specified index.
- * It performs appropriate validation based on the field being updated:
- * - For URLs: Validates format, structure, and length (max 256 chars)
- * - For names: Validates non-empty and length (max 128 chars)
- *
- * @param {number} index - The index of the stream to update
- * @param {string} field - The field to update ('name' or 'url')
- * @param {string} value - The new value for the field
- */
-function updateStream(index, field, value) {
-  if (index < 0 || index >= streams.length) {
-    return;
-  }
-
-  if (!streams[index]) {
-    return;
-  }
-
-  const trimmedValue = value.trim();
-
-  // Validate URL format if updating URL field
-  if (field === "url") {
-    if (!trimmedValue) {
-      return;
-    }
-
-    if (
-      !trimmedValue.startsWith("http://") &&
-      !trimmedValue.startsWith("https://")
-    ) {
-      return;
-    }
-
-    // Additional URL validation
-    try {
-      new URL(trimmedValue);
-    } catch (e) {
-      return;
-    }
-
-    // Validate URL length
-    if (trimmedValue.length > 256) {
-      return;
-    }
-  }
-
-  // Validate name field
-  if (field === "name") {
-    if (!trimmedValue) {
-      return;
-    }
-
-    // Validate name length
-    if (trimmedValue.length > 128) {
-      return;
-    }
-  }
-
-  streams[index][field] = trimmedValue;
-}
-
 function playStreamFromPlaylist(index) {
   if (index < 0 || index >= streams.length) {
     return;
@@ -1841,175 +1978,6 @@ function playStreamFromPlaylist(index) {
   });
 }
 
-function deleteStream(index) {
-  if (index < 0 || index >= streams.length) {
-    return;
-  }
-
-  // Create modal for confirmation
-  const modal = document.createElement("dialog");
-  modal.id = "deleteModal";
-  modal.innerHTML = `
-        <article>
-            <header>
-                <h2>Confirm Deletion</h2>
-            </header>
-            <p>Are you sure you want to delete this stream?</p>
-            <footer>
-                <div role="group">
-                    <button onclick="confirmDeleteStream(${index})">Delete</button>
-                    <button class="secondary" onclick="$('deleteModal').remove()">Cancel</button>
-                </div>
-            </footer>
-        </article>
-    `;
-  document.body.appendChild(modal);
-  modal.showModal();
-}
-
-function confirmDeleteStream(index) {
-  // Close and remove modal
-  const modal = $("deleteModal");
-  if (modal) {
-    modal.remove();
-  }
-
-  // Perform deletion
-  streams.splice(index, 1);
-  renderPlaylist();
-}
-
-async function savePlaylist() {
-  // Validate playlist before saving
-  if (streams.length === 0) {
-    // Create modal for confirmation
-    const modal = document.createElement("dialog");
-    modal.id = "emptyPlaylistModal";
-    modal.innerHTML = `
-            <article>
-                <header>
-                    <h2>Empty Playlist</h2>
-                </header>
-                <p>Playlist is empty. Do you want to save an empty playlist?</p>
-                <footer>
-                    <div role="group">
-                        <button onclick="confirmSaveEmptyPlaylist()">Save</button>
-                        <button class="secondary" onclick="$('emptyPlaylistModal').remove()">Cancel</button>
-                    </div>
-                </footer>
-            </article>
-        `;
-    document.body.appendChild(modal);
-    modal.showModal();
-    return;
-  }
-
-  // If playlist is not empty, proceed with saving
-  savePlaylistInternal();
-}
-
-function confirmSaveEmptyPlaylist() {
-  // Close and remove modal
-  const modal = $("emptyPlaylistModal");
-  if (modal) {
-    modal.remove();
-  }
-
-  // Proceed with saving
-  savePlaylistInternal();
-}
-
-async function savePlaylistInternal() {
-  // Validate each stream in the playlist
-  for (let i = 0; i < streams.length; i++) {
-    const stream = streams[i];
-    if (!stream || typeof stream !== "object") {
-      return;
-    }
-
-    if (!stream.name || !stream.name.trim()) {
-      return;
-    }
-
-    if (!stream.url) {
-      return;
-    }
-
-    if (
-      !stream.url.startsWith("http://") &&
-      !stream.url.startsWith("https://")
-    ) {
-      return;
-    }
-
-    try {
-      new URL(stream.url);
-    } catch (e) {
-      return;
-    }
-  }
-
-  // Show loading state
-  const saveButton = document.querySelector(
-    'button[onclick="savePlaylist()"]',
-  );
-  const originalText = saveButton ? saveButton.textContent : null;
-  if (saveButton) {
-    saveButton.textContent = "Saving...";
-    saveButton.disabled = true;
-  }
-
-  // Convert streams to JSON
-  let jsonData;
-  try {
-    jsonData = JSON.stringify(streams);
-  } catch (error) {
-    console.error("Error serializing playlist:", error);
-    if (saveButton) {
-      saveButton.textContent = originalText || "Save Playlist";
-      saveButton.disabled = false;
-    }
-    return;
-  }
-
-  console.log("Saving playlist:", jsonData);
-
-  try {
-    const response = await fetch("/api/streams", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: jsonData,
-    });
-
-    console.log("Save playlist response status:", response.status);
-
-    if (response.ok) {
-      // Handle JSON response
-      const result = await response.json();
-      if (result.status === "success") {
-        // Success - no toast needed
-      } else {
-        throw new Error(result.message || "Unknown error");
-      }
-    } else {
-      const error = await response.text();
-      throw new Error(
-        `Error saving playlist: ${response.status} ${response.statusText} - ${error}`,
-      );
-    }
-  } catch (error) {
-    console.error("Error saving playlist:", error);
-  } finally {
-    // Restore button state
-    if (saveButton) {
-      saveButton.textContent = originalText || "Save Playlist";
-      saveButton.disabled = false;
-    }
-  }
-}
 
 async function importRemotePlaylist() {
   const urlInput = $("remote-playlist-url");
