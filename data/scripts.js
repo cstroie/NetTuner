@@ -3288,15 +3288,15 @@ async function exportAllConfiguration() {
 
 // Handle import file selection
 function handleImportFileSelect() {
-    const fileInput = document.getElementById('importFile');
-    const importButton = document.getElementById('importButton');
+    const fileInput = document.getElementById('import-file');
+    const importButton = document.getElementById('import-button');
     importButton.disabled = !fileInput.files.length;
 }
 
 // Import all configuration
 async function importAllConfiguration() {
-    const fileInput = document.getElementById('importFile');
-    const importButton = document.getElementById('importButton');
+    const fileInput = document.getElementById('import-file');
+    const importButton = document.getElementById('import-button');
     const file = fileInput.files[0];
     
     if (!file) {
