@@ -1,130 +1,124 @@
 <!DOCTYPE html>
-<html data-theme="dark">
-<head>
-    <meta charset="UTF-8">
+<html lang="en-US" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
     <title>NetTuner</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="pico.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body class="container">
-    <!-- Navigation bar with status indicator -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="pico.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="container">
     <nav>
-        <ul>
-            <li><strong>NetTuner</strong></li>
-        </ul>
-        <ul>
-            <!-- Playback status indicator -->
-            <li><span id="status" class="status-indicator stopped">STOPPED</span></li>
-        </ul>
-        <ul>
-            <!-- Dropdown menu for page navigation -->
-            <li>
-                <details class="dropdown">
-                    <summary>Home</summary>
-                    <ul dir="rtl">
-                        <li><a href="/" aria-current="page">Home</a></li>
-                        <li><a href="/playlist">Playlist</a></li>
-                        <li><a href="/wifi">Wifi</a></li>
-                        <li><a href="/config">Config</a></li>
-                        <li><a href="/about">About</a></li>
-                    </ul>
-                </details>
-            </li>
-            <!-- Theme toggle button -->
-            <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
-        </ul>
+      <ul>
+        <li><strong>NetTuner</strong></li>
+      </ul>
+      <ul>
+        <li>
+          <details class="dropdown">
+            <summary>Home</summary>
+            <ul dir="rtl">
+              <li><a href="/" aria-current="page">Home</a></li>
+              <li><a href="/playlist">Playlist</a></li>
+              <li><a href="/wifi">Wifi</a></li>
+              <li><a href="/config">Configuration</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <button
+            id="themeToggle"
+            class="outline"
+            aria-label="Toggle theme"
+            onclick="toggleTheme()">
+            ◐
+          </button>
+        </li>
+      </ul>
     </nav>
-    <!-- Header with stream information and controls -->
     <header>
-        <article>
-            <!-- Stream title and name display -->
-            <hgroup>
-                <figure>
-                    <!-- Cover art image -->
-                    <img id="coverArt" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+" alt="Cover Art">
-                    <aside>
-                        <h2 id="streamTitle">No stream selected</h2>
-                        <p id="streamName">No station selected</p>
-                    </aside>
-                </figure>
-            </hgroup>
-            <!-- Audio controls footer -->
-            <footer>
-                <!-- Volume control card -->
-                <card>
-                    <label for="volume">Volume:
-                        <span id="volumeValue">11</span>
-                    </label>
-                    <!-- Volume slider (0-22 range for ESP32-audioI2S) -->
-                    <input type="range" id="volume" min="0" max="22" value="11" step="1" oninput="handleMixerChange('volume', this.value)">
-                </card>
-                <!-- Tone controls card -->
-                <card class="tone-controls">
-                    <!-- Bass control -->
-                    <div class="tone-control">
-                        <label for="bass">Bass:
-                            <span id="bassValue">0dB</span>
-                        </label>
-                        <input type="range" id="bass" min="-6" max="6" value="0" step="1" oninput="handleMixerChange('bass', this.value)">
-                    </div>
-                    <!-- Midrange control -->
-                    <div class="tone-control">
-                        <label for="mid">Midrange:
-                            <span id="midValue">0dB</span>
-                        </label>
-                        <input type="range" id="mid" min="-6" max="6" value="0" step="1" oninput="handleMixerChange('mid', this.value)">
-                    </div>
-                    <!-- Treble control -->
-                    <div class="tone-control">
-                        <label for="treble">Treble:
-                            <span id="trebleValue">0dB</span>
-                        </label>
-                        <input type="range" id="treble" min="-6" max="6" value="0" step="1" oninput="handleMixerChange('treble', this.value)">
-                    </div>
-                </card>
-            </footer>
-        </article>
-    </header>
-    <!-- Main content with stream selection and instant play -->
-    <main>     
-        <!-- Stream selection article -->
-        <article>
-            <label for="streamSelect">Select a stream</label>
-            <!-- Playlist dropdown populated by JavaScript -->
-            <select id="streamSelect" onchange="playSelectedStream()">
-                <option value="">Select a stream...</option>
-            </select>
-            <!-- Playback control buttons -->
-            <footer>
-                <div role="group">
-                    <button onclick="playStream()">▶&nbsp;Play</button>
-                    <button class="secondary" onclick="stopStream()">⏹&nbsp;Stop</button>
-                </div>
-            </footer>
-        </article>
-        
-        <!-- Instant play article -->
-        <article>
-            <label for="instantUrl">Instant play</label>
-            <!-- Direct URL input for playing streams not in playlist -->
-            <div role="group">
-                <input type="text" id="instantUrl" placeholder="Enter stream URL for instant play">
-                <button onclick="playInstantStream()">▶&nbsp;Play</button>
+      <article>
+        <hgroup>
+          <figure>
+            <img
+              id="coverArt"
+              src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+"
+              alt="Cover Art" />
+            <aside>
+              <h2 id="streamTitle">No stream selected</h2>
+              <p id="streamName">No station selected</p>
+            </aside>
+          </figure>
+        </hgroup>
+        <footer>
+          <card>
+            <label for="volume">Volume:
+              <span id="volumeValue">11</span>
+            </label>
+            <input
+              type="range" id="volume" min="0" max="22" value="11" step="1"
+              oninput="handleMixerChange('volume', this.value)" />
+          </card>
+          <card class="tone-controls">
+            <div class="tone-control">
+              <label for="bass">Bass:
+                <span id="bassValue">0dB</span>
+              </label>
+              <input
+                type="range" id="bass" min="-6" max="6" value="0" step="1"
+                oninput="handleMixerChange('bass', this.value)" />
             </div>
-        </article>
+            <div class="tone-control">
+              <label for="mid">Midrange:
+                <span id="midValue">0dB</span>
+              </label>
+              <input
+                type="range" id="mid" min="-6" max="6" value="0" step="1"
+                oninput="handleMixerChange('mid', this.value)" />
+            </div>
+            <div class="tone-control">
+              <label for="treble">Treble:
+                <span id="trebleValue">0dB</span>
+              </label>
+              <input
+                type="range" id="treble" min="-6" max="6" value="0" step="1"
+                oninput="handleMixerChange('treble', this.value)" />
+            </div>
+          </card>
+        </footer>
+      </article>
+    </header>
+    <main>
+      <article>
+        <label for="streamSelect">Select a stream</label>
+        <select id="streamSelect" onchange="playSelectedStream()">
+          <option value="">Select a stream...</option>
+        </select>
+        <footer>
+          <div role="group">
+            <button onclick="playStream()">▶&nbsp;Play</button>
+            <button class="secondary" onclick="stopStream()">⏹&nbsp;Stop</button>
+          </div>
+        </footer>
+      </article>
+      <article>
+        <label for="instantUrl">Instant play</label>
+        <div role="group">
+          <input
+            type="text"
+            id="instantUrl"
+            placeholder="Enter stream URL for instant play" />
+          <button onclick="playInstantStream()">▶&nbsp;Play</button>
+        </div>
+      </article>
     </main>
-    <!-- JavaScript includes -->
     <script src="scripts.js"></script>
     <script>
-        // Initialize the main page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verify we're on the correct page before initializing
-            if (document.getElementById('streamSelect')) {
-                initTheme();    // Initialize theme settings
-                initMainPage(); // Initialize main page functionality
-            }
-        });
+      // Initialize the main page when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        initTheme();    // Initialize theme settings
+        initMainPage(); // Initialize main page functionality
+      });
     </script>
-</body>
+  </body>
 </html>
