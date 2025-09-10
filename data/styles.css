@@ -247,7 +247,7 @@ fieldset input[type="number"]:focus {
  * - Large font size for clear icon display
  * - Proper padding and line height for centering
  */
-button#themeToggle {
+button#theme-toggle {
     border: none;
     font-size: 2em;
     line-height: 1;

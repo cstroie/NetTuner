@@ -118,7 +118,7 @@ function toggleTheme() {
  * @description Updates the theme toggle button text and title based on current theme
  */
 function updateThemeToggle() {
-    const themeToggle = document.getElementById('themeToggle');
+    const themeToggle = document.getElementById('theme-toggle');
     const currentTheme = document.documentElement.getAttribute('data-theme');
     if (themeToggle) {
         themeToggle.textContent = currentTheme === 'dark' ? '◑' : '◐';
@@ -176,22 +176,22 @@ async function loadConfig() {
         const response = await fetch('/api/config');
         if (response.ok) {
             const config = await response.json();
-            document.getElementById('i2s_bclk').value = config.i2s_bclk || 27;
-            document.getElementById('i2s_lrc').value = config.i2s_lrc || 25;
-            document.getElementById('i2s_dout').value = config.i2s_dout || 26;
-            document.getElementById('led_pin').value = config.led_pin || 2;
-            document.getElementById('rotary_clk').value = config.rotary_clk || 18;
-            document.getElementById('rotary_dt').value = config.rotary_dt || 19;
-            document.getElementById('rotary_sw').value = config.rotary_sw || 23;
-            document.getElementById('board_button').value = config.board_button || 0;
-            document.getElementById('display_sda').value = config.display_sda || 5;
-            document.getElementById('display_scl').value = config.display_scl || 4;
-            document.getElementById('display_width').value = config.display_width || 128;
-            document.getElementById('display_height').value = config.display_height || 64;
-            document.getElementById('display_address').value = config.display_address || 60;
+            document.getElementById('i2s-bclk').value = config.i2s_bclk || 27;
+            document.getElementById('i2s-lrc').value = config.i2s_lrc || 25;
+            document.getElementById('i2s-dout').value = config.i2s_dout || 26;
+            document.getElementById('led-pin').value = config.led_pin || 2;
+            document.getElementById('rotary-clk').value = config.rotary_clk || 18;
+            document.getElementById('rotary-dt').value = config.rotary_dt || 19;
+            document.getElementById('rotary-sw').value = config.rotary_sw || 23;
+            document.getElementById('board-button').value = config.board_button || 0;
+            document.getElementById('display-sda').value = config.display_sda || 5;
+            document.getElementById('display-scl').value = config.display_scl || 4;
+            document.getElementById('display-width').value = config.display_width || 128;
+            document.getElementById('display-height').value = config.display_height || 64;
+            document.getElementById('display-address').value = config.display_address || 60;
             
             // Reset aria-invalid attributes
-            const configInputs = document.querySelectorAll('#configForm input');
+            const configInputs = document.querySelectorAll('#config-form input');
             configInputs.forEach(input => {
                 input.setAttribute('aria-invalid', 'false');
             });
@@ -207,7 +207,7 @@ async function loadConfig() {
  * @returns {Promise<void>}
  */
 async function saveConfig() {
-    const configInputs = document.querySelectorAll('#configForm input');
+    const configInputs = document.querySelectorAll('#config-form input');
     let hasErrors = false;
     
     // Reset all aria-invalid attributes
@@ -216,19 +216,19 @@ async function saveConfig() {
     });
     
     const config = {
-        i2s_bclk: parseInt(document.getElementById('i2s_bclk').value),
-        i2s_lrc: parseInt(document.getElementById('i2s_lrc').value),
-        i2s_dout: parseInt(document.getElementById('i2s_dout').value),
-        led_pin: parseInt(document.getElementById('led_pin').value),
-        rotary_clk: parseInt(document.getElementById('rotary_clk').value),
-        rotary_dt: parseInt(document.getElementById('rotary_dt').value),
-        rotary_sw: parseInt(document.getElementById('rotary_sw').value),
-        board_button: parseInt(document.getElementById('board_button').value),
-        display_sda: parseInt(document.getElementById('display_sda').value),
-        display_scl: parseInt(document.getElementById('display_scl').value),
-        display_width: parseInt(document.getElementById('display_width').value),
-        display_height: parseInt(document.getElementById('display_height').value),
-        display_address: parseInt(document.getElementById('display_address').value)
+        i2s_bclk: parseInt(document.getElementById('i2s-bclk').value),
+        i2s_lrc: parseInt(document.getElementById('i2s-lrc').value),
+        i2s_dout: parseInt(document.getElementById('i2s-dout').value),
+        led_pin: parseInt(document.getElementById('led-pin').value),
+        rotary_clk: parseInt(document.getElementById('rotary-clk').value),
+        rotary_dt: parseInt(document.getElementById('rotary-dt').value),
+        rotary_sw: parseInt(document.getElementById('rotary-sw').value),
+        board_button: parseInt(document.getElementById('board-button').value),
+        display_sda: parseInt(document.getElementById('display-sda').value),
+        display_scl: parseInt(document.getElementById('display-scl').value),
+        display_width: parseInt(document.getElementById('display-width').value),
+        display_height: parseInt(document.getElementById('display-height').value),
+        display_address: parseInt(document.getElementById('display-address').value)
     };
     
     // Validate all inputs
@@ -273,7 +273,7 @@ function initConfigPage() {
     loadConfig();
     
     // Set up form submit handler
-    const configForm = document.getElementById('configForm');
+    const configForm = document.getElementById('config-form');
     if (configForm) {
         configForm.addEventListener('submit', function(e) {
             e.preventDefault();
