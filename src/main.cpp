@@ -2225,6 +2225,7 @@ void loop() {
       Serial.println("WiFi disconnected, attempting to reconnect...");
       for (int i = 0; i < wifiNetworkCount; i++) {
         if (strlen(ssid[i]) > 0) {
+          Serial.printf("Connecting to %s\n", ssid[i]);
           WiFi.begin(ssid[i], password[i]);
           int wifiAttempts = 0;
           const int maxAttempts = 5;
