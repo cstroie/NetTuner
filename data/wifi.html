@@ -1,99 +1,117 @@
 <!DOCTYPE html>
-<html data-theme="dark">
-<head>
-    <meta charset="UTF-8">
+<html lang="en-US" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
     <title>WiFi configuration</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="pico.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body class="container">
-    <!-- Navigation bar -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="pico.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="container">
     <nav>
-        <ul>
-            <li><strong>NetTuner</strong></li>
-        </ul>
-        <ul>
-            <!-- Dropdown menu for page navigation -->
-            <li>
-                <details class="dropdown">
-                    <summary>Wifi</summary>
-                    <ul dir="rtl">
-                        <li><a href="/">Home</a></li>
-                        <li><a href="/playlist">Playlist</a></li>
-                        <li><a href="/wifi" aria-current="page">Wifi</a></li>
-                        <li><a href="/config">Config</a></li>
-                        <li><a href="/about">About</a></li>
-                    </ul>
-                </details>
-            </li>
-            <!-- Theme toggle button -->
-            <li><button id="themeToggle" class="outline" aria-label="Toggle theme" onclick="toggleTheme()">◐</button></li>
-        </ul>
+      <ul>
+        <li><strong>NetTuner</strong></li>
+      </ul>
+      <ul>
+        <li>
+          <details class="dropdown">
+            <summary>Wifi</summary>
+            <ul dir="rtl">
+              <li><a href="/">Home</a></li>
+              <li><a href="/playlist">Playlist</a></li>
+              <li><a href="/wifi" aria-current="page">Wifi</a></li>
+              <li><a href="/config">Configuration</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </details>
+        </li>
+        <li>
+          <button
+            id="themeToggle"
+            class="outline"
+            aria-label="Toggle theme"
+            onclick="toggleTheme()">
+            ◐
+          </button>
+        </li>
+      </ul>
     </nav>
-    <!-- Main content with WiFi configuration -->
     <main>
-        <!-- Available networks scanning -->
-        <article>
-            <hgroup>
-                <h2>Available networks</h2>
-                <p>Select a network from the list below to add it to your configuration. Networks marked with ★ are already configured.</p>
-            </hgroup>
-            <!-- Network list container -->
-            <div id="networks"><p>Press «Refresh networks» to start scanning for WiFi networks</p></div>
-            <!-- Refresh networks button -->
-            <footer>
-                <button type="submit" onclick="scanNetworks()">Refresh networks</button>
-            </footer>
-        </article>
-        
-        <!-- WiFi network configuration form -->
-        <article>
-            <hgroup>
-                <h2>Configure WiFi networks</h2>
-                <p>Add up to 5 WiFi networks. The device will try to connect to them in order of preference. Drag and drop to reorder networks.</p>
-            </hgroup>
-            <!-- Form for WiFi network configuration -->
-            <form id="wifiForm">
-                <fieldset id="networkFields">
-                    <!-- Initial network entry field -->
-                    <div role="group" class="network-entry" draggable="true">
-                        <div class="drag-handle">⋮⋮</div>
-                        <input type="text" id="ssid0" name="ssid0" placeholder="Enter SSID">
-                        <input type="password" id="password0" name="password0" placeholder="Enter password">
-                        <button type="button" class="remove-btn secondary" onclick="removeNetworkField(this)">Remove</button>
-                    </div>
-                </fieldset>
-            </form>
-            <!-- Save configuration button -->
-            <footer>
-                <div class="grid">
-                    <button type="button" onclick="addNetworkField()">Add network</button>
-                    <button type="submit" form="wifiForm">Save configuration</button>
-                </div>
-            </footer>
-        </article>
-    </main>
-    <!-- Connection status footer -->
-    <footer>
+      <article>
         <hgroup>
-            <h2>Connection status</h2>
-            <p>Current network connection information</p>
+          <h2>Available networks</h2>
+          <p>
+            Select a network from the list below to add it to your
+            configuration. Networks marked with ★ are already configured.
+          </p>
         </hgroup>
-        <!-- Connection status display -->
-        <div id="connection-status">
-            <p aria-busy="true">Loading connection status...</p>
+        <div id="networks">
+          <p>Press «Refresh networks» to start scanning for WiFi networks</p>
         </div>
+        <footer>
+          <button type="submit" onclick="scanNetworks()">
+            Refresh networks
+          </button>
+        </footer>
+      </article>
+      <article>
+        <hgroup>
+          <h2>Configure WiFi networks</h2>
+          <p>
+            Add up to 5 WiFi networks. The device will try to connect to them
+            in order of preference. Drag and drop to reorder networks.
+          </p>
+        </hgroup>
+        <form id="wifiForm">
+          <fieldset id="networkFields">
+            <div role="group" class="network-entry" draggable="true">
+              <div class="drag-handle">⋮⋮</div>
+              <input
+                type="text"
+                id="ssid0"
+                name="ssid0"
+                placeholder="Enter SSID" />
+              <input
+                type="password"
+                id="password0"
+                name="password0"
+                placeholder="Enter password" />
+              <button
+                type="button"
+                class="remove-btn secondary"
+                onclick="removeNetworkField(this)">
+                Remove
+              </button>
+            </div>
+          </fieldset>
+        </form>
+        <footer>
+          <div class="grid">
+            <button type="button" onclick="addNetworkField()">
+              Add network
+            </button>
+            <button type="submit" form="wifiForm">Save configuration</button>
+          </div>
+        </footer>
+      </article>
+    </main>
+    <footer>
+      <hgroup>
+        <h2>Connection status</h2>
+        <p>Current network connection information</p>
+      </hgroup>
+      <div id="connection-status">
+        <p aria-busy="true">Loading connection status...</p>
+      </div>
     </footer>
-    <!-- JavaScript includes -->
     <script src="scripts.js"></script>
     <script>
-        // Initialize the WiFi page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            initTheme();            // Initialize theme settings
-            initWiFiPage();         // Initialize WiFi page functionality
-            loadConnectionStatus(); // Load current connection status
-        });
+      // Initialize the WiFi page when DOM is loaded
+      document.addEventListener("DOMContentLoaded", function () {
+        initTheme(); // Initialize theme settings
+        initWiFiPage(); // Initialize WiFi page functionality
+        loadConnectionStatus(); // Load current connection status
+      });
     </script>
-</body>
+  </body>
 </html>
