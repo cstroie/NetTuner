@@ -301,13 +301,13 @@ function initConfigPage() {
  */
 async function loadStreams() {
     // Show loading state
-    const select = document.getElementById('streamSelect');
+    const select = document.getElementById('stream-select');
     if (select) {
         select.innerHTML = '<option value="">Loading streams...</option>';
         select.disabled = true;
     }
     
-    const playlistBody = document.getElementById('playlistBody');
+    const playlistBody = document.getElementById('playlist-body');
     if (playlistBody) {
         playlistBody.innerHTML = '<span aria-busy="true">Loading streams...</span>';
     }

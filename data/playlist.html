@@ -37,7 +37,7 @@
           <h2>Current playlist</h2>
           <p>Edit, remove, or reorder existing streams in your playlist.</p>
         </hgroup>
-        <div class="overflow-auto" id="playlistBody">
+        <div class="overflow-auto" id="playlist-body">
           <span class="empty-playlist">No streams in playlist</span
           >
         </div>
@@ -82,27 +82,27 @@
           <h2>Playlist management</h2>
           <p>Import or export your playlist in different formats.</p>
         </hgroup>
-        <label for="playlistFile">Upload playlist file:
-          <input type="file" id="playlistFile" accept=".json,.m3u,.m3u8,.pls" />
+        <label for="playlist-file">Upload playlist file:
+          <input type="file" id="playlist-file" accept=".json,.m3u,.m3u8,.pls" />
           <small>Supported formats: JSON, M3U, PLS</small>
         </label>
         <footer class="grid">
           <div role="group">
-            <button id="uploadPlaylistBtn" onclick="uploadPlaylist()">
+            <button id="upload-playlist-btn" onclick="uploadPlaylist()">
               Upload playlist
             </button>
           </div>
           <div role="group">
             <button
-              id="downloadJsonBtn" class="secondary" 
+              id="download-json-btn" class="secondary" 
               onclick="downloadJSON()"> Download JSON
             </button>
             <button
-              id="downloadM3uBtn" class="secondary" onclick="downloadM3U()"> 
+              id="download-m3u-btn" class="secondary" onclick="downloadM3U()"> 
               Download M3U
             </button>
             <button
-              id="downloadPlsBtn" class="secondary" onclick="downloadPLS()"> 
+              id="download-pls-btn" class="secondary" onclick="downloadPLS()"> 
               Download PLS
             </button>
           </div>
@@ -115,9 +115,9 @@
             Import items from a remote playlist in JSON, M3U and PLS formats.
           </p>
         </hgroup>
-        <label for="remotePlaylistUrl">Remote playlist URL</label>
+        <label for="remote-playlist-url">Remote playlist URL</label>
         <div role="group">
-          <input type="url" id="remotePlaylistUrl"
+          <input type="url" id="remote-playlist-url"
             placeholder="Enter remote playlist URL (http://...)" />
           <button onclick="importRemotePlaylist()">Import</button>
         </div>
