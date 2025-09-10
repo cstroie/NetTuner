@@ -109,6 +109,482 @@ function initConfigPage() {
 
 
 /**
+ * @brief Play selected stream
+ * @description Plays the stream selected in the main dropdown
+ *
+ * Implementation details:
+ * - Shows loading state during play request
+ * - Validates stream selection before playing
+ * - Handles network errors gracefully
+ * - Restores UI state after completion
+ * - Provides user feedback on success/failure
+ *
+ * @returns {Promise<void>}
+ */
+async function playStream() {
+  const { select, url, name } = getSelectedStream();
+  if (!select) {
+    return;
+  }
+  if (!validateStreamURL(url)) {
+    return;
+  }
+  // Show loading state
+  const playButton = $("play-stream-btn");
+  const originalText = playButton ? playButton.textContent : "▶&nbsp;Play";
+  if (playButton) {
+    playButton.textContent = "Playing...";
+    playButton.disabled = true;
+  }
+  try {
+    await sendPlayRequest(url, name, select.selectedIndex);
+  } catch (error) {
+    handlePlayError(error);
+  } finally {
+    // Restore button state
+    if (playButton) {
+      playButton.textContent = originalText;
+      playButton.disabled = false;
+    }
+  }
+}
+
+function getSelectedStream() {
+  const select = $("stream-select");
+  if (!select) {
+    return { select: null, url: null, name: null };
+  }
+  const option = select.options[select.selectedIndex];
+  const url = select.value;
+  const name = option ? option.dataset.name : "";
+  console.log("Playing stream:", { url, name });
+  return { select, url, name };
+}
+
+async function sendPlayRequest(url, name, index) {
+  const response = await fetch("/api/player", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify({
+      action: "play",
+      url: url,
+      name: name,
+      index: index,
+    }),
+  });
+  console.log("Player response status:", response.status);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`,
+    );
+  }
+  const result = await response.json();
+  if (result.status !== "success") {
+    throw new Error(result.message || "Failed to play stream");
+  }
+}
+
+function handlePlayError(error) {
+  console.error("Error playing stream:", error);
+  const errorMessage = error.message || "Unknown error occurred";
+  showModal("Error playing stream", errorMessage + " Please check the stream URL and try again.");
+}
+
+async function stopStream() {
+  // Show loading state
+  const stopButton = $("stop-stream-btn");
+  const originalText = stopButton ? stopButton.textContent : "⏹&nbsp;Stop";
+  if (stopButton) {
+    stopButton.textContent = "Stopping...";
+    stopButton.disabled = true;
+  }
+  try {
+    await sendStopRequest();
+  } catch (error) {
+    handleStopError(error);
+  } finally {
+    // Restore button state
+    if (stopButton) {
+      stopButton.textContent = originalText;
+      stopButton.disabled = false;
+    }
+  }
+}
+
+async function sendStopRequest() {
+  const response = await fetch("/api/player", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+    },
+    body: JSON.stringify({ action: "stop" }),
+  });
+  console.log("Stopping current stream:", response.status);
+  if (response.ok) {
+    const result = await response.json();
+    if (result.status !== "success") {
+      throw new Error(result.message || "Failed to stop stream");
+    }
+  } else {
+    throw new Error(
+      `Failed to stop stream: ${response.status} ${response.statusText}`,
+    );
+  }
+}
+
+function handleStopError(error) {
+  console.error("Error stopping stream:", error);
+  const errorMessage = error.message || "Unknown error occurred";
+  showModal("Error stopping stream", errorMessage + ". Please try again.");
+}
+
+
+async function playInstantStream() {
+  const urlInput = $("instant-url");
+  const url = urlInput.value.trim();
+  // Reset aria-invalid attribute
+  urlInput.removeAttribute("aria-invalid");
+  // Validate URL format
+  if (!validateStreamURL(url)) {
+    urlInput.setAttribute("aria-invalid", "true");
+    showModal(
+      "Play error",
+      "Please enter a valid stream URL. Must start with http:// or https://",
+    );
+    return;
+  }
+  // Show loading state
+  const playButton = $("instant-play-btn");
+  const originalText = playButton ? playButton.textContent : "▶&nbsp;Instan&nbsp;play";
+  if (playButton) {
+    playButton.textContent = "Processing...";
+    playButton.disabled = true;
+  }
+  try {
+    // Check if URL is a playlist by extension
+    const lowerUrl = url.toLowerCase();
+    if (
+      lowerUrl.endsWith(".m3u") ||
+      lowerUrl.endsWith(".m3u8") ||
+      lowerUrl.endsWith(".pls") ||
+      lowerUrl.endsWith(".json")
+    ) {
+      // It's a playlist, fetch and parse it
+      const playlistData = await getPlaylistData(url);
+      if (playlistData && playlistData.length > 0) {
+        if (playlistData.length === 1) {
+          // Only one stream, play it directly
+          await sendPlayRequest(playlistData[0].url, playlistData[0].name, 0);
+          showModal("Success", "Stream is now playing");
+        } else {
+          // Multiple streams, show selection modal
+          showInstantPlaySelectionModal(playlistData, url);
+          // Don't clear input yet, user needs to select
+          if (playButton) {
+            playButton.textContent = originalText;
+            playButton.disabled = false;
+          }
+          return;
+        }
+      } else {
+        throw new Error("No valid streams found in playlist");
+      }
+    } else {
+      // Not a playlist, play directly
+      await sendPlayRequest(url, "Instant stream", 0);
+      showModal("Success", "Stream is now playing");
+    }
+    // Clear the input field after successful play
+    //urlInput.value = "";
+  } catch (error) {
+    console.error("Error playing instant stream:", error);
+    showModal("Play error", "Error playing stream: " + error.message);
+  } finally {
+    // Restore button state
+    if (playButton) {
+      playButton.textContent = originalText;
+      playButton.disabled = false;
+    }
+  }
+}
+
+async function getPlaylistData(url) {
+  try {
+    // Try direct fetch first
+    let response = await fetch(url);
+
+    // If direct fetch fails due to CORS, try with a proxy
+    if (!response.ok) {
+      console.log("Direct fetch failed, trying with CORS proxy");
+      const proxyUrl =
+        "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+      response = await fetch(proxyUrl);
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch playlist: ${response.status} ${response.statusText}`,
+      );
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    const textContent = await response.text();
+
+    let playlistData;
+
+    // Detect format based on content type or content
+    const lowerUrl = url.toLowerCase();
+    if (
+      lowerUrl.endsWith(".m3u") ||
+      lowerUrl.endsWith(".m3u8") ||
+      contentType.includes("audio/x-mpegurl") ||
+      contentType.includes("application/x-mpegurl") ||
+      textContent.includes("#EXTM3U")
+    ) {
+      // M3U format
+      playlistData = JSON.parse(convertM3UToJSON(textContent));
+    } else if (
+      lowerUrl.endsWith(".pls") ||
+      contentType.includes("audio/x-scpls") ||
+      textContent.includes("[playlist]")
+    ) {
+      // PLS format
+      playlistData = JSON.parse(convertPLSToJSON(textContent));
+    } else if (
+      lowerUrl.endsWith(".json") ||
+      contentType.includes("application/json") ||
+      textContent.trim().startsWith("{") ||
+      textContent.trim().startsWith("[")
+    ) {
+      // JSON format
+      const jsonData = JSON.parse(textContent);
+
+      // Validate the JSON structure
+      if (!Array.isArray(jsonData)) {
+        throw new Error("Invalid playlist format: expected array of streams");
+      }
+
+      // Validate each stream in the playlist and skip invalid ones
+      const validStreams = [];
+      for (let i = 0; i < jsonData.length; i++) {
+        const stream = jsonData[i];
+        if (!stream || typeof stream !== "object") {
+          console.warn(
+            `Skipping invalid stream at position ${i + 1}: not an object`,
+          );
+          continue;
+        }
+
+        if (!stream.name || !stream.name.trim()) {
+          console.warn(`Skipping stream at position ${i + 1}: empty name`);
+          continue;
+        }
+
+        if (!stream.url) {
+          console.warn(`Skipping stream at position ${i + 1}: no URL`);
+          continue;
+        }
+
+        if (
+          !stream.url.startsWith("http://") &&
+          !stream.url.startsWith("https://")
+        ) {
+          console.warn(
+            `Skipping stream at position ${i + 1}: invalid URL format`,
+          );
+          continue;
+        }
+
+        try {
+          new URL(stream.url);
+        } catch (e) {
+          console.warn(`Skipping stream at position ${i + 1}: invalid URL`);
+          continue;
+        }
+
+        // If we get here, the stream is valid
+        validStreams.push(stream);
+      }
+
+      playlistData = validStreams;
+    } else {
+      throw new Error("Unsupported playlist format");
+    }
+
+    return playlistData;
+  } catch (error) {
+    console.error("Error processing playlist:", error);
+    throw error;
+  }
+}
+
+
+function showInstantPlaySelectionModal(playlistData, originalUrl) {
+  // Remove any existing modal
+  const existingModal = $("instant-play-selection-modal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+  // Store playlist data in a global variable for access by modal functions
+  window.currentInstantPlayPlaylistData = playlistData;
+  // Create modal element
+  const modal = document.createElement("dialog");
+  modal.id = "instant-play-selection-modal";
+  modal.className = "playlist-selection-modal";
+  // Create modal content
+  let modalContent = `
+    <article>
+      <header>
+        <h2>Select Stream to Play</h2>
+        <p>${playlistData.length} stream(s) found in the playlist</p>
+      </header>
+      <div class="playlist-items-container">
+        <label for="instant-stream-select">Choose a stream:</label>
+        <select id="instant-stream-select" style="width: 100%; margin-bottom: 1rem;">
+  `;
+  // Add option for each stream
+  playlistData.forEach((stream, index) => {
+    // Validate stream object
+    if (!stream || typeof stream !== "object") {
+      console.warn("Skipping invalid stream object in playlist:", stream);
+    }
+    const streamName = stream.name || `Stream ${index + 1}`;
+    modalContent += `
+          <option value="${index}">${escapeHtml(streamName)}</option>
+    `;
+  });
+  modalContent += `
+        </select>
+      </div>
+      <footer>
+        <div role="group">
+          <button id="play-instant-selected-btn">Play</button>
+          <button class="secondary" onclick="$('instant-play-selection-modal').remove()">Cancel</button>
+        </div>
+      </footer>
+    </article>
+  `;
+
+  modal.innerHTML = modalContent;
+  document.body.appendChild(modal);
+  modal.showModal();
+  // Add event listener for play button
+  document
+    .getElementById("play-instant-selected-btn")
+    .addEventListener("click", function () {
+      const selectElement = $("instant-stream-select");
+      const selectedIndex = parseInt(selectElement.value);
+      playInstantSelectedStreamFromPlaylist(selectedIndex);
+    });
+  // Also allow playing with Enter key
+  document
+    .getElementById("instant-stream-select")
+    .addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        const selectedIndex = parseInt(this.value);
+        playInstantSelectedStreamFromPlaylist(selectedIndex);
+      }
+    });
+}
+
+async function playInstantSelectedStreamFromPlaylist(index) {
+  const playlistData = window.currentInstantPlayPlaylistData;
+  // Validate playlist data
+  if (!playlistData || !Array.isArray(playlistData)) {
+    console.error("Invalid playlist data:", playlistData);
+    showModal("Play error", "Invalid playlist data");
+    return;
+  }
+  // Validate index
+  if (index < 0 || index >= playlistData.length) {
+    console.error("Invalid stream index:", {
+      index,
+      playlistLength: playlistData.length,
+    });
+    showModal("Play error", "Invalid stream selection");
+    return;
+  }
+  const selectedStream = playlistData[index];
+  console.log("Selected stream to play:", index, selectedStream);
+  // Validate the selected stream
+  if (!selectedStream || typeof selectedStream !== "object") {
+    console.error("Invalid stream object at index:", {
+      index,
+      stream: selectedStream,
+    });
+    showModal("Play error", "Invalid stream data");
+    return;
+  }
+  // Check if stream has required properties
+  if (!selectedStream.url) {
+    console.error("Stream missing URL at index:", {
+      index,
+      stream: selectedStream,
+    });
+    showModal("Play Error", "Selected stream is missing URL");
+    return;
+  }
+  // Validate URL format
+  try {
+    new URL(selectedStream.url);
+  } catch (e) {
+    console.error("Invalid stream URL at index:", {
+      index,
+      url: selectedStream.url,
+    });
+    showModal("Play Error", "Invalid stream URL");
+    return;
+  }
+  // Use stream name if available, otherwise generate one
+  const streamName =
+    (selectedStream.name && selectedStream.name.trim()) ||
+    `Stream ${index + 1}`;
+  // Show loading state
+  const playButton = $("play-instant-selected-btn");
+  const originalText = playButton ? playButton.textContent : "▶&nbsp;Instant▶&nbsp;play";
+  if (playButton) {
+    playButton.textContent = "Playing...";
+    playButton.disabled = true;
+  }
+
+  try {
+    await sendPlayRequest(selectedStream.url, streamName, index);
+
+    // Close modal
+    const modal = $("instant-play-selection-modal");
+    if (modal) {
+      modal.remove();
+    }
+
+    // Clear the input field
+    const urlInput = $("instant-url");
+    if (urlInput) {
+      urlInput.value = "";
+    }
+
+    // Show success message
+    showModal("Success", "Stream is now playing");
+  } catch (error) {
+    console.error("Error playing stream:", error);
+    showModal("Play Error", "Error playing stream: " + error.message);
+  } finally {
+    // Restore button state
+    if (playButton) {
+      playButton.textContent = originalText;
+      playButton.disabled = false;
+    }
+  }
+}
+
+
+
+
+/**
  * @brief Load streams from the server
  * @description Fetches the playlist from the server and updates the UI
  * Shows loading states and handles errors appropriately
@@ -273,24 +749,7 @@ function updateStream(index, field, value) {
   const trimmedValue = value.trim();
   // Validate URL format if updating URL field
   if (field === "url") {
-    // Empty
-    if (!trimmedValue) {
-      return;
-    }
-    if (
-      !trimmedValue.startsWith("http://") &&
-      !trimmedValue.startsWith("https://")
-    ) {
-      return;
-    }
-    // Additional URL validation
-    try {
-      new URL(trimmedValue);
-    } catch (e) {
-      return;
-    }
-    // Validate URL length
-    if (trimmedValue.length > 256) {
+    if (!validateStreamURL(trimmedValue)) {
       return;
     }
   }
@@ -345,7 +804,6 @@ function confirmDeleteStream(index) {
   streams.splice(index, 1);
   renderPlaylist();
 }
-
 
 async function savePlaylist() {
   // Validate playlist before saving
@@ -1256,124 +1714,13 @@ function resetToDefaultCoverArt() {
   }
 }
 
-/**
- * @brief Play selected stream
- * @description Plays the stream selected in the main dropdown
- *
- * Implementation details:
- * - Shows loading state during play request
- * - Validates stream selection before playing
- * - Handles network errors gracefully
- * - Restores UI state after completion
- * - Provides user feedback on success/failure
- *
- * @returns {Promise<void>}
- */
-async function playStream() {
-  const { select, url, name } = getSelectedStream();
-  if (!select) {
-    return;
-  }
-
-  if (!validateStreamSelection(url)) {
-    return;
-  }
-
-  // Show loading state
-  const playButton = document.querySelector('button[onclick="playStream()"]');
-  const originalText = playButton ? playButton.textContent : "Play";
-  if (playButton) {
-    playButton.textContent = "Playing...";
-    playButton.disabled = true;
-  }
-
-  try {
-    await sendPlayRequest(url, name, select.selectedIndex);
-  } catch (error) {
-    handlePlayError(error);
-  } finally {
-    // Restore button state
-    if (playButton) {
-      playButton.textContent = originalText;
-      playButton.disabled = false;
-    }
-  }
-}
-
-function getSelectedStream() {
-  const select = $("stream-select");
-  if (!select) {
-    return { select: null, url: null, name: null };
-  }
-
-  const option = select.options[select.selectedIndex];
-  const url = select.value;
-  const name = option ? option.dataset.name : "";
-
-  console.log("Playing stream:", { url, name });
-  return { select, url, name };
-}
-
-function validateStreamSelection(url) {
-  if (!url) {
-    return false;
-  }
-
-  // Validate URL format
-  try {
-    new URL(url);
-  } catch (e) {
-    return false;
-  }
-
-  return true;
-}
-
-async function sendPlayRequest(url, name, index) {
-  const response = await fetch("/api/player", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Requested-With": "XMLHttpRequest",
-    },
-    body: JSON.stringify({
-      action: "play",
-      url: url,
-      name: name,
-      index: index,
-    }),
-  });
-  console.log("Player response status:", response.status);
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Failed to play stream: ${response.status} ${response.statusText} - ${errorText}`,
-    );
-  }
-  const result = await response.json();
-  if (result.status !== "success") {
-    throw new Error(result.message || "Failed to play stream");
-  }
-}
-
-function handlePlayError(error) {
-  console.error("Error playing stream:", error);
-  const errorMessage = error.message || "Unknown error occurred";
-  showToast(
-    "Error playing stream: " +
-      errorMessage +
-      ". Please check the stream URL and try again.",
-    "error",
-  );
-}
-
 function playSelectedStream() {
   const { select, url, name } = getSelectedStream();
   if (!select || select.selectedIndex === 0) {
     return; // No stream selected or it's the placeholder option
   }
   // Validate stream selection
-  if (!validateStreamSelection(url)) {
+  if (!validateStreamURL(url)) {
     return;
   }
   console.log("Playing selected stream:", { url, name });
@@ -1383,59 +1730,6 @@ function playSelectedStream() {
   });
 }
 
-async function stopStream() {
-  // Show loading state
-  const stopButton = document.querySelector('button[onclick="stopStream()"]');
-  const originalText = stopButton ? stopButton.textContent : "Stop";
-  if (stopButton) {
-    stopButton.textContent = "Stopping...";
-    stopButton.disabled = true;
-  }
-
-  try {
-    await sendStopRequest();
-  } catch (error) {
-    handleStopError(error);
-  } finally {
-    // Restore button state
-    if (stopButton) {
-      stopButton.textContent = originalText;
-      stopButton.disabled = false;
-    }
-  }
-}
-
-async function sendStopRequest() {
-  console.log("Stopping current stream");
-  const response = await fetch("/api/player", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Requested-With": "XMLHttpRequest",
-    },
-    body: JSON.stringify({ action: "stop" }),
-  });
-  console.log("Player response status:", response.status);
-  if (response.ok) {
-    const result = await response.json();
-    if (result.status !== "success") {
-      throw new Error(result.message || "Failed to stop stream");
-    }
-  } else {
-    throw new Error(
-      `Failed to stop stream: ${response.status} ${response.statusText}`,
-    );
-  }
-}
-
-function handleStopError(error) {
-  console.error("Error stopping stream:", error);
-  const errorMessage = error.message || "Unknown error occurred";
-  showToast(
-    "Error stopping stream: " + errorMessage + ". Please try again.",
-    "error",
-  );
-}
 
 // Wrapper function for mixer changes to handle errors in inline event handlers
 function handleMixerChange(type, value) {
@@ -1578,203 +1872,6 @@ async function setMixer(settings) {
         toneControls[type].disabled = false;
       }
     });
-  }
-}
-
-async function playInstantStream() {
-  const urlInput = $("instant-url");
-  const url = urlInput.value.trim();
-
-  // Reset aria-invalid attribute
-  urlInput.setAttribute("aria-invalid", "false");
-
-  if (!url) {
-    urlInput.setAttribute("aria-invalid", "true");
-    showModal("Play Error", "Please enter a stream URL");
-    return;
-  }
-
-  // Validate URL format
-  if (!url.startsWith("http://") && !url.startsWith("https://")) {
-    urlInput.setAttribute("aria-invalid", "true");
-    showModal(
-      "Play Error",
-      "Invalid URL format. Must start with http:// or https://",
-    );
-    return;
-  }
-
-  try {
-    new URL(url);
-  } catch (e) {
-    urlInput.setAttribute("aria-invalid", "true");
-    showModal("Play Error", "Invalid URL format");
-    return;
-  }
-
-  // Show loading state
-  const playButton = document.querySelector(".instant-play button");
-  const originalText = playButton ? playButton.textContent : "Instant Play";
-  if (playButton) {
-    playButton.textContent = "Processing...";
-    playButton.disabled = true;
-  }
-
-  try {
-    // Check if URL is a playlist by extension
-    const lowerUrl = url.toLowerCase();
-    if (
-      lowerUrl.endsWith(".m3u") ||
-      lowerUrl.endsWith(".m3u8") ||
-      lowerUrl.endsWith(".pls") ||
-      lowerUrl.endsWith(".json")
-    ) {
-      // It's a playlist, fetch and parse it
-      const playlistData = await getPlaylistData(url);
-      if (playlistData && playlistData.length > 0) {
-        if (playlistData.length === 1) {
-          // Only one stream, play it directly
-          await sendPlayRequest(playlistData[0].url, playlistData[0].name, 0);
-          showModal("Success", "Stream is now playing");
-        } else {
-          // Multiple streams, show selection modal
-          showPlaylistSelectionModalForInstantPlay(playlistData, url);
-          // Don't clear input yet, user needs to select
-          if (playButton) {
-            playButton.textContent = originalText;
-            playButton.disabled = false;
-          }
-          return;
-        }
-      } else {
-        throw new Error("No valid streams found in playlist");
-      }
-    } else {
-      // Not a playlist, play directly
-      await sendPlayRequest(url, "Instant Stream", 0);
-      showModal("Success", "Stream is now playing");
-    }
-    // Clear the input field after successful play
-    urlInput.value = "";
-  } catch (error) {
-    console.error("Error playing instant stream:", error);
-    showModal("Play Error", "Error playing stream: " + error.message);
-  } finally {
-    // Restore button state
-    if (playButton) {
-      playButton.textContent = originalText;
-      playButton.disabled = false;
-    }
-  }
-}
-
-async function getPlaylistData(url) {
-  try {
-    // Try direct fetch first
-    let response = await fetch(url);
-
-    // If direct fetch fails due to CORS, try with a proxy
-    if (!response.ok) {
-      console.log("Direct fetch failed, trying with CORS proxy");
-      const proxyUrl =
-        "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-      response = await fetch(proxyUrl);
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch playlist: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const contentType = response.headers.get("content-type") || "";
-    const textContent = await response.text();
-
-    let playlistData;
-
-    // Detect format based on content type or content
-    const lowerUrl = url.toLowerCase();
-    if (
-      lowerUrl.endsWith(".m3u") ||
-      lowerUrl.endsWith(".m3u8") ||
-      contentType.includes("audio/x-mpegurl") ||
-      contentType.includes("application/x-mpegurl") ||
-      textContent.includes("#EXTM3U")
-    ) {
-      // M3U format
-      playlistData = JSON.parse(convertM3UToJSON(textContent));
-    } else if (
-      lowerUrl.endsWith(".pls") ||
-      contentType.includes("audio/x-scpls") ||
-      textContent.includes("[playlist]")
-    ) {
-      // PLS format
-      playlistData = JSON.parse(convertPLSToJSON(textContent));
-    } else if (
-      lowerUrl.endsWith(".json") ||
-      contentType.includes("application/json") ||
-      textContent.trim().startsWith("{") ||
-      textContent.trim().startsWith("[")
-    ) {
-      // JSON format
-      const jsonData = JSON.parse(textContent);
-
-      // Validate the JSON structure
-      if (!Array.isArray(jsonData)) {
-        throw new Error("Invalid playlist format: expected array of streams");
-      }
-
-      // Validate each stream in the playlist and skip invalid ones
-      const validStreams = [];
-      for (let i = 0; i < jsonData.length; i++) {
-        const stream = jsonData[i];
-        if (!stream || typeof stream !== "object") {
-          console.warn(
-            `Skipping invalid stream at position ${i + 1}: not an object`,
-          );
-          continue;
-        }
-
-        if (!stream.name || !stream.name.trim()) {
-          console.warn(`Skipping stream at position ${i + 1}: empty name`);
-          continue;
-        }
-
-        if (!stream.url) {
-          console.warn(`Skipping stream at position ${i + 1}: no URL`);
-          continue;
-        }
-
-        if (
-          !stream.url.startsWith("http://") &&
-          !stream.url.startsWith("https://")
-        ) {
-          console.warn(
-            `Skipping stream at position ${i + 1}: invalid URL format`,
-          );
-          continue;
-        }
-
-        try {
-          new URL(stream.url);
-        } catch (e) {
-          console.warn(`Skipping stream at position ${i + 1}: invalid URL`);
-          continue;
-        }
-
-        // If we get here, the stream is valid
-        validStreams.push(stream);
-      }
-
-      playlistData = validStreams;
-    } else {
-      throw new Error("Unsupported playlist format");
-    }
-
-    return playlistData;
-  } catch (error) {
-    console.error("Error processing playlist:", error);
-    throw error;
   }
 }
 
@@ -2221,83 +2318,6 @@ function showPlaylistSelectionModal(playlistData) {
   }
 }
 
-function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
-  // Remove any existing modal
-  const existingModal = $("instantPlaySelectionModal");
-  if (existingModal) {
-    existingModal.remove();
-  }
-
-  // Store playlist data in a global variable for access by modal functions
-  window.currentInstantPlayPlaylistData = playlistData;
-
-  // Create modal element
-  const modal = document.createElement("dialog");
-  modal.id = "instantPlaySelectionModal";
-  modal.className = "playlist-selection-modal";
-
-  // Create modal content
-  let modalContent = `
-        <article>
-            <header>
-                <h2>Select Stream to Play</h2>
-                <p>${playlistData.length} stream(s) found in the playlist</p>
-            </header>
-            <div class="playlist-items-container">
-                <label for="instantStreamSelect">Choose a stream:</label>
-                <select id="instantStreamSelect" style="width: 100%; margin-bottom: 1rem;">
-    `;
-
-  // Add option for each stream
-  playlistData.forEach((stream, index) => {
-    // Validate stream object
-    if (!stream || typeof stream !== "object") {
-      console.warn("Skipping invalid stream object in playlist:", stream);
-      return;
-    }
-
-    const streamName = stream.name || `Stream ${index + 1}`;
-    modalContent += `
-            <option value="${index}">${escapeHtml(streamName)}</option>
-        `;
-  });
-
-  modalContent += `
-                </select>
-            </div>
-            <footer>
-                <div role="group">
-                    <button id="playInstantSelectedStreamBtn">Play</button>
-                    <button class="secondary" onclick="$('instantPlaySelectionModal').remove()">Cancel</button>
-                </div>
-            </footer>
-        </article>
-    `;
-
-  modal.innerHTML = modalContent;
-  document.body.appendChild(modal);
-  modal.showModal();
-
-  // Add event listener for play button
-  document
-    .getElementById("playInstantSelectedStreamBtn")
-    .addEventListener("click", function () {
-      const selectElement = $("instantStreamSelect");
-      const selectedIndex = parseInt(selectElement.value);
-      playInstantSelectedStreamFromPlaylist(selectedIndex);
-    });
-
-  // Also allow playing with Enter key
-  document
-    .getElementById("instantStreamSelect")
-    .addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        const selectedIndex = parseInt(this.value);
-        playInstantSelectedStreamFromPlaylist(selectedIndex);
-      }
-    });
-}
-
 function appendSelectedStreams() {
   const checkboxes = document.querySelectorAll(
     "#playlistSelectionModal .stream-checkbox",
@@ -2340,103 +2360,6 @@ function replaceWithSelectedStreams() {
 
   // Close modal
   $("playlistSelectionModal").remove();
-}
-
-async function playInstantSelectedStreamFromPlaylist(index) {
-  const playlistData = window.currentInstantPlayPlaylistData;
-
-  // Validate playlist data
-  if (!playlistData || !Array.isArray(playlistData)) {
-    console.error("Invalid playlist data:", playlistData);
-    showModal("Play Error", "Invalid playlist data");
-    return;
-  }
-
-  // Validate index
-  if (index < 0 || index >= playlistData.length) {
-    console.error("Invalid stream index:", {
-      index,
-      playlistLength: playlistData.length,
-    });
-    showModal("Play Error", "Invalid stream selection");
-    return;
-  }
-
-  const selectedStream = playlistData[index];
-  console.log("Selected stream to play:", index, selectedStream);
-
-  // Validate the selected stream
-  if (!selectedStream || typeof selectedStream !== "object") {
-    console.error("Invalid stream object at index:", {
-      index,
-      stream: selectedStream,
-    });
-    showModal("Play Error", "Invalid stream data");
-    return;
-  }
-
-  // Check if stream has required properties
-  if (!selectedStream.url) {
-    console.error("Stream missing URL at index:", {
-      index,
-      stream: selectedStream,
-    });
-    showModal("Play Error", "Selected stream is missing URL");
-    return;
-  }
-
-  // Validate URL format
-  try {
-    new URL(selectedStream.url);
-  } catch (e) {
-    console.error("Invalid stream URL at index:", {
-      index,
-      url: selectedStream.url,
-    });
-    showModal("Play Error", "Invalid stream URL");
-    return;
-  }
-
-  // Use stream name if available, otherwise generate one
-  const streamName =
-    (selectedStream.name && selectedStream.name.trim()) ||
-    `Stream ${index + 1}`;
-
-  // Show loading state
-  const playButton = $("playInstantSelectedStreamBtn");
-  const originalText = playButton ? playButton.textContent : "Play";
-  if (playButton) {
-    playButton.textContent = "Playing...";
-    playButton.disabled = true;
-  }
-
-  try {
-    await sendPlayRequest(selectedStream.url, streamName, index);
-
-    // Close modal
-    const modal = $("instantPlaySelectionModal");
-    if (modal) {
-      modal.remove();
-    }
-
-    // Clear the input field
-    const urlInput = $("instant-url");
-    if (urlInput) {
-      urlInput.value = "";
-    }
-
-    // Show success message
-    showModal("Success", "Stream is now playing");
-  } catch (error) {
-    console.error("Error playing stream:", error);
-    showModal("Play Error", "Error playing stream: " + error.message);
-  } finally {
-    // Restore button state
-    if (playButton) {
-      playButton.textContent = originalText;
-      playButton.disabled = false;
-    }
-  }
 }
 
 async function uploadPlaylist() {
@@ -3561,4 +3484,29 @@ function showModal(title, message) {
 
   document.body.appendChild(modal);
   modal.showModal();
+}
+
+
+function validateStreamURL(url) {
+  // Empty
+  if (!url) {
+    return false;
+  }
+  if (
+    !trimmedValue.startsWith("http://") &&
+    !trimmedValue.startsWith("https://")
+  ) {
+    return false;
+  }
+  // Additional URL validation
+  try {
+    new URL(trimmedValue);
+  } catch (e) {
+    return false;
+  }
+  // Validate URL length
+  if (trimmedValue.length > 256) {
+    return false;
+  }
+  return true;
 }

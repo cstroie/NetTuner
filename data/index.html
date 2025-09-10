@@ -91,8 +91,8 @@
         </select>
         <footer>
           <div role="group">
-            <button onclick="playStream()">▶&nbsp;Play</button>
-            <button class="secondary" onclick="stopStream()">⏹&nbsp;Stop</button>
+            <button id="play-stream-btn" onclick="playStream()">▶&nbsp;Play</button>
+            <button id="stop-stream-btn" class="secondary" onclick="stopStream()">⏹&nbsp;Stop</button>
           </div>
         </footer>
       </article>
@@ -103,7 +103,7 @@
             type="text"
             id="instant-url"
             placeholder="Enter stream or playlist URL for instant play" />
-          <button onclick="playInstantStream()">▶&nbsp;Instant&nbsp;play</button>
+          <button id="play-instant-btn" onclick="playInstantStream()">▶&nbsp;Instant&nbsp;play</button>
         </div>
       </article>
     </main>
