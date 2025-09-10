@@ -16,8 +16,8 @@ let bass = 0;
 let mid = 0;
 let treble = 0;
 
-// Helper function to replace document.getElementById
-const $ = (id) => document.getElementById(id);
+// Helper function to replace $
+const $ = (id) => $(id);
 
 
 
@@ -48,7 +48,7 @@ function toggleTheme() {
  * @description Updates the theme toggle button text and title based on current theme
  */
 function updateThemeToggle() {
-  const themeToggle = document.getElementById("theme-toggle");
+  const themeToggle = $("theme-toggle");
   const currentTheme = document.documentElement.getAttribute("data-theme");
   if (themeToggle) {
     themeToggle.textContent = currentTheme === "dark" ? "◑" : "◐";
@@ -97,7 +97,7 @@ function initConfigPage() {
   loadConfig();
 
   // Set up form submit handler
-  const configForm = document.getElementById("config-form");
+  const configForm = $("config-form");
   if (configForm) {
     configForm.addEventListener("submit", function (e) {
       e.preventDefault();
@@ -118,19 +118,19 @@ async function loadConfig() {
     const response = await fetch("/api/config");
     if (response.ok) {
       const config = await response.json();
-      document.getElementById("i2s-bclk").value = config.i2s_bclk;
-      document.getElementById("i2s-lrc").value = config.i2s_lrc;
-      document.getElementById("i2s-dout").value = config.i2s_dout;
-      document.getElementById("led-pin").value = config.led_pin;
-      document.getElementById("rotary-clk").value = config.rotary_clk;
-      document.getElementById("rotary-dt").value = config.rotary_dt;
-      document.getElementById("rotary-sw").value = config.rotary_sw;
-      document.getElementById("board-button").value = config.board_button;
-      document.getElementById("display-sda").value = config.display_sda;
-      document.getElementById("display-scl").value = config.display_scl;
-      document.getElementById("display-width").value = config.display_width;
-      document.getElementById("display-height").value = config.display_height;
-      document.getElementById("display-address").value = config.display_address;
+      $("i2s-bclk").value = config.i2s_bclk;
+      $("i2s-lrc").value = config.i2s_lrc;
+      $("i2s-dout").value = config.i2s_dout;
+      $("led-pin").value = config.led_pin;
+      $("rotary-clk").value = config.rotary_clk;
+      $("rotary-dt").value = config.rotary_dt;
+      $("rotary-sw").value = config.rotary_sw;
+      $("board-button").value = config.board_button;
+      $("display-sda").value = config.display_sda;
+      $("display-scl").value = config.display_scl;
+      $("display-width").value = config.display_width;
+      $("display-height").value = config.display_height;
+      $("display-address").value = config.display_address;
 
       // FIXME Reset aria-invalid attributes
       //const configInputs = document.querySelectorAll("#config-form input");
@@ -158,19 +158,19 @@ async function saveConfig() {
   });
 
   const config = {
-    i2s_bclk: parseInt(document.getElementById("i2s-bclk").value),
-    i2s_lrc: parseInt(document.getElementById("i2s-lrc").value),
-    i2s_dout: parseInt(document.getElementById("i2s-dout").value),
-    led_pin: parseInt(document.getElementById("led-pin").value),
-    rotary_clk: parseInt(document.getElementById("rotary-clk").value),
-    rotary_dt: parseInt(document.getElementById("rotary-dt").value),
-    rotary_sw: parseInt(document.getElementById("rotary-sw").value),
-    board_button: parseInt(document.getElementById("board-button").value),
-    display_sda: parseInt(document.getElementById("display-sda").value),
-    display_scl: parseInt(document.getElementById("display-scl").value),
-    display_width: parseInt(document.getElementById("display-width").value),
-    display_height: parseInt(document.getElementById("display-height").value),
-    display_address: parseInt(document.getElementById("display-address").value),
+    i2s_bclk: parseInt($("i2s-bclk").value),
+    i2s_lrc: parseInt($("i2s-lrc").value),
+    i2s_dout: parseInt($("i2s-dout").value),
+    led_pin: parseInt($("led-pin").value),
+    rotary_clk: parseInt($("rotary-clk").value),
+    rotary_dt: parseInt($("rotary-dt").value),
+    rotary_sw: parseInt($("rotary-sw").value),
+    board_button: parseInt($("board-button").value),
+    display_sda: parseInt($("display-sda").value),
+    display_scl: parseInt($("display-scl").value),
+    display_width: parseInt($("display-width").value),
+    display_height: parseInt($("display-height").value),
+    display_address: parseInt($("display-address").value),
   };
 
   // Validate all inputs
@@ -306,13 +306,13 @@ async function checkImageExists(url) {
  */
 async function loadStreams() {
   // Show loading state
-  const select = document.getElementById("stream-select");
+  const select = $("stream-select");
   if (select) {
     select.innerHTML = '<option value="">Loading streams...</option>';
     select.disabled = true;
   }
 
-  const playlistBody = document.getElementById("playlist-body");
+  const playlistBody = $("playlist-body");
   if (playlistBody) {
     playlistBody.innerHTML =
       '<span aria-busy="true">Loading streams...</span>';
@@ -538,7 +538,7 @@ function connectWebSocket() {
 
         // Update stream name element only if it changed
         if (status.streamName !== prev.streamName) {
-          const streamNameElement = document.getElementById("stream-name");
+          const streamNameElement = $("stream-name");
           if (streamNameElement) {
             // Show stream name when playing
             let displayText = status.streamName || "No station selected";
@@ -554,7 +554,7 @@ function connectWebSocket() {
           status.bitrate !== prev.bitrate ||
           status.playing !== prev.playing
         ) {
-          const streamTitleElement = document.getElementById("stream-title");
+          const streamTitleElement = $("stream-title");
           if (streamTitleElement) {
             // Show stream title when playing
             let displayText = status.streamTitle || "No stream selected";
@@ -590,7 +590,7 @@ function connectWebSocket() {
             );
           } else {
             // Reset to default CD image when no stream is playing
-            const coverArtElement = document.getElementById("cover-art");
+            const coverArtElement = $("cover-art");
             if (coverArtElement) {
               coverArtElement.src =
                 "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
@@ -600,8 +600,8 @@ function connectWebSocket() {
 
         // Update volume controls only if volume changed
         if (status.volume !== prev.volume) {
-          const volumeControl = document.getElementById("volume");
-          const volumeValue = document.getElementById("volume-value");
+          const volumeControl = $("volume");
+          const volumeValue = $("volume-value");
 
           if (volumeControl) {
             volumeControl.value = status.volume;
@@ -615,8 +615,8 @@ function connectWebSocket() {
 
         // Update tone controls only if values changed
         if (status.bass !== prev.bass) {
-          const bassControl = document.getElementById("bass");
-          const bassValue = document.getElementById("bass-value");
+          const bassControl = $("bass");
+          const bassValue = $("bass-value");
 
           if (bassControl && status.bass !== undefined) {
             bassControl.value = status.bass;
@@ -630,8 +630,8 @@ function connectWebSocket() {
         }
 
         if (status.mid !== prev.mid) {
-          const midControl = document.getElementById("mid");
-          const midValue = document.getElementById("mid-value");
+          const midControl = $("mid");
+          const midValue = $("mid-value");
 
           if (midControl && status.mid !== undefined) {
             midControl.value = status.mid;
@@ -645,8 +645,8 @@ function connectWebSocket() {
         }
 
         if (status.treble !== prev.treble) {
-          const trebleControl = document.getElementById("treble");
-          const trebleValue = document.getElementById("treble-value");
+          const trebleControl = $("treble");
+          const trebleValue = $("treble-value");
 
           if (trebleControl && status.treble !== undefined) {
             trebleControl.value = status.treble;
@@ -779,7 +779,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
       ) {
         // Use the thumbnail image URL
         const imageUrl = data.artists[0].strArtistThumb;
-        const coverArtElement = document.getElementById("cover-art");
+        const coverArtElement = $("cover-art");
         if (coverArtElement) {
           coverArtElement.src = imageUrl;
           coverArtElement.style.display = "block";
@@ -807,7 +807,7 @@ function handleImageFallback(iconUrl, icyUrl) {
     // Check if icon URL is a valid image
     checkImageExists(iconUrl).then((exists) => {
       if (exists) {
-        const coverArtElement = document.getElementById("cover-art");
+        const coverArtElement = $("cover-art");
         if (coverArtElement) {
           coverArtElement.src = iconUrl;
           coverArtElement.style.display = "block";
@@ -834,7 +834,7 @@ function tryFaviconFallback(icyUrl) {
       if (faviconUrl) {
         console.log("Found favicon:", faviconUrl);
         // Update the cover art image element
-        const coverArtElement = document.getElementById("cover-art");
+        const coverArtElement = $("cover-art");
         if (coverArtElement) {
           coverArtElement.src = faviconUrl;
         }
@@ -853,7 +853,7 @@ function tryFaviconFallback(icyUrl) {
  * Reset cover art to default CD image
  */
 function resetToDefaultCoverArt() {
-  const coverArtElement = document.getElementById("cover-art");
+  const coverArtElement = $("cover-art");
   if (coverArtElement) {
     coverArtElement.src =
       "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
@@ -906,7 +906,7 @@ async function playStream() {
 }
 
 function getSelectedStream() {
-  const select = document.getElementById("stream-select");
+  const select = $("stream-select");
   if (!select) {
     return { select: null, url: null, name: null };
   }
@@ -1086,8 +1086,8 @@ async function setMixer(settings) {
   // Show loading state for volume if being changed
   let volumeControl, volumeValue, originalVolume;
   if (settings.volume !== undefined) {
-    volumeControl = document.getElementById("volume");
-    volumeValue = document.getElementById("volume-value");
+    volumeControl = $("volume");
+    volumeValue = $("volume-value");
     originalVolume = volumeControl ? volumeControl.value : "50";
 
     if (volumeControl) {
@@ -1104,8 +1104,8 @@ async function setMixer(settings) {
 
   ["bass", "mid", "treble"].forEach((type) => {
     if (settings[type] !== undefined) {
-      toneControls[type] = document.getElementById(type);
-      toneValueElements[type] = document.getElementById(type + "-value");
+      toneControls[type] = $(type);
+      toneValueElements[type] = $(type + "-value");
       originalValues[type] = toneControls[type]
         ? toneControls[type].value
         : "0";
@@ -1187,7 +1187,7 @@ async function setMixer(settings) {
 }
 
 async function playInstantStream() {
-  const urlInput = document.getElementById("instant-url");
+  const urlInput = $("instant-url");
   const url = urlInput.value.trim();
 
   // Reset aria-invalid attribute
@@ -1394,7 +1394,7 @@ async function getPlaylistData(url) {
  * The playlist items are draggable for reordering.
  */
 function renderPlaylist() {
-  const playlistBody = document.getElementById("playlist-body");
+  const playlistBody = $("playlist-body");
   if (!playlistBody) {
     console.warn("Playlist element not found");
     return;
@@ -1555,8 +1555,8 @@ function handleDragEnd(e) {
  * After successful validation, the stream is added to the playlist and the UI is updated.
  */
 function addStation() {
-  const name = document.getElementById("name");
-  const url = document.getElementById("url");
+  const name = $("name");
+  const url = $("url");
 
   if (!name || !url) {
     return;
@@ -1731,7 +1731,7 @@ function deleteStream(index) {
             <footer>
                 <div role="group">
                     <button onclick="confirmDeleteStream(${index})">Delete</button>
-                    <button class="secondary" onclick="document.getElementById('deleteModal').remove()">Cancel</button>
+                    <button class="secondary" onclick="$('deleteModal').remove()">Cancel</button>
                 </div>
             </footer>
         </article>
@@ -1742,7 +1742,7 @@ function deleteStream(index) {
 
 function confirmDeleteStream(index) {
   // Close and remove modal
-  const modal = document.getElementById("deleteModal");
+  const modal = $("deleteModal");
   if (modal) {
     modal.remove();
   }
@@ -1767,7 +1767,7 @@ async function savePlaylist() {
                 <footer>
                     <div role="group">
                         <button onclick="confirmSaveEmptyPlaylist()">Save</button>
-                        <button class="secondary" onclick="document.getElementById('emptyPlaylistModal').remove()">Cancel</button>
+                        <button class="secondary" onclick="$('emptyPlaylistModal').remove()">Cancel</button>
                     </div>
                 </footer>
             </article>
@@ -1783,7 +1783,7 @@ async function savePlaylist() {
 
 function confirmSaveEmptyPlaylist() {
   // Close and remove modal
-  const modal = document.getElementById("emptyPlaylistModal");
+  const modal = $("emptyPlaylistModal");
   if (modal) {
     modal.remove();
   }
@@ -1885,7 +1885,7 @@ async function savePlaylistInternal() {
 }
 
 async function importRemotePlaylist() {
-  const urlInput = document.getElementById("remote-playlist-url");
+  const urlInput = $("remote-playlist-url");
   const url = urlInput.value.trim();
 
   // Reset aria-invalid attribute
@@ -2039,7 +2039,7 @@ async function importRemotePlaylist() {
 
 function showPlaylistSelectionModal(playlistData) {
   // Remove any existing modal
-  const existingModal = document.getElementById("playlistSelectionModal");
+  const existingModal = $("playlistSelectionModal");
   if (existingModal) {
     existingModal.remove();
   }
@@ -2089,7 +2089,7 @@ function showPlaylistSelectionModal(playlistData) {
                 <div role="group">
                     <button id="appendSelectedBtn">Append Selected</button>
                     <button class="secondary" id="replaceAllBtn">Replace All</button>
-                    <button class="secondary" onclick="document.getElementById('playlistSelectionModal').remove()">Cancel</button>
+                    <button class="secondary" onclick="$('playlistSelectionModal').remove()">Cancel</button>
                 </div>
             </footer>
         </article>
@@ -2113,7 +2113,7 @@ function showPlaylistSelectionModal(playlistData) {
     });
 
   // Add event listener for select all checkbox
-  const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+  const selectAllCheckbox = $("selectAllCheckbox");
   if (selectAllCheckbox) {
     selectAllCheckbox.addEventListener("change", function () {
       const checkboxes = document.querySelectorAll(
@@ -2128,7 +2128,7 @@ function showPlaylistSelectionModal(playlistData) {
 
 function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
   // Remove any existing modal
-  const existingModal = document.getElementById("instantPlaySelectionModal");
+  const existingModal = $("instantPlaySelectionModal");
   if (existingModal) {
     existingModal.remove();
   }
@@ -2173,7 +2173,7 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
             <footer>
                 <div role="group">
                     <button id="playInstantSelectedStreamBtn">Play</button>
-                    <button class="secondary" onclick="document.getElementById('instantPlaySelectionModal').remove()">Cancel</button>
+                    <button class="secondary" onclick="$('instantPlaySelectionModal').remove()">Cancel</button>
                 </div>
             </footer>
         </article>
@@ -2187,7 +2187,7 @@ function showPlaylistSelectionModalForInstantPlay(playlistData, originalUrl) {
   document
     .getElementById("playInstantSelectedStreamBtn")
     .addEventListener("click", function () {
-      const selectElement = document.getElementById("instantStreamSelect");
+      const selectElement = $("instantStreamSelect");
       const selectedIndex = parseInt(selectElement.value);
       playInstantSelectedStreamFromPlaylist(selectedIndex);
     });
@@ -2222,7 +2222,7 @@ function appendSelectedStreams() {
   renderPlaylist();
 
   // Close modal
-  document.getElementById("playlistSelectionModal").remove();
+  $("playlistSelectionModal").remove();
 }
 
 function replaceWithSelectedStreams() {
@@ -2244,7 +2244,7 @@ function replaceWithSelectedStreams() {
   renderPlaylist();
 
   // Close modal
-  document.getElementById("playlistSelectionModal").remove();
+  $("playlistSelectionModal").remove();
 }
 
 async function playInstantSelectedStreamFromPlaylist(index) {
@@ -2308,7 +2308,7 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     `Stream ${index + 1}`;
 
   // Show loading state
-  const playButton = document.getElementById("playInstantSelectedStreamBtn");
+  const playButton = $("playInstantSelectedStreamBtn");
   const originalText = playButton ? playButton.textContent : "Play";
   if (playButton) {
     playButton.textContent = "Playing...";
@@ -2319,13 +2319,13 @@ async function playInstantSelectedStreamFromPlaylist(index) {
     await sendPlayRequest(selectedStream.url, streamName, index);
 
     // Close modal
-    const modal = document.getElementById("instantPlaySelectionModal");
+    const modal = $("instantPlaySelectionModal");
     if (modal) {
       modal.remove();
     }
 
     // Clear the input field
-    const urlInput = document.getElementById("instant-url");
+    const urlInput = $("instant-url");
     if (urlInput) {
       urlInput.value = "";
     }
@@ -2345,7 +2345,7 @@ async function playInstantSelectedStreamFromPlaylist(index) {
 }
 
 async function uploadPlaylist() {
-  const fileInput = document.getElementById("playlist-file");
+  const fileInput = $("playlist-file");
   const file = fileInput.files[0];
 
   console.log("Uploading playlist file:", file);
@@ -2370,7 +2370,7 @@ async function uploadPlaylist() {
   }
 
   // Show loading state
-  const uploadButton = document.getElementById("upload-playlist-btn");
+  const uploadButton = $("upload-playlist-btn");
   const originalText = uploadButton ? uploadButton.textContent : null;
   if (uploadButton) {
     uploadButton.textContent = "Uploading...";
@@ -2484,7 +2484,7 @@ async function uploadPlaylist() {
 
 async function downloadJSON() {
   // Show loading state
-  const downloadButton = document.getElementById("download-json-btn");
+  const downloadButton = $("download-json-btn");
   const originalText = downloadButton ? downloadButton.textContent : null;
   if (downloadButton) {
     downloadButton.textContent = "Downloading...";
@@ -2529,7 +2529,7 @@ async function downloadJSON() {
 
 async function downloadM3U() {
   // Show loading state
-  const downloadButton = document.getElementById("download-m3u-btn");
+  const downloadButton = $("download-m3u-btn");
   const originalText = downloadButton ? downloadButton.textContent : null;
   if (downloadButton) {
     downloadButton.textContent = "Downloading...";
@@ -2575,7 +2575,7 @@ async function downloadM3U() {
 
 async function downloadPLS() {
   // Show loading state
-  const downloadButton = document.getElementById("download-pls-btn");
+  const downloadButton = $("download-pls-btn");
   const originalText = downloadButton ? downloadButton.textContent : null;
   if (downloadButton) {
     downloadButton.textContent = "Downloading...";
@@ -2971,7 +2971,7 @@ async function loadWiFiConfiguration() {
 
     // Also populate the form with configured networks
     // Clear existing fields except the first one
-    const networkFields = document.getElementById("network-fields");
+    const networkFields = $("network-fields");
     if (networkFields) {
       while (networkFields.children.length > 1) {
         networkFields.removeChild(networkFields.lastChild);
@@ -2983,8 +2983,8 @@ async function loadWiFiConfiguration() {
       // Populate with configured networks
       if (configNetworks.length > 0) {
         // Fill the first entry
-        const firstSSID = document.getElementById("ssid0");
-        const firstPassword = document.getElementById("password0");
+        const firstSSID = $("ssid0");
+        const firstPassword = $("password0");
         if (firstSSID) {
           firstSSID.value = configNetworks[0].ssid || "";
           firstSSID.setAttribute("aria-invalid", "false");
@@ -3006,8 +3006,8 @@ async function loadWiFiConfiguration() {
         // Add additional entries for each configured network
         for (let i = 1; i < configNetworks.length && i < 5; i++) {
           addNetworkField();
-          const ssidElement = document.getElementById(`ssid${i}`);
-          const passwordElement = document.getElementById(`password${i}`);
+          const ssidElement = $(`ssid${i}`);
+          const passwordElement = $(`password${i}`);
           if (ssidElement) {
             ssidElement.value = configNetworks[i].ssid || "";
             ssidElement.setAttribute("aria-invalid", "false");
@@ -3057,7 +3057,7 @@ function addNetworkField() {
     return;
   }
 
-  const networkFields = document.getElementById("network-fields");
+  const networkFields = $("network-fields");
   const newEntry = document.createElement("div");
   newEntry.className = "network-entry";
   newEntry.role = "group";
@@ -3213,7 +3213,7 @@ function handleWiFiDrop(e) {
 
   if (dragSrcWiFiElement !== this) {
     // Get the network entries container
-    const networkFields = document.getElementById("network-fields");
+    const networkFields = $("network-fields");
     const entries = Array.from(
       networkFields.querySelectorAll(".network-entry"),
     );
@@ -3268,7 +3268,7 @@ function addDragAndDropToWiFiNetworks() {
 
 // Attach event listener to WiFi form when page loads
 window.addEventListener("load", function () {
-  const wifiForm = document.getElementById("wifi-form");
+  const wifiForm = $("wifi-form");
   if (wifiForm) {
     wifiForm.addEventListener("submit", handleWiFiFormSubmit);
   }
@@ -3276,7 +3276,7 @@ window.addEventListener("load", function () {
 
 // Override the scanNetworks function to highlight configured networks
 function scanNetworks() {
-  const networksDiv = document.getElementById("networks");
+  const networksDiv = $("networks");
   if (!networksDiv) return;
 
   networksDiv.innerHTML =
@@ -3372,7 +3372,7 @@ function scanNetworks() {
 
 // Load current connection status
 function loadConnectionStatus() {
-  const statusDiv = document.getElementById("connection-status");
+  const statusDiv = $("connection-status");
   if (!statusDiv) return;
 
   statusDiv.innerHTML =
@@ -3415,11 +3415,11 @@ function selectNetwork(ssid) {
     addNetworkField();
     // Set the SSID in the new entry
     const newIndex = networkCount - 1;
-    const ssidInput = document.getElementById(`ssid${newIndex}`);
+    const ssidInput = $(`ssid${newIndex}`);
     if (ssidInput) {
       ssidInput.value = ssid;
       // Focus on the password field for the new entry
-      const passwordInput = document.getElementById(`password${newIndex}`);
+      const passwordInput = $(`password${newIndex}`);
       if (passwordInput) {
         passwordInput.focus();
       }
@@ -3427,11 +3427,11 @@ function selectNetwork(ssid) {
   } else {
     // If we already have 5 networks, update the last one
     const lastIndex = 4;
-    const ssidInput = document.getElementById(`ssid${lastIndex}`);
+    const ssidInput = $(`ssid${lastIndex}`);
     if (ssidInput) {
       ssidInput.value = ssid;
       // Focus on the password field
-      const passwordInput = document.getElementById(`password${lastIndex}`);
+      const passwordInput = $(`password${lastIndex}`);
       if (passwordInput) {
         passwordInput.focus();
       }
@@ -3478,15 +3478,15 @@ async function exportAllConfiguration() {
 
 // Handle import file selection
 function handleImportFileSelect() {
-  const fileInput = document.getElementById("import-file");
-  const importButton = document.getElementById("import-button");
+  const fileInput = $("import-file");
+  const importButton = $("import-button");
   importButton.disabled = !fileInput.files.length;
 }
 
 // Import all configuration
 async function importAllConfiguration() {
-  const fileInput = document.getElementById("import-file");
-  const importButton = document.getElementById("import-button");
+  const fileInput = $("import-file");
+  const importButton = $("import-button");
   const file = fileInput.files[0];
 
   if (!file) {
@@ -3580,7 +3580,7 @@ function readFileAsText(file) {
 // Simple modal dialog function
 function showModal(title, message) {
   // Remove any existing modal
-  const existingModal = document.getElementById("configModal");
+  const existingModal = $("configModal");
   if (existingModal) {
     existingModal.remove();
   }
@@ -3596,7 +3596,7 @@ function showModal(title, message) {
             <p>${message}</p>
             <footer>
                 <div role="group">
-                    <button onclick="document.getElementById('configModal').remove()">OK</button>
+                    <button onclick="$('configModal').remove()">OK</button>
                 </div>
             </footer>
         </article>
