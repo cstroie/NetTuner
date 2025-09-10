@@ -561,6 +561,119 @@ async function playInstantSelectedStreamFromPlaylist(index) {
 
 
 
+// Wrapper function for mixer changes to handle errors in inline event handlers
+function handleMixerChange(type, value) {
+  setMixer({ [type]: value }).catch((error) => {
+    console.error("Error in mixer change:", error);
+  });
+}
+
+async function setMixer(settings) {
+  // Validate settings
+  if (settings.volume !== undefined) {
+    const volumeNum = parseInt(settings.volume, 10);
+    if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 22) {
+      console.error("Invalid volume value:", settings.volume);
+      return;
+    }
+  }
+  if (settings.bass !== undefined) {
+    const bassValue = parseInt(settings.bass, 10);
+    if (isNaN(bassValue) || bassValue < -6 || bassValue > 6) {
+      console.error("Invalid bass value:", settings.bass);
+      return;
+    }
+  }
+  if (settings.mid !== undefined) {
+    const midValue = parseInt(settings.mid, 10);
+    if (isNaN(midValue) || midValue < -6 || midValue > 6) {
+      console.error("Invalid mid value:", settings.mid);
+      return;
+    }
+  }
+  if (settings.treble !== undefined) {
+    const trebleValue = parseInt(settings.treble, 10);
+    if (isNaN(trebleValue) || trebleValue < -6 || trebleValue > 6) {
+      console.error("Invalid treble value:", settings.treble);
+      return;
+    }
+  }
+  // Show loading state for volume if being changed
+  let volumeControl, volumeValue, originalVolume;
+  if (settings.volume !== undefined) {
+    volumeControl = $("volume");
+    volumeValue = $("volume-value");
+    originalVolume = volumeControl ? volumeControl.value : "11";
+  }
+  // Show loading state for tone controls if being changed
+  let toneControls = {};
+  let toneValueElements = {};
+  let originalValues = {};
+  ["bass", "mid", "treble"].forEach((type) => {
+    if (settings[type] !== undefined) {
+      toneControls[type] = $(type);
+      toneValueElements[type] = $(type + "-value");
+      originalValues[type] = toneControls[type]
+        ? toneControls[type].value
+        : "0";
+    }
+  });
+  // Send settings to server
+  try {
+    console.log("Setting mixer to:", settings);
+    const response = await fetch("/api/mixer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify(settings),
+    });
+    console.log("Mixer response status:", response.status);
+    if (response.ok) {
+      const result = await response.json();
+      if (result.status === "success") {
+        // Update UI elements
+        if (settings.volume !== undefined && volumeValue) {
+          volumeValue.textContent = settings.volume;
+        }
+        ["bass", "mid", "treble"].forEach((type) => {
+          if (settings[type] !== undefined && toneValueElements[type]) {
+            toneValueElements[type].textContent = settings[type] + "dB";
+            // Update global variable
+            window[type] = settings[type];
+          }
+        });
+      } else {
+        throw new Error(result.message || "Failed to set mixer");
+      }
+    } else {
+      throw new Error(
+        `Failed to set mixer: ${response.status} ${response.statusText}`,
+      );
+    }
+  } catch (error) {
+    console.error("Error setting mixer:", error);
+    // Restore original values on error
+    if (settings.volume !== undefined && volumeControl) {
+      volumeControl.value = originalVolume;
+    }
+    if (volumeValue && settings.volume !== undefined) {
+      volumeValue.textContent = originalVolume;
+    }
+    ["bass", "mid", "treble"].forEach((type) => {
+      if (settings[type] !== undefined && toneControls[type]) {
+        toneControls[type].value = originalValues[type];
+      }
+      if (toneValueElements[type] && settings[type] !== undefined) {
+        toneValueElements[type].textContent = originalValues[type] + "dB";
+      }
+    });
+    throw error; // Re-throw to allow caller to handle
+  }
+}
+
+
 
 /**
  * @brief Load streams from the server
@@ -1682,119 +1795,6 @@ function forceReconnect() {
 }
 
 
-
-
-// Wrapper function for mixer changes to handle errors in inline event handlers
-function handleMixerChange(type, value) {
-  setMixer({ [type]: value }).catch((error) => {
-    console.error("Error in mixer change:", error);
-  });
-}
-
-async function setMixer(settings) {
-  // Validate settings
-  if (settings.volume !== undefined) {
-    const volumeNum = parseInt(settings.volume, 10);
-    if (isNaN(volumeNum) || volumeNum < 0 || volumeNum > 22) {
-      console.error("Invalid volume value:", settings.volume);
-      return;
-    }
-  }
-  if (settings.bass !== undefined) {
-    const bassValue = parseInt(settings.bass, 10);
-    if (isNaN(bassValue) || bassValue < -6 || bassValue > 6) {
-      console.error("Invalid bass value:", settings.bass);
-      return;
-    }
-  }
-  if (settings.mid !== undefined) {
-    const midValue = parseInt(settings.mid, 10);
-    if (isNaN(midValue) || midValue < -6 || midValue > 6) {
-      console.error("Invalid mid value:", settings.mid);
-      return;
-    }
-  }
-  if (settings.treble !== undefined) {
-    const trebleValue = parseInt(settings.treble, 10);
-    if (isNaN(trebleValue) || trebleValue < -6 || trebleValue > 6) {
-      console.error("Invalid treble value:", settings.treble);
-      return;
-    }
-  }
-  // Show loading state for volume if being changed
-  let volumeControl, volumeValue, originalVolume;
-  if (settings.volume !== undefined) {
-    volumeControl = $("volume");
-    volumeValue = $("volume-value");
-    originalVolume = volumeControl ? volumeControl.value : "11";
-  }
-  // Show loading state for tone controls if being changed
-  let toneControls = {};
-  let toneValueElements = {};
-  let originalValues = {};
-  ["bass", "mid", "treble"].forEach((type) => {
-    if (settings[type] !== undefined) {
-      toneControls[type] = $(type);
-      toneValueElements[type] = $(type + "-value");
-      originalValues[type] = toneControls[type]
-        ? toneControls[type].value
-        : "0";
-    }
-  });
-  // Send settings to server
-  try {
-    console.log("Setting mixer to:", settings);
-    const response = await fetch("/api/mixer", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-      body: JSON.stringify(settings),
-    });
-    console.log("Mixer response status:", response.status);
-    if (response.ok) {
-      const result = await response.json();
-      if (result.status === "success") {
-        // Update UI elements
-        if (settings.volume !== undefined && volumeValue) {
-          volumeValue.textContent = settings.volume;
-        }
-        ["bass", "mid", "treble"].forEach((type) => {
-          if (settings[type] !== undefined && toneValueElements[type]) {
-            toneValueElements[type].textContent = settings[type] + "dB";
-            // Update global variable
-            window[type] = settings[type];
-          }
-        });
-      } else {
-        throw new Error(result.message || "Failed to set mixer");
-      }
-    } else {
-      throw new Error(
-        `Failed to set mixer: ${response.status} ${response.statusText}`,
-      );
-    }
-  } catch (error) {
-    console.error("Error setting mixer:", error);
-    // Restore original values on error
-    if (settings.volume !== undefined && volumeControl) {
-      volumeControl.value = originalVolume;
-    }
-    if (volumeValue && settings.volume !== undefined) {
-      volumeValue.textContent = originalVolume;
-    }
-    ["bass", "mid", "treble"].forEach((type) => {
-      if (settings[type] !== undefined && toneControls[type]) {
-        toneControls[type].value = originalValues[type];
-      }
-      if (toneValueElements[type] && settings[type] !== undefined) {
-        toneValueElements[type].textContent = originalValues[type] + "dB";
-      }
-    });
-    throw error; // Re-throw to allow caller to handle
-  }
-}
 
 
 // Drag and drop functions for playlist reordering
