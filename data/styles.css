@@ -167,11 +167,11 @@ fieldset input[type="number"]:focus {
  * These styles override default PicoCSS behaviors for specific elements
  * to better match the application's design requirements.
  */
-#instantUrl {
+#instant-url {
     width: 80%;
 }
 
-#streamURL {
+#stream-url {
     font-weight: 700;
 }
 

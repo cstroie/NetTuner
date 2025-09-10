@@ -27,7 +27,7 @@
         </li>
         <li>
           <button
-            id="themeToggle"
+            id="theme-toggle"
             class="outline"
             aria-label="Toggle theme"
             onclick="toggleTheme()">
@@ -41,19 +41,19 @@
         <hgroup>
           <figure>
             <img
-              id="coverArt"
+              id="cover-art"
               src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+"
               alt="Cover Art" />
             <aside>
-              <h2 id="streamTitle">No stream selected</h2>
-              <p id="streamName">No station selected</p>
+              <h2 id="stream-title">No stream selected</h2>
+              <p id="stream-name">No station selected</p>
             </aside>
           </figure>
         </hgroup>
         <footer>
           <card>
             <label for="volume">Volume:
-              <span id="volumeValue">11</span>
+              <span id="volume-value">11</span>
             </label>
             <input
               type="range" id="volume" min="0" max="22" value="11" step="1"
@@ -62,7 +62,7 @@
           <card class="tone-controls">
             <div class="tone-control">
               <label for="bass">Bass:
-                <span id="bassValue">0dB</span>
+                <span id="bass-value">0dB</span>
               </label>
               <input
                 type="range" id="bass" min="-6" max="6" value="0" step="1"
@@ -70,7 +70,7 @@
             </div>
             <div class="tone-control">
               <label for="mid">Midrange:
-                <span id="midValue">0dB</span>
+                <span id="mid-value">0dB</span>
               </label>
               <input
                 type="range" id="mid" min="-6" max="6" value="0" step="1"
@@ -78,7 +78,7 @@
             </div>
             <div class="tone-control">
               <label for="treble">Treble:
-                <span id="trebleValue">0dB</span>
+                <span id="treble-value">0dB</span>
               </label>
               <input
                 type="range" id="treble" min="-6" max="6" value="0" step="1"
@@ -90,8 +90,8 @@
     </header>
     <main>
       <article>
-        <label for="streamSelect">Select a stream</label>
-        <select id="streamSelect" onchange="playSelectedStream()">
+        <label for="stream-select">Select a stream</label>
+        <select id="stream-select" onchange="playSelectedStream()">
           <option value="">Select a stream...</option>
         </select>
         <footer>
@@ -102,11 +102,11 @@
         </footer>
       </article>
       <article>
-        <label for="instantUrl">Instant play</label>
+        <label for="instant-url">Instant play</label>
         <div role="group">
           <input
             type="text"
-            id="instantUrl"
+            id="instant-url"
             placeholder="Enter stream URL for instant play" />
           <button onclick="playInstantStream()">▶&nbsp;Play</button>
         </div>
