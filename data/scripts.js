@@ -161,9 +161,8 @@ function initPlaylistPage() {
  */
 function initWiFiPage() {
     // Load existing WiFi configuration when page loads
-    window.addEventListener('load', function() {
-        loadConfiguredNetworks();
-    });
+    loadConnectionStatus();
+    loadConfiguredNetworks();
 }
 
 /**
