@@ -1032,7 +1032,7 @@ async function setMixer(settings) {
     let volumeControl, volumeValue, originalVolume;
     if (settings.volume !== undefined) {
         volumeControl = document.getElementById('volume');
-        volumeValue = document.getElementById('volumeValue');
+        volumeValue = document.getElementById('volume-value');
         originalVolume = volumeControl ? volumeControl.value : '50';
         
         if (volumeControl) {
@@ -1050,7 +1050,7 @@ async function setMixer(settings) {
     ['bass', 'mid', 'treble'].forEach(type => {
         if (settings[type] !== undefined) {
             toneControls[type] = document.getElementById(type);
-            toneValueElements[type] = document.getElementById(type + 'Value');
+            toneValueElements[type] = document.getElementById(type + '-value');
             originalValues[type] = toneControls[type] ? toneControls[type].value : '0';
             
             if (toneControls[type]) {
