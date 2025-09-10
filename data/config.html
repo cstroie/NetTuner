@@ -15,24 +15,19 @@
       <ul>
         <li>
           <details class="dropdown">
-            <summary>Config</summary>
+            <summary>Configuration</summary>
             <ul dir="rtl">
               <li><a href="/">Home</a></li>
               <li><a href="/playlist">Playlist</a></li>
               <li><a href="/wifi">Wifi</a></li>
-              <li><a href="/config" aria-current="page">Config</a></li>
+              <li><a href="/config" aria-current="page">Configuration</a></li>
               <li><a href="/about">About</a></li>
             </ul>
           </details>
         </li>
         <li>
-          <button
-            id="theme-toggle"
-            class="outline"
-            aria-label="Toggle theme"
-            onclick="toggleTheme()">
-            ◐
-          </button>
+          <button id="theme-toggle" class="outline" aria-label="Toggle theme" 
+                  onclick="toggleTheme()">◐</button>
         </li>
       </ul>
     </nav>
@@ -47,128 +42,63 @@
             <legend>I2S audio pins</legend>
             <span></span>
             <label for="i2s-bclk">I2S BCLK
-              <input
-                type="number"
-                id="i2s-bclk"
-                name="i2s-bclk"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="i2s-bclk" name="i2s-bclk"
+                     min="0" max="39" required />
             </label>
             <label for="i2s-lrc">I2S LRC
-              <input
-                type="number"
-                id="i2s-lrc"
-                name="i2s-lrc"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="i2s-lrc" name="i2s-lrc"
+                     min="0" max="39" required />
             </label>
             <label for="i2s-dout">I2S DOUT
-              <input
-                type="number"
-                id="i2s-dout"
-                name="i2s-dout"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="i2s-dout" name="i2s-dout"
+                     min="0" max="39" required />
             </label>
             <span></span>
           </fieldset>
           <fieldset class="grid">
             <legend>Control pins</legend>
             <label for="led-pin">Onboard LED
-              <input
-                type="number"
-                id="led-pin"
-                name="led-pin"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="led-pin" name="led-pin"
+                     min="0" max="39" required />
             </label>
             <label for="board-button">Onboard Button
-              <input
-                type="number"
-                id="board-button"
-                name="board-button"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="board-button" name="board-button"
+                     min="0" max="39" required />
             </label>
             <label for="rotary-clk">Rotary CLK
-              <input
-                type="number"
-                id="rotary-clk"
-                name="rotary-clk"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="rotary-clk" name="rotary-clk"
+                     min="0" max="39" required />
             </label>
             <label for="rotary-dt">Rotary DT
-              <input
-                type="number"
-                id="rotary-dt"
-                name="rotary-dt"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="rotary-dt" name="rotary-dt"
+                     min="0" max="39" required />
             </label>
             <label for="rotary-sw">Rotary SW
-              <input
-                type="number"
-                id="rotary-sw"
-                name="rotary-sw"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="rotary-sw" name="rotary-sw"
+                     min="0" max="39" required />
             </label>
           </fieldset>
           <fieldset class="grid">
             <legend>Display settings</legend>
             <label for="display-sda">I2C SDA
-              <input
-                type="number"
-                id="display-sda"
-                name="display-sda"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="display-sda" name="display-sda"
+                     min="0" max="39" required />
             </label>
             <label for="display-scl">I2C SCL
-              <input
-                type="number"
-                id="display-scl"
-                name="display-scl"
-                min="0"
-                max="39"
-                required />
+              <input type="number" id="display-scl" name="display-scl"
+                     min="0" max="39" required />
             </label>
             <label for="display-address">I2C address
-              <input
-                type="number"
-                id="display-address"
-                name="display-address"
-                min="0"
-                max="127"
-                required />
+              <input type="number" id="display-address" name="display-address"
+                     min="0" max="127" required />
             </label>
             <label for="display-width">Display Width
-              <input
-                type="number"
-                id="display-width"
-                name="display-width"
-                min="32"
-                max="256"
-                required />
+              <input type="number" id="display-width" name="display-width"
+                     min="32" max="256" required />
             </label>
             <label for="display-height">Display Height
-              <input
-                type="number"
-                id="display-height"
-                name="display-height"
-                min="32"
-                max="256"
-                required />
+              <input type="number" id="display-height" name="display-height"
+                     min="32" max="256" required />
             </label>
           </fieldset>
         </form>
@@ -203,7 +133,9 @@
             disabled>
             Import configuration
           </button>
-          <button type="button" onclick="exportAllConfiguration()">
+          <button
+            type="button"
+            onclick="exportAllConfiguration()">
             Export configuration
           </button>
         </footer>
@@ -213,7 +145,7 @@
     <script>
       // Initialize the configuration page when DOM is loaded
       document.addEventListener("DOMContentLoaded", function () {
-        initTheme(); // Initialize theme settings
+        initTheme();      // Initialize theme settings
         initConfigPage(); // Initialize configuration page functionality
       });
     </script>

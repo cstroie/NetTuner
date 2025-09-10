@@ -26,13 +26,8 @@
           </details>
         </li>
         <li>
-          <button
-            id="theme-toggle"
-            class="outline"
-            aria-label="Toggle theme"
-            onclick="toggleTheme()">
-            ◐
-          </button>
+          <button id="theme-toggle" class="outline" aria-label="Toggle theme" 
+                  onclick="toggleTheme()">◐</button>
         </li>
       </ul>
     </nav>
@@ -108,9 +103,8 @@
     <script>
       // Initialize the WiFi page when DOM is loaded
       document.addEventListener("DOMContentLoaded", function () {
-        initTheme(); // Initialize theme settings
-        initWiFiPage(); // Initialize WiFi page functionality
-        loadConnectionStatus(); // Load current connection status
+        initTheme();            // Initialize theme settings
+        initWiFiPage();         // Initialize WiFi page functionality
       });
     </script>
   </body>
