@@ -523,7 +523,7 @@ function connectWebSocket() {
                 
                 // Update stream name element only if it changed
                 if (status.streamName !== prev.streamName) {
-                    const streamNameElement = document.getElementById('streamName');
+                    const streamNameElement = document.getElementById('stream-name');
                     if (streamNameElement) {
                         // Show stream name when playing
                         let displayText = status.streamName || 'No station selected';
@@ -537,7 +537,7 @@ function connectWebSocket() {
                 if (status.streamTitle !== prev.streamTitle || 
                     status.bitrate !== prev.bitrate || 
                     status.playing !== prev.playing) {
-                    const streamTitleElement = document.getElementById('streamTitle');
+                    const streamTitleElement = document.getElementById('stream-title');
                     if (streamTitleElement) {
                         // Show stream title when playing
                         let displayText = status.streamTitle || 'No stream selected';
@@ -566,7 +566,7 @@ function connectWebSocket() {
                         fetchArtistImageFromTheAudioDB(status.streamTitle, status.streamIconURL, status.streamIcyURL);
                     } else {
                         // Reset to default CD image when no stream is playing
-                        const coverArtElement = document.getElementById('coverArt');
+                        const coverArtElement = document.getElementById('cover-art');
                         if (coverArtElement) {
                             coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
                         }
@@ -576,7 +576,7 @@ function connectWebSocket() {
                 // Update volume controls only if volume changed
                 if (status.volume !== prev.volume) {
                     const volumeControl = document.getElementById('volume');
-                    const volumeValue = document.getElementById('volumeValue');
+                    const volumeValue = document.getElementById('volume-value');
                     
                     if (volumeControl) {
                         volumeControl.value = status.volume;
@@ -591,7 +591,7 @@ function connectWebSocket() {
                 // Update tone controls only if values changed
                 if (status.bass !== prev.bass) {
                     const bassControl = document.getElementById('bass');
-                    const bassValue = document.getElementById('bassValue');
+                    const bassValue = document.getElementById('bass-value');
     
                     if (bassControl && status.bass !== undefined) {
                         bassControl.value = status.bass;
@@ -606,7 +606,7 @@ function connectWebSocket() {
 
                 if (status.mid !== prev.mid) {
                     const midControl = document.getElementById('mid');
-                    const midValue = document.getElementById('midValue');
+                    const midValue = document.getElementById('mid-value');
     
                     if (midControl && status.mid !== undefined) {
                         midControl.value = status.mid;
@@ -621,7 +621,7 @@ function connectWebSocket() {
 
                 if (status.treble !== prev.treble) {
                     const trebleControl = document.getElementById('treble');
-                    const trebleValue = document.getElementById('trebleValue');
+                    const trebleValue = document.getElementById('treble-value');
     
                     if (trebleControl && status.treble !== undefined) {
                         trebleControl.value = status.treble;
@@ -741,7 +741,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
         if (data.artists && data.artists.length > 0 && data.artists[0].strArtistThumb) {
             // Use the thumbnail image URL
             const imageUrl = data.artists[0].strArtistThumb;
-            const coverArtElement = document.getElementById('coverArt');
+            const coverArtElement = document.getElementById('cover-art');
             if (coverArtElement) {
                 coverArtElement.src = imageUrl;
                 coverArtElement.style.display = "block";
@@ -769,7 +769,7 @@ function handleImageFallback(iconUrl, icyUrl) {
         // Check if icon URL is a valid image
         checkImageExists(iconUrl).then(exists => {
             if (exists) {
-                const coverArtElement = document.getElementById('coverArt');
+                const coverArtElement = document.getElementById('cover-art');
                 if (coverArtElement) {
                     coverArtElement.src = iconUrl;
                     coverArtElement.style.display = "block";
@@ -796,7 +796,7 @@ function tryFaviconFallback(icyUrl) {
             if (faviconUrl) {
                 console.log('Found favicon:', faviconUrl);
                 // Update the cover art image element
-                const coverArtElement = document.getElementById('coverArt');
+                const coverArtElement = document.getElementById('cover-art');
                 if (coverArtElement) {
                     coverArtElement.src = faviconUrl;
                 }
@@ -815,7 +815,7 @@ function tryFaviconFallback(icyUrl) {
  * Reset cover art to default CD image
  */
 function resetToDefaultCoverArt() {
-    const coverArtElement = document.getElementById('coverArt');
+    const coverArtElement = document.getElementById('cover-art');
     if (coverArtElement) {
         coverArtElement.src = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
         coverArtElement.style.display = "block";
@@ -867,7 +867,7 @@ async function playStream() {
 }
 
 function getSelectedStream() {
-    const select = document.getElementById('streamSelect');
+    const select = document.getElementById('stream-select');
     if (!select) {
         return { select: null, url: null, name: null };
     }
@@ -1128,7 +1128,7 @@ async function setMixer(settings) {
 }
 
 async function playInstantStream() {
-    const urlInput = document.getElementById('instantUrl');
+    const urlInput = document.getElementById('instant-url');
     const url = urlInput.value.trim();
     
     // Reset aria-invalid attribute
@@ -1310,7 +1310,7 @@ async function getPlaylistData(url) {
  * The playlist items are draggable for reordering.
  */
 function renderPlaylist() {
-    const playlistBody = document.getElementById('playlistBody');
+    const playlistBody = document.getElementById('playlist-body');
     if (!playlistBody) {
         console.warn('Playlist element not found');
         return;
@@ -1789,7 +1789,7 @@ async function savePlaylistInternal() {
 
 
 async function importRemotePlaylist() {
-    const urlInput = document.getElementById('remotePlaylistUrl');
+    const urlInput = document.getElementById('remote-playlist-url');
     const url = urlInput.value.trim();
     
     // Reset aria-invalid attribute
@@ -2200,7 +2200,7 @@ async function playInstantSelectedStreamFromPlaylist(index) {
 
 
 async function uploadPlaylist() {
-    const fileInput = document.getElementById('playlistFile');
+    const fileInput = document.getElementById('playlist-file');
     const file = fileInput.files[0];
     
     console.log('Uploading playlist file:', file);
@@ -2225,7 +2225,7 @@ async function uploadPlaylist() {
     }
     
     // Show loading state
-    const uploadButton = document.getElementById('uploadPlaylistBtn');
+    const uploadButton = document.getElementById('upload-playlist-btn');
     const originalText = uploadButton ? uploadButton.textContent : null;
     if (uploadButton) {
         uploadButton.textContent = 'Uploading...';
@@ -2330,7 +2330,7 @@ async function uploadPlaylist() {
 
 async function downloadJSON() {
     // Show loading state
-    const downloadButton = document.getElementById('downloadJsonBtn');
+    const downloadButton = document.getElementById('download-json-btn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
@@ -2374,7 +2374,7 @@ async function downloadJSON() {
 
 async function downloadM3U() {
     // Show loading state
-    const downloadButton = document.getElementById('downloadM3uBtn');
+    const downloadButton = document.getElementById('download-m3u-btn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
@@ -2419,7 +2419,7 @@ async function downloadM3U() {
 
 async function downloadPLS() {
     // Show loading state
-    const downloadButton = document.getElementById('downloadPlsBtn');
+    const downloadButton = document.getElementById('download-pls-btn');
     const originalText = downloadButton ? downloadButton.textContent : null;
     if (downloadButton) {
         downloadButton.textContent = 'Downloading...';
@@ -2796,7 +2796,7 @@ async function loadWiFiConfiguration() {
         
         // Also populate the form with configured networks
         // Clear existing fields except the first one
-        const networkFields = document.getElementById('networkFields');
+        const networkFields = document.getElementById('network-fields');
         if (networkFields) {
             while (networkFields.children.length > 1) {
                 networkFields.removeChild(networkFields.lastChild);
@@ -2880,7 +2880,7 @@ function addNetworkField() {
         return;
     }
     
-    const networkFields = document.getElementById('networkFields');
+    const networkFields = document.getElementById('network-fields');
     const newEntry = document.createElement('div');
     newEntry.className = "network-entry"
     newEntry.role = "group"
@@ -3035,7 +3035,7 @@ function handleWiFiDrop(e) {
     
     if (dragSrcWiFiElement !== this) {
         // Get the network entries container
-        const networkFields = document.getElementById('networkFields');
+        const networkFields = document.getElementById('network-fields');
         const entries = Array.from(networkFields.querySelectorAll('.network-entry'));
         
         // Find source and target indices
@@ -3088,7 +3088,7 @@ function addDragAndDropToWiFiNetworks() {
 
 // Attach event listener to WiFi form when page loads
 window.addEventListener('load', function() {
-    const wifiForm = document.getElementById('wifiForm');
+    const wifiForm = document.getElementById('wifi-form');
     if (wifiForm) {
         wifiForm.addEventListener('submit', handleWiFiFormSubmit);
     }
