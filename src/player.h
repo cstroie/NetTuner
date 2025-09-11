@@ -25,10 +25,13 @@
 class Audio;
 
 // Stream information variables
-// Document this, AI!
+/**
+ * @brief Stream information structure
+ * Contains all the information about the current stream
+ */
 struct StreamInfoData {
-  char url[256];
-  char name[128];
+  char url[256];    ///< Stream URL
+  char name[128];   ///< Stream name
   char title[128];
   char icyUrl[256];
   char iconUrl[256];
