@@ -124,6 +124,7 @@ void Player::clearStreamInfo() {
   streamInfo.title[0] = '\0';
   streamInfo.icyUrl[0] = '\0';
   streamInfo.iconUrl[0] = '\0';
+  streamInfo.bitrate = 0;
 }
 
 /**
@@ -216,26 +217,22 @@ void Player::startStream(const char* url, const char* name) {
       resume = true;
     } else {
       Serial.println("Error: No URL provided and no current stream to resume");
-      updateDisplay();
       return;
     }
   }
   // Validate inputs
   if (!url || !name) {
-    Serial.println("Error: NULL pointer passed to startStream");
-    updateDisplay();
+    Serial.println("Error: NULL stream URL or name pointer passed to startStream");
     return;
   }
   // Check for empty strings
   if (strlen(url) == 0 || strlen(name) == 0) {
-    Serial.println("Error: Empty URL or name passed to startStream");
-    updateDisplay();
+    Serial.println("Error: Empty stream URL or name passed to startStream");
     return;
   }
   // Validate URL format
   if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
     Serial.println("Error: Invalid URL format");
-    updateDisplay();
     return;
   }
   // Keep the stream url and name if they are new
@@ -263,7 +260,7 @@ void Player::startStream(const char* url, const char* name) {
       Serial.println("Successfully connected to audio stream");
     }
   }
-  updateDisplay();  // Refresh the display with new playback info
+  updateDisplay();        // Refresh the display with new playback info
   sendStatusToClients();  // Notify clients of status change
 }
 
@@ -279,12 +276,7 @@ void Player::stopStream() {
     audio->stopSong();
   }
   playerState.playing = false;             // Set playback status to stopped
-  streamInfo.url[0] = '\0';       // Clear current stream URL
-  streamInfo.name[0] = '\0';   // Clear current stream name
-  streamInfo.title[0] = '\0';         // Clear stream title
-  streamInfo.icyUrl[0] = '\0';        // Clear ICY URL
-  streamInfo.iconUrl[0] = '\0';       // Clear stream icon URL
-  streamInfo.bitrate = 0;                   // Clear bitrate
+  clearStreamInfo();
   // Update total play time when stopping
   if (playerState.playStartTime > 0) {
     playerState.totalPlayTime += (millis() / 1000) - playerState.playStartTime;
