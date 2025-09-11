@@ -67,9 +67,9 @@ int parseValue(const String& valueStr) {
  * @param args Command arguments (not used for stop command)
  */
 void MPDInterface::handleStopCommand(const String& args) {
-  player.stopStream();
-  player.markPlayerStateDirty();
-  player.savePlayerState();
+  this->player.stopStream();
+  this->player.markPlayerStateDirty();
+  this->player.savePlayerState();
   mpdClient.print(mpdResponseOK());
 }
 
@@ -268,8 +268,8 @@ void MPDInterface::handleListCommand(const String& args) {
       mpdClient.print("Album: WebRadio\n");
     } else if (tagType.startsWith("title")) {
       // Return the playlist
-      for (int i = 0; i < player.getPlaylistCount(); i++) {
-        mpdClient.print("Title: " + String(player.getPlaylistItem(i).name) + "\n");
+      for (int i = 0; i < this->player.getPlaylistCount(); i++) {
+        mpdClient.print("Title: " + String(this->player.getPlaylistItem(i).name) + "\n");
       }
     }
   }
@@ -451,13 +451,13 @@ void MPDInterface::handleStatsCommand(const String& args) {
   // Calculate uptime and playtime
   unsigned long uptime = (millis() / 1000) - startTime;
   unsigned long playtime = totalPlayTime;
-  if (player.isPlaying() && player.getPlayStartTime() > 0) {
-    playtime += (millis() / 1000) - player.getPlayStartTime();
+  if (this->player.isPlaying() && this->player.getPlayStartTime() > 0) {
+    playtime += (millis() / 1000) - this->player.getPlayStartTime();
   }
   // Send stats information
   mpdClient.print("artists: 1\n");
   mpdClient.print("albums: 1\n");
-  mpdClient.print("songs: " + String(player.getPlaylistCount()) + "\n");
+  mpdClient.print("songs: " + String(this->player.getPlaylistCount()) + "\n");
   mpdClient.print("uptime: " + String(uptime) + "\n");
   mpdClient.print("playtime: " + String(playtime) + "\n");
   mpdClient.print("db_playtime: " + String(playtime) + "\n");
@@ -674,7 +674,7 @@ void MPDInterface::handleClearCommand(const String& args) {
  * @param args Command arguments (not used for getvol command)
  */
 void MPDInterface::handleGetVolCommand(const String& args) {
-  int volPercent = map(player.getVolume(), 0, 22, 0, 100);
+  int volPercent = map(this->player.getVolume(), 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print(mpdResponseOK());
 }
@@ -737,15 +737,15 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   if (args.length() > 0) {
     id = parseValue(args);
     // Validate ID range
-    if (id < 0 || id >= player.getPlaylistCount()) {
+    if (id < 0 || id >= this->player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("playlistid", "Invalid playlist ID"));
       return;
     }
   }
   // Check if the ID is valid
-  if (id >= 0 && id < player.getPlaylistCount()) {
+  if (id >= 0 && id < this->player.getPlaylistCount()) {
     // Return specific entry
-    const StreamInfo& item = player.getPlaylistItem(id);
+    const StreamInfo& item = this->player.getPlaylistItem(id);
     mpdClient.print("file: " + String(item.url) + "\n");
     mpdClient.print("Title: " + String(item.name) + "\n");
     mpdClient.print("Artist: WebRadio\n");
@@ -814,10 +814,10 @@ void MPDInterface::handlePlaylistInfoCommand(const String& args) {
  * @param args Command arguments (not used for currentsong command)
  */
 void MPDInterface::handleCurrentSongCommand(const String& args) {
-  if (player.isPlaying() && strlen(player.getStreamName()) > 0) {
-    mpdClient.print("file: " + String(player.getStreamUrl()) + "\n");
-    if (strlen(player.getStreamTitle()) > 0) {
-      String streamTitleStr = String(player.getStreamTitle());
+  if (this->player.isPlaying() && strlen(this->player.getStreamName()) > 0) {
+    mpdClient.print("file: " + String(this->player.getStreamUrl()) + "\n");
+    if (strlen(this->player.getStreamTitle()) > 0) {
+      String streamTitleStr = String(this->player.getStreamTitle());
       // Check if stream title contains " - " separator for artist/track parsing
       int separatorPos = streamTitleStr.indexOf(" - ");
       if (separatorPos != -1) {
@@ -832,10 +832,10 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
       }
     } else {
       // No stream title, use stream name as fallback
-      mpdClient.print("Title: " + String(player.getStreamName()) + "\n");
+      mpdClient.print("Title: " + String(this->player.getStreamName()) + "\n");
     }
-    mpdClient.print("Id: " + String(player.getPlaylistIndex() + 1) + "\n");
-    mpdClient.print("Pos: " + String(player.getPlaylistIndex() + 1) + "\n");
+    mpdClient.print("Id: " + String(this->player.getPlaylistIndex() + 1) + "\n");
+    mpdClient.print("Pos: " + String(this->player.getPlaylistIndex() + 1) + "\n");
   }
   mpdClient.print(mpdResponseOK());
 }
@@ -867,27 +867,27 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
  * @param args Command arguments (not used for status command)
  */
 void MPDInterface::handleStatusCommand(const String& args) {
-  int index = player.getPlaylistIndex() + 1; // 1-based index for MPD
-  int volPercent = map(player.getVolume(), 0, 22, 0, 100);
+  int index = this->player.getPlaylistIndex() + 1; // 1-based index for MPD
+  int volPercent = map(this->player.getVolume(), 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print("repeat: 0\n");
   mpdClient.print("random: 0\n");
   mpdClient.print("single: 0\n");
   mpdClient.print("consume: 0\n");
   mpdClient.print("playlist: 1\n");
-  mpdClient.print("playlistlength: " + String(player.getPlaylistCount()) + "\n");
+  mpdClient.print("playlistlength: " + String(this->player.getPlaylistCount()) + "\n");
   mpdClient.print("mixrampdb: 0.000000\n");
-  mpdClient.print("state: " + String(player.isPlaying() ? "play" : "stop") + "\n");
-  if (player.isPlaying() && strlen(player.getStreamName()) > 0) {
+  mpdClient.print("state: " + String(this->player.isPlaying() ? "play" : "stop") + "\n");
+  if (this->player.isPlaying() && strlen(this->player.getStreamName()) > 0) {
     mpdClient.print("song: " + String(index) + "\n");
     mpdClient.print("songid: " + String(index) + "\n");
     // Calculate elapsed time since playback started
     unsigned long elapsed = 0;
-    if (player.getPlayStartTime() > 0) {
-      elapsed = (millis() / 1000) - player.getPlayStartTime();
+    if (this->player.getPlayStartTime() > 0) {
+      elapsed = (millis() / 1000) - this->player.getPlayStartTime();
     }
     mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
-    mpdClient.print("bitrate: " + String(player.getBitrate()) + "\n");
+    mpdClient.print("bitrate: " + String(this->player.getBitrate()) + "\n");
     mpdClient.print("audio: 44100:16:2\n");
     index++;
     mpdClient.print("nextsong: " + String(index) + "\n");
@@ -1039,8 +1039,8 @@ void MPDInterface::handleDisableOutputCommand(const String& args) {
  * @param args Command arguments (not used for previous command)
  */
 void MPDInterface::handlePreviousCommand(const String& args) {
-  if (player.getPlaylistCount() > 0) {
-    int prevIndex = (player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount();
+  if (this->player.getPlaylistCount() > 0) {
+    int prevIndex = (this->player.getPlaylistIndex() - 1 + this->player.getPlaylistCount()) % this->player.getPlaylistCount();
     if (handlePlayback(prevIndex)) {
       mpdClient.print(mpdResponseOK());
     } else {
@@ -1079,8 +1079,8 @@ void MPDInterface::handlePreviousCommand(const String& args) {
  */
 void MPDInterface::handleNextCommand(const String& args) {
   // Next command
-  if (player.getPlaylistCount() > 0) {
-    int nextIndex = (player.getPlaylistIndex() + 1) % player.getPlaylistCount();
+  if (this->player.getPlaylistCount() > 0) {
+    int nextIndex = (this->player.getPlaylistIndex() + 1) % this->player.getPlaylistCount();
     if (handlePlayback(nextIndex)) {
       mpdClient.print(mpdResponseOK());
     } else {
@@ -1125,8 +1125,8 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     int volumeChange = parseValue(args);
     
     // Get current volume as percentage for MPD compatibility
-    int currentVolPercent = map(player.getVolume(), 0, 22, 0, 100);
-    
+    int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
+
     // Apply change and clamp to 0-100 range
     int newVolPercent = currentVolPercent + volumeChange;
     if (newVolPercent < 0) newVolPercent = 0;
@@ -1134,7 +1134,7 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     
     // Convert back to 0-22 scale for ESP32-audioI2S and set
     int newVolume = map(newVolPercent, 0, 100, 0, 22);
-    player.setVolume(newVolume);
+    this->player.setVolume(newVolume);
     updateDisplay();
     sendStatusToClients();  // Notify WebSocket clients of volume change
     mpdClient.print(mpdResponseOK());
@@ -1179,7 +1179,7 @@ void MPDInterface::handleSetVolCommand(const String& args) {
     if (newVolume >= 0 && newVolume <= 100) {
       // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
       int volume = map(newVolume, 0, 100, 0, 22);
-      player.setVolume(volume);
+      this->player.setVolume(volume);
       updateDisplay();
       sendStatusToClients();  // Notify WebSocket clients of volume change
       mpdClient.print(mpdResponseOK());
@@ -1228,7 +1228,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
     // Convert to 0-based index
     playlistIndex = parseValue(args) - 1;
     // Validate index if provided
-    if (playlistIndex < -1 || playlistIndex >= player.getPlaylistCount()) {
+    if (playlistIndex < -1 || playlistIndex >= this->player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
@@ -1300,11 +1300,11 @@ void MPDInterface::handleIdleCommand(const String& args) {
   inIdleMode = true;
   // Initialize hashes for tracking changes
   lastTitleHash = 0;
-  for (int i = 0; player.getStreamTitle()[i]; i++) {
-    lastTitleHash = lastTitleHash * 31 + player.getStreamTitle()[i];
+  for (int i = 0; this->player.getStreamTitle()[i]; i++) {
+    lastTitleHash = lastTitleHash * 31 + this->player.getStreamTitle()[i];
   }
-  lastStatusHash = player.isPlaying() ? 1 : 0;
-  lastStatusHash = lastStatusHash * 31 + player.getVolume();
+  lastStatusHash = this->player.isPlaying() ? 1 : 0;
+  lastStatusHash = lastStatusHash * 31 + this->player.getVolume();
   // Don't send immediate response - wait for changes
 }
 
@@ -1659,13 +1659,13 @@ void MPDInterface::handleIdleMode() {
   // Check for title changes using hash computation
   // Uses polynomial rolling hash with base 31 for good distribution
   unsigned long currentTitleHash = 0;
-  for (int i = 0; player.getStreamTitle()[i]; i++) {
-    currentTitleHash = currentTitleHash * 31 + player.getStreamTitle()[i];
+  for (int i = 0; this->player.getStreamTitle()[i]; i++) {
+    currentTitleHash = currentTitleHash * 31 + this->player.getStreamTitle()[i];
   }
   // Check for status changes using hash computation
   // Combines playing status (boolean) and volume (0-22) into a single hash
-  unsigned long currentStatusHash = player.isPlaying() ? 1 : 0;
-  currentStatusHash = currentStatusHash * 31 + player.getVolume();
+  unsigned long currentStatusHash = this->player.isPlaying() ? 1 : 0;
+  currentStatusHash = currentStatusHash * 31 + this->player.getVolume();
   // Prepare to send idle response if changes detected
   bool sendIdleResponse = false;
   String idleChanges = "";
@@ -1730,15 +1730,15 @@ void MPDInterface::handleIdleMode() {
  * @return true if playback started successfully, false otherwise
  */
 bool MPDInterface::handlePlayback(int index) {
-  if (player.getPlaylistCount() <= 0) {
+  if (this->player.getPlaylistCount() <= 0) {
     return false;
   }
   // Use current selection if no valid index provided
-  if (index < 0 || index >= player.getPlaylistCount()) {
-    index = player.getPlaylistIndex();
+  if (index < 0 || index >= this->player.getPlaylistCount()) {
+    index = this->player.getPlaylistIndex();
   }
   // Validate that we have a valid index within playlist bounds
-  if (index < 0 || index >= player.getPlaylistCount()) {
+  if (index < 0 || index >= this->player.getPlaylistCount()) {
     return false;
   }
   // Stop any current playback
@@ -1952,8 +1952,8 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
  * 3=artist/album (file+title+artist+album+id+pos+lastmod)
  */
 void MPDInterface::sendPlaylistInfo(int detailLevel) {
-  for (int i = 0; i < player.getPlaylistCount(); i++) {
-    const StreamInfo& item = player.getPlaylistItem(i);
+  for (int i = 0; i < this->player.getPlaylistCount(); i++) {
+    const StreamInfo& item = this->player.getPlaylistItem(i);
     mpdClient.print("file: " + String(item.url) + "\n");
     mpdClient.print("Title: " + String(item.name) + "\n");
     if (detailLevel >= 3) {
@@ -2033,8 +2033,8 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     return;
   }
   // Search in playlist names
-  for (int i = 0; i < player.getPlaylistCount(); i++) {
-    const StreamInfo& item = player.getPlaylistItem(i);
+  for (int i = 0; i < this->player.getPlaylistCount(); i++) {
+    const StreamInfo& item = this->player.getPlaylistItem(i);
     String playlistName = String(item.name);
     // Convert both to lowercase for case-insensitive comparison
     String lowerName = playlistName;
