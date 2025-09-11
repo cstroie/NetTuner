@@ -1005,7 +1005,7 @@ void handleRotary() {
     if (playlistCount > 0 && currentSelection < playlistCount) {
       if (!isPlaying) {
         // If not playing, start playback of selected stream
-        startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         sendStatusToClients();  // Notify clients of status change
       }
     }
@@ -1412,12 +1412,12 @@ void handlePlayer() {
       return;
     }
     // Stop any currently playing stream
-    stopStream();
+    player.stopStream();
     // Start the stream
-    startStream(url.c_str(), name.c_str());
+    player.startStream(url.c_str(), name.c_str());
     // Save player state when user requests to play
-    markPlayerStateDirty();
-    savePlayerState();
+    player.markPlayerStateDirty();
+    player.savePlayerState();
     // Update display and notify clients
     updateDisplay();
     sendStatusToClients();
@@ -1426,10 +1426,10 @@ void handlePlayer() {
   } 
   else if (action == "stop") {
     // Stop any currently playing stream
-    stopStream();
+    player.stopStream();
     // Save player state when user stops the stream
-    markPlayerStateDirty();
-    savePlayerState();
+    player.markPlayerStateDirty();
+    player.savePlayerState();
     // Update display and notify clients
     updateDisplay();
     sendStatusToClients();
@@ -2070,7 +2070,7 @@ void loop() {
             Serial.println("Attempting to restart stream...");
             // With the updated startStream function, we can now call it
             // without parameters to resume the current stream
-            startStream();
+            player.startStream();
             streamStoppedTime = 0; // Reset the timer
           }
         }
@@ -2190,7 +2190,7 @@ void setup() {
   }
   
   // Load player state
-  loadPlayerState();
+  player.loadPlayerState();
   
   // Setup web server routes
   setupWebServer();
@@ -2217,50 +2217,4 @@ void setup() {
   
   // Update display
   updateDisplay();
-}
-
-/**
- * @brief Load player state from SPIFFS
- * This function reads player state from player.json in SPIFFS and applies it
- */
-void loadPlayerState() {
-  // Load player state
-  player.loadPlayerState();
-}
-
-/**
- * @brief Save player state to SPIFFS
- * This function saves the current player state to player.json in SPIFFS
- */
-void savePlayerState() {
-  player.savePlayerState();
-}
-
-/**
- * @brief Mark player state as dirty (needs saving)
- * This function marks the player state as dirty so it will be saved
- */
-void markPlayerStateDirty() {
-  player.markPlayerStateDirty();
-}
-
-/**
- * @brief Start streaming an audio stream
- * Stops any currently playing stream and begins playing a new one
- * If called without parameters, resumes playback of streamURL if available
- * @param url URL of the audio stream to play (optional)
- * @param name Human-readable name of the stream (optional)
- */
-void startStream(const char* url, const char* name) {
-  player.startStream(url, name);
-}
-
-/**
- * @brief Stop the currently playing stream
- * Cleans up audio components and resets playback state
- * This function stops audio playback, clears stream information, and resets
- * the playback state to stopped.
- */
-void stopStream() {
-  player.stopStream();
 }
