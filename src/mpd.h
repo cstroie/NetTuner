@@ -62,17 +62,8 @@ private:
   WiFiServer& mpdServer;             ///< WiFi server instance for MPD connections
   WiFiClient mpdClient;              ///< Current MPD client connection
 
-  // References to global variables for state synchronization
-  char* streamTitleRef;              ///< Reference to global stream title buffer
-  char* streamNameRef;               ///< Reference to global stream name buffer
-  char* streamURLRef;                ///< Reference to global stream URL buffer
-  volatile bool& isPlayingRef;       ///< Reference to global playing status flag
-  int& volumeRef;                    ///< Reference to global volume level (0-22, ESP32-audioI2S scale)
-  int& bitrateRef;                   ///< Reference to global bitrate value (in kbps)
-  int& playlistCountRef;             ///< Reference to global playlist count
-  int& currentSelectionRef;          ///< Reference to global current selection index
-  StreamInfo* playlistRef;           ///< Reference to global playlist array
-  Audio*& audioRef;                  ///< Reference to global audio instance
+  // Reference to player instance
+  Player& player;                    ///< Reference to Player instance
 
   // MPD command list state variables for batch command processing
   bool inCommandList = false;        ///< Flag indicating if we're in command list mode
