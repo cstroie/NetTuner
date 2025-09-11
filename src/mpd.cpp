@@ -1742,15 +1742,15 @@ bool MPDInterface::handlePlayback(int index) {
     return false;
   }
   // Stop any current playback
-  player.stopStream();
+  this->player.stopStream();
   // Update current selection
-  player.setPlaylistIndex(index);
+  this->player.setPlaylistIndex(index);
   // Start playback
-  const StreamInfo& item = player.getPlaylistItem(index);
-  player.startStream(item.url, item.name);
+  const StreamInfo& item = this->player.getPlaylistItem(index);
+  this->player.startStream(item.url, item.name);
   // Update state
-  player.markPlayerStateDirty();
-  player.savePlayerState();
+  this->player.markPlayerStateDirty();
+  this->player.savePlayerState();
   return true;
 }
 
