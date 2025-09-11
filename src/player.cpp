@@ -37,7 +37,6 @@ Player::Player() {
   playerState.playlistIndex = 0;
   playerState.lastSaveTime = 0;
   playerState.dirty = false;
-  bitrate = 0;
   
   // Initialize stream info
   streamInfo.url[0] = '\0';
@@ -45,6 +44,7 @@ Player::Player() {
   streamInfo.title[0] = '\0';
   streamInfo.icyUrl[0] = '\0';
   streamInfo.iconUrl[0] = '\0';
+  streamInfo.bitrate = 0;
 }
 
 /**
@@ -254,7 +254,7 @@ void Player::startStream(const char* url, const char* name) {
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
       playerState.playing = false;
-      bitrate = 0;
+      streamInfo.bitrate = 0;
     } else {
       playerState.playing = true;
       Serial.println("Successfully connected to audio stream");
@@ -281,7 +281,7 @@ void Player::stopStream() {
   streamInfo.title[0] = '\0';         // Clear stream title
   streamInfo.icyUrl[0] = '\0';        // Clear ICY URL
   streamInfo.iconUrl[0] = '\0';       // Clear stream icon URL
-  bitrate = 0;                   // Clear bitrate
+  streamInfo.bitrate = 0;                   // Clear bitrate
   // Turn off LED when stopped
   digitalWrite(config.led_pin, LOW);
   updateDisplay();  // Refresh the display

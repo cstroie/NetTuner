@@ -31,6 +31,7 @@ struct StreamInfoData {
   char title[128];
   char icyUrl[256];
   char iconUrl[256];
+  int bitrate;
 };
 
 struct PlayerState {
@@ -49,7 +50,6 @@ class Player {
 private:
   PlayerState playerState;
   StreamInfoData streamInfo;
-  int bitrate;
   
 public:
   // Constructor
@@ -68,7 +68,7 @@ public:
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   bool isDirty() const { return playerState.dirty; }
-  int getBitrate() const { return bitrate; }
+  int getBitrate() const { return streamInfo.bitrate; }
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
@@ -77,7 +77,7 @@ public:
   void setMid(int mid) { playerState.mid = mid; }
   void setTreble(int treble) { playerState.treble = treble; }
   void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
-  void setBitrate(int newBitrate) { bitrate = newBitrate; }
+  void setBitrate(int newBitrate) { streamInfo.bitrate = newBitrate; }
   
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
