@@ -31,7 +31,7 @@
 
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, streamInfo.title, streamInfo.name, streamInfo.url,
-  isPlaying, playerState.volume, bitrate, playlistCount, currentSelection, playlist, audio);
+  isPlaying, player.getVolume(), bitrate, playlistCount, currentSelection, playlist, audio);
 
 
 /**
@@ -1082,10 +1082,7 @@ void handleSimpleWebPage() {
         if (server.hasArg("volume")) {
           int newVolume = server.arg("volume").toInt();
           if (newVolume >= 0 && newVolume <= 22) {
-            playerState.volume = newVolume;
-            if (audio) {
-              audio->setVolume(playerState.volume);
-            }
+            player.setVolume(newVolume);
             updateDisplay();
             sendStatusToClients();
           }
@@ -1148,7 +1145,7 @@ void handleSimpleWebPage() {
   // Add volume options (0-22)
   for (int i = 0; i <= 22; i++) {
     html += "<option value='" + String(i) + "'";
-    if (i == playerState.volume) {
+    if (i == player.getVolume()) {
       html += " selected";
     }
     html += ">" + String(i) + "</option>";
@@ -1493,10 +1490,10 @@ void handleMixer() {
     // Create JSON document with appropriate size
     DynamicJsonDocument doc(256);
     // Add mixer status
-    doc["volume"] = playerState.volume;
-    doc["bass"] = playerState.bass;
-    doc["mid"] = playerState.mid;
-    doc["treble"] = playerState.treble;
+    doc["volume"] = player.getVolume();
+    doc["bass"] = player.getBass();
+    doc["mid"] = player.getMid();
+    doc["treble"] = player.getTreble();
     // Serialize JSON to string
     String json;
     serializeJson(doc, json);
@@ -1558,10 +1555,7 @@ void handleMixer() {
       sendJsonResponse("error", "Volume must be between 0 and 22");
       return;
     }
-    playerState.volume = newVolume;
-    if (audio) {
-      audio->setVolume(playerState.volume);  // ESP32-audioI2S uses 0-22 scale
-    }
+    player.setVolume(newVolume);
     updated = true;
   }
   // Handle bass setting
@@ -1576,7 +1570,7 @@ void handleMixer() {
       sendJsonResponse("error", "Bass must be between -6 and 6");
       return;
     }
-    playerState.bass = newBass;
+    player.setBass(newBass);
     updated = true;
   }
   // Handle mid setting
@@ -1591,7 +1585,7 @@ void handleMixer() {
       sendJsonResponse("error", "Midrange must be between -6 and 6");
       return;
     }
-    playerState.mid = newMid;
+    player.setMid(newMid);
     updated = true;
   }
   // Handle treble setting
@@ -1606,7 +1600,7 @@ void handleMixer() {
       sendJsonResponse("error", "Treble must be between -6 and 6");
       return;
     }
-    playerState.treble = newTreble;
+    player.setTreble(newTreble);
     updated = true;
   }
   // Check if any parameters were provided
@@ -1617,7 +1611,7 @@ void handleMixer() {
   // Apply tone settings to audio using the Audio library's setTone function
   if (audio && (doc.containsKey("bass") || doc.containsKey("mid") || doc.containsKey("treble"))) {
     // For setTone: gainLowPass (bass), gainBandPass (mid), gainHighPass (treble)
-    audio->setTone(playerState.bass, playerState.mid, playerState.treble);
+    audio->setTone(player.getBass(), player.getMid(), player.getTreble());
   }
   // Update display and notify clients
   updateDisplay();
@@ -1759,10 +1753,10 @@ String generateStatusJSON(bool fullStatus = true) {
     doc["streamIcyURL"] = streamInfo.icyUrl;
     doc["streamIconURL"] = streamInfo.iconUrl;
     doc["bitrate"] = bitrate;
-    doc["volume"] = playerState.volume;
-    doc["bass"] = playerState.bass;
-    doc["mid"] = playerState.mid;
-    doc["treble"] = playerState.treble;
+    doc["volume"] = player.getVolume();
+    doc["bass"] = player.getBass();
+    doc["mid"] = player.getMid();
+    doc["treble"] = player.getTreble();
   } else {
     // Only include values that have changed
     if (isPlaying != prevIsPlaying) {
@@ -1793,20 +1787,20 @@ String generateStatusJSON(bool fullStatus = true) {
       doc["bitrate"] = bitrate;
     }
     
-    if (playerState.volume != prevPlayerState.volume) {
-      doc["volume"] = playerState.volume;
+    if (player.getVolume() != prevPlayerState.volume) {
+      doc["volume"] = player.getVolume();
     }
     
-    if (playerState.bass != prevPlayerState.bass) {
-      doc["bass"] = playerState.bass;
+    if (player.getBass() != prevPlayerState.bass) {
+      doc["bass"] = player.getBass();
     }
     
-    if (playerState.mid != prevPlayerState.mid) {
-      doc["mid"] = playerState.mid;
+    if (player.getMid() != prevPlayerState.mid) {
+      doc["mid"] = player.getMid();
     }
     
-    if (playerState.treble != prevPlayerState.treble) {
-      doc["treble"] = playerState.treble;
+    if (player.getTreble() != prevPlayerState.treble) {
+      doc["treble"] = player.getTreble();
     }
   }
   
@@ -1818,10 +1812,10 @@ String generateStatusJSON(bool fullStatus = true) {
   strcpy(prevStreamInfo.icyUrl, streamInfo.icyUrl);
   strcpy(prevStreamInfo.iconUrl, streamInfo.iconUrl);
   prevBitrate = bitrate;
-  prevPlayerState.volume = playerState.volume;
-  prevPlayerState.bass = playerState.bass;
-  prevPlayerState.mid = playerState.mid;
-  prevPlayerState.treble = playerState.treble;
+  prevPlayerState.volume = player.getVolume();
+  prevPlayerState.bass = player.getBass();
+  prevPlayerState.mid = player.getMid();
+  prevPlayerState.treble = player.getTreble();
   
   // Serialize JSON to string
   String json;
@@ -1907,7 +1901,7 @@ void updateDisplay() {
     ipString = "No IP";
   }
   // Update the display with current status
-  display.update(isPlaying, streamInfo.title, streamInfo.name, playerState.volume, bitrate, ipString);
+  display.update(player.isPlaying(), streamInfo.title, streamInfo.name, player.getVolume(), bitrate, ipString);
 }
 
 
