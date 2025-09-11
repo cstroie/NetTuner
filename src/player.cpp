@@ -21,7 +21,6 @@
 #include "main.h"
 #include <ArduinoJson.h>
 
-
 /**
  * @brief Player constructor
  */
@@ -31,7 +30,6 @@ Player::Player() {
   
   // Initialize player state with defaults
   clearPlayerState();
-
   // Initialize stream info
   clearStreamInfo();
 }

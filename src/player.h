@@ -25,7 +25,6 @@
 class Audio;
 class Playlist;
 
-// Stream information variables
 /**
  * @brief Stream information structure
  * Contains all the information about the current stream
