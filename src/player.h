@@ -34,6 +34,7 @@ struct StreamInfoData {
   int bitrate;
 };
 
+// Document this, AI!
 struct PlayerState {
   bool playing;
   int volume;
