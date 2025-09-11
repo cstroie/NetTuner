@@ -411,3 +411,14 @@ void Player::handleAudio() {
     audio->loop();
   }
 }
+
+int Player::updateBitrate() {
+  if (audio) {
+    int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
+    if (newBitrate > 0 && newBitrate != streamInfo.bitrate) {
+      streamInfo.bitrate = newBitrate;
+      return newBitrate;
+    }
+  }
+  return streamInfo.bitrate;
+}

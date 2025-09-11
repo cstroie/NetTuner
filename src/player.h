@@ -68,7 +68,8 @@ public:
   Player();
   
   // Audio getter
-  Audio* getAudio() const { return audio; }
+  Audio* getAudioObject() const { return audio; }
+  bool isRunning() const { return audio ? audio->isRunning() : false; } 
   
   // Player state methods
   void clearPlayerState();
@@ -138,6 +139,8 @@ public:
   Audio* setupAudioOutput();
   // Audio handler
   void handleAudio();
+  // Update the bitrate from the Audio object
+  void updateBitrate();
 };
 
 #endif // PLAYER_H
