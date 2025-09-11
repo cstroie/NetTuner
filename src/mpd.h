@@ -27,6 +27,7 @@
 
 // Forward declarations
 struct StreamInfo;
+class Player;
 
 // External global variables
 extern unsigned long startTime;
