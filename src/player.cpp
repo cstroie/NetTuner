@@ -289,6 +289,25 @@ void Player::stopStream() {
 }
 
 /**
+ * @brief Set tone controls (bass, mid, treble)
+ * Applies the tone settings to the audio output
+ * @param bass Bass level (-6 to 6)
+ * @param mid Mid level (-6 to 6)
+ * @param treble Treble level (-6 to 6)
+ */
+void Player::setTone(int bass, int mid, int treble) {
+  // Validate and set tone values
+  playerState.bass = constrain(bass, -6, 6);
+  playerState.mid = constrain(mid, -6, 6);
+  playerState.treble = constrain(treble, -6, 6);
+  
+  // Apply tone settings to audio output
+  if (audio) {
+    audio->setTone(playerState.bass, playerState.mid, playerState.treble);
+  }
+}
+
+/**
  * @brief Initialize audio output interface
  * Configures the selected audio output method
  * This function initializes the ESP32-audioI2S library with I2S pin configuration

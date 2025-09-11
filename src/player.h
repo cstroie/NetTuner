@@ -90,6 +90,9 @@ public:
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
   
+  // Tone control
+  void setTone(int bass, int mid, int treble);
+  
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }
