@@ -167,21 +167,16 @@ volatile bool isPlaying = false;
 unsigned long lastActivityTime = 0;
 unsigned long startTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
-bool audioConnected = false;
 String previousStatus = "";
 
-// Previous values for partial status updates
-static StreamInfoData prevStreamInfo = {"", "", "", "", ""};
-static Player::PlayerState prevPlayerState = {false, 0, 0, 0, 0, 0, 0, false};
-static int prevBitrate = 0;
-static bool prevIsPlaying = false;
+
+
 
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
 StreamInfo playlist[MAX_PLAYLIST_SIZE];
 int playlistCount = 0;
-int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
 Player player;
@@ -375,8 +370,8 @@ void handleBoardButton() {
           player.startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
-        else if (playlistCount > 0 && currentSelection < playlistCount) {
-          player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        else if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
+          player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
         }
         player.markPlayerStateDirty();
       }
@@ -954,7 +949,7 @@ void handleRotary() {
       } else {
         // If not playing, select next item in playlist
         if (playlistCount > 0) {
-          currentSelection = (currentSelection + 1) % playlistCount;
+          player.setPlaylistIndex((player.getPlaylistIndex() + 1) % playlistCount);
         }
       }
     } else if (diff < 0) {
@@ -967,7 +962,7 @@ void handleRotary() {
       } else {
         // If not playing, select previous item in playlist
         if (playlistCount > 0) {
-          currentSelection = (currentSelection - 1 + playlistCount) % playlistCount;
+          player.setPlaylistIndex((player.getPlaylistIndex() - 1 + playlistCount) % playlistCount);
         }
       }
     }
@@ -986,10 +981,10 @@ void handleRotary() {
       updateDisplay(); // Turn display back on and update
     }
     // Only process if we have playlist items
-    if (playlistCount > 0 && currentSelection < playlistCount) {
-      if (!isPlaying) {
+    if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
+      if (!player->isPlaying()) {
         // If not playing, start playback of selected stream
-        player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+        player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
         sendStatusToClients();  // Notify clients of status change
       }
     }
@@ -1018,7 +1013,7 @@ void handleSimpleWebPage() {
             // Stop playback
             player.stopStream();
             // Play selected stream
-            currentSelection = streamIndex;
+            player.setPlaylistIndex(streamIndex);
             player.startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
         } else if (strlen(player.getStreamUrl()) > 0) {
@@ -1026,11 +1021,11 @@ void handleSimpleWebPage() {
           player.stopStream();
           // Resume current stream
           player.startStream();
-        } else if (playlistCount > 0 && currentSelection < playlistCount) {
+        } else if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
           // Stop playback
           player.stopStream();
           // Play currently selected stream
-          player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+          player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
         }
       } else if (action == "stop") {
         // Stop playback
@@ -1084,9 +1079,9 @@ void handleSimpleWebPage() {
     html += "<p><b>Current Stream:</b> ";
     html += player.getStreamName();
     html += "</p>";
-  } else if (!player.isPlaying() && playlistCount > 0 && currentSelection < playlistCount) {
+  } else if (!player.isPlaying() && playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
     html += "<p><b>Selected Stream:</b> ";
-    html += playlist[currentSelection].name;
+    html += playlist[player.getPlaylistIndex()].name;
     html += "</p>";
   }
   html += R"rawliteral(</section>
@@ -1124,7 +1119,7 @@ void handleSimpleWebPage() {
     // Populate the dropdown with available streams
     for (int i = 0; i < playlistCount; i++) {
       html += "<option value='" + String(i) + "'";
-      if (i == currentSelection) {
+      if (i == player.getPlaylistIndex()) {
         html += " selected";
       }
       html += ">" + String(playlist[i].name) + "</option>";
@@ -1277,14 +1272,14 @@ void handlePlayer() {
     // Create JSON document with appropriate size
     DynamicJsonDocument doc(512);
     // Add player status
-    doc["status"] = isPlaying ? "play" : "stop";
+    doc["status"] = player.isPlaying() ? "play" : "stop";
     // If playing, add stream information
-    if (isPlaying) {
+    if (player.isPlaying()) {
       JsonObject streamObj = doc.createNestedObject("stream");
       streamObj["name"] = player.getStreamName();
       streamObj["title"] = player.getStreamTitle();
       streamObj["url"] = player.getStreamUrl();
-      streamObj["index"] = currentSelection;
+      streamObj["index"] = player.getPlaylistIndex();
       streamObj["bitrate"] = player.getBitrate();
       // Calculate elapsed time
       if (player.getPlayStartTime() > 0) {
@@ -1364,7 +1359,7 @@ void handlePlayer() {
       // Extract stream data from playlist
       url = String(playlist[index].url);
       name = String(playlist[index].name);
-      currentSelection = index;
+      player.setPlaylistIndex(index);
     } 
     // Handle case where URL is provided (with optional name)
     else if (url.length() > 0) {
@@ -1380,7 +1375,7 @@ void handlePlayer() {
       // Update currentSelection based on URL
       for (int i = 0; i < playlistCount; i++) {
         if (strcmp(playlist[i].url, url.c_str()) == 0) {
-          currentSelection = i;
+          player.setPlaylistIndex(i);
           break;
         }
       }
@@ -1704,7 +1699,7 @@ String generateStatusJSON(bool fullStatus = true) {
   
   if (fullStatus) {
     // Populate JSON document with all status values
-    doc["playing"] = isPlaying;
+    doc["playing"] = player.isPlaying();
     doc["streamURL"] = player.getStreamUrl();
     doc["streamName"] = player.getStreamName();
     doc["streamTitle"] = player.getStreamTitle();
@@ -1716,65 +1711,10 @@ String generateStatusJSON(bool fullStatus = true) {
     doc["mid"] = player.getMid();
     doc["treble"] = player.getTreble();
   } else {
-    // Only include values that have changed
-    if (isPlaying != prevIsPlaying) {
-      doc["playing"] = isPlaying;
-    }
-    
-    if (strcmp(player.getStreamUrl(), prevStreamInfo.url) != 0) {
-      doc["streamURL"] = player.getStreamUrl();
-    }
-    
-    if (strcmp(player.getStreamName(), prevStreamInfo.name) != 0) {
-      doc["streamName"] = player.getStreamName();
-    }
-    
-    if (strcmp(player.getStreamTitle(), prevStreamInfo.title) != 0) {
-      doc["streamTitle"] = player.getStreamTitle();
-    }
-    
-    if (strcmp(player.getStreamIcyUrl(), prevStreamInfo.icyUrl) != 0) {
-      doc["streamIcyURL"] = player.getStreamIcyUrl();
-    }
-    
-    if (strcmp(player.getStreamIconUrl(), prevStreamInfo.iconUrl) != 0) {
-      doc["streamIconURL"] = player.getStreamIconUrl();
-    }
-    
-    if (player.getBitrate() != prevBitrate) {
-      doc["bitrate"] = player.getBitrate();
-    }
-    
-    if (player.getVolume() != prevPlayerState.volume) {
-      doc["volume"] = player.getVolume();
-    }
-    
-    if (player.getBass() != prevPlayerState.bass) {
-      doc["bass"] = player.getBass();
-    }
-    
-    if (player.getMid() != prevPlayerState.mid) {
-      doc["mid"] = player.getMid();
-    }
-    
-    if (player.getTreble() != prevPlayerState.treble) {
-      doc["treble"] = player.getTreble();
-    }
+    // Only include the bitrater
+    doc["bitrate"] = player.getBitrate();
   }
-  
-  // Update previous values
-  prevIsPlaying = isPlaying;
-  strcpy(prevStreamInfo.url, player.getStreamUrl());
-  strcpy(prevStreamInfo.name, player.getStreamName());
-  strcpy(prevStreamInfo.title, player.getStreamTitle());
-  strcpy(prevStreamInfo.icyUrl, player.getStreamIcyUrl());
-  strcpy(prevStreamInfo.iconUrl, player.getStreamIconUrl());
-  prevBitrate = player.getBitrate();
-  prevPlayerState.volume = player.getVolume();
-  prevPlayerState.bass = player.getBass();
-  prevPlayerState.mid = player.getMid();
-  prevPlayerState.treble = player.getTreble();
-  
+    
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -2169,8 +2109,8 @@ void setup() {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
     playlistCount = 0;
   }
-  if (currentSelection < 0 || currentSelection >= playlistCount) {
-    currentSelection = 0;
+  if (player.getPlaylistIndex() < 0 || player.getPlaylistIndex() >= playlistCount) {
+    player.setPlaylistIndex(0);
   }
   
   // Load player state

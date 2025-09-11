@@ -61,6 +61,34 @@ void Player::setVolume(int volume) {
 }
 
 /**
+ * @brief Set tone controls (bass, mid, treble)
+ * Applies the tone settings to the audio output
+ */
+void Player::setTone() {
+  // Apply tone settings to audio output
+  if (audio) {
+    audio->setTone(playerState.bass, playerState.mid, playerState.treble);
+  }
+}
+
+/**
+ * @brief Set tone controls (bass, mid, treble)
+ * Applies the tone settings to the audio output
+ * @param bass Bass level (-6 to 6)
+ * @param mid Mid level (-6 to 6)
+ * @param treble Treble level (-6 to 6)
+ */
+void Player::setTone(int bass, int mid, int treble) {
+  // Validate and set tone values
+  playerState.bass = constrain(bass, -6, 6);
+  playerState.mid = constrain(mid, -6, 6);
+  playerState.treble = constrain(treble, -6, 6);
+  
+  // Apply tone settings to audio output
+  setTone();
+}
+
+/**
  * @brief Set stream URL
  * @param url New stream URL
  */
@@ -286,25 +314,6 @@ void Player::stopStream() {
   digitalWrite(config.led_pin, LOW);
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
-}
-
-/**
- * @brief Set tone controls (bass, mid, treble)
- * Applies the tone settings to the audio output
- * @param bass Bass level (-6 to 6)
- * @param mid Mid level (-6 to 6)
- * @param treble Treble level (-6 to 6)
- */
-void Player::setTone(int bass, int mid, int treble) {
-  // Validate and set tone values
-  playerState.bass = constrain(bass, -6, 6);
-  playerState.mid = constrain(mid, -6, 6);
-  playerState.treble = constrain(treble, -6, 6);
-  
-  // Apply tone settings to audio output
-  if (audio) {
-    audio->setTone(playerState.bass, playerState.mid, playerState.treble);
-  }
 }
 
 /**

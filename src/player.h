@@ -81,6 +81,8 @@ public:
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
   void setVolume(int volume);
+  void setTone();
+  void setTone(int bass, int mid, int treble);
   void setBass(int bass) { playerState.bass = bass; }
   void setMid(int mid) { playerState.mid = mid; }
   void setTreble(int treble) { playerState.treble = treble; }
@@ -89,10 +91,7 @@ public:
   void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
-  
-  // Tone control
-  void setTone(int bass, int mid, int treble);
-  
+
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }
