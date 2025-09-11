@@ -301,11 +301,13 @@ void Player::stopStream() {
  * Configures the selected audio output method
  * This function initializes the ESP32-audioI2S library with I2S pin configuration
  * and sets up the audio buffer with an increased size for better performance.
+ * @return Pointer to the initialized Audio object
  */
-void Player::setupAudioOutput() {
+Audio* Player::setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
+  return audio;
 }

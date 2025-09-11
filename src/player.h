@@ -111,7 +111,7 @@ public:
   void stopStream();
   
   // Audio setup method
-  void setupAudioOutput();
+  Audio* setupAudioOutput();
 };
 
 #endif // PLAYER_H

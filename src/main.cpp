@@ -2160,7 +2160,7 @@ void setup() {
   }
   
   // Setup audio output with error handling
-  player.setupAudioOutput();
+  Audio* audio = player.setupAudioOutput();
   // Setup rotary encoder with error handling
   setupRotaryEncoder();
   // Load playlist with error recovery
