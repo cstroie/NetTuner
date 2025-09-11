@@ -21,6 +21,7 @@
 #include "mpd.h"
 #include "display.h"
 #include "rotary.h"
+#include "player.h"
 #include "playlist.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
@@ -29,6 +30,8 @@
 #include "Spleen16x32.h"
 #include <ESPmDNS.h>
 
+
+Player player;
 
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, player);
