@@ -982,13 +982,10 @@ void handleRotary() {
     // Process clockwise rotation
     if (diff > 0) {
       // Rotate clockwise - volume up or next item
-      if (isPlaying) {
+      if (player.isPlaying()) {
         // If playing, increase volume by 1 (capped at 22)
-        playerState.volume = min(22, playerState.volume + 1);
-        if (audio) {
-          audio->setVolume(playerState.volume);  // ESP32-audioI2S uses 0-22 scale
-        }
-        markPlayerStateDirty();
+        player.setVolume(min(22, player.getVolume() + 1));
+        player.markPlayerStateDirty();
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
@@ -999,12 +996,9 @@ void handleRotary() {
     } else if (diff < 0) {
       // Process counter-clockwise rotation
       // Rotate counter-clockwise - volume down or previous item
-      if (isPlaying) {
+      if (player.isPlaying()) {
         // If playing, decrease volume by 1 (capped at 0)
-        playerState.volume = max(0, playerState.volume - 1);
-        if (audio) {
-          audio->setVolume(playerState.volume);  // ESP32-audioI2S uses 0-22 scale
-        }
+        player.setVolume(max(0, player.getVolume() - 1));
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
