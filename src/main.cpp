@@ -166,8 +166,6 @@ WiFiServer mpdServer(6600);
 volatile bool isPlaying = false;
 unsigned long lastActivityTime = 0;
 unsigned long startTime = 0;
-unsigned long playStartTime = 0;
-unsigned long totalPlayTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 Audio *audio = nullptr;
 bool audioConnected = false;
@@ -1305,9 +1303,9 @@ void handlePlayer() {
       streamObj["index"] = currentSelection;
       streamObj["bitrate"] = player.getBitrate();
       // Calculate elapsed time
-      if (playStartTime > 0) {
+      if (player.getPlayStartTime() > 0) {
         unsigned long currentTime = millis() / 1000;
-        unsigned long elapsedTime = currentTime - playStartTime;
+        unsigned long elapsedTime = currentTime - player.getPlayStartTime();
         streamObj["elapsed"] = elapsedTime;
       } else {
         streamObj["elapsed"] = 0;

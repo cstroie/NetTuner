@@ -43,6 +43,8 @@ struct PlayerState {
   int playlistIndex;
   unsigned long lastSaveTime;
   bool dirty;
+  unsigned long playStartTime;
+  unsigned long totalPlayTime;
 };
 
 // Player class declaration
@@ -69,6 +71,8 @@ public:
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
+  unsigned long getPlayStartTime() const { return playerState.playStartTime; }
+  unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
@@ -78,6 +82,9 @@ public:
   void setTreble(int treble) { playerState.treble = treble; }
   void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
   void setBitrate(int newBitrate) { streamInfo.bitrate = newBitrate; }
+  void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
+  void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
+  void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
   
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }

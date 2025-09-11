@@ -37,6 +37,8 @@ Player::Player() {
   playerState.playlistIndex = 0;
   playerState.lastSaveTime = 0;
   playerState.dirty = false;
+  playerState.playStartTime = 0;
+  playerState.totalPlayTime = 0;
   
   // Initialize stream info
   streamInfo.url[0] = '\0';
@@ -246,6 +248,7 @@ void Player::startStream(const char* url, const char* name) {
   // Set playback status to playing
   playerState.playing = true;
   // Track play time
+  playerState.playStartTime = millis() / 1000;  // Store in seconds
   // Turn on LED when playing
   digitalWrite(config.led_pin, HIGH);
   // Use ESP32-audioI2S to play the stream
@@ -282,6 +285,11 @@ void Player::stopStream() {
   streamInfo.icyUrl[0] = '\0';        // Clear ICY URL
   streamInfo.iconUrl[0] = '\0';       // Clear stream icon URL
   streamInfo.bitrate = 0;                   // Clear bitrate
+  // Update total play time when stopping
+  if (playerState.playStartTime > 0) {
+    playerState.totalPlayTime += (millis() / 1000) - playerState.playStartTime;
+    playerState.playStartTime = 0;
+  }
   // Turn off LED when stopped
   digitalWrite(config.led_pin, LOW);
   updateDisplay();  // Refresh the display

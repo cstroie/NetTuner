@@ -76,8 +76,6 @@ extern Config config;
 extern volatile bool isPlaying;
 extern unsigned long lastActivityTime;
 extern unsigned long startTime;
-extern unsigned long playStartTime;
-extern unsigned long totalPlayTime;
 extern const char* BUILD_TIME;
 extern const unsigned long BUILD_TIME_UNIX;
 extern Audio* audio;
