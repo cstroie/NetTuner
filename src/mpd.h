@@ -105,7 +105,7 @@ private:
 
 
 public:
-  MPDInterface(WiFiServer& server, Player& playerRef);
+  MPDInterface(WiFiServer& serverRef, Player& playerRef);
 
   /**
    * @brief Handle MPD client connections and process commands
@@ -293,7 +293,6 @@ private:
    */
   bool executeCommand(const String& command);
 
-private:
   // Individual command handlers
   void handleStopCommand(const String& args);
   void handleStatusCommand(const String& args);
