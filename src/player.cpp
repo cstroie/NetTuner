@@ -207,42 +207,75 @@ void Player::savePlayerState() {
   }
 }
 
-// Document this, AI!
+/**
+ * @brief Load playlist from SPIFFS storage
+ * Delegates to the playlist object's load method
+ */
 void Player::loadPlaylist() {
   playlist->load();
 }
 
-// Document this, AI!
+/**
+ * @brief Save playlist to SPIFFS storage
+ * Delegates to the playlist object's save method
+ */
 void Player::savePlaylist() {
   playlist->save();
 }
 
-// Document this, AI!
+/**
+ * @brief Set playlist item at specific index
+ * @param index Playlist index
+ * @param name Stream name
+ * @param url Stream URL
+ * Delegates to the playlist object's setItem method
+ */
 void Player::setPlaylistItem(int index, const char* name, const char* url) {
   playlist->setItem(index, name, url);
 }
 
-// Document this, AI!
+/**
+ * @brief Add playlist item
+ * @param name Stream name
+ * @param url Stream URL
+ * Delegates to the playlist object's addItem method
+ */
 void Player::addPlaylistItem(const char* name, const char* url) {
   playlist->addItem(name, url);
 }
 
-// Document this, AI!
+/**
+ * @brief Remove playlist item at specific index
+ * @param index Playlist index to remove
+ * Delegates to the playlist object's removeItem method
+ */
 void Player::removePlaylistItem(int index) {
   playlist->removeItem(index);
 }
 
-// Document this, AI!
+/**
+ * @brief Clear all playlist items
+ * Delegates to the playlist object's clear method
+ */
 void Player::clearPlaylist() {
   playlist->clear();
 }
 
-// Document this, AI!
+/**
+ * @brief Get the number of items in the playlist
+ * @return int Number of items in the playlist
+ * Delegates to the playlist object's getCount method
+ */
 int Player::getPlaylistCount() const { 
   return playlist->getCount(); 
 }
 
-// Document this, AI!
+/**
+ * @brief Get a playlist item at specific index
+ * @param index Playlist index
+ * @return const StreamInfo& Reference to the playlist item
+ * Delegates to the playlist object's getItem method
+ */
 const StreamInfo& Player::getPlaylistItem(int index) const { 
   return playlist->getItem(index); 
 }
