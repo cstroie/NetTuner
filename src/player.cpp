@@ -402,7 +402,12 @@ Audio* Player::setupAudioOutput() {
   return audio;
 }
 
-// document this AI!
+/**
+ * @brief Handle audio processing loop
+ * Processes audio data and maintains playback state
+ * This function should be called regularly in the main loop to process
+ * audio data and maintain proper playback functionality.
+ */
 void Player::handleAudio() {
   if (audio) {
     audio->loop();
