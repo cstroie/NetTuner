@@ -2233,6 +2233,7 @@ void setup() {
  * This function reads player state from player.json in SPIFFS and applies it
  */
 void loadPlayerState() {
+  // Load player state
   player.loadPlayerState();
 }
 
