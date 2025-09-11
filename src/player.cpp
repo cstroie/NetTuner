@@ -234,6 +234,14 @@ void Player::clearPlaylist() {
   playlist->clearPlaylist();
 }
 
+int Player::getPlaylistCount() const { 
+  return playlist->getPlaylistCount(); 
+}
+
+const StreamInfo& Player::getPlaylistItem(int index) const { 
+  return playlist->getPlaylistItem(index); 
+}
+
 /**
  * @brief Mark player state as dirty (needs saving)
  */
