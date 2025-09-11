@@ -84,7 +84,7 @@ public:
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
   
   // Playlist getters
-  const StreamInfo& getPlaylistItem(int index) const;
+  const struct StreamInfo& getPlaylistItem(int index) const;
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
