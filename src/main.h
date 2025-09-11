@@ -41,7 +41,7 @@ class WiFiServer;
 class Adafruit_SSD1306;
 class MPDInterface;
 class WiFiClient;
-class Display;  // Forward declaration for Display class
+class Display;
 
 // Configuration structure
 struct Config {
@@ -67,31 +67,22 @@ extern Config config;
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
 
 // Global variables
-extern volatile bool isPlaying;
-extern unsigned long lastActivityTime;
-extern unsigned long startTime;
 extern const char* BUILD_TIME;
 extern const unsigned long BUILD_TIME_UNIX;
-extern bool audioConnected;
 extern WebServer server;
 extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
 extern WiFiClient mpdClient;
 extern Display display;
-extern int currentSelection;
 extern TaskHandle_t audioTaskHandle;
 extern char ssid[MAX_WIFI_NETWORKS][64];
 extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
 
-
 // Forward declarations for global functions
 void updateDisplay();
 void sendStatusToClients();
-void loadPlaylist();
-void savePlaylist();
 void handleRotary();
-void handleDisplayTimeout();
 void audioTask(void *pvParameters);
 void loadConfig();
 void saveConfig();
@@ -123,17 +114,11 @@ void audio_icyurl(const char *info);
 void audio_icydescription(const char *info);
 void audio_id3data(const char *info);
 
-// Helper functions
-bool initializeSPIFFS();
-
 // Utility functions
 String generateStatusJSON();
-bool connectToWiFi();
 
 // JSON file helper functions
 bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
 bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
-
-
 
 #endif // MAIN_H

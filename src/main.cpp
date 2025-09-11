@@ -1866,7 +1866,7 @@ void loop() {
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
-    // Cleanup stale network connections
+    // TODO: Add any additional cleanup tasks here
 
     // Check WiFi status and reconnect if needed
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {

@@ -30,7 +30,6 @@
 class Player;
 
 // External global variables
-extern unsigned long startTime;
 extern unsigned long totalPlayTime;
 extern unsigned long playStartTime;
 

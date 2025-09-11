@@ -140,7 +140,7 @@ public:
   // Audio handler
   void handleAudio();
   // Update the bitrate from the Audio object
-  void updateBitrate();
+  int updateBitrate();
 };
 
 #endif // PLAYER_H

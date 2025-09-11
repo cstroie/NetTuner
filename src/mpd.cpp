@@ -449,7 +449,7 @@ void MPDInterface::handlePingCommand(const String& args) {
  */
 void MPDInterface::handleStatsCommand(const String& args) {
   // Calculate uptime and playtime
-  unsigned long uptime = (millis() / 1000) - startTime;
+  unsigned long uptime = (millis() / 1000);
   unsigned long playtime = this->player.getTotalPlayTime();
   if (this->player.isPlaying() && this->player.getPlayStartTime() > 0) {
     playtime += (millis() / 1000) - this->player.getPlayStartTime();
@@ -867,7 +867,7 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
  * @param args Command arguments (not used for status command)
  */
 void MPDInterface::handleStatusCommand(const String& args) {
-  int index = this->player.getPlaylistIndex() + 1; // 1-based index for MPD
+  int index = this->player.getPlaylistIndex();
   int volPercent = map(this->player.getVolume(), 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print("repeat: 0\n");
@@ -889,7 +889,9 @@ void MPDInterface::handleStatusCommand(const String& args) {
     mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
     mpdClient.print("bitrate: " + String(this->player.getBitrate()) + "\n");
     mpdClient.print("audio: 44100:16:2\n");
-    index++;
+    if (++index >= this->player.getPlaylistCount()) {
+      index = 0; // Wrap around to start
+    }
     mpdClient.print("nextsong: " + String(index) + "\n");
     mpdClient.print("nextsongid: " + String(index) + "\n");
   }
