@@ -421,7 +421,11 @@ void Player::handleAudio() {
   }
 }
 
-// Document this AI!
+/**
+ * @brief Update the current stream bitrate
+ * Gets the current bitrate from the audio object and updates the stream info
+ * @return The current bitrate in kbps
+ */
 int Player::updateBitrate() {
   if (audio) {
     int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
