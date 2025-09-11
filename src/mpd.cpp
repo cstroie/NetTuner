@@ -1455,21 +1455,12 @@ void MPDInterface::handleDecodersCommand(const String& args) {
  * The constructor initializes all member variables with the provided references
  * and sets initial state for command processing.
  * 
- * @param server WiFiServer instance for MPD connections
- * @param streamTitle Reference to global stream title buffer
- * @param streamName Reference to global stream name buffer
- * @param streamURL Reference to global stream URL buffer
- * @param isPlaying Reference to global playing status flag
- * @param volume Reference to global volume level (0-22, ESP32-audioI2S scale)
- * @param bitrate Reference to global bitrate value (in kbps)
- * @param playlistCount Reference to global playlist count
- * @param currentSelection Reference to global current selection index
- * @param playlist Reference to global playlist array
- * @param audio Reference to global audio instance
+ * @param serverRef WiFiServer instance for MPD connections
+ * @param playerRef Player instance for controlling playback
  */
-MPDInterface::MPDInterface(WiFiServer& server, Player& playerRef)
-    : mpdServer(server), player(playerRef) {
-        
+MPDInterface::MPDInterface(WiFiServer& serverRef, Player& playerRef)
+    : mpdServer(serverRef), player(playerRef) {
+
   // Initialize supported commands list
   supportedCommands = {
     "add", "clear", "close", "currentsong", "delete", "disableoutput", 
