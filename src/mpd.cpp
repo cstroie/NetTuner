@@ -18,6 +18,7 @@
 
 #include "mpd.h"
 #include "main.h"  // For global function declarations
+#include "player.h"
 
 /**
  * @brief Parse value from string, handling quotes
@@ -1471,13 +1472,8 @@ void MPDInterface::handleDecodersCommand(const String& args) {
  * @param playlist Reference to global playlist array
  * @param audio Reference to global audio instance
  */
-MPDInterface::MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
-               volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
-               int& currentSelection, StreamInfo* playlist, Audio*& audio)
-    : mpdServer(server), streamTitleRef(streamTitle), streamNameRef(streamName),
-      streamURLRef(streamURL), isPlayingRef(isPlaying), volumeRef(volume), bitrateRef(bitrate),
-      playlistCountRef(playlistCount), currentSelectionRef(currentSelection),
-      playlistRef(playlist), audioRef(audio) {
+MPDInterface::MPDInterface(WiFiServer& server, Player& playerRef)
+    : mpdServer(server), player(playerRef) {
         
   // Initialize supported commands list
   supportedCommands = {
@@ -1677,14 +1673,14 @@ void MPDInterface::handleIdleMode() {
   // Check for title changes using hash computation
   // Uses polynomial rolling hash with base 31 for good distribution
   unsigned long currentTitleHash = 0;
-  for (int i = 0; streamTitleRef[i]; i++) {
-    currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
+  for (int i = 0; player.getStreamTitle()[i]; i++) {
+    currentTitleHash = currentTitleHash * 31 + player.getStreamTitle()[i];
   }
   // Check for status changes using hash computation
   // Combines playing status (boolean), volume (0-22), and bitrate (kbps) into a single hash
-  unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
-  currentStatusHash = currentStatusHash * 31 + volumeRef;
-  currentStatusHash = currentStatusHash * 31 + bitrateRef;
+  unsigned long currentStatusHash = player.isPlaying() ? 1 : 0;
+  currentStatusHash = currentStatusHash * 31 + player.getVolume();
+  currentStatusHash = currentStatusHash * 31 + player.getBitrate();
   // Prepare to send idle response if changes detected
   bool sendIdleResponse = false;
   String idleChanges = "";
@@ -1749,26 +1745,27 @@ void MPDInterface::handleIdleMode() {
  * @return true if playback started successfully, false otherwise
  */
 bool MPDInterface::handlePlayback(int index) {
-  if (playlistCountRef <= 0) {
+  if (player.getPlaylistCount() <= 0) {
     return false;
   }
   // Use current selection if no valid index provided
-  if (index < 0 || index >= playlistCountRef) {
-    index = currentSelectionRef;
+  if (index < 0 || index >= player.getPlaylistCount()) {
+    index = player.getPlaylistIndex();
   }
   // Validate that we have a valid index within playlist bounds
-  if (index < 0 || index >= playlistCountRef) {
+  if (index < 0 || index >= player.getPlaylistCount()) {
     return false;
   }
   // Stop any current playback
-  stopStream();
+  player.stopStream();
   // Update current selection
-  currentSelectionRef = index;
+  player.setPlaylistIndex(index);
   // Start playback
-  startStream(playlistRef[index].url, playlistRef[index].name);
+  const StreamInfo& item = player.getPlaylistItem(index);
+  player.startStream(item.url, item.name);
   // Update state
-  markPlayerStateDirty();
-  savePlayerState();
+  player.markPlayerStateDirty();
+  player.savePlayerState();
   return true;
 }
 
@@ -1970,9 +1967,10 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
  * 3=artist/album (file+title+artist+album+id+pos+lastmod)
  */
 void MPDInterface::sendPlaylistInfo(int detailLevel) {
-  for (int i = 0; i < playlistCountRef; i++) {
-    mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
-    mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+  for (int i = 0; i < player.getPlaylistCount(); i++) {
+    const StreamInfo& item = player.getPlaylistItem(i);
+    mpdClient.print("file: " + String(item.url) + "\n");
+    mpdClient.print("Title: " + String(item.name) + "\n");
     if (detailLevel >= 3) {
       // Artist/Album detail level
       mpdClient.print("Artist: WebRadio\n");
@@ -2050,8 +2048,9 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     return;
   }
   // Search in playlist names
-  for (int i = 0; i < playlistCountRef; i++) {
-    String playlistName = String(playlistRef[i].name);
+  for (int i = 0; i < player.getPlaylistCount(); i++) {
+    const StreamInfo& item = player.getPlaylistItem(i);
+    String playlistName = String(item.name);
     // Convert both to lowercase for case-insensitive comparison
     String lowerName = playlistName;
     lowerName.toLowerCase();
@@ -2067,8 +2066,8 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     }
     // If a match is found, send the metadata
     if (match) {
-      mpdClient.print("file: " + String(playlistRef[i].url) + "\n");
-      mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+      mpdClient.print("file: " + String(item.url) + "\n");
+      mpdClient.print("Title: " + String(item.name) + "\n");
       mpdClient.print("Track: " + String(i + 1) + "\n");
       mpdClient.print("Last-Modified: " + String(BUILD_TIME) + "\n");
     }
