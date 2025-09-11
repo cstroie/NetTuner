@@ -1307,9 +1307,9 @@ void handlePlayer() {
     // If playing, add stream information
     if (isPlaying) {
       JsonObject streamObj = doc.createNestedObject("stream");
-      streamObj["name"] = streamInfo.name;
-      streamObj["title"] = streamInfo.title;
-      streamObj["url"] = streamInfo.url;
+      streamObj["name"] = player.getStreamName();
+      streamObj["title"] = player.getStreamTitle();
+      streamObj["url"] = player.getStreamUrl();
       streamObj["index"] = currentSelection;
       streamObj["bitrate"] = bitrate;
       // Calculate elapsed time
@@ -1731,11 +1731,11 @@ String generateStatusJSON(bool fullStatus = true) {
   if (fullStatus) {
     // Populate JSON document with all status values
     doc["playing"] = isPlaying;
-    doc["streamURL"] = streamInfo.url;
-    doc["streamName"] = streamInfo.name;
-    doc["streamTitle"] = streamInfo.title;
-    doc["streamIcyURL"] = streamInfo.icyUrl;
-    doc["streamIconURL"] = streamInfo.iconUrl;
+    doc["streamURL"] = player.getStreamUrl();
+    doc["streamName"] = player.getStreamName();
+    doc["streamTitle"] = player.getStreamTitle();
+    doc["streamIcyURL"] = player.getStreamIcyUrl();
+    doc["streamIconURL"] = player.getStreamIconUrl();
     doc["bitrate"] = bitrate;
     doc["volume"] = player.getVolume();
     doc["bass"] = player.getBass();
@@ -1747,24 +1747,24 @@ String generateStatusJSON(bool fullStatus = true) {
       doc["playing"] = isPlaying;
     }
     
-    if (strcmp(streamInfo.url, prevStreamInfo.url) != 0) {
-      doc["streamURL"] = streamInfo.url;
+    if (strcmp(player.getStreamUrl(), prevStreamInfo.url) != 0) {
+      doc["streamURL"] = player.getStreamUrl();
     }
     
-    if (strcmp(streamInfo.name, prevStreamInfo.name) != 0) {
-      doc["streamName"] = streamInfo.name;
+    if (strcmp(player.getStreamName(), prevStreamInfo.name) != 0) {
+      doc["streamName"] = player.getStreamName();
     }
     
-    if (strcmp(streamInfo.title, prevStreamInfo.title) != 0) {
-      doc["streamTitle"] = streamInfo.title;
+    if (strcmp(player.getStreamTitle(), prevStreamInfo.title) != 0) {
+      doc["streamTitle"] = player.getStreamTitle();
     }
     
-    if (strcmp(streamInfo.icyUrl, prevStreamInfo.icyUrl) != 0) {
-      doc["streamIcyURL"] = streamInfo.icyUrl;
+    if (strcmp(player.getStreamIcyUrl(), prevStreamInfo.icyUrl) != 0) {
+      doc["streamIcyURL"] = player.getStreamIcyUrl();
     }
     
-    if (strcmp(streamInfo.iconUrl, prevStreamInfo.iconUrl) != 0) {
-      doc["streamIconURL"] = streamInfo.iconUrl;
+    if (strcmp(player.getStreamIconUrl(), prevStreamInfo.iconUrl) != 0) {
+      doc["streamIconURL"] = player.getStreamIconUrl();
     }
     
     if (bitrate != prevBitrate) {
