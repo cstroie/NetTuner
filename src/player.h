@@ -69,7 +69,7 @@ public:
   
   // Audio getter
   Audio* getAudioObject() const { return audio; }
-  bool isRunning() const { return audio ? audio->isRunning() : false; } 
+  bool isRunning() const;
   
   // Player state methods
   void clearPlayerState();
