@@ -67,9 +67,9 @@ int parseValue(const String& valueStr) {
  * @param args Command arguments (not used for stop command)
  */
 void MPDInterface::handleStopCommand(const String& args) {
-  stopStream();
-  markPlayerStateDirty();
-  savePlayerState();
+  player.stopStream();
+  player.markPlayerStateDirty();
+  player.savePlayerState();
   mpdClient.print(mpdResponseOK());
 }
 
@@ -1303,8 +1303,8 @@ void MPDInterface::handleIdleCommand(const String& args) {
   for (int i = 0; player.getStreamTitle()[i]; i++) {
     lastTitleHash = lastTitleHash * 31 + player.getStreamTitle()[i];
   }
-  lastStatusHash = isPlayingRef ? 1 : 0;
-  lastStatusHash = lastStatusHash * 31 + volumeRef;
+  lastStatusHash = player.isPlaying() ? 1 : 0;
+  lastStatusHash = lastStatusHash * 31 + player.getVolume();
   // Don't send immediate response - wait for changes
 }
 
@@ -1673,8 +1673,8 @@ void MPDInterface::handleIdleMode() {
   }
   // Check for status changes using hash computation
   // Combines playing status (boolean) and volume (0-22) into a single hash
-  unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
-  currentStatusHash = currentStatusHash * 31 + volumeRef;
+  unsigned long currentStatusHash = player.isPlaying() ? 1 : 0;
+  currentStatusHash = currentStatusHash * 31 + player.getVolume();
   // Prepare to send idle response if changes detected
   bool sendIdleResponse = false;
   String idleChanges = "";

@@ -105,9 +105,7 @@ private:
 
 
 public:
-  MPDInterface(WiFiServer& server, char* streamTitle, char* streamName, char* streamURL,
-               volatile bool& isPlaying, int& volume, int& bitrate, int& playlistCount,
-               int& currentSelection, StreamInfo* playlist, Audio*& audio);
+  MPDInterface(WiFiServer& server, Player& playerRef);
 
   /**
    * @brief Handle MPD client connections and process commands
