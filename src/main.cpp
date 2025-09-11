@@ -1043,6 +1043,10 @@ void handleGetStreams() {
   // Yield to other tasks before processing
   yield();
   // If playlist file doesn't exist, return a default empty one
+  if (!SPIFFS.exists("/playlist.json")) {
+    server.send(200, "application/json", "[]");
+    return;
+  }
   File file = SPIFFS.open("/playlist.json", "r");
   if (!file) {
     server.send(200, "application/json", "[]");
