@@ -106,18 +106,54 @@ struct StreamInfoData {
 };
 extern StreamInfoData streamInfo;
 
-// Player state tracking
-struct PlayerState {
-  bool playing;
-  int volume;
-  int bass;
-  int mid;
-  int treble;
-  int playlistIndex;
-  unsigned long lastSaveTime;
-  bool dirty;
+// Player class declaration
+class Player {
+private:
+  struct PlayerState {
+    bool playing;
+    int volume;
+    int bass;
+    int mid;
+    int treble;
+    int playlistIndex;
+    unsigned long lastSaveTime;
+    bool dirty;
+  };
+  
+  PlayerState playerState;
+  
+public:
+  // Constructor
+  Player();
+  
+  // Player state methods
+  void loadPlayerState();
+  void savePlayerState();
+  void markPlayerStateDirty();
+  
+  // Getters
+  bool isPlaying() const { return playerState.playing; }
+  int getVolume() const { return playerState.volume; }
+  int getBass() const { return playerState.bass; }
+  int getMid() const { return playerState.mid; }
+  int getTreble() const { return playerState.treble; }
+  int getPlaylistIndex() const { return playerState.playlistIndex; }
+  bool isDirty() const { return playerState.dirty; }
+  
+  // Setters
+  void setPlaying(bool playing) { playerState.playing = playing; }
+  void setVolume(int volume);
+  void setBass(int bass) { playerState.bass = bass; }
+  void setMid(int mid) { playerState.mid = mid; }
+  void setTreble(int treble) { playerState.treble = treble; }
+  void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
+  
+  // Audio control methods
+  void startStream(const char* url = nullptr, const char* name = nullptr);
+  void stopStream();
 };
-extern PlayerState playerState;
+
+extern Player player;
 
 // Forward declarations for global functions
 void stopStream();

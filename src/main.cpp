@@ -184,7 +184,7 @@ String previousStatus = "";
 
 // Previous values for partial status updates
 static StreamInfoData prevStreamInfo = {"", "", "", "", ""};
-static PlayerState prevPlayerState = {false, 0, 0, 0, 0, 0, 0, false};
+static Player::PlayerState prevPlayerState = {false, 0, 0, 0, 0, 0, 0, false};
 static int prevBitrate = 0;
 static bool prevIsPlaying = false;
 
@@ -205,7 +205,7 @@ StreamInfoData streamInfo = {
   ""   // iconUrl
 };
 
-PlayerState playerState;
+Player player;
 
 // Configuration structure definition
 Config config = {
@@ -363,69 +363,6 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
 }
 
 
-/**
- * @brief Load player state from SPIFFS
- */
-void loadPlayerState() {
-  DynamicJsonDocument doc(512);
-  if (readJsonFile("/player.json", 512, doc)) {
-    playerState.playing = doc["playing"] | false;
-    playerState.volume = doc["volume"] | 8;
-    playerState.bass = doc["bass"] | 0;
-    playerState.mid = doc["mid"] | 0;
-    playerState.treble = doc["treble"] | 0;
-    playerState.playlistIndex = doc["playlistIndex"] | 0;
-    Serial.println("Loaded player state from SPIFFS");
-  } else {
-    Serial.println("No player state file found, using defaults");
-    playerState.playing = false;
-    playerState.volume = 8;
-    playerState.bass = 0;
-    playerState.mid = 0;
-    playerState.treble = 0;
-    playerState.playlistIndex = 0;
-  }
-  // Apply loaded state
-  if (audio) {
-    audio->setVolume(playerState.volume);
-    audio->setTone(playerState.bass, playerState.mid, playerState.treble);
-  }
-  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlistCount) {
-    currentSelection = playerState.playlistIndex;
-  }
-  // If was playing, resume playback
-  if (playerState.playing && playlistCount > 0 && currentSelection < playlistCount) {
-    Serial.println("Resuming playback from saved state");
-    startStream(playlist[currentSelection].url, playlist[currentSelection].name);
-  }
-}
-
-
-/**
- * @brief Save player state to SPIFFS
- */
-void savePlayerState() {
-  DynamicJsonDocument doc(512);
-  doc["playing"] = isPlaying;
-  doc["volume"] = playerState.volume;
-  doc["bass"] = playerState.bass;
-  doc["mid"] = playerState.mid;
-  doc["treble"] = playerState.treble;
-  doc["playlistIndex"] = currentSelection;
-  if (writeJsonFile("/player.json", doc)) {
-    Serial.println("Saved player state to SPIFFS");
-    playerState.dirty = false;
-  } else {
-    Serial.println("Failed to save player state to SPIFFS");
-  }
-}
-
-/**
- * @brief Mark player state as dirty (needs saving)
- */
-void markPlayerStateDirty() {
-  playerState.dirty = true;
-}
 
 
 /**
@@ -450,19 +387,19 @@ void handleBoardButton() {
     // If button is pressed (LOW due to pull-up) and we haven't handled this press yet
     if (buttonReading == LOW && lastButtonState == HIGH && !buttonPressHandled) {
       // Toggle play/stop
-      if (isPlaying) {
-        stopStream();
-        markPlayerStateDirty();
+      if (player.isPlaying()) {
+        player.stopStream();
+        player.markPlayerStateDirty();
       } else {
         // If we have a current stream, resume it
         if (strlen(streamInfo.url) > 0) {
-          startStream();
+          player.startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
         else if (playlistCount > 0 && currentSelection < playlistCount) {
-          startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+          player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         }
-        markPlayerStateDirty();
+        player.markPlayerStateDirty();
       }
       updateDisplay();
       sendStatusToClients();
@@ -1291,14 +1228,14 @@ void handleSimpleWebPage() {
 <section>
 <h2>Status</h2>
 <p><b>Status:</b> )rawliteral";
-  html += isPlaying ? "Playing" : "Stopped";
+  html += player.isPlaying() ? "Playing" : "Stopped";
   html += "</p>";
   // Show current stream name
-  if (isPlaying && streamInfo.name[0]) {
+  if (player.isPlaying() && streamInfo.name[0]) {
     html += "<p><b>Current Stream:</b> ";
     html += streamInfo.name;
     html += "</p>";
-  } else if (!isPlaying && playlistCount > 0 && currentSelection < playlistCount) {
+  } else if (!player.isPlaying() && playlistCount > 0 && currentSelection < playlistCount) {
     html += "<p><b>Selected Stream:</b> ";
     html += playlist[currentSelection].name;
     html += "</p>";
