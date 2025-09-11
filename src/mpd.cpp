@@ -461,7 +461,7 @@ void MPDInterface::handleStatsCommand(const String& args) {
   mpdClient.print("uptime: " + String(uptime) + "\n");
   mpdClient.print("playtime: " + String(playtime) + "\n");
   mpdClient.print("db_playtime: " + String(playtime) + "\n");
-  mpdClient.print("db_update: " + String(BUILD_TIME_UNIX) + "\n");
+  mpdClient.print("db_update: 0\n");
   mpdClient.print(mpdResponseOK());
 }
 
