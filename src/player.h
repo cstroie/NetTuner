@@ -23,6 +23,7 @@
 
 // Forward declarations
 class Audio;
+class Playlist;
 
 // Stream information variables
 /**
@@ -32,10 +33,10 @@ class Audio;
 struct StreamInfoData {
   char url[256];    ///< Stream URL
   char name[128];   ///< Stream name
-  char title[128];
-  char icyUrl[256];
-  char iconUrl[256];
-  int bitrate;
+  char title[128];  ///< Current track title
+  char icyUrl[256]; ///< ICY URL
+  char iconUrl[256];///< Stream icon URL
+  int bitrate;      ///< Stream bitrate
 };
 
 /**
@@ -43,20 +44,17 @@ struct StreamInfoData {
  * Contains all the state information for the player
  */
 struct PlayerState {
-  bool playing;           ///< Current playback status (true = playing, false = stopped)
-  int volume;            ///< Current volume level (0-22, ESP32-audioI2S scale)
-  int bass;              ///< Bass tone control (-10 to 10)
-  int mid;               ///< Mid tone control (-10 to 10)
-  int treble;            ///< Treble tone control (-10 to 10)
-  int playlistIndex;     ///< Current selected playlist index
-  unsigned long lastSaveTime; ///< Timestamp of last state save
-  bool dirty;            ///< Flag indicating if state has changed and needs saving
+  bool playing;                ///< Current playback status (true = playing, false = stopped)
+  int volume;                  ///< Current volume level (0-22, ESP32-audioI2S scale)
+  int bass;                    ///< Bass tone control (-6 to 6)
+  int mid;                     ///< Mid tone control (-6 to 6)
+  int treble;                  ///< Treble tone control (-6 to 6)
+  int playlistIndex;           ///< Current selected playlist index
+  unsigned long lastSaveTime;  ///< Timestamp of last state save
+  bool dirty;                  ///< Flag indicating if state has changed and needs saving
   unsigned long playStartTime; ///< Timestamp when current playback started
   unsigned long totalPlayTime; ///< Total playback time in seconds
 };
-
-// Forward declaration
-class Playlist;
 
 // Player class declaration
 class Player {
@@ -74,6 +72,7 @@ public:
   Audio* getAudio() const { return audio; }
   
   // Player state methods
+  void clearPlayerState();
   void loadPlayerState();
   void savePlayerState();
   void markPlayerStateDirty();
@@ -90,9 +89,6 @@ public:
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
-  
-  // Playlist getters
-  const struct StreamInfo& getPlaylistItem(int index) const;
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
@@ -123,6 +119,10 @@ public:
   void setStreamIconUrl(const char* iconUrl);
   void clearStreamInfo();
   
+  // Playlist getters
+  const struct StreamInfo& getPlaylistItem(int index) const;
+  Playlist* getPlaylist() const { return playlist; }
+
   // Playlist methods
   void loadPlaylist();
   void savePlaylist();
@@ -139,9 +139,6 @@ public:
   Audio* setupAudioOutput();
   // Audio handler
   void handleAudio();
-  
-  // Playlist access
-  Playlist* getPlaylist() const { return playlist; }
 };
 
 #endif // PLAYER_H

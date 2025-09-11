@@ -31,6 +31,49 @@
 #include <ESPmDNS.h>
 
 
+// Global variables definitions
+char ssid[MAX_WIFI_NETWORKS][64] = {""};
+char password[MAX_WIFI_NETWORKS][64] = {""};
+int wifiNetworkCount = 0;
+WebServer server(80);
+WebSocketsServer webSocket(81);
+WiFiServer mpdServer(6600);
+volatile bool isPlaying = false;
+unsigned long lastActivityTime = 0;
+unsigned long startTime = 0;
+const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
+String previousStatus = "";
+
+
+
+
+Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
+Display display(displayOLED);
+RotaryEncoder rotaryEncoder;
+TaskHandle_t audioTaskHandle = NULL;
+
+Player player;
+
+// MPD Interface instance
+MPDInterface mpdInterface(mpdServer, player);
+
+// Configuration structure definition
+Config config = {
+  DEFAULT_I2S_DOUT,
+  DEFAULT_I2S_BCLK,
+  DEFAULT_I2S_LRC,
+  DEFAULT_LED_PIN,
+  DEFAULT_ROTARY_CLK,
+  DEFAULT_ROTARY_DT,
+  DEFAULT_ROTARY_SW,
+  DEFAULT_BOARD_BUTTON,
+  DEFAULT_DISPLAY_SDA,
+  DEFAULT_DISPLAY_SCL,
+  DEFAULT_DISPLAY_WIDTH,
+  DEFAULT_DISPLAY_HEIGHT,
+  DEFAULT_DISPLAY_ADDR
+};
+
 
 
 /**
@@ -151,49 +194,6 @@ void audio_id3data(const char *info) {
     Serial.println(info);
   }
 }
-
-// Global variables definitions
-char ssid[MAX_WIFI_NETWORKS][64] = {""};
-char password[MAX_WIFI_NETWORKS][64] = {""};
-int wifiNetworkCount = 0;
-WebServer server(80);
-WebSocketsServer webSocket(81);
-WiFiServer mpdServer(6600);
-volatile bool isPlaying = false;
-unsigned long lastActivityTime = 0;
-unsigned long startTime = 0;
-const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
-String previousStatus = "";
-
-
-
-
-Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
-Display display(displayOLED);
-RotaryEncoder rotaryEncoder;
-TaskHandle_t audioTaskHandle = NULL;
-
-Player player;
-
-// MPD Interface instance
-MPDInterface mpdInterface(mpdServer, player);
-
-// Configuration structure definition
-Config config = {
-  DEFAULT_I2S_DOUT,
-  DEFAULT_I2S_BCLK,
-  DEFAULT_I2S_LRC,
-  DEFAULT_LED_PIN,
-  DEFAULT_ROTARY_CLK,
-  DEFAULT_ROTARY_DT,
-  DEFAULT_ROTARY_SW,
-  DEFAULT_BOARD_BUTTON,
-  DEFAULT_DISPLAY_SDA,
-  DEFAULT_DISPLAY_SCL,
-  DEFAULT_DISPLAY_WIDTH,
-  DEFAULT_DISPLAY_HEIGHT,
-  DEFAULT_DISPLAY_ADDR
-};
 
 
 /**
@@ -1983,7 +1983,7 @@ void setup() {
   loadPlaylist();
 
   // Validate loaded playlist
-  player.getPlaylist()->validatePlaylist();
+  player.getPlaylist()->validate();
   
   // Load player state
   player.loadPlayerState();

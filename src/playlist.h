@@ -33,31 +33,31 @@ struct StreamInfo {
 class Playlist {
 private:
   StreamInfo playlist[MAX_PLAYLIST_SIZE];
-  int playlistCount;
-  int currentSelection;
+  int count;
+  int current;
   
 public:
   // Constructor
   Playlist();
   
   // Playlist management methods
-  void loadPlaylist();
-  void savePlaylist();
-  void setPlaylistItem(int index, const char* name, const char* url);
-  void addPlaylistItem(const char* name, const char* url);
-  void removePlaylistItem(int index);
-  void clearPlaylist();
+  void load();
+  void save();
+  void setItem(int index, const char* name, const char* url);
+  void addItem(const char* name, const char* url);
+  void removeItem(int index);
+  void clear();
   
   // Getters
-  int getPlaylistCount() const { return playlistCount; }
-  int getCurrentSelection() const { return currentSelection; }
-  const StreamInfo& getPlaylistItem(int index) const { return playlist[index]; }
-  
+  int getCount() const { return count; }
+  int getCurrent() const { return current; }
+  const StreamInfo& getItem(int index) const { return playlist[index]; }
+
   // Setters
-  void setCurrentSelection(int index) { currentSelection = index; }
+  void setCurrent(int index) { current = index; }
   
   // Utility methods
-  void validatePlaylist();
+  void validate();
 };
 
 #endif // PLAYLIST_H

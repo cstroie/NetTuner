@@ -27,8 +27,8 @@ extern bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
  * @brief Playlist constructor
  */
 Playlist::Playlist() {
-  playlistCount = 0;
-  currentSelection = 0;
+  count = 0;
+  current = 0;
   
   // Initialize playlist
   for (int i = 0; i < MAX_PLAYLIST_SIZE; i++) {
@@ -43,8 +43,8 @@ Playlist::Playlist() {
  * This function loads the playlist from SPIFFS with error recovery mechanisms.
  * If the playlist file is corrupted, it creates a backup and a new empty playlist.
  */
-void Playlist::loadPlaylist() {
-  playlistCount = 0;  // Reset playlist count
+void Playlist::load() {
+  count = 0;  // Reset playlist count
   // Load playlist using helper function
   DynamicJsonDocument doc(4096);
   if (!readJsonFile("/playlist.json", 4096, doc)) {
@@ -60,10 +60,10 @@ void Playlist::loadPlaylist() {
   }
   // Populate the playlist array
   JsonArray array = doc.as<JsonArray>();
-  playlistCount = 0;
+  count = 0;
   // Iterate through the JSON array
   for (JsonObject item : array) {
-    if (playlistCount >= MAX_PLAYLIST_SIZE) {
+    if (count >= MAX_PLAYLIST_SIZE) {
       Serial.println("Warning: Playlist limit reached (20 entries)");
       break;
     }
@@ -76,11 +76,11 @@ void Playlist::loadPlaylist() {
         // Validate URL format
         if (VALIDATE_URL(url)) {
           // Add item to playlist
-          strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-          playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-          strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-          playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-          playlistCount++;
+          strncpy(playlist[count].name, name, sizeof(playlist[count].name) - 1);
+          playlist[count].name[sizeof(playlist[count].name) - 1] = '\0';
+          strncpy(playlist[count].url, url, sizeof(playlist[count].url) - 1);
+          playlist[count].url[sizeof(playlist[count].url) - 1] = '\0';
+          count++;
         } else {
           Serial.println("Warning: Skipping stream with invalid URL format");
         }
@@ -90,11 +90,11 @@ void Playlist::loadPlaylist() {
     }
   }
   // Check if any valid streams were loaded
-  if (playlistCount == 0) {
+  if (count == 0) {
     Serial.println("Error: No valid streams found in playlist");
   } else {
     Serial.print("Loaded ");
-    Serial.print(playlistCount);
+    Serial.print(count);
     Serial.println(" streams from playlist");
   }
 }
@@ -105,12 +105,12 @@ void Playlist::loadPlaylist() {
  * This function saves the current playlist to SPIFFS with backup functionality.
  * It creates a backup before saving and restores from backup if saving fails.
  */
-void Playlist::savePlaylist() {
+void Playlist::save() {
   // Create JSON array
   DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
   // Add playlist entries
-  for (int i = 0; i < playlistCount; i++) {
+  for (int i = 0; i < count; i++) {
     // Validate URL format before saving
     if (strlen(playlist[i].url) == 0 || 
         !VALIDATE_URL(playlist[i].url)) {
@@ -136,14 +136,14 @@ void Playlist::savePlaylist() {
  * @param name Stream name
  * @param url Stream URL
  */
-void Playlist::setPlaylistItem(int index, const char* name, const char* url) {
+void Playlist::setItem(int index, const char* name, const char* url) {
   if (index >= 0 && index < MAX_PLAYLIST_SIZE && name && url) {
     strncpy(playlist[index].name, name, sizeof(playlist[index].name) - 1);
     playlist[index].name[sizeof(playlist[index].name) - 1] = '\0';
     strncpy(playlist[index].url, url, sizeof(playlist[index].url) - 1);
     playlist[index].url[sizeof(playlist[index].url) - 1] = '\0';
-    if (index >= playlistCount) {
-      playlistCount = index + 1;
+    if (index >= count) {
+      count = index + 1;
     }
   }
 }
@@ -153,13 +153,13 @@ void Playlist::setPlaylistItem(int index, const char* name, const char* url) {
  * @param name Stream name
  * @param url Stream URL
  */
-void Playlist::addPlaylistItem(const char* name, const char* url) {
-  if (playlistCount < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-    playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-    strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-    playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-    playlistCount++;
+void Playlist::addItem(const char* name, const char* url) {
+  if (count < MAX_PLAYLIST_SIZE && name && url) {
+    strncpy(playlist[count].name, name, sizeof(playlist[count].name) - 1);
+    playlist[count].name[sizeof(playlist[count].name) - 1] = '\0';
+    strncpy(playlist[count].url, url, sizeof(playlist[count].url) - 1);
+    playlist[count].url[sizeof(playlist[count].url) - 1] = '\0';
+    count++;
   }
 }
 
@@ -167,26 +167,26 @@ void Playlist::addPlaylistItem(const char* name, const char* url) {
  * @brief Remove playlist item at specific index
  * @param index Playlist index to remove
  */
-void Playlist::removePlaylistItem(int index) {
-  if (index >= 0 && index < playlistCount) {
+void Playlist::removeItem(int index) {
+  if (index >= 0 && index < count) {
     // Shift all items after the removed item
-    for (int i = index; i < playlistCount - 1; i++) {
+    for (int i = index; i < count - 1; i++) {
       strncpy(playlist[i].name, playlist[i + 1].name, sizeof(playlist[i].name) - 1);
       playlist[i].name[sizeof(playlist[i].name) - 1] = '\0';
       strncpy(playlist[i].url, playlist[i + 1].url, sizeof(playlist[i].url) - 1);
       playlist[i].url[sizeof(playlist[i].url) - 1] = '\0';
     }
     // Clear the last item
-    playlist[playlistCount - 1].name[0] = '\0';
-    playlist[playlistCount - 1].url[0] = '\0';
-    playlistCount--;
+    playlist[count - 1].name[0] = '\0';
+    playlist[count - 1].url[0] = '\0';
+    count--;
     
-    // Adjust currentSelection if necessary
-    if (currentSelection >= playlistCount) {
-      currentSelection = playlistCount - 1;
+    // Adjust current if necessary
+    if (current >= count) {
+      current = count - 1;
     }
-    if (currentSelection < 0) {
-      currentSelection = 0;
+    if (current < 0) {
+      current = 0;
     }
   }
 }
@@ -194,28 +194,28 @@ void Playlist::removePlaylistItem(int index) {
 /**
  * @brief Clear all playlist items
  */
-void Playlist::clearPlaylist() {
-  for (int i = 0; i < playlistCount; i++) {
+void Playlist::clear() {
+  for (int i = 0; i < count; i++) {
     playlist[i].name[0] = '\0';
     playlist[i].url[0] = '\0';
   }
-  playlistCount = 0;
-  currentSelection = 0;
+  count = 0;
+  current = 0;
 }
 
 /**
  * @brief Validate playlist integrity
  * Ensures playlist count and selection are within valid ranges
  */
-void Playlist::validatePlaylist() {
+void Playlist::validate() {
   // Validate playlist count
-  if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
+  if (count < 0 || count > MAX_PLAYLIST_SIZE) {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
-    playlistCount = 0;
+    count = 0;
   }
   
   // Validate current selection
-  if (currentSelection < 0 || currentSelection >= playlistCount) {
-    currentSelection = 0;
+  if (current < 0 || current >= count) {
+    current = 0;
   }
 }
