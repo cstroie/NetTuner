@@ -421,6 +421,7 @@ void Player::handleAudio() {
   }
 }
 
+// Document this AI!
 int Player::updateBitrate() {
   if (audio) {
     int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
