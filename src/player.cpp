@@ -174,22 +174,14 @@ void Player::loadPlayerState() {
     Serial.println("Loaded player state from SPIFFS");
   } else {
     Serial.println("No player state file found, using defaults");
-    playerState.playing = false;
-    playerState.volume = 8;
-    playerState.bass = 0;
-    playerState.mid = 0;
-    playerState.treble = 0;
-    playerState.playlistIndex = 0;
+    clearPlayerState();
   }
   // Apply loaded state
   if (audio) {
     audio->setVolume(playerState.volume);
     audio->setTone(playerState.bass, playerState.mid, playerState.treble);
   }
-  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlist->getCount()) {
-    // currentSelection is now handled within Player class
-  }
-  // If was playing, resume playback
+  // If it was playing, resume playback
   if (playerState.playing && playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount()) {
     Serial.println("Resuming playback from saved state");
     startStream(playlist->getItem(playerState.playlistIndex).url, playlist->getItem(playerState.playlistIndex).name);
@@ -215,34 +207,42 @@ void Player::savePlayerState() {
   }
 }
 
+// Document this, AI!
 void Player::loadPlaylist() {
   playlist->load();
 }
 
+// Document this, AI!
 void Player::savePlaylist() {
   playlist->save();
 }
 
+// Document this, AI!
 void Player::setPlaylistItem(int index, const char* name, const char* url) {
   playlist->setItem(index, name, url);
 }
 
+// Document this, AI!
 void Player::addPlaylistItem(const char* name, const char* url) {
   playlist->addItem(name, url);
 }
 
+// Document this, AI!
 void Player::removePlaylistItem(int index) {
   playlist->removeItem(index);
 }
 
+// Document this, AI!
 void Player::clearPlaylist() {
   playlist->clear();
 }
 
+// Document this, AI!
 int Player::getPlaylistCount() const { 
   return playlist->getCount(); 
 }
 
+// Document this, AI!
 const StreamInfo& Player::getPlaylistItem(int index) const { 
   return playlist->getItem(index); 
 }
