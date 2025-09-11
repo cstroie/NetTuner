@@ -794,102 +794,7 @@ void audioTask(void *pvParameters) {
  * If the playlist file is corrupted, it creates a backup and a new empty playlist.
  */
 void loadPlaylist() {
-  playlistCount = 0;  // Reset playlist count
-  // If playlist file doesn't exist, just return without creating an empty one
-  if (!SPIFFS.exists("/playlist.json")) {
-    Serial.println("Playlist file not found, continuing with empty playlist");
-    return;
-  }
-  // Open the playlist file for reading
-  File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) {
-    Serial.println("Error: Failed to open playlist file for reading");
-    return;  // Return if file couldn't be opened
-  }
-  // Check file size
-  size_t size = file.size();
-  if (size == 0) {
-    Serial.println("Warning: Playlist file is empty");
-    file.close();
-    return;
-  }
-  if (size > 4096) {
-    Serial.println("Error: Playlist file too large");
-    file.close();
-    return;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.println("Error: Failed to allocate memory for playlist file");
-    file.close();
-    return;
-  }
-  // Read the file content into the buffer
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Error: Failed to read playlist file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
-  // Parse the JSON content
-  DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, buf.get());
-  // Check for JSON parsing errors
-  if (error) {
-    Serial.print("Error: Failed to parse playlist JSON: ");
-    Serial.println(error.c_str());
-    // Don't create an empty playlist, just return with empty playlist
-    Serial.println("Continuing with empty playlist");
-    return;
-  }
-  // Check if the JSON document is an array
-  if (!doc.is<JsonArray>()) {
-    Serial.println("Error: Playlist JSON is not an array");
-    // Don't create an empty playlist, just return with empty playlist
-    Serial.println("Continuing with empty playlist");
-    return;
-  }
-  // Populate the playlist array
-  JsonArray array = doc.as<JsonArray>();
-  playlistCount = 0;
-  // Iterate through the JSON array
-  for (JsonObject item : array) {
-    if (playlistCount >= 20) {
-      Serial.println("Warning: Playlist limit reached (20 entries)");
-      break;
-    }
-    // Check if the item has the required keys
-    if (item.containsKey("name") && item.containsKey("url")) {
-      const char* name = item["name"];
-      const char* url = item["url"];
-      // Validate name and URL
-      if (name && url && strlen(name) > 0 && strlen(url) > 0) {
-        // Validate URL format
-        if (VALIDATE_URL(url)) {
-          // Add item to playlist
-          strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-          playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-          strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-          playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-          playlistCount++;
-        } else {
-          Serial.println("Warning: Skipping stream with invalid URL format");
-        }
-      } else {
-        Serial.println("Warning: Skipping stream with empty name or URL");
-      }
-    }
-  }
-  // Check if any valid streams were loaded
-  if (playlistCount == 0) {
-    Serial.println("Error: No valid streams found in playlist");
-  } else {
-    Serial.print("Loaded ");
-    Serial.print(playlistCount);
-    Serial.println(" streams from playlist");
-  }
+  player.loadPlaylist();
 }
 
 /**
@@ -899,28 +804,7 @@ void loadPlaylist() {
  * It creates a backup before saving and restores from backup if saving fails.
  */
 void savePlaylist() {
-  // Create JSON array
-  DynamicJsonDocument doc(4096);
-  JsonArray array = doc.to<JsonArray>();
-  // Add playlist entries
-  for (int i = 0; i < playlistCount; i++) {
-    // Validate URL format before saving
-    if (strlen(playlist[i].url) == 0 || 
-        !VALIDATE_URL(playlist[i].url)) {
-      Serial.println("Warning: Skipping stream with invalid URL format during save");
-      continue;
-    }
-    // Create JSON object for the playlist entry
-    JsonObject item = array.createNestedObject();
-    item["name"] = playlist[i].name;
-    item["url"] = playlist[i].url;
-  }
-  // Save the JSON document to SPIFFS using helper function
-  if (writeJsonFile("/playlist.json", doc)) {
-    Serial.println("Saved playlist to SPIFFS");
-  } else {
-    Serial.println("Failed to save playlist to SPIFFS");
-  }
+  player.savePlaylist();
 }
 
 
@@ -1372,8 +1256,8 @@ void handlePlayer() {
         return;
       }
       // Update currentSelection based on URL
-      for (int i = 0; i < playlistCount; i++) {
-        if (strcmp(playlist[i].url, url.c_str()) == 0) {
+      for (int i = 0; i < player.getPlaylistCount(); i++) {
+        if (strcmp(player.getPlaylistItem(i).url, url.c_str()) == 0) {
           player.setPlaylistIndex(i);
           break;
         }
@@ -2104,13 +1988,7 @@ void setup() {
   loadPlaylist();
 
   // Validate loaded playlist
-  if (playlistCount < 0 || playlistCount > MAX_PLAYLIST_SIZE) {
-    Serial.println("Warning: Invalid playlist count detected, resetting to 0");
-    playlistCount = 0;
-  }
-  if (player.getPlaylistIndex() < 0 || player.getPlaylistIndex() >= playlistCount) {
-    player.setPlaylistIndex(0);
-  }
+  player.getPlaylist()->validatePlaylist();
   
   // Load player state
   player.loadPlayerState();
