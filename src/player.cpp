@@ -26,7 +26,6 @@ extern int playlistCount;
 extern int currentSelection;
 extern Audio* audio;
 extern volatile bool isPlaying;
-extern int bitrate;
 
 /**
  * @brief Player constructor
@@ -40,6 +39,7 @@ Player::Player() {
   playerState.playlistIndex = 0;
   playerState.lastSaveTime = 0;
   playerState.dirty = false;
+  bitrate = 0;
   
   // Initialize stream info
   streamInfo.url[0] = '\0';

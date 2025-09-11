@@ -73,7 +73,6 @@ extern Config config;
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
 
 // Global variables
-extern int bitrate;
 extern volatile bool isPlaying;
 extern unsigned long lastActivityTime;
 extern unsigned long startTime;

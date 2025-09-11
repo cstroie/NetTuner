@@ -49,6 +49,7 @@ private:
   
   PlayerState playerState;
   StreamInfoData streamInfo;
+  int bitrate;
   
 public:
   // Constructor
@@ -67,6 +68,7 @@ public:
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   bool isDirty() const { return playerState.dirty; }
+  int getBitrate() const { return bitrate; }
   
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
@@ -90,6 +92,7 @@ public:
   void setMid(int mid) { playerState.mid = mid; }
   void setTreble(int treble) { playerState.treble = treble; }
   void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
+  void setBitrate(int newBitrate) { bitrate = newBitrate; }
   
   // Audio control methods
   void startStream(const char* url = nullptr, const char* name = nullptr);

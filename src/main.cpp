@@ -170,7 +170,6 @@ int wifiNetworkCount = 0;
 WebServer server(80);
 WebSocketsServer webSocket(81);
 WiFiServer mpdServer(6600);
-int bitrate = 0;
 volatile bool isPlaying = false;
 unsigned long lastActivityTime = 0;
 unsigned long startTime = 0;
@@ -1311,7 +1310,7 @@ void handlePlayer() {
       streamObj["title"] = player.getStreamTitle();
       streamObj["url"] = player.getStreamUrl();
       streamObj["index"] = currentSelection;
-      streamObj["bitrate"] = bitrate;
+      streamObj["bitrate"] = player.getBitrate();
       // Calculate elapsed time
       if (playStartTime > 0) {
         unsigned long currentTime = millis() / 1000;
@@ -1736,7 +1735,7 @@ String generateStatusJSON(bool fullStatus = true) {
     doc["streamTitle"] = player.getStreamTitle();
     doc["streamIcyURL"] = player.getStreamIcyUrl();
     doc["streamIconURL"] = player.getStreamIconUrl();
-    doc["bitrate"] = bitrate;
+    doc["bitrate"] = player.getBitrate();
     doc["volume"] = player.getVolume();
     doc["bass"] = player.getBass();
     doc["mid"] = player.getMid();
@@ -1767,8 +1766,8 @@ String generateStatusJSON(bool fullStatus = true) {
       doc["streamIconURL"] = player.getStreamIconUrl();
     }
     
-    if (bitrate != prevBitrate) {
-      doc["bitrate"] = bitrate;
+    if (player.getBitrate() != prevBitrate) {
+      doc["bitrate"] = player.getBitrate();
     }
     
     if (player.getVolume() != prevPlayerState.volume) {
@@ -1790,12 +1789,12 @@ String generateStatusJSON(bool fullStatus = true) {
   
   // Update previous values
   prevIsPlaying = isPlaying;
-  strcpy(prevStreamInfo.url, streamInfo.url);
-  strcpy(prevStreamInfo.name, streamInfo.name);
-  strcpy(prevStreamInfo.title, streamInfo.title);
-  strcpy(prevStreamInfo.icyUrl, streamInfo.icyUrl);
-  strcpy(prevStreamInfo.iconUrl, streamInfo.iconUrl);
-  prevBitrate = bitrate;
+  strcpy(prevStreamInfo.url, player.getStreamUrl());
+  strcpy(prevStreamInfo.name, player.getStreamName());
+  strcpy(prevStreamInfo.title, player.getStreamTitle());
+  strcpy(prevStreamInfo.icyUrl, player.getStreamIcyUrl());
+  strcpy(prevStreamInfo.iconUrl, player.getStreamIconUrl());
+  prevBitrate = player.getBitrate();
   prevPlayerState.volume = player.getVolume();
   prevPlayerState.bass = player.getBass();
   prevPlayerState.mid = player.getMid();
@@ -1885,7 +1884,7 @@ void updateDisplay() {
     ipString = "No IP";
   }
   // Update the display with current status
-  display.update(player.isPlaying(), streamInfo.title, streamInfo.name, player.getVolume(), bitrate, ipString);
+  display.update(player.isPlaying(), player.getStreamTitle(), player.getStreamName(), player.getVolume(), player.getBitrate(), ipString);
 }
 
 
@@ -2089,8 +2088,8 @@ void loop() {
         streamStoppedTime = 0;
         // Update bitrate if it has changed
         int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
-        if (newBitrate > 0 && newBitrate != bitrate) {
-          bitrate = newBitrate;
+        if (newBitrate > 0 && newBitrate != player.getBitrate()) {
+          player.setBitrate(newBitrate);
         }
       }
 
