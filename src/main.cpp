@@ -778,7 +778,7 @@ void handlePostConfig() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
-    player->handleAudio();
+    player.handleAudio();
     // Very small delay to prevent busy waiting but allow frequent processing
     delay(1);
   }
@@ -1092,12 +1092,9 @@ void handlePostStreams() {
     return;
   }
   // Clear existing playlist
-  playlistCount = 0;
+  player.clearPlaylist();
   // Process each item in the array
   for (JsonObject item : array) {
-    if (playlistCount >= MAX_PLAYLIST_SIZE) {
-      break;
-    }
     // Validate required fields
     if (!item.containsKey("name") || !item.containsKey("url")) {
       sendJsonResponse("error", "Each item must have 'name' and 'url' fields");
@@ -1117,14 +1114,10 @@ void handlePostStreams() {
       return;
     }
     // Add to playlist
-    strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-    playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-    strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-    playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-    playlistCount++;
+    player.addPlaylistItem(name, url);
   }
   // Save to SPIFFS
-  savePlaylist();
+  player.savePlaylist();
   // Send success response
   sendJsonResponse("success", "Playlist updated successfully");
 }
