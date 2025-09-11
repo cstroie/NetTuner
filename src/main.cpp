@@ -35,7 +35,7 @@ MPDInterface mpdInterface(mpdServer,
   const_cast<char*>(player.getStreamTitle()), 
   const_cast<char*>(player.getStreamName()), 
   const_cast<char*>(player.getStreamUrl()),
-  player.isPlaying(), player.getVolume(), player.getBitrate(), player.getPlaylistCount(), player.getPlaylistIndex(), nullptr, player.getAudio());
+  player.isPlaying(), player.getVolume(), player.getBitrate(), player.getPlaylistCount(), player.getPlaylistIndex(), player.getPlaylist(), player.getAudio());
 
 
 /**
