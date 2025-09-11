@@ -34,12 +34,6 @@ struct StreamInfoData {
   int bitrate;
 };
 
-// Structure for playlist items
-struct StreamInfo {
-  char name[128];
-  char url[256];
-};
-
 struct PlayerState {
   bool playing;
   int volume;
@@ -53,13 +47,15 @@ struct PlayerState {
   unsigned long totalPlayTime;
 };
 
+// Forward declaration
+class Playlist;
+
 // Player class declaration
 class Player {
 private:
   PlayerState playerState;
   StreamInfoData streamInfo;
-  StreamInfo playlist[MAX_PLAYLIST_SIZE];
-  int playlistCount;
+  Playlist* playlist;
   Audio* audio;
   
 public:
@@ -81,14 +77,14 @@ public:
   int getMid() const { return playerState.mid; }
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
-  int getPlaylistCount() const { return playlistCount; }
+  int getPlaylistCount() const;
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
   
   // Playlist getters
-  const StreamInfo& getPlaylistItem(int index) const { return playlist[index]; }
+  const StreamInfo& getPlaylistItem(int index) const;
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
@@ -135,6 +131,9 @@ public:
   Audio* setupAudioOutput();
   // Audio handler
   void handleAudio();
+  
+  // Playlist access
+  Playlist* getPlaylist() const { return playlist; }
 };
 
 #endif // PLAYER_H

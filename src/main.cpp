@@ -21,6 +21,7 @@
 #include "mpd.h"
 #include "display.h"
 #include "rotary.h"
+#include "playlist.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 
@@ -368,8 +369,8 @@ void handleBoardButton() {
           player.startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
-        else if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
-          player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
+        else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+          player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
         }
         player.markPlayerStateDirty();
       }

@@ -17,6 +17,7 @@
  */
 
 #include "player.h"
+#include "playlist.h"
 #include "main.h"
 #include <ArduinoJson.h>
 
@@ -36,7 +37,7 @@ Player::Player() {
   playerState.playStartTime = 0;
   playerState.totalPlayTime = 0;
   audio = nullptr;
-  playlistCount = 0;
+  playlist = new Playlist();
   
   // Initialize stream info
   streamInfo.url[0] = '\0';
@@ -45,12 +46,6 @@ Player::Player() {
   streamInfo.icyUrl[0] = '\0';
   streamInfo.iconUrl[0] = '\0';
   streamInfo.bitrate = 0;
-  
-  // Initialize playlist
-  for (int i = 0; i < MAX_PLAYLIST_SIZE; i++) {
-    playlist[i].name[0] = '\0';
-    playlist[i].url[0] = '\0';
-  }
 }
 
 /**
@@ -186,13 +181,13 @@ void Player::loadPlayerState() {
     audio->setVolume(playerState.volume);
     audio->setTone(playerState.bass, playerState.mid, playerState.treble);
   }
-  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlistCount) {
+  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlist->getPlaylistCount()) {
     // currentSelection is now handled within Player class
   }
   // If was playing, resume playback
-  if (playerState.playing && playlistCount > 0 && playerState.playlistIndex < playlistCount) {
+  if (playerState.playing && playlist->getPlaylistCount() > 0 && playerState.playlistIndex < playlist->getPlaylistCount()) {
     Serial.println("Resuming playback from saved state");
-    startStream(playlist[playerState.playlistIndex].url, playlist[playerState.playlistIndex].name);
+    startStream(playlist->getPlaylistItem(playerState.playlistIndex).url, playlist->getPlaylistItem(playerState.playlistIndex).name);
   }
 }
 
@@ -215,213 +210,28 @@ void Player::savePlayerState() {
   }
 }
 
-/**
- * @brief Load playlist from SPIFFS storage
- * Reads playlist.json from SPIFFS and populates the playlist array
- * This function loads the playlist from SPIFFS with error recovery mechanisms.
- * If the playlist file is corrupted, it creates a backup and a new empty playlist.
- */
 void Player::loadPlaylist() {
-  playlistCount = 0;  // Reset playlist count
-  // If playlist file doesn't exist, just return without creating an empty one
-  if (!SPIFFS.exists("/playlist.json")) {
-    Serial.println("Playlist file not found, continuing with empty playlist");
-    return;
-  }
-  // Open the playlist file for reading
-  File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) {
-    Serial.println("Error: Failed to open playlist file for reading");
-    return;  // Return if file couldn't be opened
-  }
-  // Check file size
-  size_t size = file.size();
-  if (size == 0) {
-    Serial.println("Warning: Playlist file is empty");
-    file.close();
-    return;
-  }
-  if (size > 4096) {
-    Serial.println("Error: Playlist file too large");
-    file.close();
-    return;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.println("Error: Failed to allocate memory for playlist file");
-    file.close();
-    return;
-  }
-  // Read the file content into the buffer
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Error: Failed to read playlist file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
-  // Parse the JSON content
-  DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, buf.get());
-  // Check for JSON parsing errors
-  if (error) {
-    Serial.print("Error: Failed to parse playlist JSON: ");
-    Serial.println(error.c_str());
-    // Don't create an empty playlist, just return with empty playlist
-    Serial.println("Continuing with empty playlist");
-    return;
-  }
-  // Check if the JSON document is an array
-  if (!doc.is<JsonArray>()) {
-    Serial.println("Error: Playlist JSON is not an array");
-    // Don't create an empty playlist, just return with empty playlist
-    Serial.println("Continuing with empty playlist");
-    return;
-  }
-  // Populate the playlist array
-  JsonArray array = doc.as<JsonArray>();
-  playlistCount = 0;
-  // Iterate through the JSON array
-  for (JsonObject item : array) {
-    if (playlistCount >= MAX_PLAYLIST_SIZE) {
-      Serial.println("Warning: Playlist limit reached (20 entries)");
-      break;
-    }
-    // Check if the item has the required keys
-    if (item.containsKey("name") && item.containsKey("url")) {
-      const char* name = item["name"];
-      const char* url = item["url"];
-      // Validate name and URL
-      if (name && url && strlen(name) > 0 && strlen(url) > 0) {
-        // Validate URL format
-        if (VALIDATE_URL(url)) {
-          // Add item to playlist
-          strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-          playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-          strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-          playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-          playlistCount++;
-        } else {
-          Serial.println("Warning: Skipping stream with invalid URL format");
-        }
-      } else {
-        Serial.println("Warning: Skipping stream with empty name or URL");
-      }
-    }
-  }
-  // Check if any valid streams were loaded
-  if (playlistCount == 0) {
-    Serial.println("Error: No valid streams found in playlist");
-  } else {
-    Serial.print("Loaded ");
-    Serial.print(playlistCount);
-    Serial.println(" streams from playlist");
-  }
+  playlist->loadPlaylist();
 }
 
-/**
- * @brief Save playlist to SPIFFS storage
- * Serializes the current playlist array to playlist.json
- * This function saves the current playlist to SPIFFS with backup functionality.
- * It creates a backup before saving and restores from backup if saving fails.
- */
 void Player::savePlaylist() {
-  // Create JSON array
-  DynamicJsonDocument doc(4096);
-  JsonArray array = doc.to<JsonArray>();
-  // Add playlist entries
-  for (int i = 0; i < playlistCount; i++) {
-    // Validate URL format before saving
-    if (strlen(playlist[i].url) == 0 || 
-        !VALIDATE_URL(playlist[i].url)) {
-      Serial.println("Warning: Skipping stream with invalid URL format during save");
-      continue;
-    }
-    // Create JSON object for the playlist entry
-    JsonObject item = array.createNestedObject();
-    item["name"] = playlist[i].name;
-    item["url"] = playlist[i].url;
-  }
-  // Save the JSON document to SPIFFS using helper function
-  if (writeJsonFile("/playlist.json", doc)) {
-    Serial.println("Saved playlist to SPIFFS");
-  } else {
-    Serial.println("Failed to save playlist to SPIFFS");
-  }
+  playlist->savePlaylist();
 }
 
-/**
- * @brief Set playlist item at specific index
- * @param index Playlist index
- * @param name Stream name
- * @param url Stream URL
- */
 void Player::setPlaylistItem(int index, const char* name, const char* url) {
-  if (index >= 0 && index < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[index].name, name, sizeof(playlist[index].name) - 1);
-    playlist[index].name[sizeof(playlist[index].name) - 1] = '\0';
-    strncpy(playlist[index].url, url, sizeof(playlist[index].url) - 1);
-    playlist[index].url[sizeof(playlist[index].url) - 1] = '\0';
-    if (index >= playlistCount) {
-      playlistCount = index + 1;
-    }
-  }
+  playlist->setPlaylistItem(index, name, url);
 }
 
-/**
- * @brief Add playlist item
- * @param name Stream name
- * @param url Stream URL
- */
 void Player::addPlaylistItem(const char* name, const char* url) {
-  if (playlistCount < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[playlistCount].name, name, sizeof(playlist[playlistCount].name) - 1);
-    playlist[playlistCount].name[sizeof(playlist[playlistCount].name) - 1] = '\0';
-    strncpy(playlist[playlistCount].url, url, sizeof(playlist[playlistCount].url) - 1);
-    playlist[playlistCount].url[sizeof(playlist[playlistCount].url) - 1] = '\0';
-    playlistCount++;
-  }
+  playlist->addPlaylistItem(name, url);
 }
 
-/**
- * @brief Remove playlist item at specific index
- * @param index Playlist index to remove
- */
 void Player::removePlaylistItem(int index) {
-  if (index >= 0 && index < playlistCount) {
-    // Shift all items after the removed item
-    for (int i = index; i < playlistCount - 1; i++) {
-      strncpy(playlist[i].name, playlist[i + 1].name, sizeof(playlist[i].name) - 1);
-      playlist[i].name[sizeof(playlist[i].name) - 1] = '\0';
-      strncpy(playlist[i].url, playlist[i + 1].url, sizeof(playlist[i].url) - 1);
-      playlist[i].url[sizeof(playlist[i].url) - 1] = '\0';
-    }
-    // Clear the last item
-    playlist[playlistCount - 1].name[0] = '\0';
-    playlist[playlistCount - 1].url[0] = '\0';
-    playlistCount--;
-    
-    // Adjust playlistIndex if necessary
-    if (playerState.playlistIndex >= playlistCount) {
-      playerState.playlistIndex = playlistCount - 1;
-    }
-    if (playerState.playlistIndex < 0) {
-      playerState.playlistIndex = 0;
-    }
-  }
+  playlist->removePlaylistItem(index);
 }
 
-/**
- * @brief Clear all playlist items
- */
 void Player::clearPlaylist() {
-  for (int i = 0; i < playlistCount; i++) {
-    playlist[i].name[0] = '\0';
-    playlist[i].url[0] = '\0';
-  }
-  playlistCount = 0;
-  playerState.playlistIndex = 0;
+  playlist->clearPlaylist();
 }
 
 /**
