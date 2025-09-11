@@ -311,3 +311,9 @@ Audio* Player::setupAudioOutput() {
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
   return audio;
 }
+
+void Player::handleAudio() {
+  if (audio) {
+    audio->loop();
+  }
+}

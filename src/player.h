@@ -112,6 +112,8 @@ public:
   
   // Audio setup method
   Audio* setupAudioOutput();
+  // Audio handler
+  void handleAudio();
 };
 
 #endif // PLAYER_H

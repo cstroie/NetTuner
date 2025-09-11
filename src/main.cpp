@@ -784,9 +784,7 @@ void handlePostConfig() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
-    if (player.getAudio()) {
-      player.getAudio()->loop();
-    }
+    player->handleAudio();
     // Very small delay to prevent busy waiting but allow frequent processing
     delay(1);
   }
