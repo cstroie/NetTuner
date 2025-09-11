@@ -450,7 +450,7 @@ void MPDInterface::handlePingCommand(const String& args) {
 void MPDInterface::handleStatsCommand(const String& args) {
   // Calculate uptime and playtime
   unsigned long uptime = (millis() / 1000) - startTime;
-  unsigned long playtime = totalPlayTime;
+  unsigned long playtime = this->player.getTotalPlayTime();
   if (this->player.isPlaying() && this->player.getPlayStartTime() > 0) {
     playtime += (millis() / 1000) - this->player.getPlayStartTime();
   }
