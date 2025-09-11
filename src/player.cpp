@@ -142,7 +142,10 @@ void Player::clearStreamInfo() {
   streamInfo.bitrate = 0;
 }
 
-// Document this, AI!
+/**
+ * @brief Clear player state to default values
+ * Resets all player state variables to their default values
+ */
 void Player::clearPlayerState() {
   playerState.playing = false;
   playerState.volume = 8;
