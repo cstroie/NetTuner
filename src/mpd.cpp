@@ -268,8 +268,8 @@ void MPDInterface::handleListCommand(const String& args) {
       mpdClient.print("Album: WebRadio\n");
     } else if (tagType.startsWith("title")) {
       // Return the playlist
-      for (int i = 0; i < playlistCountRef; i++) {
-        mpdClient.print("Title: " + String(playlistRef[i].name) + "\n");
+      for (int i = 0; i < player.getPlaylistCount(); i++) {
+        mpdClient.print("Title: " + String(player.getPlaylistItem(i).name) + "\n");
       }
     }
   }
@@ -457,7 +457,7 @@ void MPDInterface::handleStatsCommand(const String& args) {
   // Send stats information
   mpdClient.print("artists: 1\n");
   mpdClient.print("albums: 1\n");
-  mpdClient.print("songs: " + String(playlistCountRef) + "\n");
+  mpdClient.print("songs: " + String(player.getPlaylistCount()) + "\n");
   mpdClient.print("uptime: " + String(uptime) + "\n");
   mpdClient.print("playtime: " + String(playtime) + "\n");
   mpdClient.print("db_playtime: " + String(playtime) + "\n");
@@ -737,16 +737,17 @@ void MPDInterface::handlePlaylistIdCommand(const String& args) {
   if (args.length() > 0) {
     id = parseValue(args);
     // Validate ID range
-    if (id < 0 || id >= playlistCountRef) {
+    if (id < 0 || id >= player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("playlistid", "Invalid playlist ID"));
       return;
     }
   }
   // Check if the ID is valid
-  if (id >= 0 && id < playlistCountRef) {
+  if (id >= 0 && id < player.getPlaylistCount()) {
     // Return specific entry
-    mpdClient.print("file: " + String(playlistRef[id + 1].url) + "\n");
-    mpdClient.print("Title: " + String(playlistRef[id + 1].name) + "\n");
+    const StreamInfo& item = player.getPlaylistItem(id);
+    mpdClient.print("file: " + String(item.url) + "\n");
+    mpdClient.print("Title: " + String(item.name) + "\n");
     mpdClient.print("Artist: WebRadio\n");
     mpdClient.print("Album: WebRadio\n");
     mpdClient.print("Id: " + String(id) + "\n");
@@ -874,20 +875,19 @@ void MPDInterface::handleStatusCommand(const String& args) {
   mpdClient.print("single: 0\n");
   mpdClient.print("consume: 0\n");
   mpdClient.print("playlist: 1\n");
-  mpdClient.print("playlistlength: " + String(playlistCountRef) + "\n");
+  mpdClient.print("playlistlength: " + String(player.getPlaylistCount()) + "\n");
   mpdClient.print("mixrampdb: 0.000000\n");
-  mpdClient.print("state: " + String(isPlayingRef ? "play" : "stop") + "\n");
-  if (isPlayingRef && strlen(streamNameRef) > 0) {
+  mpdClient.print("state: " + String(player.isPlaying() ? "play" : "stop") + "\n");
+  if (player.isPlaying() && strlen(player.getStreamName()) > 0) {
     mpdClient.print("song: " + String(index) + "\n");
     mpdClient.print("songid: " + String(index) + "\n");
     // Calculate elapsed time since playback started
-    extern unsigned long playStartTime;
     unsigned long elapsed = 0;
-    if (playStartTime > 0) {
-      elapsed = (millis() / 1000) - playStartTime;
+    if (player.getPlayStartTime() > 0) {
+      elapsed = (millis() / 1000) - player.getPlayStartTime();
     }
     mpdClient.print("elapsed: " + String(elapsed) + ".000\n");
-    mpdClient.print("bitrate: " + String(bitrateRef) + "\n");
+    mpdClient.print("bitrate: " + String(player.getBitrate()) + "\n");
     mpdClient.print("audio: 44100:16:2\n");
     index++;
     mpdClient.print("nextsong: " + String(index) + "\n");
@@ -1039,8 +1039,8 @@ void MPDInterface::handleDisableOutputCommand(const String& args) {
  * @param args Command arguments (not used for previous command)
  */
 void MPDInterface::handlePreviousCommand(const String& args) {
-  if (playlistCountRef > 0) {
-    int prevIndex = (currentSelectionRef - 1 + playlistCountRef) % playlistCountRef;
+  if (player.getPlaylistCount() > 0) {
+    int prevIndex = (player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount();
     if (handlePlayback(prevIndex)) {
       mpdClient.print(mpdResponseOK());
     } else {
@@ -1079,8 +1079,8 @@ void MPDInterface::handlePreviousCommand(const String& args) {
  */
 void MPDInterface::handleNextCommand(const String& args) {
   // Next command
-  if (playlistCountRef > 0) {
-    int nextIndex = (currentSelectionRef + 1) % playlistCountRef;
+  if (player.getPlaylistCount() > 0) {
+    int nextIndex = (player.getPlaylistIndex() + 1) % player.getPlaylistCount();
     if (handlePlayback(nextIndex)) {
       mpdClient.print(mpdResponseOK());
     } else {
@@ -1180,10 +1180,8 @@ void MPDInterface::handleSetVolCommand(const String& args) {
     // Validate volume range (0-100 for MPD compatibility)
     if (newVolume >= 0 && newVolume <= 100) {
       // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
-      volumeRef = map(newVolume, 0, 100, 0, 22);
-      if (audioRef) {
-        audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
-      }
+      int volume = map(newVolume, 0, 100, 0, 22);
+      player.setVolume(volume);
       updateDisplay();
       sendStatusToClients();  // Notify WebSocket clients of volume change
       mpdClient.print(mpdResponseOK());
@@ -1232,7 +1230,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
     // Convert to 0-based index
     playlistIndex = parseValue(args) - 1;
     // Validate index if provided
-    if (playlistIndex < -1 || playlistIndex >= playlistCountRef) {
+    if (playlistIndex < -1 || playlistIndex >= player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
@@ -1304,12 +1302,12 @@ void MPDInterface::handleIdleCommand(const String& args) {
   inIdleMode = true;
   // Initialize hashes for tracking changes
   lastTitleHash = 0;
-  for (int i = 0; streamTitleRef[i]; i++) {
-    lastTitleHash = lastTitleHash * 31 + streamTitleRef[i];
+  for (int i = 0; player.getStreamTitle()[i]; i++) {
+    lastTitleHash = lastTitleHash * 31 + player.getStreamTitle()[i];
   }
-  lastStatusHash = isPlayingRef ? 1 : 0;
-  lastStatusHash = lastStatusHash * 31 + volumeRef;
-  lastStatusHash = lastStatusHash * 31 + bitrateRef;
+  lastStatusHash = player.isPlaying() ? 1 : 0;
+  lastStatusHash = lastStatusHash * 31 + player.getVolume();
+  lastStatusHash = lastStatusHash * 31 + player.getBitrate();
   // Don't send immediate response - wait for changes
 }
 
