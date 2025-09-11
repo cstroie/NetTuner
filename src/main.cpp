@@ -31,8 +31,6 @@
 #include <ESPmDNS.h>
 
 
-// MPD Interface instance
-MPDInterface mpdInterface(mpdServer, player);
 
 
 /**
@@ -176,6 +174,9 @@ RotaryEncoder rotaryEncoder;
 TaskHandle_t audioTaskHandle = NULL;
 
 Player player;
+
+// MPD Interface instance
+MPDInterface mpdInterface(mpdServer, player);
 
 // Configuration structure definition
 Config config = {
