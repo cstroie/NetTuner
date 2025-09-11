@@ -130,6 +130,10 @@ bool initializeSPIFFS();
 String generateStatusJSON();
 bool connectToWiFi();
 
+// JSON file helper functions
+bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
+bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
+
 
 // Timestamp
 #define BUILD_TIME_UNIX 1757065455
