@@ -372,7 +372,8 @@ void Player::stopStream() {
   if (audio) {
     audio->stopSong();
   }
-  playerState.playing = false;             // Set playback status to stopped
+  // Set playback status to stopped
+  playerState.playing = false;
   clearStreamInfo();
   // Update total play time when stopping
   if (playerState.playStartTime > 0) {
@@ -401,6 +402,7 @@ Audio* Player::setupAudioOutput() {
   return audio;
 }
 
+// document this AI!
 void Player::handleAudio() {
   if (audio) {
     audio->loop();
