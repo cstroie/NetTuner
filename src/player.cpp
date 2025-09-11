@@ -20,6 +20,7 @@
 #include "playlist.h"
 #include "main.h"
 #include <ArduinoJson.h>
+#include <ESP32-audioI2S.h>
 
 /**
  * @brief Player constructor
@@ -398,6 +399,14 @@ Audio* Player::setupAudioOutput() {
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
   return audio;
+}
+
+/**
+ * @brief Check if audio is currently running
+ * @return true if audio is running, false otherwise
+ */
+bool Player::isRunning() const {
+  return audio ? audio->isRunning() : false;
 }
 
 /**
