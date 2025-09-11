@@ -814,10 +814,10 @@ void MPDInterface::handlePlaylistInfoCommand(const String& args) {
  * @param args Command arguments (not used for currentsong command)
  */
 void MPDInterface::handleCurrentSongCommand(const String& args) {
-  if (isPlayingRef && strlen(streamNameRef) > 0) {
-    mpdClient.print("file: " + String(streamURLRef) + "\n");
-    if (strlen(streamTitleRef) > 0) {
-      String streamTitleStr = String(streamTitleRef);
+  if (player.isPlaying() && strlen(player.getStreamName()) > 0) {
+    mpdClient.print("file: " + String(player.getStreamUrl()) + "\n");
+    if (strlen(player.getStreamTitle()) > 0) {
+      String streamTitleStr = String(player.getStreamTitle());
       // Check if stream title contains " - " separator for artist/track parsing
       int separatorPos = streamTitleStr.indexOf(" - ");
       if (separatorPos != -1) {
@@ -832,10 +832,10 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
       }
     } else {
       // No stream title, use stream name as fallback
-      mpdClient.print("Title: " + String(streamNameRef) + "\n");
+      mpdClient.print("Title: " + String(player.getStreamName()) + "\n");
     }
-    mpdClient.print("Id: " + String(currentSelectionRef + 1) + "\n");
-    mpdClient.print("Pos: " + String(currentSelectionRef + 1) + "\n");
+    mpdClient.print("Id: " + String(player.getPlaylistIndex() + 1) + "\n");
+    mpdClient.print("Pos: " + String(player.getPlaylistIndex() + 1) + "\n");
   }
   mpdClient.print(mpdResponseOK());
 }
@@ -867,8 +867,8 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
  * @param args Command arguments (not used for status command)
  */
 void MPDInterface::handleStatusCommand(const String& args) {
-  int index = currentSelectionRef + 1; // 1-based index for MPD
-  int volPercent = map(volumeRef, 0, 22, 0, 100);
+  int index = player.getPlaylistIndex() + 1; // 1-based index for MPD
+  int volPercent = map(player.getVolume(), 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print("repeat: 0\n");
   mpdClient.print("random: 0\n");
