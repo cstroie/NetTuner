@@ -43,8 +43,8 @@ void audio_showstreamtitle(const char *info) {
     Serial.print("Stream title: ");
     Serial.println(info);
     // Update stream title if it has changed
-    if (strcmp(player.getStreamTitle(), info) != 0) {
-      player.setStreamTitle(info);
+    if (strcmp(::player.getStreamTitle(), info) != 0) {
+      ::player.setStreamTitle(info);
       sendStatusToClients();
     }
   }
@@ -60,8 +60,8 @@ void audio_showstation(const char *info) {
     Serial.print("Station name: ");
     Serial.println(info);
     // Update current stream name if it has changed and we're not already using a custom name
-    if (strcmp(player.getStreamName(), info) != 0) {
-      player.setStreamName(info);
+    if (strcmp(::player.getStreamName(), info) != 0) {
+      ::player.setStreamName(info);
       sendStatusToClients();
     }
   }
@@ -79,8 +79,8 @@ void audio_bitrate(const char *info) {
     // Convert string to integer bitrate and convert to kbps (divide by 1000)
     int newBitrate = atoi(info) / 1000;
     // Update bitrate if it has changed
-    if (newBitrate > 0 && newBitrate != player.getBitrate()) {
-      player.setBitrate(newBitrate);
+    if (newBitrate > 0 && newBitrate != ::player.getBitrate()) {
+      ::player.setBitrate(newBitrate);
     }
   }
 }
@@ -106,9 +106,9 @@ void audio_info(const char *info) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       }
       // Store the stream icon URL
-      player.setStreamIconUrl(urlPart.c_str());
+      ::player.setStreamIconUrl(urlPart.c_str());
       Serial.print("Stream Icon URL: ");
-      Serial.println(player.getStreamIconUrl());
+      Serial.println(::player.getStreamIconUrl());
       // Notify clients of the new stream icon
       sendStatusToClients();
     }
@@ -124,7 +124,7 @@ void audio_icyurl(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("ICY URL: ");
     Serial.println(info);
-    player.setStreamIcyUrl(info);
+    ::player.setStreamIcyUrl(info);
   }
 }
 
