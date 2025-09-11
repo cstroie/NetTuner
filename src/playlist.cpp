@@ -45,53 +45,10 @@ Playlist::Playlist() {
  */
 void Playlist::loadPlaylist() {
   playlistCount = 0;  // Reset playlist count
-  // If playlist file doesn't exist, just return without creating an empty one
-  if (!SPIFFS.exists("/playlist.json")) {
-    Serial.println("Playlist file not found, continuing with empty playlist");
-    return;
-  }
-  // Open the playlist file for reading
-  File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) {
-    Serial.println("Error: Failed to open playlist file for reading");
-    return;  // Return if file couldn't be opened
-  }
-  // Check file size
-  size_t size = file.size();
-  if (size == 0) {
-    Serial.println("Warning: Playlist file is empty");
-    file.close();
-    return;
-  }
-  if (size > 4096) {
-    Serial.println("Error: Playlist file too large");
-    file.close();
-    return;
-  }
-  // Allocate buffer for file content
-  std::unique_ptr<char[]> buf(new char[size + 1]);
-  if (!buf) {
-    Serial.println("Error: Failed to allocate memory for playlist file");
-    file.close();
-    return;
-  }
-  // Read the file content into the buffer
-  if (file.readBytes(buf.get(), size) != size) {
-    Serial.println("Error: Failed to read playlist file");
-    file.close();
-    return;
-  }
-  buf[size] = '\0';
-  file.close();
-  // Parse the JSON content
+  // Load playlist using helper function
   DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, buf.get());
-  // Check for JSON parsing errors
-  if (error) {
-    Serial.print("Error: Failed to parse playlist JSON: ");
-    Serial.println(error.c_str());
-    // Don't create an empty playlist, just return with empty playlist
-    Serial.println("Continuing with empty playlist");
+  if (!readJsonFile("/playlist.json", 4096, doc)) {
+    Serial.println("Failed to load playlist, continuing with empty playlist");
     return;
   }
   // Check if the JSON document is an array
