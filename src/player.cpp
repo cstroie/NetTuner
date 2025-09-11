@@ -21,7 +21,6 @@
 #include <ArduinoJson.h>
 
 // External variables from main.cpp
-extern StreamInfoData streamInfo;
 extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
 extern int currentSelection;
@@ -41,6 +40,13 @@ Player::Player() {
   playerState.playlistIndex = 0;
   playerState.lastSaveTime = 0;
   playerState.dirty = false;
+  
+  // Initialize stream info
+  streamInfo.url[0] = '\0';
+  streamInfo.name[0] = '\0';
+  streamInfo.title[0] = '\0';
+  streamInfo.icyUrl[0] = '\0';
+  streamInfo.iconUrl[0] = '\0';
 }
 
 /**
@@ -52,6 +58,72 @@ void Player::setVolume(int volume) {
   if (audio) {
     audio->setVolume(volume);
   }
+}
+
+/**
+ * @brief Set stream URL
+ * @param url New stream URL
+ */
+void Player::setStreamUrl(const char* url) {
+  if (url) {
+    strncpy(streamInfo.url, url, sizeof(streamInfo.url) - 1);
+    streamInfo.url[sizeof(streamInfo.url) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Set stream name
+ * @param name New stream name
+ */
+void Player::setStreamName(const char* name) {
+  if (name) {
+    strncpy(streamInfo.name, name, sizeof(streamInfo.name) - 1);
+    streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Set stream title
+ * @param title New stream title
+ */
+void Player::setStreamTitle(const char* title) {
+  if (title) {
+    strncpy(streamInfo.title, title, sizeof(streamInfo.title) - 1);
+    streamInfo.title[sizeof(streamInfo.title) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Set stream ICY URL
+ * @param icyUrl New stream ICY URL
+ */
+void Player::setStreamIcyUrl(const char* icyUrl) {
+  if (icyUrl) {
+    strncpy(streamInfo.icyUrl, icyUrl, sizeof(streamInfo.icyUrl) - 1);
+    streamInfo.icyUrl[sizeof(streamInfo.icyUrl) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Set stream icon URL
+ * @param iconUrl New stream icon URL
+ */
+void Player::setStreamIconUrl(const char* iconUrl) {
+  if (iconUrl) {
+    strncpy(streamInfo.iconUrl, iconUrl, sizeof(streamInfo.iconUrl) - 1);
+    streamInfo.iconUrl[sizeof(streamInfo.iconUrl) - 1] = '\0';
+  }
+}
+
+/**
+ * @brief Clear all stream information
+ */
+void Player::clearStreamInfo() {
+  streamInfo.url[0] = '\0';
+  streamInfo.name[0] = '\0';
+  streamInfo.title[0] = '\0';
+  streamInfo.icyUrl[0] = '\0';
+  streamInfo.iconUrl[0] = '\0';
 }
 
 /**

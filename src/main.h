@@ -96,15 +96,6 @@ extern char ssid[MAX_WIFI_NETWORKS][64];
 extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
 
-// Stream information variables
-struct StreamInfoData {
-  char url[256];
-  char name[128];
-  char title[128];
-  char icyUrl[256];
-  char iconUrl[256];
-};
-extern StreamInfoData streamInfo;
 
 #include "player.h"
 

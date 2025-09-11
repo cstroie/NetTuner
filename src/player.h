@@ -24,6 +24,15 @@
 // Forward declarations
 class Audio;
 
+// Stream information variables
+struct StreamInfoData {
+  char url[256];
+  char name[128];
+  char title[128];
+  char icyUrl[256];
+  char iconUrl[256];
+};
+
 // Player class declaration
 class Player {
 private:
@@ -39,6 +48,7 @@ private:
   };
   
   PlayerState playerState;
+  StreamInfoData streamInfo;
   
 public:
   // Constructor
@@ -57,6 +67,21 @@ public:
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   bool isDirty() const { return playerState.dirty; }
+  
+  // Stream info getters
+  const char* getStreamUrl() const { return streamInfo.url; }
+  const char* getStreamName() const { return streamInfo.name; }
+  const char* getStreamTitle() const { return streamInfo.title; }
+  const char* getStreamIcyUrl() const { return streamInfo.icyUrl; }
+  const char* getStreamIconUrl() const { return streamInfo.iconUrl; }
+  
+  // Stream info setters
+  void setStreamUrl(const char* url);
+  void setStreamName(const char* name);
+  void setStreamTitle(const char* title);
+  void setStreamIcyUrl(const char* icyUrl);
+  void setStreamIconUrl(const char* iconUrl);
+  void clearStreamInfo();
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }

@@ -30,7 +30,10 @@
 
 
 // MPD Interface instance
-MPDInterface mpdInterface(mpdServer, streamInfo.title, streamInfo.name, streamInfo.url,
+MPDInterface mpdInterface(mpdServer, 
+  const_cast<char*>(player.getStreamTitle()), 
+  const_cast<char*>(player.getStreamName()), 
+  const_cast<char*>(player.getStreamUrl()),
   isPlaying, player.getVolume(), bitrate, playlistCount, currentSelection, playlist, audio);
 
 
@@ -44,9 +47,8 @@ void audio_showstreamtitle(const char *info) {
     Serial.print("Stream title: ");
     Serial.println(info);
     // Update stream title if it has changed
-    if (strcmp(streamInfo.title, info) != 0) {
-      strncpy(streamInfo.title, info, sizeof(streamInfo.title) - 1);
-      streamInfo.title[sizeof(streamInfo.title) - 1] = '\0';
+    if (strcmp(player.getStreamTitle(), info) != 0) {
+      player.setStreamTitle(info);
       updateDisplay();
       // Notify clients of stream title change
       sendStatusToClients();
@@ -64,9 +66,8 @@ void audio_showstation(const char *info) {
     Serial.print("Station name: ");
     Serial.println(info);
     // Update current stream name if it has changed and we're not already using a custom name
-    if (strcmp(streamInfo.name, info) != 0) {
-      strncpy(streamInfo.name, info, sizeof(streamInfo.name) - 1);
-      streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
+    if (strcmp(player.getStreamName(), info) != 0) {
+      player.setStreamName(info);
       updateDisplay();
       // Notify clients of station name change
       sendStatusToClients();
@@ -115,10 +116,9 @@ void audio_info(const char *info) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       }
       // Store the stream icon URL
-      strncpy(streamInfo.iconUrl, urlPart.c_str(), sizeof(streamInfo.iconUrl) - 1);
-      streamInfo.iconUrl[sizeof(streamInfo.iconUrl) - 1] = '\0';
+      player.setStreamIconUrl(urlPart.c_str());
       Serial.print("Stream Icon URL: ");
-      Serial.println(streamInfo.iconUrl);
+      Serial.println(player.getStreamIconUrl());
       // Notify clients of the new stream icon
       sendStatusToClients();
     }
@@ -135,8 +135,7 @@ void audio_icyurl(const char *info) {
     Serial.print("ICY URL: ");
     Serial.println(info);
     // Store the ICY URL for later use
-    strncpy(streamInfo.icyUrl, info, sizeof(streamInfo.icyUrl) - 1);
-    streamInfo.icyUrl[sizeof(streamInfo.icyUrl) - 1] = '\0';
+    player.setStreamIcyUrl(info);
   }
 }
 
@@ -195,15 +194,6 @@ StreamInfo playlist[MAX_PLAYLIST_SIZE];
 int playlistCount = 0;
 int currentSelection = 0;
 TaskHandle_t audioTaskHandle = NULL;
-
-// Stream information variables
-StreamInfoData streamInfo = {
-  "",  // url
-  "",  // name
-  "",  // title
-  "",  // icyUrl
-  ""   // iconUrl
-};
 
 Player player;
 
@@ -392,7 +382,7 @@ void handleBoardButton() {
         player.markPlayerStateDirty();
       } else {
         // If we have a current stream, resume it
-        if (strlen(streamInfo.url) > 0) {
+        if (strlen(player.getStreamUrl()) > 0) {
           player.startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
@@ -1052,25 +1042,25 @@ void handleSimpleWebPage() {
           int streamIndex = server.arg("stream").toInt();
           if (streamIndex >= 0 && streamIndex < playlistCount) {
             // Stop playback
-            stopStream();
+            player.stopStream();
             // Play selected stream
             currentSelection = streamIndex;
-            startStream(playlist[streamIndex].url, playlist[streamIndex].name);
+            player.startStream(playlist[streamIndex].url, playlist[streamIndex].name);
           }
-        } else if (strlen(streamInfo.url) > 0) {
+        } else if (strlen(player.getStreamUrl()) > 0) {
           // Stop current playback
-          stopStream();
+          player.stopStream();
           // Resume current stream
-          startStream();
+          player.startStream();
         } else if (playlistCount > 0 && currentSelection < playlistCount) {
           // Stop playback
-          stopStream();
+          player.stopStream();
           // Play currently selected stream
-          startStream(playlist[currentSelection].url, playlist[currentSelection].name);
+          player.startStream(playlist[currentSelection].url, playlist[currentSelection].name);
         }
       } else if (action == "stop") {
         // Stop playback
-        stopStream();
+        player.stopStream();
       } else if (action == "volume") {
         // Set volume
         if (server.hasArg("volume")) {
@@ -1088,10 +1078,10 @@ void handleSimpleWebPage() {
           if (customUrl.length() > 0 && 
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             // Stop current playback
-            stopStream();
+            player.stopStream();
             // Use a generic name for the stream
             String streamName = "Stream";
-            startStream(customUrl.c_str(), streamName.c_str());
+            player.startStream(customUrl.c_str(), streamName.c_str());
           }
         }
       }
@@ -1116,9 +1106,9 @@ void handleSimpleWebPage() {
   html += player.isPlaying() ? "Playing" : "Stopped";
   html += "</p>";
   // Show current stream name
-  if (player.isPlaying() && streamInfo.name[0]) {
+  if (player.isPlaying() && player.getStreamName()[0]) {
     html += "<p><b>Current Stream:</b> ";
-    html += streamInfo.name;
+    html += player.getStreamName();
     html += "</p>";
   } else if (!player.isPlaying() && playlistCount > 0 && currentSelection < playlistCount) {
     html += "<p><b>Selected Stream:</b> ";
@@ -1405,8 +1395,8 @@ void handlePlayer() {
     // Handle case where URL is provided (with optional name)
     else if (url.length() > 0) {
       // If no name provided, check if we have a current stream name
-      if (name.length() == 0 && strlen(streamInfo.url) > 0 && url == String(streamInfo.url)) {
-        name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
+      if (name.length() == 0 && strlen(player.getStreamUrl()) > 0 && url == String(player.getStreamUrl())) {
+        name = (strlen(player.getStreamName()) > 0) ? String(player.getStreamName()) : "Unknown Station";
       }
       // Validate URL format
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -1422,9 +1412,9 @@ void handlePlayer() {
       }
     }
     // Handle case where we're resuming playback
-    else if (url.length() == 0 && strlen(streamInfo.url) > 0) {
-      url = String(streamInfo.url);
-      name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name) : "Unknown Station";
+    else if (url.length() == 0 && strlen(player.getStreamUrl()) > 0) {
+      url = String(player.getStreamUrl());
+      name = (strlen(player.getStreamName()) > 0) ? String(player.getStreamName()) : "Unknown Station";
     }
     // No valid play parameters
     else {
