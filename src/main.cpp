@@ -31,8 +31,6 @@
 #include <ESPmDNS.h>
 
 
-Player player;
-
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, player);
 
@@ -1859,7 +1857,7 @@ void loop() {
   if (player.getAudio()) {
     // Check if audio is still connected
     if (isPlaying) {
-      if (!audio->isRunning()) {
+      if (!player.getAudio()->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
         if (strlen(player.getStreamUrl()) > 0) {

@@ -451,8 +451,8 @@ void MPDInterface::handleStatsCommand(const String& args) {
   // Calculate uptime and playtime
   unsigned long uptime = (millis() / 1000) - startTime;
   unsigned long playtime = totalPlayTime;
-  if (isPlayingRef && playStartTime > 0) {
-    playtime += (millis() / 1000) - playStartTime;
+  if (player.isPlaying() && player.getPlayStartTime() > 0) {
+    playtime += (millis() / 1000) - player.getPlayStartTime();
   }
   // Send stats information
   mpdClient.print("artists: 1\n");
@@ -674,7 +674,7 @@ void MPDInterface::handleClearCommand(const String& args) {
  * @param args Command arguments (not used for getvol command)
  */
 void MPDInterface::handleGetVolCommand(const String& args) {
-  int volPercent = map(volumeRef, 0, 22, 0, 100);
+  int volPercent = map(player.getVolume(), 0, 22, 0, 100);
   mpdClient.print("volume: " + String(volPercent) + "\n");
   mpdClient.print(mpdResponseOK());
 }

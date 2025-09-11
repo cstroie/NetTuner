@@ -26,7 +26,7 @@
 #include <string>
 
 // Forward declarations
-struct StreamInfo;
+#include "playlist.h"
 class Player;
 
 // External global variables
