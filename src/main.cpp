@@ -83,8 +83,8 @@ void audio_bitrate(const char *info) {
     // Convert string to integer bitrate and convert to kbps (divide by 1000)
     int newBitrate = atoi(info) / 1000;
     // Update bitrate if it has changed
-    if (newBitrate > 0 && newBitrate != bitrate) {
-      bitrate = newBitrate;
+    if (newBitrate > 0 && newBitrate != player.getBitrate()) {
+      player.setBitrate(newBitrate);
     }
   }
 }
@@ -786,7 +786,7 @@ void setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
-  audio->setVolume(playerState.volume); // Use 0-22 scale directly
+  audio->setVolume(player.getVolume()); // Use 0-22 scale directly
   audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
 }
 
@@ -2059,7 +2059,7 @@ void loop() {
       if (!audio->isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
-        if (strlen(streamInfo.url) > 0) {
+        if (strlen(player.getStreamUrl()) > 0) {
           // Wait 1 second before attempting to restart (non-blocking)
           if (streamStoppedTime == 0) {
             // First time detecting the stream has stopped
