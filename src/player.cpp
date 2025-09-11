@@ -23,7 +23,6 @@
 // External variables from main.cpp
 extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
-extern Audio* audio;
 
 /**
  * @brief Player constructor
@@ -39,6 +38,7 @@ Player::Player() {
   playerState.dirty = false;
   playerState.playStartTime = 0;
   playerState.totalPlayTime = 0;
+  audio = nullptr;
   
   // Initialize stream info
   streamInfo.url[0] = '\0';

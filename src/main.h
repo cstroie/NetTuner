@@ -78,7 +78,6 @@ extern unsigned long lastActivityTime;
 extern unsigned long startTime;
 extern const char* BUILD_TIME;
 extern const unsigned long BUILD_TIME_UNIX;
-extern Audio* audio;
 extern bool audioConnected;
 extern WebServer server;
 extern WebSocketsServer webSocket;

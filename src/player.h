@@ -52,10 +52,14 @@ class Player {
 private:
   PlayerState playerState;
   StreamInfoData streamInfo;
+  Audio* audio;
   
 public:
   // Constructor
   Player();
+  
+  // Audio getter
+  Audio* getAudio() const { return audio; }
   
   // Player state methods
   void loadPlayerState();

@@ -34,7 +34,7 @@ MPDInterface mpdInterface(mpdServer,
   const_cast<char*>(player.getStreamTitle()), 
   const_cast<char*>(player.getStreamName()), 
   const_cast<char*>(player.getStreamUrl()),
-  player.isPlaying(), player.getVolume(), player.getBitrate(), playlistCount, player.getPlaylistIndex(), playlist, audio);
+  player.isPlaying(), player.getVolume(), player.getBitrate(), playlistCount, player.getPlaylistIndex(), playlist, player.getAudio());
 
 
 /**
@@ -167,7 +167,6 @@ volatile bool isPlaying = false;
 unsigned long lastActivityTime = 0;
 unsigned long startTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
-Audio *audio = nullptr;
 bool audioConnected = false;
 String previousStatus = "";
 
@@ -785,8 +784,8 @@ void handlePostConfig() {
 void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
-    if (audio) {
-      audio->loop();
+    if (player.getAudio()) {
+      player.getAudio()->loop();
     }
     // Very small delay to prevent busy waiting but allow frequent processing
     delay(1);
@@ -1570,9 +1569,9 @@ void handleMixer() {
     return;
   }
   // Apply tone settings to audio using the Audio library's setTone function
-  if (audio && (doc.containsKey("bass") || doc.containsKey("mid") || doc.containsKey("treble"))) {
+  if (player.getAudio() && (doc.containsKey("bass") || doc.containsKey("mid") || doc.containsKey("treble"))) {
     // For setTone: gainLowPass (bass), gainBandPass (mid), gainHighPass (treble)
-    audio->setTone(player.getBass(), player.getMid(), player.getTreble());
+    player.getAudio()->setTone(player.getBass(), player.getMid(), player.getTreble());
   }
   // Update display and notify clients
   updateDisplay();
@@ -2040,7 +2039,7 @@ void loop() {
   }
   
   // Check audio connection status with improved error recovery
-  if (audio) {
+  if (player.getAudio()) {
     // Check if audio is still connected
     if (isPlaying) {
       if (!audio->isRunning()) {
@@ -2065,7 +2064,7 @@ void loop() {
         // Stream is running, reset the stopped time
         streamStoppedTime = 0;
         // Update bitrate if it has changed
-        int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
+        int newBitrate = player.getAudio()->getBitRate() / 1000;  // Convert bps to kbps
         if (newBitrate > 0 && newBitrate != player.getBitrate()) {
           player.setBitrate(newBitrate);
         }
