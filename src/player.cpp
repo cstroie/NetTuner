@@ -26,26 +26,14 @@
  * @brief Player constructor
  */
 Player::Player() {
-  playerState.playing = false;
-  playerState.volume = 8;
-  playerState.bass = 0;
-  playerState.mid = 0;
-  playerState.treble = 0;
-  playerState.playlistIndex = 0;
-  playerState.lastSaveTime = 0;
-  playerState.dirty = false;
-  playerState.playStartTime = 0;
-  playerState.totalPlayTime = 0;
   audio = nullptr;
   playlist = new Playlist();
   
+  // Initialize player state with defaults
+  clearPlayerState();
+
   // Initialize stream info
-  streamInfo.url[0] = '\0';
-  streamInfo.name[0] = '\0';
-  streamInfo.title[0] = '\0';
-  streamInfo.icyUrl[0] = '\0';
-  streamInfo.iconUrl[0] = '\0';
-  streamInfo.bitrate = 0;
+  clearStreamInfo();
 }
 
 /**
@@ -154,6 +142,20 @@ void Player::clearStreamInfo() {
   streamInfo.bitrate = 0;
 }
 
+// Document this, AI!
+void Player::clearPlayerState() {
+  playerState.playing = false;
+  playerState.volume = 8;
+  playerState.bass = 0;
+  playerState.mid = 0;
+  playerState.treble = 0;
+  playerState.playlistIndex = 0;
+  playerState.lastSaveTime = 0;
+  playerState.dirty = false;
+  playerState.playStartTime = 0;
+  playerState.totalPlayTime = 0;
+}
+
 /**
  * @brief Load player state from SPIFFS
  */
@@ -181,13 +183,13 @@ void Player::loadPlayerState() {
     audio->setVolume(playerState.volume);
     audio->setTone(playerState.bass, playerState.mid, playerState.treble);
   }
-  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlist->getPlaylistCount()) {
+  if (playerState.playlistIndex >= 0 && playerState.playlistIndex < playlist->getCount()) {
     // currentSelection is now handled within Player class
   }
   // If was playing, resume playback
-  if (playerState.playing && playlist->getPlaylistCount() > 0 && playerState.playlistIndex < playlist->getPlaylistCount()) {
+  if (playerState.playing && playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount()) {
     Serial.println("Resuming playback from saved state");
-    startStream(playlist->getPlaylistItem(playerState.playlistIndex).url, playlist->getPlaylistItem(playerState.playlistIndex).name);
+    startStream(playlist->getItem(playerState.playlistIndex).url, playlist->getItem(playerState.playlistIndex).name);
   }
 }
 
@@ -211,35 +213,35 @@ void Player::savePlayerState() {
 }
 
 void Player::loadPlaylist() {
-  playlist->loadPlaylist();
+  playlist->load();
 }
 
 void Player::savePlaylist() {
-  playlist->savePlaylist();
+  playlist->save();
 }
 
 void Player::setPlaylistItem(int index, const char* name, const char* url) {
-  playlist->setPlaylistItem(index, name, url);
+  playlist->setItem(index, name, url);
 }
 
 void Player::addPlaylistItem(const char* name, const char* url) {
-  playlist->addPlaylistItem(name, url);
+  playlist->addItem(name, url);
 }
 
 void Player::removePlaylistItem(int index) {
-  playlist->removePlaylistItem(index);
+  playlist->removeItem(index);
 }
 
 void Player::clearPlaylist() {
-  playlist->clearPlaylist();
+  playlist->clear();
 }
 
 int Player::getPlaylistCount() const { 
-  return playlist->getPlaylistCount(); 
+  return playlist->getCount(); 
 }
 
 const StreamInfo& Player::getPlaylistItem(int index) const { 
-  return playlist->getPlaylistItem(index); 
+  return playlist->getItem(index); 
 }
 
 /**
