@@ -1308,7 +1308,6 @@ void MPDInterface::handleIdleCommand(const String& args) {
   }
   lastStatusHash = isPlayingRef ? 1 : 0;
   lastStatusHash = lastStatusHash * 31 + volumeRef;
-  lastStatusHash = lastStatusHash * 31 + bitrateRef;
   // Don't send immediate response - wait for changes
 }
 
@@ -1554,7 +1553,7 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"find", &MPDInterface::handleFindCommand, false},
   {"seek", &MPDInterface::handleSeekCommand, false},
   {"seekid", &MPDInterface::handleSeekIdCommand, false},
-  {"tagtypes", &MPDInterface::handleTagTypesCommand, true},
+  {"tagtypes", &MPDInterface::handleTagTypesCommand, false},
   {"plchanges", &MPDInterface::handlePlChangesCommand, false},
   {"idle", &MPDInterface::handleIdleCommand, true},
   {"noidle", &MPDInterface::handleNoIdleCommand, true},
@@ -1681,10 +1680,9 @@ void MPDInterface::handleIdleMode() {
     currentTitleHash = currentTitleHash * 31 + streamTitleRef[i];
   }
   // Check for status changes using hash computation
-  // Combines playing status (boolean), volume (0-22), and bitrate (kbps) into a single hash
+  // Combines playing status (boolean) and volume (0-22) into a single hash
   unsigned long currentStatusHash = isPlayingRef ? 1 : 0;
   currentStatusHash = currentStatusHash * 31 + volumeRef;
-  currentStatusHash = currentStatusHash * 31 + bitrateRef;
   // Prepare to send idle response if changes detected
   bool sendIdleResponse = false;
   String idleChanges = "";
