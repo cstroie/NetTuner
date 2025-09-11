@@ -808,8 +808,8 @@ void MPDInterface::handlePlaylistInfoCommand(const String& args) {
  * - File URI (stream URL)
  * - Artist name (parsed from title or "WebRadio" default)
  * - Track title (parsed from title or stream name)
- * - Position (1-based index)
- * - ID (1-based index)
+ * - Position (0-based index)
+ * - ID (0-based index)
  * 
  * @param args Command arguments (not used for currentsong command)
  */
@@ -834,8 +834,8 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
       // No stream title, use stream name as fallback
       mpdClient.print("Title: " + String(this->player.getStreamName()) + "\n");
     }
-    mpdClient.print("Id: " + String(this->player.getPlaylistIndex() + 1) + "\n");
-    mpdClient.print("Pos: " + String(this->player.getPlaylistIndex() + 1) + "\n");
+    mpdClient.print("Id: " + String(this->player.getPlaylistIndex()) + "\n");
+    mpdClient.print("Pos: " + String(this->player.getPlaylistIndex()) + "\n");
   }
   mpdClient.print(mpdResponseOK());
 }
