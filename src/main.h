@@ -85,10 +85,6 @@ extern char password[MAX_WIFI_NETWORKS][64];
 extern int wifiNetworkCount;
 
 
-#include "player.h"
-
-extern Player player;
-
 // Forward declarations for global functions
 void updateDisplay();
 void sendStatusToClients();
