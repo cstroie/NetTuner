@@ -34,18 +34,21 @@ struct StreamInfoData {
   int bitrate;
 };
 
-// Document this, AI!
+/**
+ * @brief Player state structure
+ * Contains all the state information for the player
+ */
 struct PlayerState {
-  bool playing;
-  int volume;
-  int bass;
-  int mid;
-  int treble;
-  int playlistIndex;
-  unsigned long lastSaveTime;
-  bool dirty;
-  unsigned long playStartTime;
-  unsigned long totalPlayTime;
+  bool playing;           ///< Current playback status (true = playing, false = stopped)
+  int volume;            ///< Current volume level (0-22, ESP32-audioI2S scale)
+  int bass;              ///< Bass tone control (-10 to 10)
+  int mid;               ///< Mid tone control (-10 to 10)
+  int treble;            ///< Treble tone control (-10 to 10)
+  int playlistIndex;     ///< Current selected playlist index
+  unsigned long lastSaveTime; ///< Timestamp of last state save
+  bool dirty;            ///< Flag indicating if state has changed and needs saving
+  unsigned long playStartTime; ///< Timestamp when current playback started
+  unsigned long totalPlayTime; ///< Total playback time in seconds
 };
 
 // Forward declaration
