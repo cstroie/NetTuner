@@ -20,7 +20,7 @@
 #include "playlist.h"
 #include "main.h"
 #include <ArduinoJson.h>
-#include <ESP32-audioI2S.h>
+#include <Audio.h>
 
 /**
  * @brief Player constructor
