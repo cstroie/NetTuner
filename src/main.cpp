@@ -38,8 +38,6 @@ int wifiNetworkCount = 0;
 WebServer server(80);
 WebSocketsServer webSocket(81);
 WiFiServer mpdServer(6600);
-volatile bool isPlaying = false;
-unsigned long lastActivityTime = 0;
 unsigned long startTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 String previousStatus = "";
@@ -783,30 +781,6 @@ void audioTask(void *pvParameters) {
 }
 
 
-
-
-/**
- * @brief Load playlist from SPIFFS storage
- * Reads playlist.json from SPIFFS and populates the playlist array
- * This function loads the playlist from SPIFFS with error recovery mechanisms.
- * If the playlist file is corrupted, it creates a backup and a new empty playlist.
- */
-void loadPlaylist() {
-  player.loadPlaylist();
-}
-
-/**
- * @brief Save playlist to SPIFFS storage
- * Serializes the current playlist array to playlist.json
- * This function saves the current playlist to SPIFFS with backup functionality.
- * It creates a backup before saving and restores from backup if saving fails.
- */
-void savePlaylist() {
-  player.savePlaylist();
-}
-
-
-
 /**
  * @brief Handle rotary encoder input
  * Processes rotation and button press events from the rotary encoder
@@ -1372,7 +1346,7 @@ void handleMixer() {
     sendJsonResponse("error", "Missing data: volume, bass, mid, or treble");
     return;
   }
-  bool updated = false;
+  bool toneUpdated = false;
   // Handle volume setting
   if (doc.containsKey("volume")) {
     int newVolume;
@@ -1387,7 +1361,6 @@ void handleMixer() {
       return;
     }
     player.setVolume(newVolume);
-    updated = true;
   }
   // Handle bass setting
   if (doc.containsKey("bass")) {
@@ -1402,7 +1375,7 @@ void handleMixer() {
       return;
     }
     player.setBass(newBass);
-    updated = true;
+    toneUpdated = true;
   }
   // Handle mid setting
   if (doc.containsKey("mid")) {
@@ -1417,7 +1390,7 @@ void handleMixer() {
       return;
     }
     player.setMid(newMid);
-    updated = true;
+    toneUpdated = true;
   }
   // Handle treble setting
   if (doc.containsKey("treble")) {
@@ -1432,17 +1405,11 @@ void handleMixer() {
       return;
     }
     player.setTreble(newTreble);
-    updated = true;
+    toneUpdated = true;
   }
-  // Check if any parameters were provided
-  if (!updated) {
-    sendJsonResponse("error", "Missing required parameter: volume, bass, mid, or treble");
-    return;
-  }
-  // Apply tone settings to audio using the Audio library's setTone function
-  if (player.getAudio() && (doc.containsKey("bass") || doc.containsKey("mid") || doc.containsKey("treble"))) {
-    // For setTone: gainLowPass (bass), gainBandPass (mid), gainHighPass (treble)
-    player.getAudio()->setTone(player.getBass(), player.getMid(), player.getTreble());
+  // Apply tone settings to audio
+  if (toneUpdated) {
+    player.setTone();
   }
   // Update display and notify clients
   updateDisplay();
@@ -1686,7 +1653,7 @@ void updateDisplay() {
  * Mounts SPIFFS filesystem with error recovery mechanisms
  * @return true if successful, false otherwise
  */
-bool initializeSPIFFS() {
+bool initSPIFFS() {
   // Initialize SPIFFS with error recovery
   if (!SPIFFS.begin(true)) {
     Serial.println("An Error has occurred while mounting SPIFFS");
@@ -1838,9 +1805,6 @@ bool connectToWiFi() {
  * This is the main application loop that runs continuously after setup()
  */
 void loop() {
-  static unsigned long streamStoppedTime = 0;
-  static unsigned long lastNetworkCheck = 0;
-  
   handleRotary();          // Process rotary encoder input
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
@@ -1855,10 +1819,11 @@ void loop() {
   }
   
   // Check audio connection status with improved error recovery
-  if (player.getAudio()) {
+  static unsigned long streamStoppedTime = 0;
+  if (player.getAudioObject()) {
     // Check if audio is still connected
-    if (isPlaying) {
-      if (!player.getAudio()->isRunning()) {
+    if (player.isPlaying()) {
+      if (!player.isRunning()) {
         Serial.println("Audio stream stopped unexpectedly");
         // Attempt to restart the stream if it was playing
         if (strlen(player.getStreamUrl()) > 0) {
@@ -1870,20 +1835,17 @@ void loop() {
           } else if (millis() - streamStoppedTime >= 1000) {
             // 1 second has passed, attempt to restart
             Serial.println("Attempting to restart stream...");
-            // With the updated startStream function, we can now call it
-            // without parameters to resume the current stream
+            // Resume the current stream
             player.startStream();
-            streamStoppedTime = 0; // Reset the timer
+            // Reset the timer
+            streamStoppedTime = 0;
           }
         }
       } else {
-        // Stream is running, reset the stopped time
+        // Stream is running
         streamStoppedTime = 0;
-        // Update bitrate if it has changed
-        int newBitrate = player.getAudio()->getBitRate() / 1000;  // Convert bps to kbps
-        if (newBitrate > 0 && newBitrate != player.getBitrate()) {
-          player.setBitrate(newBitrate);
-        }
+        // Update the bitrate if it has changed
+        player.updateBitrate();
       }
 
       // Send status to clients every 2 seconds instead of 1 to reduce load
@@ -1894,6 +1856,7 @@ void loop() {
           // Send minimal status update
           sendStatusToClients(true);
         }
+        // Update the timestamp
         lastStatusUpdate = millis();
       }
     }
@@ -1903,7 +1866,8 @@ void loop() {
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 30000) {  // Every 30 seconds
     lastCleanup = millis();
-    
+    // Cleanup stale network connections, AI!
+
     // Check WiFi status and reconnect if needed
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
       connectToWiFi();
@@ -1911,8 +1875,8 @@ void loop() {
   }
   
   // Handle display timeout
-  display.handleTimeout(isPlaying, millis());
-  
+  display.handleTimeout(player.isPlaying(), millis());
+
   // Small delay to prevent busy waiting and reduce network load
   delay(100);  // Increased from 50 to 100
 }
@@ -1929,10 +1893,8 @@ void setup() {
   Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
-  // Initialize start time for uptime tracking
-  startTime = millis() / 1000;  // Store in seconds
   // Initialize SPIFFS with error recovery
-  if (!initializeSPIFFS()) {
+  if (!initSPIFFS()) {
     Serial.println("ERROR: Failed to initialize SPIFFS");
     return;
   }
@@ -1980,37 +1942,29 @@ void setup() {
   // Setup rotary encoder with error handling
   setupRotaryEncoder();
   // Load playlist with error recovery
-  loadPlaylist();
-
+  player.loadPlaylist();
   // Validate loaded playlist
   player.getPlaylist()->validate();
-  
-  // Load player state
+    // Load player state
   player.loadPlayerState();
-  
-  // Setup web server routes
+    // Setup web server routes
   setupWebServer();
- 
-  // Start server
+   // Start server
   server.begin();
   Serial.println("Web server started");
-  
-  // Setup WebSocket server
+    // Setup WebSocket server
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
-  
-  // Start MPD server
+    // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");
-  
-  // Create audio task on core 0 with error checking
+    // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
   if (result != pdPASS) {
     Serial.println("ERROR: Failed to create AudioTask");
   } else {
     Serial.println("AudioTask created successfully");
   }
-  
-  // Update display
+    // Update display
   updateDisplay();
 }
