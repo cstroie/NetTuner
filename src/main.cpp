@@ -2227,3 +2227,48 @@ void setup() {
   // Update display
   updateDisplay();
 }
+
+/**
+ * @brief Load player state from SPIFFS
+ * This function reads player state from player.json in SPIFFS and applies it
+ */
+void loadPlayerState() {
+  player.loadPlayerState();
+}
+
+/**
+ * @brief Save player state to SPIFFS
+ * This function saves the current player state to player.json in SPIFFS
+ */
+void savePlayerState() {
+  player.savePlayerState();
+}
+
+/**
+ * @brief Mark player state as dirty (needs saving)
+ * This function marks the player state as dirty so it will be saved
+ */
+void markPlayerStateDirty() {
+  player.markPlayerStateDirty();
+}
+
+/**
+ * @brief Start streaming an audio stream
+ * Stops any currently playing stream and begins playing a new one
+ * If called without parameters, resumes playback of streamURL if available
+ * @param url URL of the audio stream to play (optional)
+ * @param name Human-readable name of the stream (optional)
+ */
+void startStream(const char* url, const char* name) {
+  player.startStream(url, name);
+}
+
+/**
+ * @brief Stop the currently playing stream
+ * Cleans up audio components and resets playback state
+ * This function stops audio playback, clears stream information, and resets
+ * the playback state to stopped.
+ */
+void stopStream() {
+  player.stopStream();
+}

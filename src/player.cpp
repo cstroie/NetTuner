@@ -258,7 +258,7 @@ void Player::startStream(const char* url, const char* name) {
       isPlaying = false;
       bitrate = 0;
     } else {
-      isPlaying = true;
+      playerState.playing = true;
       Serial.println("Successfully connected to audio stream");
     }
   }
@@ -277,7 +277,7 @@ void Player::stopStream() {
   if (audio) {
     audio->stopSong();
   }
-  isPlaying = false;             // Set playback status to stopped
+  playerState.playing = false;             // Set playback status to stopped
   streamInfo.url[0] = '\0';       // Clear current stream URL
   streamInfo.name[0] = '\0';   // Clear current stream name
   streamInfo.title[0] = '\0';         // Clear stream title
