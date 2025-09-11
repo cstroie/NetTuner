@@ -1125,7 +1125,7 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     int volumeChange = parseValue(args);
     
     // Get current volume as percentage for MPD compatibility
-    int currentVolPercent = map(volumeRef, 0, 22, 0, 100);
+    int currentVolPercent = map(player.getVolume(), 0, 22, 0, 100);
     
     // Apply change and clamp to 0-100 range
     int newVolPercent = currentVolPercent + volumeChange;
@@ -1133,10 +1133,8 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     if (newVolPercent > 100) newVolPercent = 100;
     
     // Convert back to 0-22 scale for ESP32-audioI2S and set
-    volumeRef = map(newVolPercent, 0, 100, 0, 22);
-    if (audioRef) {
-      audioRef->setVolume(volumeRef);  // ESP32-audioI2S uses 0-22 scale
-    }
+    int newVolume = map(newVolPercent, 0, 100, 0, 22);
+    player.setVolume(newVolume);
     updateDisplay();
     sendStatusToClients();  // Notify WebSocket clients of volume change
     mpdClient.print(mpdResponseOK());
