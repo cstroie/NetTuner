@@ -33,20 +33,20 @@ struct StreamInfoData {
   char iconUrl[256];
 };
 
+struct PlayerState {
+  bool playing;
+  int volume;
+  int bass;
+  int mid;
+  int treble;
+  int playlistIndex;
+  unsigned long lastSaveTime;
+  bool dirty;
+};
+
 // Player class declaration
 class Player {
 private:
-  struct PlayerState {
-    bool playing;
-    int volume;
-    int bass;
-    int mid;
-    int treble;
-    int playlistIndex;
-    unsigned long lastSaveTime;
-    bool dirty;
-  };
-  
   PlayerState playerState;
   StreamInfoData streamInfo;
   int bitrate;
@@ -70,6 +70,15 @@ public:
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return bitrate; }
   
+  // Setters
+  void setPlaying(bool playing) { playerState.playing = playing; }
+  void setVolume(int volume);
+  void setBass(int bass) { playerState.bass = bass; }
+  void setMid(int mid) { playerState.mid = mid; }
+  void setTreble(int treble) { playerState.treble = treble; }
+  void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
+  void setBitrate(int newBitrate) { bitrate = newBitrate; }
+  
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }
@@ -85,14 +94,6 @@ public:
   void setStreamIconUrl(const char* iconUrl);
   void clearStreamInfo();
   
-  // Setters
-  void setPlaying(bool playing) { playerState.playing = playing; }
-  void setVolume(int volume);
-  void setBass(int bass) { playerState.bass = bass; }
-  void setMid(int mid) { playerState.mid = mid; }
-  void setTreble(int treble) { playerState.treble = treble; }
-  void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
-  void setBitrate(int newBitrate) { bitrate = newBitrate; }
   
   // Audio control methods
   void startStream(const char* url = nullptr, const char* name = nullptr);

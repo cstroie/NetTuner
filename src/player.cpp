@@ -23,9 +23,7 @@
 // External variables from main.cpp
 extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
 extern int playlistCount;
-extern int currentSelection;
 extern Audio* audio;
-extern volatile bool isPlaying;
 
 /**
  * @brief Player constructor
@@ -168,12 +166,12 @@ void Player::loadPlayerState() {
  */
 void Player::savePlayerState() {
   DynamicJsonDocument doc(512);
-  doc["playing"] = isPlaying;
+  doc["playing"] = playerState.playing;
   doc["volume"] = playerState.volume;
   doc["bass"] = playerState.bass;
   doc["mid"] = playerState.mid;
   doc["treble"] = playerState.treble;
-  doc["playlistIndex"] = currentSelection;
+  doc["playlistIndex"] = playerState.playlistIndex;
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
     playerState.dirty = false;
@@ -246,7 +244,7 @@ void Player::startStream(const char* url, const char* name) {
     streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
   }
   // Set playback status to playing
-  isPlaying = true;
+  playerState.playing = true;
   // Track play time
   // Turn on LED when playing
   digitalWrite(config.led_pin, HIGH);
@@ -255,7 +253,7 @@ void Player::startStream(const char* url, const char* name) {
     bool audioConnected = audio->connecttohost(url);
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
-      isPlaying = false;
+      playerState.playing = false;
       bitrate = 0;
     } else {
       playerState.playing = true;
