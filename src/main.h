@@ -101,7 +101,6 @@ extern Player player;
 // Forward declarations for global functions
 void updateDisplay();
 void sendStatusToClients();
-void setupAudioOutput();
 void loadPlaylist();
 void savePlaylist();
 void handleRotary();
@@ -111,11 +110,6 @@ void loadConfig();
 void saveConfig();
 void loadWiFiCredentials();
 void saveWiFiCredentials();
-void loadPlayerState();
-void savePlayerState();
-void markPlayerStateDirty();
-void startStream(const char* url = nullptr, const char* name = nullptr);
-void stopStream();
 
 // Web server handlers
 void handleSimpleWebPage();
