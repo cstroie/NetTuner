@@ -1228,9 +1228,9 @@ void MPDInterface::handlePlayCommand(const String& args) {
   int playlistIndex = -1;
   if (args.length() > 0) {
     // Convert to 0-based index
-    playlistIndex = parseValue(args) - 1;
+    playlistIndex = parseValue(args);
     // Validate index if provided
-    if (playlistIndex < -1 || playlistIndex >= this->player.getPlaylistCount()) {
+    if (playlistIndex < 0 || playlistIndex > this->player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
