@@ -105,6 +105,9 @@ public:
   // Audio control methods
   void startStream(const char* url = nullptr, const char* name = nullptr);
   void stopStream();
+  
+  // Audio setup method
+  void setupAudioOutput();
 };
 
 #endif // PLAYER_H

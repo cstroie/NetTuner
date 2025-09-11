@@ -776,19 +776,6 @@ void handlePostConfig() {
 }
 
 
-/**
- * @brief Initialize audio output interface
- * Configures the selected audio output method
- * This function initializes the ESP32-audioI2S library with I2S pin configuration
- * and sets up the audio buffer with an increased size for better performance.
- */
-void setupAudioOutput() {
-  // Initialize ESP32-audioI2S
-  audio = new Audio(false); // false = use I2S, true = use DAC
-  audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
-  audio->setVolume(player.getVolume()); // Use 0-22 scale directly
-  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
-}
 
 /**
  * @brief Audio task function
@@ -2174,7 +2161,7 @@ void setup() {
   }
   
   // Setup audio output with error handling
-  setupAudioOutput();
+  player.setupAudioOutput();
   // Setup rotary encoder with error handling
   setupRotaryEncoder();
   // Load playlist with error recovery
