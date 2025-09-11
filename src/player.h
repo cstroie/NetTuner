@@ -34,6 +34,12 @@ struct StreamInfoData {
   int bitrate;
 };
 
+// Structure for playlist items
+struct StreamInfo {
+  char name[128];
+  char url[256];
+};
+
 struct PlayerState {
   bool playing;
   int volume;

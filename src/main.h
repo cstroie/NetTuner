@@ -43,12 +43,6 @@ class MPDInterface;
 class WiFiClient;
 class Display;  // Forward declaration for Display class
 
-// Structure declarations
-struct StreamInfo {
-  char name[128];
-  char url[256];
-};
-
 // Configuration structure
 struct Config {
   int i2s_dout;        ///< I2S Data Out pin
