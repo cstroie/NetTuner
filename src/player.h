@@ -52,6 +52,8 @@ class Player {
 private:
   PlayerState playerState;
   StreamInfoData streamInfo;
+  StreamInfo playlist[MAX_PLAYLIST_SIZE];
+  int playlistCount;
   Audio* audio;
   
 public:
@@ -73,10 +75,14 @@ public:
   int getMid() const { return playerState.mid; }
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
+  int getPlaylistCount() const { return playlistCount; }
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
+  
+  // Playlist getters
+  const StreamInfo& getPlaylistItem(int index) const { return playlist[index]; }
   
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
@@ -107,6 +113,13 @@ public:
   void setStreamIconUrl(const char* iconUrl);
   void clearStreamInfo();
   
+  // Playlist methods
+  void loadPlaylist();
+  void savePlaylist();
+  void setPlaylistItem(int index, const char* name, const char* url);
+  void addPlaylistItem(const char* name, const char* url);
+  void removePlaylistItem(int index);
+  void clearPlaylist();
   
   // Audio control methods
   void startStream(const char* url = nullptr, const char* name = nullptr);

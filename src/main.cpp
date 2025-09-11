@@ -34,7 +34,7 @@ MPDInterface mpdInterface(mpdServer,
   const_cast<char*>(player.getStreamTitle()), 
   const_cast<char*>(player.getStreamName()), 
   const_cast<char*>(player.getStreamUrl()),
-  player.isPlaying(), player.getVolume(), player.getBitrate(), playlistCount, player.getPlaylistIndex(), playlist, player.getAudio());
+  player.isPlaying(), player.getVolume(), player.getBitrate(), player.getPlaylistCount(), player.getPlaylistIndex(), nullptr, player.getAudio());
 
 
 /**
@@ -175,8 +175,6 @@ String previousStatus = "";
 Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
 Display display(displayOLED);
 RotaryEncoder rotaryEncoder;
-StreamInfo playlist[MAX_PLAYLIST_SIZE];
-int playlistCount = 0;
 TaskHandle_t audioTaskHandle = NULL;
 
 Player player;
@@ -948,8 +946,8 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
-        if (playlistCount > 0) {
-          player.setPlaylistIndex((player.getPlaylistIndex() + 1) % playlistCount);
+        if (player.getPlaylistCount() > 0) {
+          player.setPlaylistIndex((player.getPlaylistIndex() + 1) % player.getPlaylistCount());
         }
       }
     } else if (diff < 0) {
@@ -961,8 +959,8 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
-        if (playlistCount > 0) {
-          player.setPlaylistIndex((player.getPlaylistIndex() - 1 + playlistCount) % playlistCount);
+        if (player.getPlaylistCount() > 0) {
+          player.setPlaylistIndex((player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount());
         }
       }
     }
@@ -981,10 +979,10 @@ void handleRotary() {
       updateDisplay(); // Turn display back on and update
     }
     // Only process if we have playlist items
-    if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
-      if (!player->isPlaying()) {
+    if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+      if (!player.isPlaying()) {
         // If not playing, start playback of selected stream
-        player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
+        player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
         sendStatusToClients();  // Notify clients of status change
       }
     }
@@ -1007,25 +1005,25 @@ void handleSimpleWebPage() {
       // Perform action based on form input
       if (action == "play") {
         // Play selected stream
-        if (server.hasArg("stream") && playlistCount > 0) {
+        if (server.hasArg("stream") && player.getPlaylistCount() > 0) {
           int streamIndex = server.arg("stream").toInt();
-          if (streamIndex >= 0 && streamIndex < playlistCount) {
+          if (streamIndex >= 0 && streamIndex < player.getPlaylistCount()) {
             // Stop playback
             player.stopStream();
             // Play selected stream
             player.setPlaylistIndex(streamIndex);
-            player.startStream(playlist[streamIndex].url, playlist[streamIndex].name);
+            player.startStream(player.getPlaylistItem(streamIndex).url, player.getPlaylistItem(streamIndex).name);
           }
         } else if (strlen(player.getStreamUrl()) > 0) {
           // Stop current playback
           player.stopStream();
           // Resume current stream
           player.startStream();
-        } else if (playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
+        } else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
           // Stop playback
           player.stopStream();
           // Play currently selected stream
-          player.startStream(playlist[player.getPlaylistIndex()].url, playlist[player.getPlaylistIndex()].name);
+          player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
         }
       } else if (action == "stop") {
         // Stop playback
@@ -1079,9 +1077,9 @@ void handleSimpleWebPage() {
     html += "<p><b>Current Stream:</b> ";
     html += player.getStreamName();
     html += "</p>";
-  } else if (!player.isPlaying() && playlistCount > 0 && player.getPlaylistIndex() < playlistCount) {
+  } else if (!player.isPlaying() && player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
     html += "<p><b>Selected Stream:</b> ";
-    html += playlist[player.getPlaylistIndex()].name;
+    html += player.getPlaylistItem(player.getPlaylistIndex()).name;
     html += "</p>";
   }
   html += R"rawliteral(</section>
@@ -1111,18 +1109,18 @@ void handleSimpleWebPage() {
 <h2>Playlist</h2>
 )rawliteral";
   // Show stream selection dropdown if we have a playlist
-  if (playlistCount > 0) {
+  if (player.getPlaylistCount() > 0) {
     html += R"rawliteral(<form method='post'>
 <label for='stream'>Select Stream:</label>
 <select name='stream' id='stream'>
 )rawliteral";
     // Populate the dropdown with available streams
-    for (int i = 0; i < playlistCount; i++) {
+    for (int i = 0; i < player.getPlaylistCount(); i++) {
       html += "<option value='" + String(i) + "'";
       if (i == player.getPlaylistIndex()) {
         html += " selected";
       }
-      html += ">" + String(playlist[i].name) + "</option>";
+      html += ">" + String(player.getPlaylistItem(i).name) + "</option>";
     }
     // Close the select and form
     html += R"rawliteral(</select>
@@ -1352,13 +1350,13 @@ void handlePlayer() {
     // Handle case where only index is provided
     if (url.length() == 0 && name.length() == 0 && index >= 0) {
       // Validate index
-      if (index >= playlistCount) {
+      if (index >= player.getPlaylistCount()) {
         sendJsonResponse("error", "Invalid playlist index");
         return;
       }
       // Extract stream data from playlist
-      url = String(playlist[index].url);
-      name = String(playlist[index].name);
+      url = String(player.getPlaylistItem(index).url);
+      name = String(player.getPlaylistItem(index).name);
       player.setPlaylistIndex(index);
     } 
     // Handle case where URL is provided (with optional name)

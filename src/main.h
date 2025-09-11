@@ -84,8 +84,6 @@ extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
 extern WiFiClient mpdClient;
 extern Display display;
-extern StreamInfo playlist[MAX_PLAYLIST_SIZE];
-extern int playlistCount;
 extern int currentSelection;
 extern TaskHandle_t audioTaskHandle;
 extern char ssid[MAX_WIFI_NETWORKS][64];
