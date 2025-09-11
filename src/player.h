@@ -25,6 +25,7 @@
 class Audio;
 
 // Stream information variables
+// Document this, AI!
 struct StreamInfoData {
   char url[256];
   char name[128];
