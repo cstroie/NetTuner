@@ -34,7 +34,7 @@ MPDInterface mpdInterface(mpdServer,
   const_cast<char*>(player.getStreamTitle()), 
   const_cast<char*>(player.getStreamName()), 
   const_cast<char*>(player.getStreamUrl()),
-  isPlaying, player.getVolume(), bitrate, playlistCount, currentSelection, playlist, audio);
+  player.isPlaying(), player.getVolume(), player.getBitrate(), playlistCount, player.getPlaylistIndex(), playlist, audio);
 
 
 /**
@@ -49,8 +49,6 @@ void audio_showstreamtitle(const char *info) {
     // Update stream title if it has changed
     if (strcmp(player.getStreamTitle(), info) != 0) {
       player.setStreamTitle(info);
-      updateDisplay();
-      // Notify clients of stream title change
       sendStatusToClients();
     }
   }
@@ -68,8 +66,6 @@ void audio_showstation(const char *info) {
     // Update current stream name if it has changed and we're not already using a custom name
     if (strcmp(player.getStreamName(), info) != 0) {
       player.setStreamName(info);
-      updateDisplay();
-      // Notify clients of station name change
       sendStatusToClients();
     }
   }
@@ -89,8 +85,6 @@ void audio_bitrate(const char *info) {
     // Update bitrate if it has changed
     if (newBitrate > 0 && newBitrate != bitrate) {
       bitrate = newBitrate;
-      updateDisplay();
-      // Don't send status immediately, it will be sent by the periodic update
     }
   }
 }
@@ -134,7 +128,6 @@ void audio_icyurl(const char *info) {
   if (info && strlen(info) > 0) {
     Serial.print("ICY URL: ");
     Serial.println(info);
-    // Store the ICY URL for later use
     player.setStreamIcyUrl(info);
   }
 }
