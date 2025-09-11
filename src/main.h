@@ -135,7 +135,5 @@ bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument&
 bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
 
 
-// Timestamp
-#define BUILD_TIME_UNIX 1757065455
 
 #endif // MAIN_H
