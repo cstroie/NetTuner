@@ -76,10 +76,10 @@ int yStatus[OLED_COUNT][4] = {
  * sets the display to on state, and initializes the activity time to 0.
  * 
  * @param display Reference to Adafruit_SSD1306 display instance
- * @param display_type Type of display being used
+ * @param displayTypeEnum Type of display being used
  */
-Display::Display(Adafruit_SSD1306& display, enum display_t display_type) : 
-    displayRef(display), displayOn(true), lastActivityTime(0), displayType(display_type) {}
+Display::Display(Adafruit_SSD1306& display, enum display_t displayTypeEnum) : 
+    displayRef(display), displayOn(true), lastActivityTime(0), displayType(displayTypeEnum) {}
 
 /**
  * @brief Initialize the display

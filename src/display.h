@@ -107,9 +107,9 @@ public:
      * @brief Construct a new Display object
      * 
      * @param display Reference to Adafruit_SSD1306 display instance
-     * @param display_type Type of display being used
+     * @param displayTypeEnum Type of display being used
      */
-    Display(Adafruit_SSD1306& display, enum display_t display_type);
+    Display(Adafruit_SSD1306& display, enum display_t displayTypeEnum);
     
     /**
      * @brief Initialize the display
