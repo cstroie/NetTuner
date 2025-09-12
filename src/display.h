@@ -58,7 +58,9 @@ public:
      */
     void begin();
     
-    void setFontCursor(int x, int y, char c);
+    void setFontCursor(const char* text, int x, int y, char align);
+
+    void setFontCursor(const String text, int x, int y, char align);
     
     /**
      * @brief Update display with current playback information
