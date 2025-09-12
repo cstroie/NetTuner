@@ -1746,7 +1746,8 @@ bool connectToWiFi() {
     WiFi.setHostname("NetTuner");
     // First, scan for available networks
     Serial.println("Scanning for available WiFi networks...");
-    display->showStatus("WiFi scanning", "", "");
+    //display->showStatus("WiFi scanning", "", "");
+    display->showLogo();
     int n = WiFi.scanNetworks();
     Serial.printf("Found %d networks\n", n);
     // Create array to track which configured networks are available

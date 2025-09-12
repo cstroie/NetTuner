@@ -27,7 +27,7 @@ extern Config config;
 
 int lineY[2][4] = {
     {12, -1, 28, -1},     // 128x32
-    {12, 30, 45, 62}    // 128x64 
+    {12, 30, 45, 62}      // 128x64 
 };
 
 
@@ -140,17 +140,17 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            displayRef.setCursor(16, lineY[OLED_128x64][0]);
+            displayRef.setCursor(16, lineY[displayType][0]);
             displayRef.print(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars));
         } else {
             // Display title without scrolling for short titles
-            displayRef.setCursor(16, lineY[OLED_128x64][0]);
+            displayRef.setCursor(16, lineY[displayType][0]);
             displayRef.print(title);
         }
         
-        if (displayType == OLED_128x64) {
+        if (lineY[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
-            displayRef.setCursor(0, lineY[OLED_128x64][1]);
+            displayRef.setCursor(0, lineY[displayType][1]);
             String stationName = String(streamName);
             // 16 chars fit on a 128px display
             if (stationName.length() > 16) {
@@ -160,38 +160,43 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             }
         }
         
-        // Display volume and bitrate on third line (only for displays with sufficient height)
-        if (config.display_height >= 32) {
+        if (lineY[displayType][2] > 0) {
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            displayRef.setCursor(0, lineY[OLED_128x64][2]);
+            displayRef.setCursor(0, lineY[displayType][2]);
             displayRef.print(volStr);
             
             // Display bitrate on the same line if available
             if (bitrate > 0) {
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
-                displayRef.getTextBounds(bitrateStr, 0, lineY[OLED_128x64][2], &x1, &y1, &w, &h);
-                displayRef.setCursor(displayRef.width() - w - 1, 45);
+                displayRef.getTextBounds(bitrateStr, 0, lineY[displayType][2], &x1, &y1, &w, &h);
+                displayRef.setCursor(displayRef.width() - w - 1, lineY[displayType][2]);
                 displayRef.print(bitrateStr);
             }
+        }
             
+        if (lineY[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            displayRef.getTextBounds(ipString, 0, lineY[OLED_128x64][3], &x1, &y1, &w, &h);
+            displayRef.getTextBounds(ipString, 0, lineY[displayType][3], &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
             // Center the IP address
-            displayRef.setCursor(x, 62);
+            displayRef.setCursor(x, lineY[displayType][3]);
             displayRef.print(ipString);
         }
     } else {
-        // Display when stopped - show NetTuner title and current selection
-        displayRef.setCursor(32, 12);
-        displayRef.print("NetTuner");
-        
+        // Display when stopped
+        int lineStream = 0;
+        if (lineY[displayType][1] > 0) {
+            displayRef.setCursor(32, lineY[displayType][0]);
+            displayRef.print("NetTuner");
+            lineStream = 1;
+        }
+            
         // Display current stream name (second line) or "No stream" if none selected
-        displayRef.setCursor(0, 30);
+        displayRef.setCursor(0, lineY[displayType][lineStream]);
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
             // 16 chars fit on a 128px display
@@ -202,24 +207,26 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             }
         } else {
             // No stream is currently found in playlist
-            displayRef.setCursor(0, 30);
+            displayRef.setCursor(0, lineY[displayType][lineStream]);
             displayRef.print("No stream");
         }
         
         // Display volume on third line (only for displays with sufficient height)
-        if (config.display_height >= 32) {
+        if (lineY[displayType][2] > 0) {
             // Display volume level
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            displayRef.setCursor(0, 45);
+            displayRef.setCursor(0, lineY[displayType][2]);
             displayRef.print(volStr);
-            
+        }
+
+        if (lineY[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            displayRef.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
+            displayRef.getTextBounds(ipString, 0, lineY[displayType][3], &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
             // Center the IP address
-            displayRef.setCursor(x, 62);
+            displayRef.setCursor(x, lineY[displayType][3]);
             displayRef.print(ipString);
         }
     }
@@ -268,33 +275,33 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     displayRef.setTextColor(SSD1306_WHITE);
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
-        displayRef.setCursor(32, lineY[OLED_128x64][0]);
+        displayRef.setCursor(32, lineY[displayType][0]);
         displayRef.print("NetTuner");
         // Display each line if it contains content
         if (line1.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x64][1]);
+            displayRef.setCursor(0, lineY[displayType][1]);
             displayRef.print(line1);
         }
         if (line2.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x64][2]);
+            displayRef.setCursor(0, lineY[displayType][2]);
             displayRef.print(line2);
         }
         if (line3.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x64][3]);
+            displayRef.setCursor(0, lineY[displayType][3]);
             displayRef.print(line3);
         }
     } else {
         // Display first line
         if (line1.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x32][0]);
+            displayRef.setCursor(0, lineY[displayType][0]);
             displayRef.print(line1);
         }
         // Displey the second or third line if they have contemt
         if (line2.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x32][1]);
+            displayRef.setCursor(0, lineY[displayType][2]);
             displayRef.print(line2);
         } else if (line3.length() > 0) {
-            displayRef.setCursor(0, lineY[OLED_128x32][1]);
+            displayRef.setCursor(0, lineY[displayType][2]);
             displayRef.print(line3);
         }
     }
