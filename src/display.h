@@ -23,13 +23,49 @@
 #include <Adafruit_SSD1306.h>
 
 
+/**
+ * @brief Display types supported by the system
+ * 
+ * Enumeration of all supported OLED display types with their dimensions
+ */
 enum display_t {OLED_128x64, OLED_128x32, OLED_128x32s, OLED_COUNT};
+
+/**
+ * @brief Array of display type names
+ * 
+ * Human-readable names for each display type, indexed by display_t values
+ */
 extern char* displayNames[OLED_COUNT];
+
+/**
+ * @brief Y-coordinate arrays for update display
+ * 
+ * Predefined Y-coordinates for different display types and lines
+ * Format: [display_type][line_number] where line_number 0-3
+ */
 extern int yUpdate[OLED_COUNT][4];
+
+/**
+ * @brief Y-coordinate arrays for status display
+ * 
+ * Predefined Y-coordinates for different display types and lines in status mode
+ * Format: [display_type][line_number] where line_number 0-3
+ */
 extern int yStatus[OLED_COUNT][4];
 
-// Display type information functions
+/**
+ * @brief Get the number of configured display types
+ * 
+ * @return int Number of display types available in the system
+ */
 int getDisplayTypeCount();
+
+/**
+ * @brief Get the name of a display type by index
+ * 
+ * @param index Display type index (0 to OLED_COUNT-1)
+ * @return const char* Name of the display type, or nullptr if index is invalid
+ */
 const char* getDisplayTypeName(int index);
 
 

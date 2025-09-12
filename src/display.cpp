@@ -25,18 +25,37 @@
 
 extern Config config;
 
+/**
+ * @brief Array of display type names
+ * 
+ * Human-readable names for each display type, indexed by display_t values
+ */
 char* displayNames[OLED_COUNT] = {
     (char*)"128x64 (4 lines)", 
     (char*)"128x32 (2 lines)", 
     (char*)"128x32 (3 lines)"
 };
 
+/**
+ * @brief Y-coordinate arrays for update display
+ * 
+ * Predefined Y-coordinates for different display types and lines
+ * Format: [display_type][line_number] where line_number 0-3
+ * Value of -1 indicates line is not used for that display type
+ */
 int yUpdate[OLED_COUNT][4] = {
     {12, 30, 45, 62},     // 128x64 
     {12, -1, 28, -1},     // 128x32
     {12, -1, 22, 31}      // 128x32 small font
 };
 
+/**
+ * @brief Y-coordinate arrays for status display
+ * 
+ * Predefined Y-coordinates for different display types and lines in status mode
+ * Format: [display_type][line_number] where line_number 0-3
+ * Value of -1 indicates line is not used for that display type
+ */
 int yStatus[OLED_COUNT][4] = {
     {12, 30, 45, 62},     // 128x64 
     {12, -1, 28, -1},     // 128x32
