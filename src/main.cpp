@@ -1892,7 +1892,7 @@ void loop() {
   }
   
   // Handle display timeout with configurable timeout value
-  display->handleTimeout(player.isPlaying(), millis(), config.display_timeout);
+  display->handleTimeout(player.isPlaying(), millis());
 
   // Small delay to prevent busy waiting and reduce network load
   delay(100);  // Increased from 50 to 100
