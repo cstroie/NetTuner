@@ -37,6 +37,9 @@ enum display_t {OLED_128x64, OLED_128x32, OLED_128x32s, OLED_COUNT};
  */
 extern char* displayNames[OLED_COUNT];
 
+extern int displaySizes[OLED_COUNT][2];
+
+
 /**
  * @brief Y-coordinate arrays for update display
  * 

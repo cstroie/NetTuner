@@ -36,6 +36,12 @@ char* displayNames[OLED_COUNT] = {
     (char*)"128x32 (3 lines)"
 };
 
+int displaySizes[OLED_COUNT][2] = {
+    {128, 64}, 
+    {128, 32}, 
+    {128, 32}
+};
+
 /**
  * @brief Y-coordinate arrays for update display
  * 
