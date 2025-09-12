@@ -57,11 +57,11 @@ Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(tru
  */
 void Display::begin() {
     displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    if (config.display_height == 64) {
+    if (displayRef.height() == 64) {
         displayType = OLED_128x64;
     }
     else {
-        displayType = OLED_128x32s;
+        displayType = OLED_128x32;
     }
     showLogo();
 }
@@ -78,19 +78,22 @@ void Display::clear() {
 }
 
 void Display::printAt(const char* text, int x, int y, char align = 'l') {
-    static int lastY = config.display_height;
+    static int lastY = displayRef.height();
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
     uint16_t w, h;
-    // New screen
-    if (y < lastY) { lastY = 0; }
-    // Get the available space
-    int lh = y - lastY;
-    // Choose the adequate font
-    if      (lh >= 28) { displayRef.setFont(&Spleen16x32); }
-    else if (lh >= 12) { displayRef.setFont(&Spleen8x16);  }
-    else if (lh >= 8)  { displayRef.setFont(&Spleen6x12);  }
-    else               { displayRef.setFont(&Spleen6x12);  }
+    // Check if we are printing on a new line
+    if (y != lastY) {
+        // Printing above the last line: new screen, reset lastY
+        if (y < lastY) { lastY = 0; }
+        // Get the available vertical space
+        int v = y - lastY;
+        // Choose the adequate font for the available space
+        if      (v >= 28) { displayRef.setFont(&Spleen16x32); }
+        else if (v >= 12) { displayRef.setFont(&Spleen8x16);  }
+        else if (v >= 8)  { displayRef.setFont(&Spleen6x12);  }
+        else              { displayRef.setFont(&Spleen6x12);  }
+    }
     // Check alignment
     if (align == 'c' or align == 'r') {
         // Compute the text length
@@ -122,7 +125,7 @@ void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    printAt("NetTuner", 0, yStatus[displayType][2], 'c');
+    printAt("NetTuner", 0, 28, 'c');
     // Show the buffer
     displayRef.display();
 }
@@ -152,10 +155,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     if (!displayOn) {
         return;
     }
-    
-    // Text bounds variables for centering calculations
-    int16_t x1, y1;
-    uint16_t w, h;
     
     // Clear the display buffer for fresh content
     displayRef.clearDisplay();
