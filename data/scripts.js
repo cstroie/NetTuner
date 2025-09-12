@@ -95,6 +95,8 @@ function initWiFiPage() {
 function initConfigPage() {
   // Load existing configuration when page loads
   loadConfig();
+  // Populate display type dropdown
+  populateDisplayTypeDropdown();
   // Set up form submit handler
   const configForm = $("config-form");
   if (configForm) {
@@ -1013,7 +1015,7 @@ async function savePlaylistInternal() {
  */
 async function loadConfig() {
   // Reset aria-invalid attributes
-  const configInputs = document.querySelectorAll("#config-form input");
+  const configInputs = document.querySelectorAll("#config-form input, #config-form select");
   configInputs.forEach((input) => {
     input.removeAttribute("aria-invalid");
   });
@@ -1032,9 +1034,9 @@ async function loadConfig() {
       $("board-button").value = config.board_button;
       $("display-sda").value = config.display_sda;
       $("display-scl").value = config.display_scl;
-      $("display-width").value = config.display_width;
-      $("display-height").value = config.display_height;
+      $("display-type").value = config.display_type;
       $("display-address").value = config.display_address;
+      $("display-timeout").value = config.display_timeout;
     }
   } catch (error) {
     console.error("Error loading hardware configuration:", error);
@@ -1048,7 +1050,7 @@ async function loadConfig() {
  * @returns {Promise<void>}
  */
 async function saveConfig() {
-  const configInputs = document.querySelectorAll("#config-form input");
+  const configInputs = document.querySelectorAll("#config-form input, #config-form select");
   let hasErrors = false;
   // Reset all aria-invalid attributes
   configInputs.forEach((input) => {
@@ -1067,7 +1069,7 @@ async function saveConfig() {
     showModal("Validation Error", "Please correct the highlighted fields.");
     return;
   }
-  // Colect form data
+  // Collect form data
   const config = {
     i2s_bclk: parseInt($("i2s-bclk").value),
     i2s_lrc: parseInt($("i2s-lrc").value),
@@ -1079,9 +1081,9 @@ async function saveConfig() {
     board_button: parseInt($("board-button").value),
     display_sda: parseInt($("display-sda").value),
     display_scl: parseInt($("display-scl").value),
-    display_width: parseInt($("display-width").value),
-    display_height: parseInt($("display-height").value),
+    display_type: parseInt($("display-type").value),
     display_address: parseInt($("display-address").value),
+    display_timeout: parseInt($("display-timeout").value),
   };
   // Try to send the data to API
   try {
@@ -1104,6 +1106,33 @@ async function saveConfig() {
     console.error("Error saving config:", error);
     showModal("Error saving configuration", error.message);
   }
+}
+
+// Populate display type dropdown with available options
+function populateDisplayTypeDropdown() {
+  const displayTypeSelect = $("display-type");
+  if (!displayTypeSelect) return;
+  
+  // Clear existing options
+  displayTypeSelect.innerHTML = "";
+  
+  // Add options for each display type
+  for (let i = 0; i < 3; i++) { // Assuming 3 display types
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = getDisplayTypeName(i);
+    displayTypeSelect.appendChild(option);
+  }
+}
+
+// Get display type name by index (simplified version for frontend)
+function getDisplayTypeName(index) {
+  const displayTypes = [
+    "128x64 (4 lines)",
+    "128x32 (2 lines)", 
+    "128x32 (3 lines)"
+  ];
+  return displayTypes[index] || "Unknown";
 }
 
 // Configuration import/export functions

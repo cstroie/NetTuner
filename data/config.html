@@ -88,17 +88,17 @@
               <input type="number" id="display-scl" name="display-scl"
                      min="0" max="39" />
             </label>
+            <label for="display-type">Display Type
+              <select id="display-type" name="display-type">
+              </select>
+            </label>
             <label for="display-address">I2C address
               <input type="number" id="display-address" name="display-address"
                      min="0" max="127" />
             </label>
-            <label for="display-width">Display Width
-              <input type="number" id="display-width" name="display-width"
-                     min="32" max="256" />
-            </label>
-            <label for="display-height">Display Height
-              <input type="number" id="display-height" name="display-height"
-                     min="32" max="256" />
+            <label for="display-timeout">Display Timeout (seconds)
+              <input type="number" id="display-timeout" name="display-timeout"
+                     min="5" max="300" value="30" />
             </label>
           </fieldset>
         </form>

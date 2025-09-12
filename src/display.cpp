@@ -479,3 +479,20 @@ const char* getDisplayTypeName(int index) {
     }
     return nullptr;
 }
+
+/**
+ * @brief Get the size of a display type by index
+ * 
+ * @param index Display type index
+ * @param width Pointer to store display width
+ * @param height Pointer to store display height
+ * @return true if successful, false if index is invalid
+ */
+bool getDisplaySize(int index, int* width, int* height) {
+    if (index >= 0 && index < OLED_COUNT) {
+        *width = displaySizes[index][0];
+        *height = displaySizes[index][1];
+        return true;
+    }
+    return false;
+}

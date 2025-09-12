@@ -55,9 +55,9 @@ struct Config {
   int board_button;    ///< Board button pin
   int display_sda;     ///< OLED display SDA pin
   int display_scl;     ///< OLED display SCL pin
-  int display_width;   ///< OLED display width
-  int display_height;  ///< OLED display height
+  int display_type;    ///< OLED display type (index)
   int display_address; ///< OLED display I2C address
+  int display_timeout; ///< Display timeout in seconds
 };
 extern Config config;
 

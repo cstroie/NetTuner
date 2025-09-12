@@ -37,6 +37,12 @@ enum display_t {OLED_128x64, OLED_128x32, OLED_128x32s, OLED_COUNT};
  */
 extern char* displayNames[OLED_COUNT];
 
+/**
+ * @brief Array of display sizes
+ * 
+ * Width and height for each display type, indexed by display_t values
+ * Format: [display_type][0=width, 1=height]
+ */
 extern int displaySizes[OLED_COUNT][2];
 
 
@@ -70,6 +76,16 @@ int getDisplayTypeCount();
  * @return const char* Name of the display type, or nullptr if index is invalid
  */
 const char* getDisplayTypeName(int index);
+
+/**
+ * @brief Get the size of a display type by index
+ * 
+ * @param index Display type index (0 to OLED_COUNT-1)
+ * @param width Pointer to store display width
+ * @param height Pointer to store display height
+ * @return true if successful, false if index is invalid
+ */
+bool getDisplaySize(int index, int* width, int* height);
 
 
 /**

@@ -67,9 +67,9 @@ Config config = {
   DEFAULT_BOARD_BUTTON,
   DEFAULT_DISPLAY_SDA,
   DEFAULT_DISPLAY_SCL,
-  DEFAULT_DISPLAY_WIDTH,
-  DEFAULT_DISPLAY_HEIGHT,
-  DEFAULT_DISPLAY_ADDR
+  0, // Default display type (OLED_128x64)
+  DEFAULT_DISPLAY_ADDR,
+  30 // Default display timeout (30 seconds)
 };
 
 
@@ -655,9 +655,9 @@ void loadConfig() {
     config.board_button = doc.containsKey("board_button") ? doc["board_button"] : DEFAULT_BOARD_BUTTON;
     config.display_sda = doc.containsKey("display_sda") ? doc["display_sda"] : DEFAULT_DISPLAY_SDA;
     config.display_scl = doc.containsKey("display_scl") ? doc["display_scl"] : DEFAULT_DISPLAY_SCL;
-    config.display_width = doc.containsKey("display_width") ? doc["display_width"] : DEFAULT_DISPLAY_WIDTH;
-    config.display_height = doc.containsKey("display_height") ? doc["display_height"] : DEFAULT_DISPLAY_HEIGHT;
+    config.display_type = doc.containsKey("display_type") ? doc["display_type"] : 0;
     config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
+    config.display_timeout = doc.containsKey("display_timeout") ? doc["display_timeout"] : 30;
     // Print loaded configuration
     Serial.println("Loaded configuration from SPIFFS");
   }
@@ -680,9 +680,9 @@ void saveConfig() {
   doc["board_button"] = config.board_button;
   doc["display_sda"] = config.display_sda;
   doc["display_scl"] = config.display_scl;
-  doc["display_width"] = config.display_width;
-  doc["display_height"] = config.display_height;
+  doc["display_type"] = config.display_type;
   doc["display_address"] = config.display_address;
+  doc["display_timeout"] = config.display_timeout;
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/config.json", doc)) {
     Serial.println("Saved configuration to SPIFFS");
@@ -712,9 +712,9 @@ void handleGetConfig() {
   doc["board_button"] = config.board_button;
   doc["display_sda"] = config.display_sda;
   doc["display_scl"] = config.display_scl;
-  doc["display_width"] = config.display_width;
-  doc["display_height"] = config.display_height;
+  doc["display_type"] = config.display_type;
   doc["display_address"] = config.display_address;
+  doc["display_timeout"] = config.display_timeout;
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -755,9 +755,9 @@ void handlePostConfig() {
   if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
   if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
   if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
-  if (doc.containsKey("display_width")) config.display_width = doc["display_width"];
-  if (doc.containsKey("display_height")) config.display_height = doc["display_height"];
+  if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
   if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
@@ -1891,8 +1891,8 @@ void loop() {
     }
   }
   
-  // Handle display timeout
-  display->handleTimeout(player.isPlaying(), millis());
+  // Handle display timeout with configurable timeout value
+  display->handleTimeout(player.isPlaying(), millis(), config.display_timeout);
 
   // Small delay to prevent busy waiting and reduce network load
   delay(100);  // Increased from 50 to 100
@@ -1917,6 +1917,11 @@ void setup() {
   }
   // Load configuration
   loadConfig();
+  
+  // Validate display type
+  if (config.display_type < 0 || config.display_type >= getDisplayTypeCount()) {
+    config.display_type = 0; // Default to first display type
+  }
   // Initialize LED pin
   pinMode(config.led_pin, OUTPUT);
   digitalWrite(config.led_pin, LOW);  // Turn off LED initially
@@ -1925,8 +1930,15 @@ void setup() {
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);
+  // Get display dimensions based on display type
+  int displayWidth, displayHeight;
+  if (!getDisplaySize(config.display_type, &displayWidth, &displayHeight)) {
+    // Fallback to default if invalid display type
+    displayWidth = 128;
+    displayHeight = 64;
+  }
   // Create display objects after config is loaded
-  displayOLED = new Adafruit_SSD1306(config.display_width, config.display_height, &Wire, -1);
+  displayOLED = new Adafruit_SSD1306(displayWidth, displayHeight, &Wire, -1);
   display = new Display(*displayOLED);
   display->begin();
   // Load WiFi credentials with error recovery
