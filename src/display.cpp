@@ -393,19 +393,20 @@ bool Display::isOn() const {
  * @brief Handle display timeout
  * 
  * Manages automatic display power management based on playback state
- * and user activity. Turns display off after 30 seconds of inactivity
+ * and user activity. Turns display off after configurable seconds of inactivity
  * when not playing, and keeps it on during playback.
  * 
  * Timeout Logic:
  * - When playing: Display stays on, activity time updated every 5 seconds
- * - When stopped: Display turns off after 30 seconds of inactivity
+ * - When stopped: Display turns off after configurable seconds of inactivity
  * - Handles millis() overflow by resetting activity time
  * 
  * @param isPlaying Current playback state
  * @param currentTime Current system time in milliseconds
  */
 void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
-    const unsigned long DISPLAY_TIMEOUT = 30000; // 30 seconds
+    extern Config config;
+    const unsigned long DISPLAY_TIMEOUT = config.display_timeout * 1000; // Convert seconds to milliseconds
     
     // Handle potential millis() overflow by resetting activity time
     if (currentTime < lastActivityTime) {
