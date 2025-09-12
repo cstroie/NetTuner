@@ -933,17 +933,16 @@ void handleSimpleWebPage() {
 <header><h1>NetTuner</h1></header>
 <main>
 <section>
-<h2>Status</h2>
-<p><b>Status:</b> )rawliteral";
-  html += player.isPlaying() ? "Playing" : "Stopped";
-  html += "</p>";
+<h2>Status: )rawliteral";
+  html += player.isPlaying() ? "PLAY" : "STOP";
+html += "</h2>";
   // Show current stream name
-  if (player.isPlaying() && player.getStreamName()[0]) {
-    html += "<p><b>Current Stream:</b> ";
-    html += player.getStreamName();
+  if (player.isPlaying() && player.getStreamTitle()[0]) {
+    html += "<p><b>Now playing:</b> ";
+    html += player.getStreamTitle();
     html += "</p>";
   } else if (!player.isPlaying() && player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
-    html += "<p><b>Selected Stream:</b> ";
+    html += "<p><b>Selected:</b> ";
     html += player.getPlaylistItem(player.getPlaylistIndex()).name;
     html += "</p>";
   }
@@ -951,11 +950,13 @@ void handleSimpleWebPage() {
 <section>
 <h2>Controls</h2>
 <form method='post'>
+<fieldset role='group'>
 <button name='action' value='play' type='submit'>Play</button> 
 <button name='action' value='stop' type='submit'>Stop</button>
+</fieldset>
 </form>
 <form method='post'>
-<label for='volume'>Volume:</label>
+<fieldset role='group'>
 <select name='volume' id='volume'>
 )rawliteral";
   // Add volume options (0-22)
@@ -967,7 +968,8 @@ void handleSimpleWebPage() {
     html += ">" + String(i) + "</option>";
   }
   html += R"rawliteral(</select>
-<button name='action' value='volume' type='submit'>Set Volume</button>
+<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>
+</fieldset>
 </form>
 </section>
 <section>
@@ -976,7 +978,7 @@ void handleSimpleWebPage() {
   // Show stream selection dropdown if we have a playlist
   if (player.getPlaylistCount() > 0) {
     html += R"rawliteral(<form method='post'>
-<label for='stream'>Select Stream:</label>
+    <fieldset role='group'>
 <select name='stream' id='stream'>
 )rawliteral";
     // Populate the dropdown with available streams
@@ -989,19 +991,22 @@ void handleSimpleWebPage() {
     }
     // Close the select and form
     html += R"rawliteral(</select>
-<button name='action' value='play' type='submit'>Play Selected</button>
+<button name='action' value='play' type='submit'>Play&nbsp;selected</button>
+</fieldset>
 </form>
 )rawliteral";
   } else {
     html += "<p>No streams in playlist.</p>";
   }
   // Add instant play input for custom stream URL even when no playlist
-  html += "<h2>Play Custom Stream</h2>\n";
-  html += "<form method='post'>\n";
-  html += "<label for='url'>Stream URL:</label>\n";
-  html += "<input type='url' name='url' id='url' placeholder='http://example.com/stream'>\n";
-  html += "<button name='action' value='instant' type='submit'>Play Stream</button>\n";
-  html += "</form>\n";
+  html += R"rawliteral(<h2>Play instant stream</h2>
+<form method='post'>
+<fieldset role='group'>
+<input type='url' name='url' id='url' placeholder='http://example.com/stream'>
+<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>
+</fieldset>
+</form>
+)rawliteral";
   // Close the HTML
   html += R"rawliteral(</section>
 </main>
