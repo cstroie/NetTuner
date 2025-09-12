@@ -428,3 +428,25 @@ void Display::setActivityTime(unsigned long time) {
 unsigned long Display::getLastActivityTime() const {
     return lastActivityTime;
 }
+
+/**
+ * @brief Get the number of configured display types
+ * 
+ * @return int Number of display types
+ */
+int getDisplayTypeCount() {
+    return OLED_COUNT;
+}
+
+/**
+ * @brief Get the name of a display type by index
+ * 
+ * @param index Display type index
+ * @return const char* Name of the display type, or nullptr if index is invalid
+ */
+const char* getDisplayTypeName(int index) {
+    if (index >= 0 && index < OLED_COUNT) {
+        return displayNames[index];
+    }
+    return nullptr;
+}

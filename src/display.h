@@ -28,6 +28,10 @@ extern char* displayNames[OLED_COUNT];
 extern int yUpdate[OLED_COUNT][4];
 extern int yStatus[OLED_COUNT][4];
 
+// Display type information functions
+int getDisplayTypeCount();
+const char* getDisplayTypeName(int index);
+
 
 /**
  * @brief Display management class for OLED screen
