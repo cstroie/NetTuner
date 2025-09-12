@@ -882,9 +882,15 @@ void handleSimpleWebPage() {
           // Play currently selected stream
           player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
         }
+        // Save player state when user requests to play
+        player.markPlayerStateDirty();
+        player.savePlayerState();
       } else if (action == "stop") {
         // Stop playback
         player.stopStream();
+        // Save player state when user requests to play
+        player.markPlayerStateDirty();
+        player.savePlayerState();
       } else if (action == "volume") {
         // Set volume
         if (server.hasArg("volume")) {
@@ -894,6 +900,8 @@ void handleSimpleWebPage() {
             updateDisplay();
             sendStatusToClients();
           }
+          // Save player state when user requests to play
+          player.markPlayerStateDirty();
         }
       } else if (action == "instant") {
         // Play a stream URL
