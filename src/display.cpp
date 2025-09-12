@@ -25,6 +25,11 @@
 
 extern Config config;
 
+int lineY[2][4] = {
+    {12, -1, 28, -1},     // 128x32
+    {12, 30, 45, 62}    // 128x64 
+};
+
 
 /**
  * @brief Construct a new Display object
