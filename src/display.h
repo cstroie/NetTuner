@@ -58,6 +58,8 @@ public:
      */
     void begin();
     
+    void setFontCursor(int x, int y, char c);
+    
     /**
      * @brief Update display with current playback information
      * 

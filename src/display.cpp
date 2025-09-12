@@ -77,12 +77,28 @@ void Display::clear() {
     displayRef.display();
 }
 
+void Display::setFontCursor(int x, int y, char c = 'l') {
+    static int lastY = config.display_height;
+    // New screen
+    if (y < lastY) { lastY = 0; }
+    // Get the available space
+    int h = y - lastY;
+    // Choose the adequate font
+    if      (h >= 28) { displayRef.setFont(&Spleen16x32); }
+    else if (h >= 12) { displayRef.setFont(&Spleen8x16);  }
+    else if (h >= 8)  { displayRef.setFont(&Spleen6x12);  }
+    else              { displayRef.setFont(&Spleen6x12);  }
+    // Set the cursor position
+    displayRef.setCursor(x, y);
+    // Keep the last Y
+    lastY = y;
+}
+
 void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    displayRef.setFont(&Spleen16x32);
-    displayRef.setCursor(0, yStatus[displayType][2]);
+    setFontCursor(0, yStatus[displayType][2]);
     displayRef.print("NetTuner");
     // Show the buffer
     displayRef.display();
@@ -121,11 +137,10 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     // Clear the display buffer for fresh content
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    displayRef.setFont(&Spleen8x16);
     
     if (isPlaying) {
         // Display when playing - show stream information with scrolling title
-        displayRef.setCursor(0, yUpdate[displayType][0]);
+        setFontCursor(0, yUpdate[displayType][0]);
         // Fixed '>' character to indicate playing state
         displayRef.print(">");
         
@@ -171,17 +186,17 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            displayRef.setCursor(16, yUpdate[displayType][0]);
+            setFontCursor(16, yUpdate[displayType][0]);
             displayRef.print(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars));
         } else {
             // Display title without scrolling for short titles
-            displayRef.setCursor(16, yUpdate[displayType][0]);
+            setFontCursor(0, yUpdate[displayType][0]);
             displayRef.print(title);
         }
         
         if (yUpdate[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
-            displayRef.setCursor(0, yUpdate[displayType][1]);
+            setFontCursor(0, yUpdate[displayType][1]);
             String stationName = String(streamName);
             // 16 chars fit on a 128px display
             if (stationName.length() > 16) {
@@ -192,11 +207,10 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         }
         
         if (yUpdate[displayType][2] > 0) {
-            displayRef.setFont(&Spleen6x12);
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            displayRef.setCursor(0, yUpdate[displayType][2]);
+            setFontCursor(0, yUpdate[displayType][2]);
             displayRef.print(volStr);
             
             // Display bitrate on the same line if available
@@ -204,32 +218,31 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
                 displayRef.getTextBounds(bitrateStr, 0, yUpdate[displayType][2], &x1, &y1, &w, &h);
-                displayRef.setCursor(displayRef.width() - w - 1, yUpdate[displayType][2]);
+                setFontCursor(displayRef.width() - w - 1, yUpdate[displayType][2]);
                 displayRef.print(bitrateStr);
             }
         }
             
         if (yUpdate[displayType][3] > 0) {
-            displayRef.setFont(&Spleen6x12);
             // Display IP address on the last line, centered
             displayRef.getTextBounds(ipString, 0, yUpdate[displayType][3], &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
             // Center the IP address
-            displayRef.setCursor(x, yUpdate[displayType][3]);
+            setFontCursor(x, yUpdate[displayType][3]);
             displayRef.print(ipString);
         }
     } else {
         // Display when stopped
         int lineStream = 0;
         if (yUpdate[displayType][1] > 0) {
-            displayRef.setCursor(32, yUpdate[displayType][0]);
+            setFontCursor(32, yUpdate[displayType][0]);
             displayRef.print("NetTuner");
             lineStream = 1;
         }
             
         // Display current stream name (second line) or "No stream" if none selected
-        displayRef.setCursor(0, yUpdate[displayType][lineStream]);
+        setFontCursor(0, yUpdate[displayType][lineStream]);
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
             // 16 chars fit on a 128px display
@@ -240,7 +253,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             }
         } else {
             // No stream is currently found in playlist
-            displayRef.setCursor(0, yUpdate[displayType][lineStream]);
+            setFontCursor(0, yUpdate[displayType][lineStream]);
             displayRef.print("No stream");
         }
         
@@ -249,7 +262,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display volume level
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            displayRef.setCursor(0, yUpdate[displayType][2]);
+            setFontCursor(0, yUpdate[displayType][2]);
             displayRef.print(volStr);
         }
 
@@ -259,7 +272,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
             // Center the IP address
-            displayRef.setCursor(x, yUpdate[displayType][3]);
+            setFontCursor(x, yUpdate[displayType][3]);
             displayRef.print(ipString);
         }
     }
@@ -282,36 +295,35 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    displayRef.setFont(&Spleen8x16);
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
-        displayRef.setCursor(32, yStatus[displayType][0]);
+        setFontCursor(32, yStatus[displayType][0]);
         displayRef.print("NetTuner");
         // Display each line if it contains content
         if (line1.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][1]);
+            setFontCursor(0, yStatus[displayType][1]);
             displayRef.print(line1);
         }
         if (line2.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][2]);
+            setFontCursor(0, yStatus[displayType][2]);
             displayRef.print(line2);
         }
         if (line3.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][3]);
+            setFontCursor(0, yStatus[displayType][3]);
             displayRef.print(line3);
         }
     } else {
         // Display first line
         if (line1.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][0]);
+            setFontCursor(0, yStatus[displayType][0]);
             displayRef.print(line1);
         }
         // Displey the second or third line if they have contemt
         if (line2.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][2]);
+            setFontCursor(0, yStatus[displayType][2]);
             displayRef.print(line2);
         } else if (line3.length() > 0) {
-            displayRef.setCursor(0, yStatus[displayType][2]);
+            setFontCursor(0, yStatus[displayType][2]);
             displayRef.print(line3);
         }
     }
