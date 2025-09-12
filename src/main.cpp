@@ -45,8 +45,8 @@ String previousStatus = "";
 
 
 
-Adafruit_SSD1306 displayOLED(config.display_width, config.display_height, &Wire, -1);
-Display display(displayOLED);
+Adafruit_SSD1306* displayOLED;
+Display* display;
 RotaryEncoder rotaryEncoder;
 TaskHandle_t audioTaskHandle = NULL;
 
@@ -1645,6 +1645,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
  * the selected playlist item and volume. It also implements scrolling text for long strings.
  */
 void updateDisplay() {
+  // Check if display is initialized
+  if (display == nullptr) return;
+  
   String ipString;
   if (WiFi.status() == WL_CONNECTED) {
     ipString = WiFi.localIP().toString();
@@ -1652,7 +1655,7 @@ void updateDisplay() {
     ipString = "No IP";
   }
   // Update the display with current status
-  display.update(player.isPlaying(), player.getStreamTitle(), player.getStreamName(), player.getVolume(), player.getBitrate(), ipString);
+  display->update(player.isPlaying(), player.getStreamTitle(), player.getStreamName(), player.getVolume(), player.getBitrate(), ipString);
 }
 
 
@@ -1916,7 +1919,10 @@ void setup() {
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);
-  display.begin();
+  // Create display objects after config is loaded
+  displayOLED = new Adafruit_SSD1306(config.display_width, config.display_height, &Wire, -1);
+  display = new Display(*displayOLED);
+  display->begin();
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   // Connect to WiFi with error handling
