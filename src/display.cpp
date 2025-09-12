@@ -241,15 +241,16 @@ void Display::showStatus(const String& line1, const String& line2, const String&
         displayRef.setCursor(0, 30);
         displayRef.print(line1);
     }
+    if (config.display_height == 64) {
+        if (line2.length() > 0) {
+            displayRef.setCursor(0, 45);
+            displayRef.print(line2);
+        }
     
-    if (line2.length() > 0) {
-        displayRef.setCursor(0, 45);
-        displayRef.print(line2);
-    }
-    
-    if (line3.length() > 0) {
-        displayRef.setCursor(0, 62);
-        displayRef.print(line3);
+        if (line3.length() > 0) {
+            displayRef.setCursor(0, 62);
+            displayRef.print(line3);
+        }
     }
     
     displayRef.display();
