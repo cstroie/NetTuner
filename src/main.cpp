@@ -1939,7 +1939,7 @@ void setup() {
   }
   // Create display objects after config is loaded
   displayOLED = new Adafruit_SSD1306(displayWidth, displayHeight, &Wire, -1);
-  display = new Display(*displayOLED);
+  display = new Display(*displayOLED, (enum display_t)config.display_type);
   display->begin();
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();

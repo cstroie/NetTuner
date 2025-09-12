@@ -76,8 +76,10 @@ int yStatus[OLED_COUNT][4] = {
  * sets the display to on state, and initializes the activity time to 0.
  * 
  * @param display Reference to Adafruit_SSD1306 display instance
+ * @param display_type Type of display being used
  */
-Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(true), lastActivityTime(0) {}
+Display::Display(Adafruit_SSD1306& display, enum display_t display_type) : 
+    displayRef(display), displayOn(true), lastActivityTime(0), displayType(display_type) {}
 
 /**
  * @brief Initialize the display
@@ -88,12 +90,6 @@ Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(tru
  */
 void Display::begin() {
     displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    if (displayRef.height() == 64) {
-        displayType = OLED_128x64;
-    }
-    else {
-        displayType = OLED_128x32;
-    }
     showLogo();
 }
 
