@@ -822,17 +822,17 @@ void handleRotary() {
       }
     }
     lastRotaryPosition = currentPosition;  // Update last position
-    display.setActivityTime(millis()); // Update activity time on user interaction
-    if (!display.isOn()) {
-      display.turnOn();
+    display->setActivityTime(millis()); // Update activity time on user interaction
+    if (!display->isOn()) {
+      display->turnOn();
     }
     updateDisplay();                      // Refresh display with new values
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
-    display.setActivityTime(millis()); // Update activity time
-    if (!display.isOn()) {
-      display.turnOn();
+    display->setActivityTime(millis()); // Update activity time
+    if (!display->isOn()) {
+      display->turnOn();
       updateDisplay(); // Turn display back on and update
     }
     // Only process if we have playlist items
@@ -1746,7 +1746,7 @@ bool connectToWiFi() {
     WiFi.setHostname("NetTuner");
     // First, scan for available networks
     Serial.println("Scanning for available WiFi networks...");
-    display.showStatus("WiFi scanning", "", "");
+    display->showStatus("WiFi scanning", "", "");
     int n = WiFi.scanNetworks();
     Serial.printf("Found %d networks\n", n);
     // Create array to track which configured networks are available
@@ -1769,9 +1769,9 @@ bool connectToWiFi() {
     // Try to connect to available configured networks in background
     for (int i = 0; i < wifiNetworkCount; i++) {
       if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
-        display.turnOn();
+        display->turnOn();
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display.showStatus("WiFi connecting", String(ssid[i]), "");
+        display->showStatus("WiFi connecting", String(ssid[i]), "");
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
         const int maxAttempts = 15; // Increased attempts per network
@@ -1786,7 +1786,7 @@ bool connectToWiFi() {
           // Update display with connection info
           Serial.print("IP Address: ");
           Serial.println(WiFi.localIP().toString());
-          display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+          display->showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
           break;
         } else {
           Serial.printf("Failed to connect to %s\n", ssid[i]);
@@ -1802,7 +1802,7 @@ bool connectToWiFi() {
     Serial.println("Connected to WiFi");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
-    display.showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+    display->showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
   }
@@ -1886,7 +1886,7 @@ void loop() {
   }
   
   // Handle display timeout
-  display.handleTimeout(player.isPlaying(), millis());
+  display->handleTimeout(player.isPlaying(), millis());
 
   // Small delay to prevent busy waiting and reduce network load
   delay(100);  // Increased from 50 to 100
@@ -1929,17 +1929,17 @@ void setup() {
   connectToWiFi();
   // Always start AP mode as a control mechanism
   Serial.println("Starting Access Point mode...");
-  display.showStatus("Starting AP Mode", "", "");
+  display->showStatus("Starting AP Mode", "", "");
   
   // Start WiFi access point mode with error handling
   if (WiFi.softAP("NetTuner-Setup")) {
     Serial.println("Access Point Started");
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP().toString());
-    display.showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
+    display->showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
   } else {
     Serial.println("Failed to start Access Point");
-    display.showStatus("AP Start Failed", "", "");
+    display->showStatus("AP Start Failed", "", "");
   }
 
   // Start mDNS responder

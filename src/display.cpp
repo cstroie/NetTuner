@@ -21,6 +21,7 @@
 #include "Spleen8x16.h" 
 #include "Spleen16x32.h"
 #include <WiFi.h>
+#include "main.h"
 
 extern Config config;
 
