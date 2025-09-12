@@ -638,9 +638,9 @@ void loadConfig() {
     config.board_button = DEFAULT_BOARD_BUTTON;
     config.display_sda = DEFAULT_DISPLAY_SDA;
     config.display_scl = DEFAULT_DISPLAY_SCL;
-    config.display_width = DEFAULT_DISPLAY_WIDTH;
-    config.display_height = DEFAULT_DISPLAY_HEIGHT;
+    config.display_type = 0;
     config.display_address = DEFAULT_DISPLAY_ADDR;
+    config.display_timeout = 30;
     // Save the default configuration to file
     saveConfig();
   } else {
