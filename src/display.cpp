@@ -25,6 +25,7 @@
 
 extern Config config;
 
+
 /**
  * @brief Construct a new Display object
  * 
@@ -44,9 +45,13 @@ Display::Display(Adafruit_SSD1306& display) : displayRef(display), displayOn(tru
  */
 void Display::begin() {
     displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    displayRef.setFont(&Spleen8x16);
-    displayRef.setTextColor(SSD1306_WHITE);
-    showStatus("", "", "");
+    if (config.display_height == 64) {
+        displayType = OLED_128x64;
+    }
+    else {
+        displayType = OLED_128x32;
+    }
+    showLogo();
 }
 
 /**
@@ -84,14 +89,20 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     
     if (isPlaying) {
         // Display when playing - show stream information with scrolling title
-        displayRef.setCursor(0, 12);
+        displayRef.setCursor(0, lineY[displayType][0]);
         // Fixed '>' character to indicate playing state
         displayRef.print(">");
         
         // Display stream title (first line) with scrolling for long titles
-        String title = String(streamTitle);
-        if (title.length() == 0) {
-            title = String(streamName);
+        String title = streamName;
+        if (displayType == OLED_128x64) {
+            if (String(streamTitle).length() > 0) {
+                title = String(streamTitle);
+            }
+        } else {
+            if (String(streamTitle).length() > 0) {
+                title = title + ": " + String(streamTitle);
+            }
         }
         
         // Scroll title if too long for display (excluding the '>' character)
@@ -124,22 +135,24 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            displayRef.setCursor(16, 12);
+            displayRef.setCursor(16, lineY[OLED_128x64][0]);
             displayRef.print(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars));
         } else {
             // Display title without scrolling for short titles
-            displayRef.setCursor(16, 12);
+            displayRef.setCursor(16, lineY[OLED_128x64][0]);
             displayRef.print(title);
         }
         
-        // Display stream name (second line) - truncated if too long
-        displayRef.setCursor(0, 30);
-        String stationName = String(streamName);
-        // 16 chars fit on a 128px display
-        if (stationName.length() > 16) {
-            displayRef.print(stationName.substring(0, 16));
-        } else {
-            displayRef.print(stationName);
+        if (displayType == OLED_128x64) {
+            // Display stream name (second line) - truncated if too long
+            displayRef.setCursor(0, lineY[OLED_128x64][1]);
+            String stationName = String(streamName);
+            // 16 chars fit on a 128px display
+            if (stationName.length() > 16) {
+                displayRef.print(stationName.substring(0, 16));
+            } else {
+                displayRef.print(stationName);
+            }
         }
         
         // Display volume and bitrate on third line (only for displays with sufficient height)
@@ -147,20 +160,20 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            displayRef.setCursor(0, 45);
+            displayRef.setCursor(0, lineY[OLED_128x64][2]);
             displayRef.print(volStr);
             
             // Display bitrate on the same line if available
             if (bitrate > 0) {
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
-                displayRef.getTextBounds(bitrateStr, 0, 45, &x1, &y1, &w, &h);
+                displayRef.getTextBounds(bitrateStr, 0, lineY[OLED_128x64][2], &x1, &y1, &w, &h);
                 displayRef.setCursor(displayRef.width() - w - 1, 45);
                 displayRef.print(bitrateStr);
             }
             
             // Display IP address on the last line, centered
-            displayRef.getTextBounds(ipString, 0, 62, &x1, &y1, &w, &h);
+            displayRef.getTextBounds(ipString, 0, lineY[OLED_128x64][3], &x1, &y1, &w, &h);
             int x = (displayRef.width() - w) / 2;
             if (x < 0) x = 0;
             // Center the IP address
@@ -221,6 +234,18 @@ void Display::clear() {
     displayRef.display();
 }
 
+void Display::showLogo() {
+    // Clear the buffer
+    displayRef.clearDisplay();
+    displayRef.setFont(&Spleen16x32);
+    displayRef.setTextColor(SSD1306_WHITE);
+    displayRef.setCursor(0, lineY[displayType][2]);
+    displayRef.print("NetTuner");
+    // Show the buffer
+    displayRef.display();
+}
+
+
 /**
  * @brief Show status information on display
  * 
@@ -232,27 +257,43 @@ void Display::clear() {
  * @param line3 Third line of information (displayed at y=62)
  */
 void Display::showStatus(const String& line1, const String& line2, const String& line3) {
+    // Clear the buffer
     displayRef.clearDisplay();
-    displayRef.setCursor(32, 12);
-    displayRef.print("NetTuner");
-    
-    // Display each line if it contains content
-    if (line1.length() > 0) {
-        displayRef.setCursor(0, 30);
-        displayRef.print(line1);
-    }
-    if (config.display_height == 64) {
+    displayRef.setFont(&Spleen8x16);
+    displayRef.setTextColor(SSD1306_WHITE);
+    // Different modes for different display sizes
+    if (displayType == OLED_128x64) {
+        displayRef.setCursor(32, lineY[OLED_128x64][0]);
+        displayRef.print("NetTuner");
+        // Display each line if it contains content
+        if (line1.length() > 0) {
+            displayRef.setCursor(0, lineY[OLED_128x64][1]);
+            displayRef.print(line1);
+        }
         if (line2.length() > 0) {
-            displayRef.setCursor(0, 45);
+            displayRef.setCursor(0, lineY[OLED_128x64][2]);
             displayRef.print(line2);
         }
-    
         if (line3.length() > 0) {
-            displayRef.setCursor(0, 62);
+            displayRef.setCursor(0, lineY[OLED_128x64][3]);
+            displayRef.print(line3);
+        }
+    } else {
+        // Display first line
+        if (line1.length() > 0) {
+            displayRef.setCursor(0, lineY[OLED_128x32][0]);
+            displayRef.print(line1);
+        }
+        // Displey the second or third line if they have contemt
+        if (line2.length() > 0) {
+            displayRef.setCursor(0, lineY[OLED_128x32][1]);
+            displayRef.print(line2);
+        } else if (line3.length() > 0) {
+            displayRef.setCursor(0, lineY[OLED_128x32][1]);
             displayRef.print(line3);
         }
     }
-    
+    // Show the buffer
     displayRef.display();
 }
 

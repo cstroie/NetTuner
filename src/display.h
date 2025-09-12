@@ -22,6 +22,14 @@
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 
+
+enum display_t {OLED_128x32, OLED_128x64};
+int lineY[2][4] = {
+    {12, -1, 28, -1},     // 128x32
+    {12, 30, 45, 62}    // 128x64 
+};
+
+
 /**
  * @brief Display management class for OLED screen
  * 
@@ -34,6 +42,7 @@ private:
     Adafruit_SSD1306& displayRef;    ///< Reference to the SSD1306 display object
     bool displayOn;                  ///< Flag indicating if display is currently on
     unsigned long lastActivityTime;  ///< Timestamp of last user activity
+    enum display_t displayType;
 
 public:
     /**
@@ -73,6 +82,8 @@ public:
      * Clears the display buffer and updates the physical display.
      */
     void clear();
+    
+    void showLogo();
     
     /**
      * @brief Show status information on display
