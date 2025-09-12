@@ -23,7 +23,8 @@
 #include <Adafruit_SSD1306.h>
 
 
-enum display_t {OLED_128x32, OLED_128x64, OLED_128x32s, OLED_COUNT};
+enum display_t {OLED_128x64, OLED_128x32, OLED_128x32s, OLED_COUNT};
+extern char* displayNames[OLED_COUNT];
 extern int yUpdate[OLED_COUNT][4];
 extern int yStatus[OLED_COUNT][4];
 
