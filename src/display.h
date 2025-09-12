@@ -21,7 +21,6 @@
 
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
-#include "main.h"
 
 /**
  * @brief Display management class for OLED screen

@@ -73,7 +73,7 @@ extern WebServer server;
 extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
 extern WiFiClient mpdClient;
-extern Display display;
+extern Display* display;
 extern TaskHandle_t audioTaskHandle;
 extern char ssid[MAX_WIFI_NETWORKS][64];
 extern char password[MAX_WIFI_NETWORKS][64];
