@@ -397,7 +397,13 @@ Audio* Player::setupAudioOutput() {
   audio = new Audio(false); // false = use I2S, true = use DAC
   audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
-  audio->setBufsize(65536, 0); // Increased buffer size to 64KB for better streaming performance
+  #if defined(BOARD_HAS_PSRAM)
+  Serial.println("PSRAM found, using larger audio buffer");
+  audio->setBufsize(65536, 1048576); // 64KB in RAM, 1MB in PSRAM
+  #else
+  Serial.println("PSRAM not supported on this board, using smaller audio buffer");
+  audio->setBufsize(65536, 0); // 64KB in RAM only
+  #endif
   return audio;
 }
 
