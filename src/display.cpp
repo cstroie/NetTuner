@@ -77,7 +77,7 @@ void Display::clear() {
     displayRef.display();
 }
 
-void Display::setFontCursor(const char* text, int x, int y, char align = 'l') {
+void Display::printAt(const char* text, int x, int y, char align = 'l') {
     static int lastY = config.display_height;
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
@@ -113,8 +113,8 @@ void Display::setFontCursor(const char* text, int x, int y, char align = 'l') {
     lastY = y;
 }
 
-void Display::setFontCursor(const String text, int x, int y, char align = 'l') {
-    setFontCursor(text.c_str(), x, y, align);
+void Display::printAt(const String text, int x, int y, char align = 'l') {
+    printAt(text.c_str(), x, y, align);
 }
 
 
@@ -122,7 +122,7 @@ void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    setFontCursor("NetTuner", 0, yStatus[displayType][2], 'c');
+    printAt("NetTuner", 0, yStatus[displayType][2], 'c');
     // Show the buffer
     displayRef.display();
 }
@@ -163,7 +163,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     
     if (isPlaying) {
         // Fixed '>' character to indicate playing state
-        setFontCursor(">", 0, yUpdate[displayType][0], 'l');
+        printAt(">", 0, yUpdate[displayType][0], 'l');
         
         // Display stream title (first line) with scrolling for long titles
         String title = streamName;
@@ -207,19 +207,19 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            setFontCursor(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars), 16, yUpdate[displayType][0], 'l');
+            printAt(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars), 16, yUpdate[displayType][0], 'l');
         } else {
             // Display title without scrolling for short titles
-            setFontCursor(title, 16, yUpdate[displayType][0], 'l');
+            printAt(title, 16, yUpdate[displayType][0], 'l');
         }
         
         if (yUpdate[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
             String stationName = String(streamName);
             if (stationName.length() > 16) {
-                setFontCursor(stationName.substring(0, 16), 0, yUpdate[displayType][1], 'l');
+                printAt(stationName.substring(0, 16), 0, yUpdate[displayType][1], 'l');
             } else {
-                setFontCursor(stationName, 0, yUpdate[displayType][1], 'l');
+                printAt(stationName, 0, yUpdate[displayType][1], 'l');
             }
         }
         
@@ -227,24 +227,24 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            setFontCursor(volStr, 0, yUpdate[displayType][2], 'l');
+            printAt(volStr, 0, yUpdate[displayType][2], 'l');
             // Display bitrate on the same line if available
             if (bitrate > 0) {
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
-                setFontCursor(bitrateStr, 0, yUpdate[displayType][2], 'r');
+                printAt(bitrateStr, 0, yUpdate[displayType][2], 'r');
             }
         }
             
         if (yUpdate[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            setFontCursor(ipString, 0, yUpdate[displayType][3], 'c');
+            printAt(ipString, 0, yUpdate[displayType][3], 'c');
         }
     } else {
         // Display when stopped
         int lineStream = 0;
         if (yUpdate[displayType][1] > 0) {
-            setFontCursor("NetTuner", 0, yUpdate[displayType][0], 'c');
+            printAt("NetTuner", 0, yUpdate[displayType][0], 'c');
             lineStream = 1;
         }
             
@@ -252,13 +252,13 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
             if (currentStream.length() > 16) {
-                setFontCursor(currentStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
+                printAt(currentStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
             } else {
-                setFontCursor(currentStream, 0, yUpdate[displayType][lineStream], 'l');
+                printAt(currentStream, 0, yUpdate[displayType][lineStream], 'l');
             }
         } else {
             // No stream is currently found in playlist
-            setFontCursor("No stream", 0, yUpdate[displayType][lineStream], 'c');
+            printAt("No stream", 0, yUpdate[displayType][lineStream], 'c');
         }
         
         // Display volume on third line (only for displays with sufficient height)
@@ -266,12 +266,12 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display volume level
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            setFontCursor(volStr, 0, yUpdate[displayType][2], 'l');
+            printAt(volStr, 0, yUpdate[displayType][2], 'l');
         }
 
         if (yUpdate[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            setFontCursor(ipString, 0, yUpdate[displayType][3], 'c');
+            printAt(ipString, 0, yUpdate[displayType][3], 'c');
         }
     }
     
@@ -295,27 +295,27 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     displayRef.setTextColor(SSD1306_WHITE);
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
-        setFontCursor("NetTuner", 0, yStatus[displayType][0], 'c');
+        printAt("NetTuner", 0, yStatus[displayType][0], 'c');
         // Display each line if it contains content
         if (line1.length() > 0) {
-            setFontCursor(line1, 0, yStatus[displayType][1], 'l');
+            printAt(line1, 0, yStatus[displayType][1], 'l');
         }
         if (line2.length() > 0) {
-            setFontCursor(line2, 0, yStatus[displayType][2], 'l');
+            printAt(line2, 0, yStatus[displayType][2], 'l');
         }
         if (line3.length() > 0) {
-            setFontCursor(line3, 0, yStatus[displayType][3], 'l');
+            printAt(line3, 0, yStatus[displayType][3], 'l');
         }
     } else {
         // Display first line
         if (line1.length() > 0) {
-            setFontCursor(line1, 0, yStatus[displayType][0], 'l');
+            printAt(line1, 0, yStatus[displayType][0], 'l');
         }
         // Displey the second or third line if they have contemt
         if (line2.length() > 0) {
-            setFontCursor(line2, 0, yStatus[displayType][1], 'l');
+            printAt(line2, 0, yStatus[displayType][1], 'l');
         } else if (line3.length() > 0) {
-            setFontCursor(line3, 0, yStatus[displayType][1], 'l');
+            printAt(line3, 0, yStatus[displayType][1], 'l');
         }
     }
     // Show the buffer
