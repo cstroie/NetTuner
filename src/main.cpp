@@ -1692,7 +1692,11 @@ void sendStatusToClients(bool fullStatus) {
   }
 }
 
-// Document this, AI!
+/**
+ * @brief Send full status to all connected WebSocket clients
+ * This is a convenience function that calls sendStatusToClients(true)
+ * to send a complete status update to all connected clients.
+ */
 void sendStatusToClients() {
   sendStatusToClients(true);
 }
