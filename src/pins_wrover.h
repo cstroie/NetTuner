@@ -16,6 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+The PSRAM pins on ESP32-WROVER are:
+
+ • IO6, IO7, IO8, IO9 (shared SPI data pins)
+ • IO16 (PSRAM chip select)
+ • IO17 (SPI clock)
+*/
+
 #ifndef PINS_WROVER_H
 #define PINS_WROVER_H
 

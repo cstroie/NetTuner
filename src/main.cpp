@@ -2017,6 +2017,7 @@ void setup() {
     Serial.println("PSRAM initialization failed");
   }
   #endif
+  
   // Initialize SPIFFS with error recovery
   if (!initSPIFFS()) {
     Serial.println("ERROR: Failed to initialize SPIFFS");

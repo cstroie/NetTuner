@@ -16,6 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/*
+PSRAM pins on ESP32-CAM:                                                                                               
+
+ • IO6 - SPIQ (MISO)                                                                                                   
+ • IO7 - SPID (MOSI)                                                                                                   
+ • IO8 - SPIWP (Write Protect)                                                                                         
+ • IO9 - SPIHD (Hold)                                                                                                  
+ • IO16 - PSRAM Chip Select (CS)                                                                                       
+ • IO17 - SPI Clock (CLK)                                                                                              
+
+The ESP32-CAM typically uses:                                                                                          
+
+ • IO0, IO4, IO15, IO16 for camera interface                                                                           
+ • IO2, IO12, IO13 for SD card (if used)                                                                               
+ • IO17 for flash/PSRAM clock                                                                                          
+
+*/
+
 #ifndef PINS_CAM_H
 #define PINS_CAM_H
 
