@@ -283,10 +283,9 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(currentStream, 0, yUpdate[displayType][lineStream], 'l');
             }
         } else {
-            // Show the currently selected playlist item
-            extern Player player;
-            if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
-                String selectedStream = String(player.getPlaylistItem(player.getPlaylistIndex()).name);
+            // Show the currently selected playlist item (passed in streamName parameter)
+            if (strlen(streamName) > 0) {
+                String selectedStream = String(streamName);
                 if (selectedStream.length() > 16) {
                     printAt(selectedStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
                 } else {

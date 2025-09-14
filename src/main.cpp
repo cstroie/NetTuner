@@ -1762,8 +1762,18 @@ void updateDisplay() {
   } else {
     ipString = "No IP";
   }
+  
+  // When not playing, show the selected playlist item name instead of empty stream name
+  const char* displayStreamName = player.getStreamName();
+  if (!player.isPlaying() && strlen(displayStreamName) == 0) {
+    // If we have a playlist and a valid index, show the selected item name
+    if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+      displayStreamName = player.getPlaylistItem(player.getPlaylistIndex()).name;
+    }
+  }
+  
   // Update the display with current status
-  display->update(player.isPlaying(), player.getStreamTitle(), player.getStreamName(), player.getVolume(), player.getBitrate(), ipString);
+  display->update(player.isPlaying(), player.getStreamTitle(), displayStreamName, player.getVolume(), player.getBitrate(), ipString);
 }
 
 
