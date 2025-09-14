@@ -34,9 +34,9 @@ public:
   /**
    * @brief Construct a new Touch Button object
    * @param touchPin The touch pin number
-   * @param touchThreshold The touch threshold value (default 40)
+   * @param touchThreshold The touch threshold value (default 80)
    */
-  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40);
+  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 80);
 
   /**
    * @brief Handle touch button state

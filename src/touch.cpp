@@ -18,26 +18,26 @@
 
 #include "touch.h"
 
-TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold) 
-  : pin(touchPin), threshold(touchThreshold), lastState(false), 
+TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold)
+  : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false) {
 }
 
 void TouchButton::handle() {
   // Read current touch value
   uint16_t touchValue = touchRead(pin);
-  
+
   // Get current time
   unsigned long currentTime = millis();
-  
+
   // Check if touch value is below threshold (touched)
   bool currentState = (touchValue < threshold);
-  
+
   // Debounce the button press
   if (currentState != lastState) {
     lastPressTime = currentTime;
   }
-  
+
   // If state has been stable for debounce time
   if ((currentTime - lastPressTime) > debounceTime) {
     // If button is pressed and we haven't handled this press yet
@@ -49,7 +49,12 @@ void TouchButton::handle() {
       pressedFlag = false;
     }
   }
-  
+
+  Serial.print("pin:");
+  Serial.print(pin);
+  Serial.print(" pressed:");
+  Serial.println(pressedFlag);
+
   // Save current state for next iteration
   lastState = currentState;
 }
