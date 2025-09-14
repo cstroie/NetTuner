@@ -44,9 +44,6 @@ private:
   int lastCLK = 0;                           ///< Last CLK signal state for edge detection
   volatile unsigned long lastRotaryTime = 0; ///< Last rotary event timestamp for debouncing
   bool buttonPressedFlag = false;            ///< Flag indicating button press detected
-  bool buttonPressed = false;                ///< Current button press state
-  bool lastButtonState = false;              ///< Last button state for edge detection
-  unsigned long lastButtonTime = 0;          ///< Last button event timestamp for debouncing
 
 public:
   /**
@@ -65,13 +62,13 @@ public:
   void handleRotation();
   
   /**
-   * @brief Handle button press (polling method)
-   * @details Processes button press events with debouncing to prevent
+   * @brief Handle button press
+   * @details Processes button press events with 50ms debouncing to prevent
    * multiple detections from a single press. Sets an internal flag that can
    * be checked and cleared by wasButtonPressed().
    * 
    * The button is connected with a pull-up resistor, so a press is detected
-   * when the signal transitions from HIGH to LOW.
+   * when the signal transitions from HIGH to LOW (falling edge).
    */
   void handleButtonPress();
   

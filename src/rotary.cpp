@@ -34,7 +34,7 @@ void rotaryISR() {
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder
  * This function sets up the rotary encoder pins with internal pull-up resistors
- * and attaches interrupt handlers for rotation. Button is handled by polling.
+ * and attaches interrupt handlers for rotation and button press events.
  */
 void setupRotaryEncoder() {
   // Configure rotary encoder pins with internal pull-up resistors
@@ -43,6 +43,10 @@ void setupRotaryEncoder() {
   pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
+  // Attach interrupt handler for rotary encoder button press
+  attachInterrupt(digitalPinToInterrupt(config.rotary_sw), []() {
+    rotaryEncoder.handleButtonPress();
+  }, FALLING);
 }
 
 /**
@@ -87,35 +91,27 @@ void RotaryEncoder::handleRotation() {
 }
 
 /**
- * @brief Handle button press (polling method)
- * @details Processes button press events with debouncing to prevent
+ * @brief Handle button press
+ * @details Processes button press events with 50ms debouncing to prevent
  * multiple detections from a single press. Sets an internal flag that can
  * be checked and cleared by wasButtonPressed().
  * 
  * The button is connected with a pull-up resistor, so a press is detected
- * when the signal transitions from HIGH to LOW.
+ * when the signal transitions from HIGH to LOW (falling edge). However, this
+ * function is triggered by an interrupt on the falling edge, so we only need
+ * to implement debouncing based on time since last interrupt.
  */
 void RotaryEncoder::handleButtonPress() {
-  unsigned long currentTime = millis();
-  bool currentButtonState = (digitalRead(config.rotary_sw) == LOW);
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
   
-  // Check if button state has changed
-  if (currentButtonState != lastButtonState) {
-    lastButtonTime = currentTime;  // Reset debounce timer
+  // Debounce the button press (ignore if less than 50ms since last press)
+  // This prevents multiple detections from a single physical button press
+  // due to mechanical switch bouncing
+  if (interruptTime - lastInterruptTime > 50) {
+    buttonPressedFlag = true;  // Set flag to indicate button press detected
   }
-  
-  // If button has been stable for long enough (debounced)
-  if ((currentTime - lastButtonTime) > 50) {
-    // If button is pressed and wasn't previously registered as pressed
-    if (currentButtonState && !buttonPressed) {
-      buttonPressedFlag = true;  // Set flag to indicate button press detected
-      buttonPressed = true;      // Mark button as currently pressed
-    } else if (!currentButtonState && buttonPressed) {
-      buttonPressed = false;     // Mark button as released
-    }
-  }
-  
-  lastButtonState = currentButtonState;  // Store current state for next iteration
+  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
 }
 
 /**
