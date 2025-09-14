@@ -1974,7 +1974,7 @@ function addStation() {
     return;
   }
   // Validate URL format
-  if (!validateStreamURL(url)) {
+  if (!validateStreamURL(trimmedUrl)) {
     url.setAttribute("aria-invalid", "true");
     url.focus();
     return;
