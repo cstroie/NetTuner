@@ -1360,7 +1360,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
   const cleanArtistName = artistName
     .replace(/\(.*?\)/g, "") // Remove text in parentheses
     .replace(/\[.*?\]/g, "") // Remove text in brackets
-    .replace(/ +- +.*$/g, " ") // Remove " - " patterns and following text
+    .replace(/ +- +.*$/g, "") // Remove " - " patterns and following text
     .trim();
 
   if (!cleanArtistName) {
@@ -1368,6 +1368,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
     handleImageFallback(iconUrl, icyUrl);
     return;
   }
+  console.log("Searching TheAudioDB for artist:", cleanArtistName);
 
   // Use TheAudioDB API to search for artist through a CORS proxy
   const apiKey = "123"; // TheAudioDB free API key
@@ -1658,7 +1659,6 @@ function connectWebSocket() {
                 displayText += " (" + status.bitrate + " kbps)";
               }
             }
-            prev["streamTitle"] = status.streamTitle;
             prev["bitrate"] = status.bitrate;
             streamTitleElement.textContent = displayText;
           }
@@ -1691,6 +1691,7 @@ function connectWebSocket() {
                 "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
             }
           }
+          prev["streamTitle"] = status.streamTitle;
         }
 
         // Update volume controls only if volume changed
