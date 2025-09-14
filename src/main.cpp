@@ -847,6 +847,83 @@ void handleRotary() {
   }
 }
 
+/**
+ * @brief Handle touch button input
+ * Processes the touch buttons for play/pause, next/volume-up, and previous/volume-down
+ * This function implements the same functionality as the rotary encoder
+ */
+void handleTouch() {
+  // Handle play/pause button
+  if (touchPlay && touchPlay->wasPressed()) {
+    display->setActivityTime(millis()); // Update activity time
+    if (!display->isOn()) {
+      display->turnOn();
+      updateDisplay(); // Turn display back on and update
+    }
+    // Toggle play/stop
+    if (player.isPlaying()) {
+      player.stopStream();
+      player.markPlayerStateDirty();
+    } else {
+      // If we have a current stream, resume it
+      if (strlen(player.getStreamUrl()) > 0) {
+        player.startStream();
+      } 
+      // Otherwise, if we have playlist items, play the selected one
+      else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+        player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
+      }
+      player.markPlayerStateDirty();
+    }
+    updateDisplay();
+    sendStatusToClients();
+  }
+  
+  // Handle next/volume-up button
+  if (touchNext && touchNext->wasPressed()) {
+    display->setActivityTime(millis()); // Update activity time
+    if (!display->isOn()) {
+      display->turnOn();
+      updateDisplay(); // Turn display back on and update
+    }
+    
+    if (player.isPlaying()) {
+      // If playing, increase volume by 1 (capped at 22)
+      player.setVolume(min(22, player.getVolume() + 1));
+      player.markPlayerStateDirty();
+      sendStatusToClients();  // Notify clients of status change
+    } else {
+      // If not playing, select next item in playlist
+      if (player.getPlaylistCount() > 0) {
+        player.setPlaylistIndex((player.getPlaylistIndex() + 1) % player.getPlaylistCount());
+      }
+    }
+    updateDisplay();  // Refresh display
+  }
+  
+  // Handle previous/volume-down button
+  if (touchPrev && touchPrev->wasPressed()) {
+    display->setActivityTime(millis()); // Update activity time
+    if (!display->isOn()) {
+      display->turnOn();
+      updateDisplay(); // Turn display back on and update
+    }
+    
+    if (player.isPlaying()) {
+      // If playing, decrease volume by 1 (capped at 0)
+      player.setVolume(max(0, player.getVolume() - 1));
+      player.markPlayerStateDirty();
+      sendStatusToClients();  // Notify clients of status change
+    } else {
+      // If not playing, select previous item in playlist
+      if (player.getPlaylistCount() > 0) {
+        player.setPlaylistIndex((player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount());
+      }
+    }
+    updateDisplay();  // Refresh display
+  }
+}
+
 
 /**
  * @brief Handle simple web page request
@@ -1823,6 +1900,10 @@ bool connectToWiFi() {
  */
 void loop() {
   handleRotary();          // Process rotary encoder input
+  if (touchPlay) touchPlay->handle();  // Process touch play button
+  if (touchNext) touchNext->handle();  // Process touch next button
+  if (touchPrev) touchPrev->handle();  // Process touch previous button
+  handleTouch();           // Process touch button actions
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
   mpdInterface.handleClient();       // Process MPD commands
@@ -1941,6 +2022,11 @@ void setup() {
   displayOLED = new Adafruit_SSD1306(displayWidth, displayHeight, &Wire, -1);
   display = new Display(*displayOLED, (enum display_t)config.display_type);
   display->begin();
+  
+  // Initialize touch buttons
+  touchPlay = new TouchButton(DEFAULT_TOUCH_PLAY);
+  touchNext = new TouchButton(DEFAULT_TOUCH_NEXT);
+  touchPrev = new TouchButton(DEFAULT_TOUCH_PREV);
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   // Connect to WiFi with error handling
