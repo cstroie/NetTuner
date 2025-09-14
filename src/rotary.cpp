@@ -92,26 +92,23 @@ void RotaryEncoder::handleRotation() {
 
 /**
  * @brief Handle button press
- * @details Processes button press events with 50ms debouncing to prevent
+ * @details Processes button press events with debouncing to prevent
  * multiple detections from a single press. Sets an internal flag that can
  * be checked and cleared by wasButtonPressed().
  * 
  * The button is connected with a pull-up resistor, so a press is detected
- * when the signal transitions from HIGH to LOW (falling edge). However, this
- * function is triggered by an interrupt on the falling edge, so we only need
- * to implement debouncing based on time since last interrupt.
+ * when the signal transitions from HIGH to LOW (falling edge).
  */
 void RotaryEncoder::handleButtonPress() {
-  static unsigned long lastInterruptTime = 0;
-  unsigned long interruptTime = millis();
+  // Use local static variable for debouncing
+  static unsigned long lastButtonPressTime = 0;
+  unsigned long currentTime = millis();
   
   // Debounce the button press (ignore if less than 50ms since last press)
-  // This prevents multiple detections from a single physical button press
-  // due to mechanical switch bouncing
-  if (interruptTime - lastInterruptTime > 50) {
+  if (currentTime - lastButtonPressTime > 50) {
     buttonPressedFlag = true;  // Set flag to indicate button press detected
+    lastButtonPressTime = currentTime;  // Update last press time for debouncing
   }
-  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
 }
 
 /**
