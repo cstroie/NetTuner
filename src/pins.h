@@ -27,6 +27,9 @@
 #define DEFAULT_ROTARY_CLK       18  ///< Rotary encoder clock pin
 #define DEFAULT_ROTARY_DT        19  ///< Rotary encoder data pin
 #define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
+#define DEFAULT_TOUCH_PLAY       12  ///< Touch button play/pause pin
+#define DEFAULT_TOUCH_NEXT       13  ///< Touch button next/volume-up pin
+#define DEFAULT_TOUCH_PREV       14  ///< Touch button previous/volume-down pin
 #define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
 #define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
@@ -85,6 +88,18 @@
 #define DEFAULT_ROTARY_SW        23  ///< Rotary encoder switch pin
 #endif
 
+#ifndef DEFAULT_TOUCH_PLAY
+#define DEFAULT_TOUCH_PLAY       12  ///< Touch button play/pause pin
+#endif
+
+#ifndef DEFAULT_TOUCH_NEXT
+#define DEFAULT_TOUCH_NEXT       13  ///< Touch button next/volume-up pin
+#endif
+
+#ifndef DEFAULT_TOUCH_PREV
+#define DEFAULT_TOUCH_PREV       14  ///< Touch button previous/volume-down pin
+#endif
+
 #ifndef DEFAULT_BOARD_BUTTON
 #define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #endif
@@ -97,16 +112,16 @@
 #define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
 #endif
 
-#ifndef DEFAULT_DISPLAY_WIDTH
-#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
-#endif
-
-#ifndef DEFAULT_DISPLAY_HEIGHT
-#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
+#ifndef DEFAULT_DISPLAY_TYPE
+#define DEFAULT_DISPLAY_TYPE      0  ///< Default display type index
 #endif
 
 #ifndef DEFAULT_DISPLAY_ADDR
 #define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
 #endif
 
-#endif // PINS_H
+#ifndef DEFAULT_DISPLAY_TIMEOUT
+#define DEFAULT_DISPLAY_TIMEOUT  30  ///< OLED display timeout in seconds
+#endif
+
+// PINS_H
