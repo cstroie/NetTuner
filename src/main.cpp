@@ -76,9 +76,9 @@ Config config = {
   0, // Default display type (OLED_128x64)
   DEFAULT_DISPLAY_ADDR,
   30, // Default display timeout (30 seconds)
-  12, // Default touch play pin
-  13, // Default touch next pin
-  14  // Default touch prev pin
+  DEFAULT_TOUCH_PLAY,
+  DEFAULT_TOUCH_NEXT,
+  DEFAULT_TOUCH_PREV
 };
 
 
