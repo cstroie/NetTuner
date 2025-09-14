@@ -823,8 +823,8 @@ function renderPlaylist() {
  *
  * This function updates either the name or URL field of a stream at the specified index.
  * It performs appropriate validation based on the field being updated:
- * - For URLs: Validates format, structure, and length (max 256 chars)
- * - For names: Validates non-empty and length (max 128 chars)
+ * - For URLs: Validates format, structure, and length (max 128 chars)
+ * - For names: Validates non-empty and length (max 96 chars)
  *
  * @param {number} index - The index of the stream to update
  * @param {string} field - The field to update ('name' or 'url')
@@ -853,7 +853,7 @@ function updateStream(index, field, value) {
       return;
     }
     // Validate name length
-    if (trimmedValue.length > 128) {
+    if (trimmedValue.length > 96) {
       return;
     }
   }
@@ -1930,7 +1930,7 @@ function handleDragEnd(e) {
  * This function handles the addition of a new stream to the playlist. It performs
  * comprehensive validation on both the stream name and URL including:
  * - Non-empty validation
- * - Length limits (128 chars for name, 256 chars for URL)
+ * - Length limits (96 chars for name, 128 chars for URL)
  * - URL format validation (must start with http:// or https://)
  * - Proper URL structure validation
  *
@@ -1961,7 +1961,7 @@ function addStation() {
     return;
   }
   // Validate name length
-  if (trimmedName.length > 128) {
+  if (trimmedName.length > 96) {
     name.setAttribute("aria-invalid", "true");
     name.focus();
     return;
@@ -2585,8 +2585,8 @@ async function downloadPLS() {
  * and URL lines. For each valid stream entry, it creates a JSON object with
  * name and URL properties.
  *
- * The function performs validation on both names (max 128 chars) and URLs
- * (must be valid HTTP/HTTPS URLs, max 256 chars).
+ * The function performs validation on both names (max 96 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 128 chars).
  *
  * @param {string} m3uContent - The raw M3U file content as a string
  * @returns {string} - JSON string representation of the playlist
@@ -2629,11 +2629,11 @@ function convertM3UToJSON(m3uContent) {
         }
 
         // Validate lengths
-        if (currentName.length > 128) {
-          currentName = currentName.substring(0, 125) + "...";
+        if (currentName.length > 96) {
+          currentName = currentName.substring(0, 93) + "...";
         }
 
-        if (line.length <= 256) {
+        if (line.length <= 128) {
           streams.push({
             name: currentName,
             url: line,
@@ -2661,8 +2661,8 @@ function convertM3UToJSON(m3uContent) {
  * for export. It generates a proper M3U header (#EXTM3U) and creates
  * #EXTINF metadata lines for each stream followed by the URL.
  *
- * The function performs validation on both names (max 128 chars) and URLs
- * (must be valid HTTP/HTTPS URLs, max 256 chars) and skips invalid entries.
+ * The function performs validation on both names (max 96 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 128 chars) and skips invalid entries.
  *
  * @param {Array} jsonData - Array of stream objects with name and url properties
  * @returns {string} - M3U formatted playlist as a string
@@ -2680,8 +2680,8 @@ function convertJSONToM3U(jsonData) {
       if (item.name && item.url) {
         // Validate and sanitize name
         let sanitizedName = item.name.trim();
-        if (sanitizedName.length > 128) {
-          sanitizedName = sanitizedName.substring(0, 125) + "...";
+        if (sanitizedName.length > 96) {
+          sanitizedName = sanitizedName.substring(0, 93) + "...";
         }
 
         // Validate URL
@@ -2693,7 +2693,7 @@ function convertJSONToM3U(jsonData) {
         }
 
         // Validate URL length
-        if (item.url.length > 256) {
+        if (item.url.length > 128) {
           console.warn("Skipping URL that exceeds maximum length:", item.url);
           return;
         }
@@ -2720,8 +2720,8 @@ function convertJSONToM3U(jsonData) {
  * and URL lines. For each valid stream entry, it creates a JSON object with
  * name and URL properties.
  *
- * The function performs validation on both names (max 128 chars) and URLs
- * (must be valid HTTP/HTTPS URLs, max 256 chars).
+ * The function performs validation on both names (max 96 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 128 chars).
  *
  * @param {string} plsContent - The raw PLS file content as a string
  * @returns {string} - JSON string representation of the playlist
@@ -2780,11 +2780,11 @@ function convertPLSToJSON(plsContent) {
         let name = entry.title || "Stream " + (streams.length + 1);
 
         // Validate name
-        if (name.length > 128) {
-          name = name.substring(0, 125) + "...";
+        if (name.length > 96) {
+          name = name.substring(0, 93) + "...";
         }
 
-        if (entry.url.length <= 256) {
+        if (entry.url.length <= 128) {
           streams.push({
             name: name,
             url: entry.url,
@@ -2814,8 +2814,8 @@ function convertPLSToJSON(plsContent) {
  * for export. It generates a proper PLS header ([playlist]), NumberOfEntries,
  * and File/Title entries for each stream.
  *
- * The function performs validation on both names (max 128 chars) and URLs
- * (must be valid HTTP/HTTPS URLs, max 256 chars) and skips invalid entries.
+ * The function performs validation on both names (max 96 chars) and URLs
+ * (must be valid HTTP/HTTPS URLs, max 128 chars) and skips invalid entries.
  *
  * @param {Array} jsonData - Array of stream objects with name and url properties
  * @returns {string} - PLS formatted playlist as a string
@@ -2841,15 +2841,15 @@ function convertJSONToPLS(jsonData) {
         }
 
         // Validate URL length
-        if (item.url.length > 256) {
+        if (item.url.length > 128) {
           console.warn("Skipping URL that exceeds maximum length:", item.url);
           return;
         }
 
         // Validate and sanitize name
         let sanitizedName = item.name.trim();
-        if (sanitizedName.length > 128) {
-          sanitizedName = sanitizedName.substring(0, 125) + "...";
+        if (sanitizedName.length > 96) {
+          sanitizedName = sanitizedName.substring(0, 93) + "...";
         }
 
         entryCount++;
@@ -3447,7 +3447,7 @@ function validateStreamURL(url) {
     return false;
   }
   // Validate URL length
-  if (url.length > 256) {
+  if (url.length > 128) {
     return false;
   }
   return true;

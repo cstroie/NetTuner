@@ -26,8 +26,8 @@
 
 // Structure for playlist items
 struct StreamInfo {
-  char name[128];
-  char url[256];
+  char name[96];
+  char url[128];
 };
 
 class Playlist {
