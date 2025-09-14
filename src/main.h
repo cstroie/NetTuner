@@ -31,6 +31,7 @@
 #include <Adafruit_GFX.h>
 #include <WebSocketsServer.h>
 #include <ESPmDNS.h>
+#include "rotary.h"
 
 
 // Forward declarations
@@ -42,6 +43,7 @@ class Adafruit_SSD1306;
 class MPDInterface;
 class WiFiClient;
 class Display;
+class RotaryEncoder;
 
 // Configuration structure
 struct Config {
