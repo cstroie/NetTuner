@@ -89,6 +89,9 @@ public:
   // Playlist navigation helper functions
   int getNextPlaylistItem() const;
   int getPrevPlaylistItem() const;
+  
+  // Playlist validation helper function
+  bool isPlaylistIndexValid() const;
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }

@@ -283,6 +283,10 @@ int Player::getPrevPlaylistItem() const {
   return (playerState.playlistIndex - 1 + playlist->getCount()) % playlist->getCount();
 }
 
+bool Player::isPlaylistIndexValid() const {
+  return (playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount());
+}
+
 /**
  * @brief Get a playlist item at specific index
  * @param index Playlist index

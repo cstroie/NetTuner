@@ -864,7 +864,7 @@ void handleRotary() {
       display->turnOn();
     }
     // Only process if we have playlist items
-    if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+    if (player.isPlaylistIndexValid()) {
       if (!player.isPlaying()) {
         // If not playing, start playback of selected stream
         player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
