@@ -351,6 +351,11 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
  * This function implements debouncing and toggles playback state when pressed.
  */
 void handleBoardButton() {
+  // Only handle board button if it's configured (not negative)
+  if (config.board_button < 0) {
+    return;
+  }
+  
   static bool lastButtonState = HIGH;  // Keep track of button state
   static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
   const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
@@ -2050,8 +2055,10 @@ void setup() {
     pinMode(config.led_pin, OUTPUT);
     digitalWrite(config.led_pin, LOW);  // Turn off LED initially
   }
-  // Initialize board button with pull-up resistor
-  pinMode(config.board_button, INPUT_PULLUP);
+  // Initialize board button with pull-up resistor if configured
+  if (config.board_button >= 0) {
+    pinMode(config.board_button, INPUT_PULLUP);
+  }
   // Initialize OLED display
   // Configure I2C pins
   Wire.begin(config.display_sda, config.display_scl);

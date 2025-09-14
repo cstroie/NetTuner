@@ -302,10 +302,12 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
             printAt(volStr, 0, yUpdate[displayType][2], 'l');
-            // Display WiFi RSSI when stopped
-            char rssiStr[20];
-            sprintf(rssiStr, "%ddBm", WiFi.RSSI());
-            printAt(rssiStr, 0, yUpdate[displayType][2], 'r');
+            // Display WiFi RSSI when stopped (only if WiFi is connected)
+            if (WiFi.status() == WL_CONNECTED) {
+                char rssiStr[20];
+                sprintf(rssiStr, "%ddBm", WiFi.RSSI());
+                printAt(rssiStr, 0, yUpdate[displayType][2], 'r');
+            }
         }
 
         if (yUpdate[displayType][3] > 0) {
