@@ -28,15 +28,16 @@ private:
   bool lastState;
   unsigned long lastPressTime;
   bool pressedFlag;
-  const unsigned long debounceTime = 50;  // 50ms debounce
+  unsigned long debounceTime;  // Configurable debounce time
 
 public:
   /**
    * @brief Construct a new Touch Button object
    * @param touchPin The touch pin number
    * @param touchThreshold The touch threshold value (default 80)
+   * @param debounceMs The debounce time in milliseconds (default 50)
    */
-  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 80);
+  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 80, unsigned long debounceMs = 50);
 
   /**
    * @brief Handle touch button state

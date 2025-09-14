@@ -18,9 +18,9 @@
 
 #include "touch.h"
 
-TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold)
+TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned long debounceMs)
   : pin(touchPin), threshold(touchThreshold), lastState(false),
-    lastPressTime(0), pressedFlag(false) {
+    lastPressTime(0), pressedFlag(false), debounceTime(debounceMs) {
 }
 
 void TouchButton::handle() {
