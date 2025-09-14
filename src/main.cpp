@@ -344,10 +344,31 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
 
 
 
+// Forward declaration of the global player instance
+extern Player player;
+
+// Flag to indicate board button press
+static volatile bool boardButtonPressed = false;
+
+/**
+ * @brief Interrupt service routine for board button
+ * Sets a flag when the board button is pressed
+ */
+void boardButtonISR() {
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+  
+  // Debounce the button press (ignore if less than 50ms since last press)
+  if (interruptTime - lastInterruptTime > 50) {
+    boardButtonPressed = true;  // Set flag to indicate button press detected
+  }
+  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
+}
+
 /**
  * @brief Handle board button input
  * Processes the built-in button (GPIO 0) for play/stop toggle functionality
- * This function implements debouncing and toggles playback state when pressed.
+ * This function checks for button presses detected by the interrupt handler
  */
 void handleBoardButton() {
   // Only handle board button if it's configured (not negative)
@@ -355,61 +376,30 @@ void handleBoardButton() {
     return;
   }
   
-  static bool lastButtonState = HIGH;  // Keep track of button state
-  static unsigned long lastDebounceTime = 0;  // Last time the button was pressed
-  const unsigned long debounceDelay = 50;  // Debounce time in milliseconds
-  static bool buttonPressHandled = false;  // Track if we've handled this press
-  // Handle board button press for play/stop toggle
-  int buttonReading = digitalRead(config.board_button);
-  
-  // Debug output
-  static unsigned long lastDebugPrint = 0;
-  if (millis() - lastDebugPrint > 1000) {  // Print every second to avoid spam
-    Serial.printf("Board button - Pin: %d, Reading: %d, Last State: %d, Handled: %s\n", 
-                  config.board_button, buttonReading, lastButtonState, buttonPressHandled ? "true" : "false");
-    lastDebugPrint = millis();
-  }
-  
-  // Check if button state changed (debounce)
-  if (buttonReading != lastButtonState) {
-    Serial.printf("Button state changed from %d to %d\n", lastButtonState, buttonReading);
-    lastDebounceTime = millis();
-    buttonPressHandled = false;  // Reset handled flag when state changes
-  }
-  
-  // If button state has been stable for debounce delay
-  if ((millis() - lastDebounceTime) > debounceDelay) {
-    // If button is pressed (LOW due to pull-up) and we haven't handled this press yet
-    if (buttonReading == LOW && !buttonPressHandled) {
-      Serial.println("Button press detected and handled");
-      // Toggle play/stop
-      if (player.isPlaying()) {
-        Serial.println("Stopping stream");
-        player.stopStream();
-        player.markPlayerStateDirty();
-      } else {
-        Serial.println("Starting stream");
-        // If we have a current stream, resume it
-        if (strlen(player.getStreamUrl()) > 0) {
-          player.startStream();
-        } 
-        // Otherwise, if we have playlist items, play the selected one
-        else if (player.isPlaylistIndexValid()) {
-          player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
-        }
-        player.markPlayerStateDirty();
+  // Check if button was pressed (detected by interrupt)
+  if (boardButtonPressed) {
+    Serial.println("Board button press detected and handled");
+    // Toggle play/stop
+    if (player.isPlaying()) {
+      Serial.println("Stopping stream");
+      player.stopStream();
+      player.markPlayerStateDirty();
+    } else {
+      Serial.println("Starting stream");
+      // If we have a current stream, resume it
+      if (strlen(player.getStreamUrl()) > 0) {
+        player.startStream();
+      } 
+      // Otherwise, if we have playlist items, play the selected one
+      else if (player.isPlaylistIndexValid()) {
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
-      updateDisplay();
-      sendStatusToClients();
-      buttonPressHandled = true;  // Mark this press as handled
+      player.markPlayerStateDirty();
     }
-    // If button is released, reset handled flag
-    else if (buttonReading == HIGH) {
-      buttonPressHandled = false;
-    }
+    updateDisplay();
+    sendStatusToClients();
+    boardButtonPressed = false;  // Clear the flag
   }
-  // Save the reading for next loop
-  lastButtonState = buttonReading;
 }
 
 /**
@@ -2061,6 +2051,8 @@ void setup() {
   // Initialize board button with pull-up resistor if configured
   if (config.board_button >= 0) {
     pinMode(config.board_button, INPUT_PULLUP);
+    // Attach interrupt handler for board button press
+    attachInterrupt(digitalPinToInterrupt(config.board_button), boardButtonISR, FALLING);
   }
   // Initialize OLED display
   // Configure I2C pins
