@@ -102,15 +102,6 @@ void audio_showstreamtitle(const char *info) {
 }
 
 /**
- * @brief Send full status to all connected WebSocket clients
- * This is a convenience function that calls sendStatusToClients(true)
- * to send a complete status update to all connected clients.
- */
-void sendStatusToClients() {
-  sendStatusToClients(true);
-}
-
-/**
  * @brief Audio station name callback function
  * This function is called by the Audio library when station name information is available
  * @param info Pointer to the station name information
@@ -389,7 +380,7 @@ void handleBoardButton() {
           player.startStream();
         } 
         // Otherwise, if we have playlist items, play the selected one
-        else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+        else if (player.isPlaylistIndexValid()) {
           player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
         }
         player.markPlayerStateDirty();
