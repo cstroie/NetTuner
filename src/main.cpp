@@ -1849,13 +1849,18 @@ void setupWebServer() {
  * @return true if connected to a network, false otherwise
  */
 bool connectToWiFi() {
+  static bool firstConnection = true;  // Track if this is the first connection attempt
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
     // First, scan for available networks
     Serial.println("Scanning for available WiFi networks...");
-    //display->showStatus("WiFi scanning", "", "");
-    display->showLogo();
+    // Show appropriate status based on whether this is first connection or reconnection
+    if (firstConnection) {
+      display->showLogo();
+    } else {
+      display->showStatus("WiFi scanning", "", "");
+    }
     int n = WiFi.scanNetworks();
     Serial.printf("Found %d networks\n", n);
     // Create array to track which configured networks are available
@@ -1912,6 +1917,7 @@ bool connectToWiFi() {
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
     display->showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
+    firstConnection = false;  // Mark that first connection has been completed
   } else {
     Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
   }
