@@ -2007,6 +2007,16 @@ void setup() {
   Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
+  
+  // Initialize PSRAM if available
+  #if defined(BOARD_HAS_PSRAM)
+  if (psramInit()) {
+    Serial.println("PSRAM initialized successfully");
+    Serial.printf("PSRAM size: %d bytes\n", ESP.getPsramSize());
+  } else {
+    Serial.println("PSRAM initialization failed");
+  }
+  #endif
   // Initialize SPIFFS with error recovery
   if (!initSPIFFS()) {
     Serial.println("ERROR: Failed to initialize SPIFFS");
