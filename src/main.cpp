@@ -1683,7 +1683,7 @@ void sendStatusToClients(bool fullStatus) {
   }
 }
 
-// Overload with default parameter
+// Document this, AI!
 void sendStatusToClients() {
   sendStatusToClients(true);
 }
