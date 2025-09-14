@@ -861,6 +861,7 @@ void handleRotary() {
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
+    Serial.println("Rotary button pressed");
     display->setActivityTime(millis()); // Update activity time
     if (!display->isOn()) {
       display->turnOn();
@@ -2020,7 +2021,7 @@ void setup() {
     Serial.println("PSRAM initialization failed");
   }
   #endif
-  
+
   // Initialize SPIFFS with error recovery
   if (!initSPIFFS()) {
     Serial.println("ERROR: Failed to initialize SPIFFS");

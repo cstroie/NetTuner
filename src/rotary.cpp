@@ -43,7 +43,6 @@ void setupRotaryEncoder() {
   pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
-  // Note: Button press is handled by polling in handleButtonPress()
 }
 
 /**
