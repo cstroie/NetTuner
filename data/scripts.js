@@ -1337,6 +1337,7 @@ async function findFaviconUrl(websiteUrl) {
  * @returns {Promise<boolean>} True if image exists, false otherwise
  */
 async function checkImageExists(url) {
+  console.log("Checking image existence:", url);
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(true);
@@ -1362,7 +1363,6 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
     .replace(/\[.*?\]/g, "") // Remove text in brackets
     .replace(/ +- +.*$/g, "") // Remove " - " patterns and following text
     .trim();
-
   if (!cleanArtistName) {
     // Try icon URL first, then favicon
     handleImageFallback(iconUrl, icyUrl);
