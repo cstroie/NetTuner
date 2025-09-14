@@ -269,6 +269,44 @@ int Player::getPlaylistCount() const {
   return playlist->getCount(); 
 }
 
+/**
+ * @brief Get the next playlist item index with wraparound
+ * @details Calculates the next playlist index with wraparound behavior.
+ * If the playlist is empty, returns 0. Otherwise, returns the next index
+ * in the playlist, wrapping to 0 when reaching the end.
+ * @return Next playlist item index
+ */
+int Player::getNextPlaylistItem() const {
+  if (playlist->getCount() <= 0) {
+    return 0;
+  }
+  return (playerState.playlistIndex + 1) % playlist->getCount();
+}
+
+/**
+ * @brief Get the previous playlist item index with wraparound
+ * @details Calculates the previous playlist index with wraparound behavior.
+ * If the playlist is empty, returns 0. Otherwise, returns the previous index
+ * in the playlist, wrapping to the last item when reaching the beginning.
+ * @return Previous playlist item index
+ */
+int Player::getPrevPlaylistItem() const {
+  if (playlist->getCount() <= 0) {
+    return 0;
+  }
+  return (playerState.playlistIndex - 1 + playlist->getCount()) % playlist->getCount();
+}
+
+/**
+ * @brief Check if the current playlist index is valid
+ * @details Validates that the playlist has items and the current index
+ * is within the valid range of the playlist.
+ * @return true if playlist index is valid, false otherwise
+ */
+bool Player::isPlaylistIndexValid() const {
+  return (playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount());
+}
+
 // Document this, AI!
 int Player::getNextPlaylistItem() const {
   if (playlist->getCount() <= 0) {
