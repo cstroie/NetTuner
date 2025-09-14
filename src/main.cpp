@@ -1858,13 +1858,6 @@ void loop() {
     lastDisplayUpdate = millis();
   }
   
-  // Periodically update display for scrolling text animation
-  static unsigned long lastDisplayUpdate = 0;
-  if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
-    updateDisplay();
-    lastDisplayUpdate = millis();
-  }
-  
   // Check audio connection status with improved error recovery
   static unsigned long streamStoppedTime = 0;
   if (player.getAudioObject()) {
