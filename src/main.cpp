@@ -2104,6 +2104,7 @@ void setup() {
   }
 
   // Start mDNS responder
+  #if defined(BOARD_HAS_PSRAM)
   if (MDNS.begin("NetTuner")) {
     Serial.println("MDNS responder started");
     MDNS.addService("http", "tcp", 80);
@@ -2111,6 +2112,7 @@ void setup() {
   } else {
     Serial.println("Error setting up MDNS responder!");
   }
+  #endif
   
   // Setup audio output with error handling
   Audio* audio = player.setupAudioOutput();
