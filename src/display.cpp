@@ -274,7 +274,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             lineStream = 1;
         }
             
-        // Display current stream name (second line) or "No stream" if none selected
+        // Display current stream name (second line) or selected playlist item if none selected
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
             if (currentStream.length() > 16) {
@@ -283,8 +283,18 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(currentStream, 0, yUpdate[displayType][lineStream], 'l');
             }
         } else {
-            // No stream is currently found in playlist
-            printAt("No stream", 0, yUpdate[displayType][lineStream], 'c');
+            // Show the currently selected playlist item
+            extern Player player;
+            if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+                String selectedStream = String(player.getPlaylistItem(player.getPlaylistIndex()).name);
+                if (selectedStream.length() > 16) {
+                    printAt(selectedStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
+                } else {
+                    printAt(selectedStream, 0, yUpdate[displayType][lineStream], 'l');
+                }
+            } else {
+                printAt("No stream", 0, yUpdate[displayType][lineStream], 'c');
+            }
         }
         
         // Display volume on third line (only for displays with sufficient height)
