@@ -23,6 +23,7 @@
 #include "rotary.h"
 #include "player.h"
 #include "playlist.h"
+#include "touch.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 
@@ -52,6 +53,11 @@ TaskHandle_t audioTaskHandle = NULL;
 
 Player player;
 
+// Touch buttons
+TouchButton* touchPlay = nullptr;
+TouchButton* touchNext = nullptr;
+TouchButton* touchPrev = nullptr;
+
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, player);
 
@@ -69,7 +75,10 @@ Config config = {
   DEFAULT_DISPLAY_SCL,
   0, // Default display type (OLED_128x64)
   DEFAULT_DISPLAY_ADDR,
-  30 // Default display timeout (30 seconds)
+  30, // Default display timeout (30 seconds)
+  12, // Default touch play pin
+  13, // Default touch next pin
+  14  // Default touch prev pin
 };
 
 
@@ -683,6 +692,9 @@ void saveConfig() {
   doc["display_type"] = config.display_type;
   doc["display_address"] = config.display_address;
   doc["display_timeout"] = config.display_timeout;
+  doc["touch_play"] = config.touch_play;
+  doc["touch_next"] = config.touch_next;
+  doc["touch_prev"] = config.touch_prev;
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/config.json", doc)) {
     Serial.println("Saved configuration to SPIFFS");
@@ -715,6 +727,9 @@ void handleGetConfig() {
   doc["display_type"] = config.display_type;
   doc["display_address"] = config.display_address;
   doc["display_timeout"] = config.display_timeout;
+  doc["touch_play"] = config.touch_play;
+  doc["touch_next"] = config.touch_next;
+  doc["touch_prev"] = config.touch_prev;
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -758,6 +773,9 @@ void handlePostConfig() {
   if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
   if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
   if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
+  if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
+  if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
+  if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
@@ -847,82 +865,6 @@ void handleRotary() {
   }
 }
 
-/**
- * @brief Handle touch button input
- * Processes the touch buttons for play/pause, next/volume-up, and previous/volume-down
- * This function implements the same functionality as the rotary encoder
- */
-void handleTouch() {
-  // Handle play/pause button
-  if (touchPlay && touchPlay->wasPressed()) {
-    display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
-    // Toggle play/stop
-    if (player.isPlaying()) {
-      player.stopStream();
-      player.markPlayerStateDirty();
-    } else {
-      // If we have a current stream, resume it
-      if (strlen(player.getStreamUrl()) > 0) {
-        player.startStream();
-      } 
-      // Otherwise, if we have playlist items, play the selected one
-      else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
-        player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
-      }
-      player.markPlayerStateDirty();
-    }
-    updateDisplay();
-    sendStatusToClients();
-  }
-  
-  // Handle next/volume-up button
-  if (touchNext && touchNext->wasPressed()) {
-    display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
-    
-    if (player.isPlaying()) {
-      // If playing, increase volume by 1 (capped at 22)
-      player.setVolume(min(22, player.getVolume() + 1));
-      player.markPlayerStateDirty();
-      sendStatusToClients();  // Notify clients of status change
-    } else {
-      // If not playing, select next item in playlist
-      if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex((player.getPlaylistIndex() + 1) % player.getPlaylistCount());
-      }
-    }
-    updateDisplay();  // Refresh display
-  }
-  
-  // Handle previous/volume-down button
-  if (touchPrev && touchPrev->wasPressed()) {
-    display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
-    
-    if (player.isPlaying()) {
-      // If playing, decrease volume by 1 (capped at 0)
-      player.setVolume(max(0, player.getVolume() - 1));
-      player.markPlayerStateDirty();
-      sendStatusToClients();  // Notify clients of status change
-    } else {
-      // If not playing, select previous item in playlist
-      if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex((player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount());
-      }
-    }
-    updateDisplay();  // Refresh display
-  }
-}
 
 
 /**
@@ -1916,6 +1858,13 @@ void loop() {
     lastDisplayUpdate = millis();
   }
   
+  // Periodically update display for scrolling text animation
+  static unsigned long lastDisplayUpdate = 0;
+  if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
+    updateDisplay();
+    lastDisplayUpdate = millis();
+  }
+  
   // Check audio connection status with improved error recovery
   static unsigned long streamStoppedTime = 0;
   if (player.getAudioObject()) {
@@ -2024,9 +1973,15 @@ void setup() {
   display->begin();
   
   // Initialize touch buttons
-  touchPlay = new TouchButton(DEFAULT_TOUCH_PLAY);
-  touchNext = new TouchButton(DEFAULT_TOUCH_NEXT);
-  touchPrev = new TouchButton(DEFAULT_TOUCH_PREV);
+  if (config.touch_play >= 0) {
+    touchPlay = new TouchButton(config.touch_play);
+  }
+  if (config.touch_next >= 0) {
+    touchNext = new TouchButton(config.touch_next);
+  }
+  if (config.touch_prev >= 0) {
+    touchPrev = new TouchButton(config.touch_prev);
+  }
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   // Connect to WiFi with error handling

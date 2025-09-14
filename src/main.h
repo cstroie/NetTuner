@@ -58,6 +58,9 @@ struct Config {
   int display_type;    ///< OLED display type (index)
   int display_address; ///< OLED display I2C address
   int display_timeout; ///< Display timeout in seconds
+  int touch_play;      ///< Touch button play/pause pin
+  int touch_next;      ///< Touch button next/volume-up pin
+  int touch_prev;      ///< Touch button previous/volume-down pin
 };
 extern Config config;
 
@@ -83,6 +86,7 @@ extern int wifiNetworkCount;
 void updateDisplay();
 void sendStatusToClients();
 void handleRotary();
+void handleTouch();
 void audioTask(void *pvParameters);
 void loadConfig();
 void saveConfig();
