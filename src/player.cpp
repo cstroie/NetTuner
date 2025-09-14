@@ -342,8 +342,10 @@ void Player::startStream(const char* url, const char* name) {
   playerState.playing = true;
   // Track play time
   playerState.playStartTime = millis() / 1000;  // Store in seconds
-  // Turn on LED when playing
-  digitalWrite(config.led_pin, HIGH);
+  // Turn on LED when playing (if LED pin is configured)
+  if (config.led_pin >= 0) {
+    digitalWrite(config.led_pin, HIGH);
+  }
   // Use ESP32-audioI2S to play the stream
   if (audio) {
     bool audioConnected = audio->connecttohost(url);
@@ -379,8 +381,10 @@ void Player::stopStream() {
     playerState.totalPlayTime += (millis() / 1000) - playerState.playStartTime;
     playerState.playStartTime = 0;
   }
-  // Turn off LED when stopped
-  digitalWrite(config.led_pin, LOW);
+  // Turn off LED when stopped (if LED pin is configured)
+  if (config.led_pin >= 0) {
+    digitalWrite(config.led_pin, LOW);
+  }
   updateDisplay();  // Refresh the display
   sendStatusToClients();  // Notify clients of status change
 }

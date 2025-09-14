@@ -2045,9 +2045,11 @@ void setup() {
   if (config.display_type < 0 || config.display_type >= getDisplayTypeCount()) {
     config.display_type = 0; // Default to first display type
   }
-  // Initialize LED pin
-  pinMode(config.led_pin, OUTPUT);
-  digitalWrite(config.led_pin, LOW);  // Turn off LED initially
+  // Initialize LED pin if configured
+  if (config.led_pin >= 0) {
+    pinMode(config.led_pin, OUTPUT);
+    digitalWrite(config.led_pin, LOW);  // Turn off LED initially
+  }
   // Initialize board button with pull-up resistor
   pinMode(config.board_button, INPUT_PULLUP);
   // Initialize OLED display
