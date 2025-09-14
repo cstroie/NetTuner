@@ -78,7 +78,9 @@ Config config = {
   30, // Default display timeout (30 seconds)
   DEFAULT_TOUCH_PLAY,
   DEFAULT_TOUCH_NEXT,
-  DEFAULT_TOUCH_PREV
+  DEFAULT_TOUCH_PREV,
+  40, // Default touch threshold
+  50  // Default touch debounce time
 };
 
 
@@ -730,6 +732,8 @@ void handleGetConfig() {
   doc["touch_play"] = config.touch_play;
   doc["touch_next"] = config.touch_next;
   doc["touch_prev"] = config.touch_prev;
+  doc["touch_threshold"] = config.touch_threshold;
+  doc["touch_debounce"] = config.touch_debounce;
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -776,6 +780,8 @@ void handlePostConfig() {
   if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
   if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
   if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
+  if (doc.containsKey("touch_threshold")) config.touch_threshold = doc["touch_threshold"];
+  if (doc.containsKey("touch_debounce")) config.touch_debounce = doc["touch_debounce"];
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
@@ -2045,13 +2051,13 @@ void setup() {
   
   // Initialize touch buttons
   if (config.touch_play >= 0) {
-    touchPlay = new TouchButton(config.touch_play);
+    touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
   }
   if (config.touch_next >= 0) {
-    touchNext = new TouchButton(config.touch_next);
+    touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce);
   }
   if (config.touch_prev >= 0) {
-    touchPrev = new TouchButton(config.touch_prev);
+    touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce);
   }
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();

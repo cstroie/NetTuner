@@ -34,10 +34,10 @@ public:
   /**
    * @brief Construct a new Touch Button object
    * @param touchPin The touch pin number
-   * @param touchThreshold The touch threshold value (default 80)
+   * @param touchThreshold The touch threshold value (default 40)
    * @param debounceMs The debounce time in milliseconds (default 50)
    */
-  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 80, unsigned long debounceMs = 50);
+  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 50);
 
   /**
    * @brief Handle touch button state

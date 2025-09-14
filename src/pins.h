@@ -60,6 +60,14 @@
 #define DEFAULT_TOUCH_PREV       14  ///< Touch button previous/volume-down pin
 #endif
 
+#ifndef DEFAULT_TOUCH_THRESHOLD
+#define DEFAULT_TOUCH_THRESHOLD  40  ///< Touch threshold value
+#endif
+
+#ifndef DEFAULT_TOUCH_DEBOUNCE
+#define DEFAULT_TOUCH_DEBOUNCE   50  ///< Touch debounce time in milliseconds
+#endif
+
 #ifndef DEFAULT_BOARD_BUTTON
 #define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #endif

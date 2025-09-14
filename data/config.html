@@ -79,6 +79,59 @@
             </label>
           </fieldset>
           <fieldset class="grid">
+            <legend>Touch buttons</legend>
+            <label for="touch-play">Play/Pause Pin
+              <select id="touch-play" name="touch-play">
+                <option value="-1">Disabled</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="27">27</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+              </select>
+            </label>
+            <label for="touch-next">Next/Volume+ Pin
+              <select id="touch-next" name="touch-next">
+                <option value="-1">Disabled</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="27">27</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+              </select>
+            </label>
+            <label for="touch-prev">Prev/Volume- Pin
+              <select id="touch-prev" name="touch-prev">
+                <option value="-1">Disabled</option>
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="27">27</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+              </select>
+            </label>
+            <label for="touch-threshold">Touch Threshold
+              <input type="number" id="touch-threshold" name="touch-threshold"
+                     min="20" max="100" value="40" />
+            </label>
+            <label for="touch-debounce">Debounce Time (ms)
+              <input type="number" id="touch-debounce" name="touch-debounce"
+                     min="10" max="200" value="50" />
+            </label>
+          </fieldset>
+          <fieldset class="grid">
             <legend>Display settings</legend>
             <label for="display-sda">I2C SDA
               <input type="number" id="display-sda" name="display-sda"

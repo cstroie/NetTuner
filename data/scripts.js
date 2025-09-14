@@ -1037,6 +1037,12 @@ async function loadConfig() {
       $("display-type").value = config.display_type;
       $("display-address").value = config.display_address;
       $("display-timeout").value = config.display_timeout;
+      // Touch configuration
+      if ($("touch-play")) $("touch-play").value = config.touch_play !== undefined ? config.touch_play : -1;
+      if ($("touch-next")) $("touch-next").value = config.touch_next !== undefined ? config.touch_next : -1;
+      if ($("touch-prev")) $("touch-prev").value = config.touch_prev !== undefined ? config.touch_prev : -1;
+      if ($("touch-threshold")) $("touch-threshold").value = config.touch_threshold !== undefined ? config.touch_threshold : 40;
+      if ($("touch-debounce")) $("touch-debounce").value = config.touch_debounce !== undefined ? config.touch_debounce : 50;
     }
   } catch (error) {
     console.error("Error loading hardware configuration:", error);
@@ -1084,6 +1090,12 @@ async function saveConfig() {
     display_type: parseInt($("display-type").value),
     display_address: parseInt($("display-address").value),
     display_timeout: parseInt($("display-timeout").value),
+    // Touch configuration
+    touch_play: parseInt($("touch-play").value),
+    touch_next: parseInt($("touch-next").value),
+    touch_prev: parseInt($("touch-prev").value),
+    touch_threshold: parseInt($("touch-threshold").value),
+    touch_debounce: parseInt($("touch-debounce").value),
   };
   // Try to send the data to API
   try {
