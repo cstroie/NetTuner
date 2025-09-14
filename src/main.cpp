@@ -102,6 +102,15 @@ void audio_showstreamtitle(const char *info) {
 }
 
 /**
+ * @brief Send full status to all connected WebSocket clients
+ * This is a convenience function that calls sendStatusToClients(true)
+ * to send a complete status update to all connected clients.
+ */
+void sendStatusToClients() {
+  sendStatusToClients(true);
+}
+
+/**
  * @brief Audio station name callback function
  * This function is called by the Audio library when station name information is available
  * @param info Pointer to the station name information
