@@ -41,26 +41,21 @@ void TouchButton::handle() {
   // If state has been stable for debounce time
   if ((currentTime - lastPressTime) > debounceTime) {
     // If button is pressed and we haven't handled this press yet
-    if (currentState && !lastState && !pressedFlag) {
+    if (currentState && !pressedFlag) {
       pressedFlag = true;  // Mark this press as detected
     }
     // If button is released, reset handled flag
-    else if (!currentState && lastState) {
+    else if (!currentState) {
       pressedFlag = false;
     }
   }
-
-  Serial.print("pin:");
-  Serial.print(pin);
-  Serial.print(" pressed:");
-  Serial.println(pressedFlag);
 
   // Save current state for next iteration
   lastState = currentState;
 }
 
 bool TouchButton::wasPressed() {
-  bool result = pressedFlag && lastState;  // Check if currently pressed and flagged
+  bool result = pressedFlag;  // Check if press was detected
   if (result) {
     pressedFlag = false;  // Clear flag to prevent reprocessing
   }
