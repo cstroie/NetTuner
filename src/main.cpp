@@ -79,8 +79,8 @@ Config config = {
   DEFAULT_TOUCH_PLAY,
   DEFAULT_TOUCH_NEXT,
   DEFAULT_TOUCH_PREV,
-  40, // Default touch threshold
-  50  // Default touch debounce time
+  DEFAULT_TOUCH_THRESHOLD,
+  DEFAULT_TOUCH_DEBOUNCE
 };
 
 

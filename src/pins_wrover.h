@@ -30,11 +30,13 @@
 #define DEFAULT_TOUCH_PLAY       12  ///< Touch button play/pause pin
 #define DEFAULT_TOUCH_NEXT       13  ///< Touch button next/volume-up pin
 #define DEFAULT_TOUCH_PREV       14  ///< Touch button previous/volume-down pin
+#define DEFAULT_TOUCH_THRESHOLD  40  ///< Touch threshold value
+#define DEFAULT_TOUCH_DEBOUNCE   50  ///< Touch debounce time in milliseconds
 #define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
 #define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
-#define DEFAULT_DISPLAY_WIDTH   128  ///< OLED display width
-#define DEFAULT_DISPLAY_HEIGHT   64  ///< OLED display height
+#define DEFAULT_DISPLAY_TYPE      0  ///< OLED display type (index)
 #define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
+#define DEFAULT_DISPLAY_TIMEOUT  30  ///< Display timeout in seconds
 
 #endif // PINS_WROVER_H

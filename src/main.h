@@ -61,6 +61,8 @@ struct Config {
   int touch_play;      ///< Touch button play/pause pin
   int touch_next;      ///< Touch button next/volume-up pin
   int touch_prev;      ///< Touch button previous/volume-down pin
+  int touch_threshold; ///< Touch threshold value
+  int touch_debounce;  ///< Touch debounce time in milliseconds
 };
 extern Config config;
 
