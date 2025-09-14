@@ -821,7 +821,7 @@ void handleRotary() {
   int currentPosition = rotaryEncoder.getPosition();
   if (currentPosition != lastRotaryPosition) {
     int diff = currentPosition - lastRotaryPosition;
-    // Process clockwise rotation
+    // Process the rotation
     if (diff > 0) {
       // Rotate clockwise - volume up or next item
       if (player.isPlaying()) {
@@ -836,7 +836,6 @@ void handleRotary() {
         }
       }
     } else if (diff < 0) {
-      // Process counter-clockwise rotation
       // Rotate counter-clockwise - volume down or previous item
       if (player.isPlaying()) {
         // If playing, decrease volume by 1 (capped at 0)
@@ -849,30 +848,43 @@ void handleRotary() {
         }
       }
     }
-    lastRotaryPosition = currentPosition;  // Update last position
-    display->setActivityTime(millis()); // Update activity time on user interaction
+    // Update last position
+    lastRotaryPosition = currentPosition;  
+    // Update activity time on user interaction
+    display->setActivityTime(millis()); 
     if (!display->isOn()) {
+      // Turn display back on if it was off
       display->turnOn();
     }
-    updateDisplay();                      // Refresh display with new values
+    // Refresh display with new values
+    updateDisplay();                      
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
-    Serial.println("Rotary button pressed");
-    display->setActivityTime(millis()); // Update activity time
+    // Update activity time
+    display->setActivityTime(millis()); 
     if (!display->isOn()) {
+      // Turn display back on and update
       display->turnOn();
-      updateDisplay(); // Turn display back on and update
     }
     // Only process if we have playlist items
     if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
       if (!player.isPlaying()) {
         // If not playing, start playback of selected stream
         player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
-        sendStatusToClients();  // Notify clients of status change
+        // Save state when user initiates playback
+        player.savePlayerState(); 
+      } else {
+        // If playing, stop playback
+        player.stopStream();
+        // Save state when user stops playback
+        player.savePlayerState(); 
       }
     }
-    updateDisplay();  // Refresh display
+    // Refresh display
+    updateDisplay();
+    // Notify clients of status change 
+    sendStatusToClients();  
   }
 }
 
