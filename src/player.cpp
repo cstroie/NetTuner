@@ -269,6 +269,7 @@ int Player::getPlaylistCount() const {
   return playlist->getCount(); 
 }
 
+// Document this, AI!
 int Player::getNextPlaylistItem() const {
   if (playlist->getCount() <= 0) {
     return 0;
@@ -276,6 +277,7 @@ int Player::getNextPlaylistItem() const {
   return (playerState.playlistIndex + 1) % playlist->getCount();
 }
 
+// Document this, AI!
 int Player::getPrevPlaylistItem() const {
   if (playlist->getCount() <= 0) {
     return 0;
@@ -283,6 +285,7 @@ int Player::getPrevPlaylistItem() const {
   return (playerState.playlistIndex - 1 + playlist->getCount()) % playlist->getCount();
 }
 
+// Document this, AI!
 bool Player::isPlaylistIndexValid() const {
   return (playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount());
 }
