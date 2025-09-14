@@ -361,20 +361,34 @@ void handleBoardButton() {
   static bool buttonPressHandled = false;  // Track if we've handled this press
   // Handle board button press for play/stop toggle
   int buttonReading = digitalRead(config.board_button);
+  
+  // Debug output
+  static unsigned long lastDebugPrint = 0;
+  if (millis() - lastDebugPrint > 1000) {  // Print every second to avoid spam
+    Serial.printf("Board button - Pin: %d, Reading: %d, Last State: %d, Handled: %s\n", 
+                  config.board_button, buttonReading, lastButtonState, buttonPressHandled ? "true" : "false");
+    lastDebugPrint = millis();
+  }
+  
   // Check if button state changed (debounce)
   if (buttonReading != lastButtonState) {
+    Serial.printf("Button state changed from %d to %d\n", lastButtonState, buttonReading);
     lastDebounceTime = millis();
     buttonPressHandled = false;  // Reset handled flag when state changes
   }
+  
   // If button state has been stable for debounce delay
   if ((millis() - lastDebounceTime) > debounceDelay) {
     // If button is pressed (LOW due to pull-up) and we haven't handled this press yet
-    if (buttonReading == LOW && lastButtonState == HIGH && !buttonPressHandled) {
+    if (buttonReading == LOW && !buttonPressHandled) {
+      Serial.println("Button press detected and handled");
       // Toggle play/stop
       if (player.isPlaying()) {
+        Serial.println("Stopping stream");
         player.stopStream();
         player.markPlayerStateDirty();
       } else {
+        Serial.println("Starting stream");
         // If we have a current stream, resume it
         if (strlen(player.getStreamUrl()) > 0) {
           player.startStream();
@@ -390,7 +404,7 @@ void handleBoardButton() {
       buttonPressHandled = true;  // Mark this press as handled
     }
     // If button is released, reset handled flag
-    else if (buttonReading == HIGH && lastButtonState == LOW) {
+    else if (buttonReading == HIGH) {
       buttonPressHandled = false;
     }
   }
