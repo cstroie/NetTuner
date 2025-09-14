@@ -922,8 +922,8 @@ void handleTouch() {
         player.startStream();
       } 
       // Otherwise, if we have playlist items, play the selected one
-      else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
-        player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
+      else if (player.isPlaylistIndexValid()) {
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
       player.markPlayerStateDirty();
     }
