@@ -85,6 +85,10 @@ public:
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   int getPlaylistCount() const;
+  
+  // Playlist navigation helper functions
+  int getNextPlaylistItem() const;
+  int getPrevPlaylistItem() const;
   bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }

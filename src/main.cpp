@@ -832,7 +832,7 @@ void handleRotary() {
       } else {
         // If not playing, select next item in playlist
         if (player.getPlaylistCount() > 0) {
-          player.setPlaylistIndex((player.getPlaylistIndex() + 1) % player.getPlaylistCount());
+          player.setPlaylistIndex(player.getNextPlaylistItem());
         }
       }
     } else if (diff < 0) {
@@ -844,7 +844,7 @@ void handleRotary() {
       } else {
         // If not playing, select previous item in playlist
         if (player.getPlaylistCount() > 0) {
-          player.setPlaylistIndex((player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount());
+          player.setPlaylistIndex(player.getPrevPlaylistItem());
         }
       }
     }
@@ -937,7 +937,7 @@ void handleTouch() {
     } else {
       // If not playing, select next item in playlist
       if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex((player.getPlaylistIndex() + 1) % player.getPlaylistCount());
+        player.setPlaylistIndex(player.getNextPlaylistItem());
       }
     }
     updateDisplay();  // Refresh display
@@ -959,7 +959,7 @@ void handleTouch() {
     } else {
       // If not playing, select previous item in playlist
       if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex((player.getPlaylistIndex() - 1 + player.getPlaylistCount()) % player.getPlaylistCount());
+        player.setPlaylistIndex(player.getPrevPlaylistItem());
       }
     }
     updateDisplay();  // Refresh display
