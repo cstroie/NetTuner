@@ -831,9 +831,7 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
-        if (player.getPlaylistCount() > 0) {
-          player.setPlaylistIndex(player.getNextPlaylistItem());
-        }
+        player.setPlaylistIndex(player.getNextPlaylistItem());
       }
     } else if (diff < 0) {
       // Rotate counter-clockwise - volume down or previous item
@@ -843,9 +841,7 @@ void handleRotary() {
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select previous item in playlist
-        if (player.getPlaylistCount() > 0) {
-          player.setPlaylistIndex(player.getPrevPlaylistItem());
-        }
+        player.setPlaylistIndex(player.getPrevPlaylistItem());
       }
     }
     // Update last position
@@ -936,9 +932,7 @@ void handleTouch() {
       sendStatusToClients();  // Notify clients of status change
     } else {
       // If not playing, select next item in playlist
-      if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex(player.getNextPlaylistItem());
-      }
+      player.setPlaylistIndex(player.getNextPlaylistItem());
     }
     updateDisplay();  // Refresh display
   }
@@ -958,9 +952,7 @@ void handleTouch() {
       sendStatusToClients();  // Notify clients of status change
     } else {
       // If not playing, select previous item in playlist
-      if (player.getPlaylistCount() > 0) {
-        player.setPlaylistIndex(player.getPrevPlaylistItem());
-      }
+      player.setPlaylistIndex(player.getPrevPlaylistItem());
     }
     updateDisplay();  // Refresh display
   }
