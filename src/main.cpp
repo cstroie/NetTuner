@@ -1630,7 +1630,7 @@ void handleImportConfig() {
  * @param fullStatus If true, generates full status; if false, generates partial status
  * @return JSON formatted status string
  */
-String generateStatusJSON(bool fullStatus = true) {
+String generateStatusJSON(bool fullStatus) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
   
