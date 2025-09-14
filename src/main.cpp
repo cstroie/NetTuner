@@ -816,6 +816,9 @@ void audioTask(void *pvParameters) {
  * or playlist selection when stopped. It also handles button presses to start/stop playback.
  */
 void handleRotary() {
+  // Poll the rotary encoder button state
+  rotaryEncoder.handleButtonPress();
+  
   static int lastRotaryPosition = 0;
   // Check if rotary encoder position has changed
   int currentPosition = rotaryEncoder.getPosition();
