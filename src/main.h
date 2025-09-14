@@ -75,11 +75,9 @@ extern Config config;
 
 // Global variables
 extern const char* BUILD_TIME;
-extern const unsigned long BUILD_TIME_UNIX;
 extern WebServer server;
 extern WebSocketsServer webSocket;
 extern WiFiServer mpdServer;
-extern WiFiClient mpdClient;
 extern Display* display;
 extern TaskHandle_t audioTaskHandle;
 extern char ssid[MAX_WIFI_NETWORKS][64];
@@ -88,7 +86,7 @@ extern int wifiNetworkCount;
 
 // Forward declarations for global functions
 void updateDisplay();
-void sendStatusToClients();
+void sendStatusToClients(bool fullStatus = true);
 void handleRotary();
 void handleTouch();
 void audioTask(void *pvParameters);
@@ -123,7 +121,7 @@ void audio_icydescription(const char *info);
 void audio_id3data(const char *info);
 
 // Utility functions
-String generateStatusJSON();
+String generateStatusJSON(bool fullStatus = true);
 
 // JSON file helper functions
 bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);

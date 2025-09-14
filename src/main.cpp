@@ -39,7 +39,6 @@ int wifiNetworkCount = 0;
 WebServer server(80);
 WebSocketsServer webSocket(81);
 WiFiServer mpdServer(6600);
-unsigned long startTime = 0;
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 String previousStatus = "";
 
@@ -1027,23 +1026,14 @@ void handleSimpleWebPage() {
       }
     }
   }
-  // Pre-allocate string with estimated size to reduce reallocations
-  String html;
-  html.reserve(2048); // Reserve space to reduce memory fragmentation
-  // Serve the HTML page
-  html = R"rawliteral(<!DOCTYPE html>
-<html>
-<head>
-<title>NetTuner</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css">
-</head>
-<body>
-<header><h1>NetTuner</h1></header>
-<main>
-<section>
-<h2>Status: )rawliteral";
+  // Create a more memory-efficient HTML response
+  String html = "<!DOCTYPE html><html><head><title>NetTuner</title>";
+  html += "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\">";
+  html += "</head><body><header><h1>NetTuner</h1></header><main>";
+  html += "<section><h2>Status: ";
   html += player.isPlaying() ? "PLAY" : "STOP";
-html += "</h2>";
+  html += "</h2>";
+  
   // Show current stream name
   if (player.isPlaying() && player.getStreamTitle()[0]) {
     html += "<p><b>Now playing:</b> ";
@@ -1054,19 +1044,14 @@ html += "</h2>";
     html += player.getPlaylistItem(player.getPlaylistIndex()).name;
     html += "</p>";
   }
-  html += R"rawliteral(</section>
-<section>
-<h2>Controls</h2>
-<form method='post'>
-<fieldset role='group'>
-<button name='action' value='play' type='submit'>Play</button> 
-<button name='action' value='stop' type='submit'>Stop</button>
-</fieldset>
-</form>
-<form method='post'>
-<fieldset role='group'>
-<select name='volume' id='volume'>
-)rawliteral";
+  html += "</section><section><h2>Controls</h2>";
+  html += "<form method='post'><fieldset role='group'>";
+  html += "<button name='action' value='play' type='submit'>Play</button> ";
+  html += "<button name='action' value='stop' type='submit'>Stop</button>";
+  html += "</fieldset></form>";
+  html += "<form method='post'><fieldset role='group'>";
+  html += "<select name='volume' id='volume'>";
+  
   // Add volume options (0-22)
   for (int i = 0; i <= 22; i++) {
     html += "<option value='" + String(i) + "'";
@@ -1075,20 +1060,15 @@ html += "</h2>";
     }
     html += ">" + String(i) + "</option>";
   }
-  html += R"rawliteral(</select>
-<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>
-</fieldset>
-</form>
-</section>
-<section>
-<h2>Playlist</h2>
-)rawliteral";
+  html += "</select>";
+  html += "<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>";
+  html += "</fieldset></form></section><section><h2>Playlist</h2>";
+  
   // Show stream selection dropdown if we have a playlist
   if (player.getPlaylistCount() > 0) {
-    html += R"rawliteral(<form method='post'>
-    <fieldset role='group'>
-<select name='stream' id='stream'>
-)rawliteral";
+    html += "<form method='post'><fieldset role='group'>";
+    html += "<select name='stream' id='stream'>";
+    
     // Populate the dropdown with available streams
     for (int i = 0; i < player.getPlaylistCount(); i++) {
       html += "<option value='" + String(i) + "'";
@@ -1097,30 +1077,21 @@ html += "</h2>";
       }
       html += ">" + String(player.getPlaylistItem(i).name) + "</option>";
     }
-    // Close the select and form
-    html += R"rawliteral(</select>
-<button name='action' value='play' type='submit'>Play&nbsp;selected</button>
-</fieldset>
-</form>
-)rawliteral";
+    html += "</select>";
+    html += "<button name='action' value='play' type='submit'>Play&nbsp;selected</button>";
+    html += "</fieldset></form>";
   } else {
     html += "<p>No streams in playlist.</p>";
   }
+  
   // Add instant play input for custom stream URL even when no playlist
-  html += R"rawliteral(<h2>Play instant stream</h2>
-<form method='post'>
-<fieldset role='group'>
-<input type='url' name='url' id='url' placeholder='http://example.com/stream'>
-<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>
-</fieldset>
-</form>
-)rawliteral";
-  // Close the HTML
-  html += R"rawliteral(</section>
-</main>
-<footer><p>NetTuner Simple Interface</p></footer>
-</body>
-</html>)rawliteral";
+  html += "<h2>Play instant stream</h2>";
+  html += "<form method='post'><fieldset role='group'>";
+  html += "<input type='url' name='url' id='url' placeholder='http://example.com/stream'>";
+  html += "<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>";
+  html += "</fieldset></form></section></main>";
+  html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
+  
   // Send the HTML response
   server.send(200, "text/html", html);
 }
@@ -1993,13 +1964,13 @@ void loop() {
         player.updateBitrate();
       }
 
-      // Send status to clients every 2 seconds instead of 1 to reduce load
+      // Send status to clients every 3 seconds instead of 2 to reduce load
       static unsigned long lastStatusUpdate = 0;
-      if (millis() - lastStatusUpdate > 2000) {  // Changed from 1000 to 2000
+      if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
         if (webSocket.connectedClients() > 0) {
           // Send minimal status update
-          sendStatusToClients(true);
+          sendStatusToClients(false);  // Send partial status to reduce data
         }
         // Update the timestamp
         lastStatusUpdate = millis();
@@ -2009,10 +1980,8 @@ void loop() {
   
   // Periodic cleanup with error recovery - add network status check
   static unsigned long lastCleanup = 0;
-  if (millis() - lastCleanup > 30000) {  // Every 30 seconds
+  if (millis() - lastCleanup > 60000) {  // Every 60 seconds instead of 30
     lastCleanup = millis();
-    // TODO: Add any additional cleanup tasks here
-
     // Check WiFi status and reconnect if needed
     if (wifiNetworkCount > 0 && WiFi.status() != WL_CONNECTED) {
       connectToWiFi();
@@ -2023,7 +1992,7 @@ void loop() {
   display->handleTimeout(player.isPlaying(), millis());
 
   // Small delay to prevent busy waiting and reduce network load
-  delay(100);  // Increased from 50 to 100
+  delay(150);  // Increased from 100 to 150 to reduce CPU usage
 }
 
 
