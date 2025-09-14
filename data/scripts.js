@@ -3429,6 +3429,10 @@ function validateStreamURL(url) {
   if (!url) {
     return false;
   }
+  // Ensure url is a string
+  if (typeof url !== 'string') {
+    return false;
+  }
   if (
     !url.startsWith("http://") &&
     !url.startsWith("https://")
