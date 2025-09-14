@@ -881,7 +881,7 @@ void handleRotary() {
     if (player.isPlaylistIndexValid()) {
       if (!player.isPlaying()) {
         // If not playing, start playback of selected stream
-        player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
         // Save state when user initiates playback
         player.savePlayerState(); 
       } else {
@@ -1006,7 +1006,7 @@ void handleSimpleWebPage() {
           // Stop playback
           player.stopStream();
           // Play currently selected stream
-          player.startStream(player.getPlaylistItem(player.getPlaylistIndex()).url, player.getPlaylistItem(player.getPlaylistIndex()).name);
+          player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
         }
         // Save player state when user requests to play
         player.markPlayerStateDirty();

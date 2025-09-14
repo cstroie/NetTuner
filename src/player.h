@@ -90,6 +90,10 @@ public:
   int getNextPlaylistItem() const;
   int getPrevPlaylistItem() const;
   
+  // Current playlist item helper functions
+  const char* getCurrentPlaylistItemName() const;
+  const char* getCurrentPlaylistItemURL() const;
+  
   // Playlist validation helper function
   bool isPlaylistIndexValid() const;
   bool isDirty() const { return playerState.dirty; }

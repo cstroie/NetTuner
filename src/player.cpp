@@ -307,6 +307,20 @@ bool Player::isPlaylistIndexValid() const {
   return (playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount());
 }
 
+const char* Player::getCurrentPlaylistItemName() const {
+  if (isPlaylistIndexValid()) {
+    return playlist->getItem(playerState.playlistIndex).name;
+  }
+  return "";
+}
+
+const char* Player::getCurrentPlaylistItemURL() const {
+  if (isPlaylistIndexValid()) {
+    return playlist->getItem(playerState.playlistIndex).url;
+  }
+  return "";
+}
+
 /**
  * @brief Get a playlist item at specific index
  * @param index Playlist index
