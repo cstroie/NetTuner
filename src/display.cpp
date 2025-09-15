@@ -468,6 +468,10 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
  */
 void Display::setActivityTime(unsigned long time) {
     lastActivityTime = time;
+    // Also ensure the display is on when there's activity
+    if (!display->isOn()) {
+        display->turnOn();
+    }
 }
 
 /**

@@ -609,12 +609,6 @@ void loadWiFiCredentials() {
   Serial.println("Loaded WiFi credentials from SPIFFS");
   for (int i = 0; i < wifiNetworkCount; i++) {
     Serial.printf("SSID[%d]: %s\n", i, ssid[i]);
-    // Only print password if it exists and is not empty
-    if (strlen(password[i]) > 0) {
-      Serial.println("Password: [REDACTED]");
-    } else {
-      Serial.println("Password: [NONE]");
-    }
   }
 }
 
@@ -857,10 +851,6 @@ void handleRotary() {
     lastRotaryPosition = currentPosition;  
     // Update activity time on user interaction
     display->setActivityTime(millis()); 
-    if (!display->isOn()) {
-      // Turn display back on if it was off
-      display->turnOn();
-    }
     // Refresh display with new values
     updateDisplay();                      
   }
@@ -868,10 +858,6 @@ void handleRotary() {
   if (rotaryEncoder.wasButtonPressed()) {
     // Update activity time
     display->setActivityTime(millis()); 
-    if (!display->isOn()) {
-      // Turn display back on and update
-      display->turnOn();
-    }
     if (player.isPlaying()) {
       // If playing, stop playback
       player.stopStream();
@@ -904,10 +890,8 @@ void handleTouch() {
   // Handle play/pause button
   if (touchPlay && touchPlay->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
+    updateDisplay(); // Turn display back on and update
+
     // Toggle play/stop
     if (player.isPlaying()) {
       // If playing, stop playback
@@ -932,10 +916,7 @@ void handleTouch() {
   // Handle next/volume-up button
   if (touchNext && touchNext->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
+    updateDisplay(); // Turn display back on and update
     
     if (player.isPlaying()) {
       // If playing, increase volume by 1 (capped at 22)
@@ -952,11 +933,8 @@ void handleTouch() {
   // Handle previous/volume-down button
   if (touchPrev && touchPrev->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
-    if (!display->isOn()) {
-      display->turnOn();
-      updateDisplay(); // Turn display back on and update
-    }
-    
+    updateDisplay(); // Turn display back on and update
+
     if (player.isPlaying()) {
       // If playing, decrease volume by 1 (capped at 0)
       player.setVolume(max(0, player.getVolume() - 1));
@@ -2117,7 +2095,11 @@ void setup() {
   player.getPlaylist()->validate();
     // Load player state
   player.loadPlayerState();
-    // Setup web server routes
+  if (player.isPlaying()) {
+    // Update activity time
+    display->setActivityTime(millis()); 
+  }
+  // Setup web server routes
   setupWebServer();
    // Start server
   server.begin();
