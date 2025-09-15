@@ -3472,33 +3472,31 @@ function escapeHtml(unsafe) {
 async function proxyFetch(url, options = {}) {
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
   
+  // Only support GET and POST methods
+  const method = options.method || 'GET';
+  if (method !== 'GET' && method !== 'POST') {
+    throw new Error('Only GET and POST methods are supported');
+  }
+  
   // Prepare the request options for the proxy
   const proxyOptions = {
-    method: options.method || 'GET',
+    method: method,
     headers: {
       'X-Requested-With': 'XMLHttpRequest',
       ...options.headers
     }
   };
   
-  // Add body for POST/PUT requests
-  if (options.body) {
+  // Add body for POST requests
+  if (method === 'POST' && options.body) {
     proxyOptions.headers['Content-Type'] = options.headers?.['Content-Type'] || 'application/json';
     proxyOptions.body = options.body;
   }
   
-  // For POST/PUT requests with body, we need to send the body in the request
-  if ((proxyOptions.method === 'POST' || proxyOptions.method === 'PUT') && proxyOptions.body) {
-    return fetch(proxyUrl, {
-      method: 'POST',
-      headers: proxyOptions.headers,
-      body: proxyOptions.body
-    });
-  } else {
-    // For GET/DELETE and other methods without body
-    return fetch(proxyUrl, {
-      method: proxyOptions.method,
-      headers: proxyOptions.headers
-    });
-  }
+  // Make the request
+  return fetch(proxyUrl, {
+    method: method,
+    headers: proxyOptions.headers,
+    body: method === 'POST' ? proxyOptions.body : undefined
+  });
 }

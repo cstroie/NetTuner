@@ -1727,11 +1727,6 @@ void handleProxyRequest() {
     // Get request body if present
     String requestBody = server.arg("plain");
     httpResponseCode = http.POST(requestBody);
-  } else if (server.method() == HTTP_PUT) {
-    String requestBody = server.arg("plain");
-    httpResponseCode = http.PUT(requestBody);
-  } else if (server.method() == HTTP_DELETE) {
-    httpResponseCode = http.sendRequest("DELETE");
   } else {
     http.end();
     sendJsonResponse("error", "Unsupported HTTP method", 405);
@@ -1950,8 +1945,6 @@ void setupWebServer() {
   server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
   server.on("/api/proxy", HTTP_GET, handleProxyRequest);
   server.on("/api/proxy", HTTP_POST, handleProxyRequest);
-  server.on("/api/proxy", HTTP_PUT, handleProxyRequest);
-  server.on("/api/proxy", HTTP_DELETE, handleProxyRequest);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
   server.serveStatic("/", SPIFFS, "/index.html");
