@@ -1724,7 +1724,7 @@ void handleProxyRequest() {
   if (server.method() == HTTP_GET) {
     httpResponseCode = http.GET();
   } else if (server.method() == HTTP_HEAD) {
-    httpResponseCode = http.HEAD();
+    httpResponseCode = http.GET(); // Use GET but we'll only send headers
   } else if (server.method() == HTTP_POST) {
     // Get request body if present
     String requestBody = server.arg("plain");
