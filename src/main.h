@@ -107,6 +107,7 @@ void handleWiFiScan();
 void handleWiFiSave();
 void handleWiFiStatus();
 void handleWiFiConfig();
+void handleProxyRequest();
 
 // WebSocket handlers
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
