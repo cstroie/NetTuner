@@ -1731,7 +1731,7 @@ void handleProxyRequest() {
     String requestBody = server.arg("plain");
     httpResponseCode = http.PUT(requestBody);
   } else if (server.method() == HTTP_DELETE) {
-    httpResponseCode = http.DELETE();
+    httpResponseCode = http.sendRequest("DELETE");
   } else {
     http.end();
     sendJsonResponse("error", "Unsupported HTTP method", 405);
@@ -1740,7 +1740,7 @@ void handleProxyRequest() {
   
   if (httpResponseCode > 0) {
     // Get response headers and forward them
-    for (int i = 0; i < http.headerKeysCount(); i++) {
+    for (int i = 0; i < http._headerKeysCount; i++) {
       String headerName = http.headerName(i);
       String headerValue = http.header(i);
       
