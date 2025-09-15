@@ -1274,61 +1274,6 @@ async function importAllConfiguration() {
 
 
 
-/**
- * @brief Find favicon URL from a website
- * @description Attempts to locate a favicon for a given website by checking common locations
- * @param {string} websiteUrl - The URL of the website to search for favicon
- * @returns {Promise<string|null>} The favicon URL if found, null otherwise
- */
-async function findFaviconUrl(websiteUrl) {
-  try {
-    // Handle cases where the URL might be a stream URL
-    let baseUrl;
-    try {
-      const urlObj = new URL(websiteUrl);
-      baseUrl = `${urlObj.protocol}//${urlObj.host}`;
-    } catch (e) {
-      // If URL parsing fails, try to extract domain
-      const match = websiteUrl.match(/^(?:https?:\/\/)?([^\/\s]+)/);
-      if (match) {
-        baseUrl = `http://${match[1]}`;
-      } else {
-        return null;
-      }
-    }
-    // Common favicon locations to check
-    const faviconLocations = [
-      "/favicon.ico",
-      "/favicon.png",
-      "/apple-touch-icon.png",
-      "/apple-touch-icon-precomposed.png",
-    ];
-    // First, try to get favicon from HTML head by fetching the base URL
-    try {
-      const response = await fetch(baseUrl, { mode: "no-cors" });
-      // For no-cors requests, we can't access the response body
-      // So we'll skip HTML parsing and go directly to favicon locations
-    } catch (e) {
-      console.log("Could not fetch HTML for favicon detection");
-    }
-    // Check common locations
-    for (const location of faviconLocations) {
-      try {
-        const faviconUrl = new URL(location, baseUrl).href;
-        if (await checkImageExists(faviconUrl)) {
-          return faviconUrl;
-        }
-      } catch (e) {
-        // Skip if URL construction fails
-        continue;
-      }
-    }
-    return null;
-  } catch (error) {
-    console.error("Error finding favicon:", error);
-    return null;
-  }
-}
 
 /**
  * @brief Check if an image exists at a given URL
@@ -1449,26 +1394,8 @@ function handleImageFallback(iconUrl, icyUrl) {
  * @param {string} icyUrl - The ICY URL for favicon detection
  */
 function tryFaviconFallback(icyUrl) {
-  if (icyUrl) {
-    // Try to get favicon from the ICY URL through proxy
-    findFaviconUrl(icyUrl).then((faviconUrl) => {
-      if (faviconUrl) {
-        console.log("Found favicon:", faviconUrl);
-        // Update the cover art image element through proxy
-        const coverArtElement = $("cover-art");
-        if (coverArtElement) {
-          const proxyFaviconUrl = `/api/proxy?url=${encodeURIComponent(faviconUrl)}`;
-          coverArtElement.src = proxyFaviconUrl;
-        }
-      } else {
-        // No favicon found, use default
-        resetToDefaultCoverArt();
-      }
-    });
-  } else {
-    // No ICY URL, use default
-    resetToDefaultCoverArt();
-  }
+  // No favicon found, use default
+  resetToDefaultCoverArt();
 }
 
 /**
