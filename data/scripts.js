@@ -1634,10 +1634,13 @@ function connectWebSocket() {
             status.streamTitle &&
             status.streamTitle !== "No stream selected"
           ) {
-            fetchArtistImageFromTheAudioDB(
-              status.streamTitle,
-              status.streamIconURL,
-            );
+            // Only try to fetch artist image if we don't already have one
+            if (!window.hasArtistImage) {
+              fetchArtistImageFromTheAudioDB(
+                status.streamTitle,
+                status.streamIconURL,
+              );
+            }
           } else {
             // Reset to default CD image when no stream is playing
             const coverArtElement = $("cover-art");
@@ -1645,6 +1648,8 @@ function connectWebSocket() {
               coverArtElement.src =
                 "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iMTIwIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCI+PGNpcmNsZSBjeD0iNjAiIGN5PSI2MCIgcj0iNTAiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyMCIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjYwIiBjeT0iNjAiIHI9IjUiIGZpbGw9IiMzMzMiLz48Y2lyY2xlIGN4PSI2MCIgY3k9IjYwIiByPSIyIiBmaWxsPSIjZmZmIi8+PC9zdmc+";
             }
+            // Reset artist image flag when stream stops
+            window.hasArtistImage = false;
           }
           prev["streamTitle"] = status.streamTitle;
         }
