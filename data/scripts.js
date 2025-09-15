@@ -1416,6 +1416,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
 function handleImageFallback(iconUrl, icyUrl) {
   // First try the stream icon URL through proxy
   if (iconUrl) {
+    console.log("Trying stream icon URL:", iconUrl);
     // Check if icon URL is a valid image through proxy
     checkImageExists(iconUrl).then((exists) => {
       if (exists) {
@@ -1674,6 +1675,14 @@ function connectWebSocket() {
           if (status.streamIcyURL) {
             console.log("Received ICY URL:", status.streamIcyURL);
             prev["streamIcyURL"] = status.streamIcyURL;
+          }
+        }
+
+        // Handle cover image URL if available and changed
+        if (status.streamIconURL !== prev.streamIconURL) {
+          if (status.streamIconURL) {
+            console.log("Received cover image URL:", status.streamIconURL);
+            prev["streamIconURL"] = status.streamIconURL;
           }
         }
 
