@@ -87,6 +87,7 @@ extern int wifiNetworkCount;
 // Forward declarations for global functions
 void updateDisplay();
 void sendStatusToClients(bool fullStatus = true);
+void sendStatusToClients();
 void handleRotary();
 void handleTouch();
 void audioTask(void *pvParameters);
