@@ -1723,6 +1723,8 @@ void handleProxyRequest() {
   // Handle different HTTP methods
   if (server.method() == HTTP_GET) {
     httpResponseCode = http.GET();
+  } else if (server.method() == HTTP_HEAD) {
+    httpResponseCode = http.HEAD();
   } else if (server.method() == HTTP_POST) {
     // Get request body if present
     String requestBody = server.arg("plain");
@@ -1945,6 +1947,7 @@ void setupWebServer() {
   server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
   server.on("/api/proxy", HTTP_GET, handleProxyRequest);
   server.on("/api/proxy", HTTP_POST, handleProxyRequest);
+  server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
   server.serveStatic("/", SPIFFS, "/index.html");
