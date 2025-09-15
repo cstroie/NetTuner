@@ -181,9 +181,9 @@ void Player::loadPlayerState() {
     audio->setTone(playerState.bass, playerState.mid, playerState.treble);
   }
   // If it was playing, resume playback
-  if (playerState.playing && playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount()) {
+  if (playerState.playing && isPlaylistIndexValid()) {
     Serial.println("Resuming playback from saved state");
-    startStream(playlist->getItem(playerState.playlistIndex).url, playlist->getItem(playerState.playlistIndex).name);
+    startStream(getCurrentPlaylistItemURL(), getCurrentPlaylistItemName());
   }
 }
 
@@ -307,6 +307,10 @@ bool Player::isPlaylistIndexValid() const {
   return (playlist->getCount() > 0 && playerState.playlistIndex < playlist->getCount());
 }
 
+/**
+ * @brief Get the name of the current playlist item
+ * @return const char* Name of the current playlist item
+ */
 const char* Player::getCurrentPlaylistItemName() const {
   if (isPlaylistIndexValid()) {
     return playlist->getItem(playerState.playlistIndex).name;
@@ -314,6 +318,10 @@ const char* Player::getCurrentPlaylistItemName() const {
   return "";
 }
 
+/**
+ * @brief Get the URL of the current playlist item
+ * @return const char* URL of the current playlist item
+ */
 const char* Player::getCurrentPlaylistItemURL() const {
   if (isPlaylistIndexValid()) {
     return playlist->getItem(playerState.playlistIndex).url;
@@ -329,13 +337,6 @@ const char* Player::getCurrentPlaylistItemURL() const {
  */
 const StreamInfo& Player::getPlaylistItem(int index) const { 
   return playlist->getItem(index); 
-}
-
-/**
- * @brief Mark player state as dirty (needs saving)
- */
-void Player::markPlayerStateDirty() {
-  playerState.dirty = true;
 }
 
 /**

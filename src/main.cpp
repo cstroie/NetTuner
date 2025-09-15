@@ -378,14 +378,11 @@ void handleBoardButton() {
   
   // Check if button was pressed (detected by interrupt)
   if (boardButtonPressed) {
-    Serial.println("Board button press detected and handled");
     // Toggle play/stop
     if (player.isPlaying()) {
-      Serial.println("Stopping stream");
+      // If currently playing, stop the stream
       player.stopStream();
-      player.markPlayerStateDirty();
     } else {
-      Serial.println("Starting stream");
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
@@ -394,11 +391,14 @@ void handleBoardButton() {
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
-      player.markPlayerStateDirty();
+      // Save player state after starting
+      player.savePlayerState();
     }
+    // Update display and notify clients
     updateDisplay();
     sendStatusToClients();
-    boardButtonPressed = false;  // Clear the flag
+    // Clear the flag
+    boardButtonPressed = false;
   }
 }
 
@@ -831,7 +831,6 @@ void handleRotary() {
       if (player.isPlaying()) {
         // If playing, increase volume by 1 (capped at 22)
         player.setVolume(min(22, player.getVolume() + 1));
-        player.markPlayerStateDirty();
         sendStatusToClients();  // Notify clients of status change
       } else {
         // If not playing, select next item in playlist
@@ -867,19 +866,20 @@ void handleRotary() {
       // Turn display back on and update
       display->turnOn();
     }
-    // Only process if we have playlist items
-    if (player.isPlaylistIndexValid()) {
-      if (!player.isPlaying()) {
-        // If not playing, start playback of selected stream
+    if (player.isPlaying()) {
+      // If playing, stop playback
+      player.stopStream();
+    } else {
+      // If we have a current stream, resume it
+      if (strlen(player.getStreamUrl()) > 0) {
+        player.startStream();
+      } 
+      // Otherwise, if we have playlist items, play the selected one
+      else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
-        // Save state when user initiates playback
-        player.savePlayerState(); 
-      } else {
-        // If playing, stop playback
-        player.stopStream();
-        // Save state when user stops playback
-        player.savePlayerState(); 
       }
+      // Save state when user initiates playback
+      player.savePlayerState(); 
     }
     // Refresh display
     updateDisplay();
@@ -904,8 +904,8 @@ void handleTouch() {
     }
     // Toggle play/stop
     if (player.isPlaying()) {
+      // If playing, stop playback
       player.stopStream();
-      player.markPlayerStateDirty();
     } else {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
@@ -915,8 +915,10 @@ void handleTouch() {
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
-      player.markPlayerStateDirty();
+      // Save state when user initiates playback
+      player.savePlayerState(); 
     }
+    // Refresh display and notify clients of status change
     updateDisplay();
     sendStatusToClients();
   }
@@ -932,13 +934,13 @@ void handleTouch() {
     if (player.isPlaying()) {
       // If playing, increase volume by 1 (capped at 22)
       player.setVolume(min(22, player.getVolume() + 1));
-      player.markPlayerStateDirty();
-      sendStatusToClients();  // Notify clients of status change
     } else {
       // If not playing, select next item in playlist
       player.setPlaylistIndex(player.getNextPlaylistItem());
     }
-    updateDisplay();  // Refresh display
+    // Update display and notify clients of status change
+    updateDisplay();
+    sendStatusToClients();
   }
   
   // Handle previous/volume-down button
@@ -952,7 +954,6 @@ void handleTouch() {
     if (player.isPlaying()) {
       // If playing, decrease volume by 1 (capped at 0)
       player.setVolume(max(0, player.getVolume() - 1));
-      player.markPlayerStateDirty();
       sendStatusToClients();  // Notify clients of status change
     } else {
       // If not playing, select previous item in playlist
@@ -985,39 +986,34 @@ void handleSimpleWebPage() {
             player.stopStream();
             // Play selected stream
             player.setPlaylistIndex(streamIndex);
-            player.startStream(player.getPlaylistItem(streamIndex).url, player.getPlaylistItem(streamIndex).name);
+            player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
           }
         } else if (strlen(player.getStreamUrl()) > 0) {
           // Stop current playback
           player.stopStream();
           // Resume current stream
           player.startStream();
-        } else if (player.getPlaylistCount() > 0 && player.getPlaylistIndex() < player.getPlaylistCount()) {
+        } else if (player.isPlaylistIndexValid()) {
           // Stop playback
           player.stopStream();
           // Play currently selected stream
           player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
         }
         // Save player state when user requests to play
-        player.markPlayerStateDirty();
         player.savePlayerState();
       } else if (action == "stop") {
         // Stop playback
         player.stopStream();
-        // Save player state when user requests to play
-        player.markPlayerStateDirty();
-        player.savePlayerState();
       } else if (action == "volume") {
         // Set volume
         if (server.hasArg("volume")) {
           int newVolume = server.arg("volume").toInt();
           if (newVolume >= 0 && newVolume <= 22) {
             player.setVolume(newVolume);
+            // Update display and notify clients
             updateDisplay();
             sendStatusToClients();
           }
-          // Save player state when user requests to play
-          player.markPlayerStateDirty();
         }
       } else if (action == "instant") {
         // Play a stream URL
@@ -1348,7 +1344,6 @@ void handlePlayer() {
     // Start the stream
     player.startStream(url.c_str(), name.c_str());
     // Save player state when user requests to play
-    player.markPlayerStateDirty();
     player.savePlayerState();
     // Update display and notify clients
     updateDisplay();
@@ -1359,9 +1354,6 @@ void handlePlayer() {
   else if (action == "stop") {
     // Stop any currently playing stream
     player.stopStream();
-    // Save player state when user stops the stream
-    player.markPlayerStateDirty();
-    player.savePlayerState();
     // Update display and notify clients
     updateDisplay();
     sendStatusToClients();
@@ -1982,8 +1974,8 @@ void loop() {
       if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
         if (webSocket.connectedClients() > 0) {
-          // Send minimal status update
-          sendStatusToClients(false);  // Send partial status to reduce data
+          // FIXME Send partial status update
+          sendStatusToClients(true);
         }
         // Update the timestamp
         lastStatusUpdate = millis();

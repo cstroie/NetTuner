@@ -75,7 +75,6 @@ public:
   void clearPlayerState();
   void loadPlayerState();
   void savePlayerState();
-  void markPlayerStateDirty();
   
   // Getters
   bool isPlaying() const { return playerState.playing; }

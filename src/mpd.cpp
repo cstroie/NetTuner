@@ -68,8 +68,6 @@ int parseValue(const String& valueStr) {
  */
 void MPDInterface::handleStopCommand(const String& args) {
   this->player.stopStream();
-  this->player.markPlayerStateDirty();
-  this->player.savePlayerState();
   mpdClient.print(mpdResponseOK());
 }
 
@@ -1751,7 +1749,6 @@ bool MPDInterface::handlePlayback(int index) {
   const StreamInfo& item = this->player.getPlaylistItem(index);
   this->player.startStream(item.url, item.name);
   // Update state
-  this->player.markPlayerStateDirty();
   this->player.savePlayerState();
   return true;
 }

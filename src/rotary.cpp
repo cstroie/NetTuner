@@ -65,9 +65,9 @@ void setupRotaryEncoder() {
  */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
-  
-  // Debounce rotary encoder (ignore if less than 5ms since last event)
-  if (currentTime - lastRotaryTime < 5) {
+
+  // Debounce rotary encoder (ignore if less than 10ms since last event)
+  if (currentTime - lastRotaryTime < 10) {
     return;
   }
   
@@ -104,11 +104,11 @@ void RotaryEncoder::handleRotation() {
 void RotaryEncoder::handleButtonPress() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  
-  // Debounce the button press (ignore if less than 50ms since last press)
+
+  // Debounce the button press (ignore if less than 100ms since last press)
   // This prevents multiple detections from a single physical button press
   // due to mechanical switch bouncing
-  if (interruptTime - lastInterruptTime > 50) {
+  if (interruptTime - lastInterruptTime > 100) {
     buttonPressedFlag = true;  // Set flag to indicate button press detected
   }
   lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
