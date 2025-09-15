@@ -1765,43 +1765,66 @@ void handleProxyRequest() {
       }
     }
     
-    // Stream the response directly to client for better memory usage
-    WiFiClient * stream = http.getStreamPtr();
-    
-    // Get content type
-    String contentType = http.header("Content-Type");
-    if (contentType.isEmpty()) {
-      // Try to determine content type from URL
-      if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
-        contentType = "image/png";
-      } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
-                 targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
-        contentType = "image/jpeg";
-      } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
-        contentType = "image/gif";
-      } else {
-        contentType = "application/octet-stream";
+    // For HEAD requests, only send headers without content
+    if (server.method() == HTTP_HEAD) {
+      // Get content type
+      String contentType = http.header("Content-Type");
+      if (contentType.isEmpty()) {
+        // Try to determine content type from URL
+        if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
+          contentType = "image/png";
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+                   targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
+          contentType = "image/jpeg";
+        } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
+          contentType = "image/gif";
+        } else {
+          contentType = "application/octet-stream";
+        }
       }
-    }
-    
-    // Send response with proper content type and length
-    server.setContentLength(http.getSize());
-    server.send(httpResponseCode, contentType, "");
-    
-    // Stream the content
-    const size_t bufferSize = 1024;
-    uint8_t buffer[bufferSize];
-    size_t totalBytesRead = 0;
-    size_t contentLength = http.getSize();
-    
-    while (http.connected() && (contentLength == 0 || totalBytesRead < contentLength)) {
-      size_t bytesAvailable = stream->available();
-      if (bytesAvailable) {
-        size_t bytesRead = stream->readBytes(buffer, min(bytesAvailable, bufferSize));
-        server.client().write(buffer, bytesRead);
-        totalBytesRead += bytesRead;
+      
+      // Send response with proper content type and length (no content body for HEAD)
+      server.setContentLength(http.getSize());
+      server.send(httpResponseCode, contentType, "");
+    } else {
+      // For GET requests, stream the response directly to client
+      WiFiClient * stream = http.getStreamPtr();
+      
+      // Get content type
+      String contentType = http.header("Content-Type");
+      if (contentType.isEmpty()) {
+        // Try to determine content type from URL
+        if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
+          contentType = "image/png";
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+                   targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
+          contentType = "image/jpeg";
+        } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
+          contentType = "image/gif";
+        } else {
+          contentType = "application/octet-stream";
+        }
       }
-      delay(1); // Yield to other tasks
+      
+      // Send response with proper content type and length
+      server.setContentLength(http.getSize());
+      server.send(httpResponseCode, contentType, "");
+      
+      // Stream the content
+      const size_t bufferSize = 1024;
+      uint8_t buffer[bufferSize];
+      size_t totalBytesRead = 0;
+      size_t contentLength = http.getSize();
+      
+      while (http.connected() && (contentLength == 0 || totalBytesRead < contentLength)) {
+        size_t bytesAvailable = stream->available();
+        if (bytesAvailable) {
+          size_t bytesRead = stream->readBytes(buffer, min(bytesAvailable, bufferSize));
+          server.client().write(buffer, bytesRead);
+          totalBytesRead += bytesRead;
+        }
+        delay(1); // Yield to other tasks
+      }
     }
   } else {
     http.end();
@@ -1947,6 +1970,7 @@ void setupWebServer() {
   server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
   server.on("/api/proxy", HTTP_GET, handleProxyRequest);
   server.on("/api/proxy", HTTP_POST, handleProxyRequest);
+  server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
   server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
