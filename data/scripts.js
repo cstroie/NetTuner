@@ -1396,15 +1396,21 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
           coverArtElement.src = imageUrl;
           coverArtElement.style.display = "block";
         }
+        // Mark that we have an artist image for this stream
+        window.hasArtistImage = true;
       } else {
         // If no artist found or no image available, try fallbacks
         handleImageFallback(iconUrl, icyUrl);
+        // Mark that we don't have an artist image for this stream
+        window.hasArtistImage = false;
       }
     })
     .catch((error) => {
       console.error("Error fetching artist from TheAudioDB:", error);
       // Try fallbacks on error
       handleImageFallback(iconUrl, icyUrl);
+      // Mark that we don't have an artist image for this stream
+      window.hasArtistImage = false;
     });
 }
 
@@ -1683,6 +1689,15 @@ function connectWebSocket() {
           if (status.streamIconURL) {
             console.log("Received cover image URL:", status.streamIconURL);
             prev["streamIconURL"] = status.streamIconURL;
+            
+            // If we don't have an artist image, try again with the new icon URL
+            if (!window.hasArtistImage) {
+              fetchArtistImageFromTheAudioDB(
+                status.streamTitle,
+                status.streamIconURL,
+                status.streamIcyURL,
+              );
+            }
           }
         }
 
