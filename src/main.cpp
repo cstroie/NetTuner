@@ -1740,17 +1740,32 @@ void handleProxyRequest() {
   
   if (httpResponseCode > 0) {
     // Get response headers and forward them
-    for (int i = 0; i < http._headerKeysCount; i++) {
-      String headerName = http.headerName(i);
-      String headerValue = http.header(i);
+    // Use public methods to iterate through headers
+    int headerCount = 0;
+    String headerName, headerValue;
+    
+    // Get all headers one by one until we've processed them all
+    while (true) {
+      headerName = http.headerName(headerCount);
+      headerValue = http.header(headerCount);
       
-      // Skip headers that might cause issues
-      if (headerName.equalsIgnoreCase("Connection") ||
-          headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        continue;
+      // If we get empty strings, we've reached the end of headers
+      if (headerName.length() == 0 && headerValue.length() == 0) {
+        break;
       }
       
-      server.sendHeader(headerName, headerValue, false);
+      // Skip headers that might cause issues
+      if (!headerName.equalsIgnoreCase("Connection") &&
+          !headerName.equalsIgnoreCase("Transfer-Encoding")) {
+        server.sendHeader(headerName, headerValue, false);
+      }
+      
+      headerCount++;
+      
+      // Safety check to prevent infinite loop
+      if (headerCount > 100) {
+        break;
+      }
     }
     
     // Stream the response directly to client for better memory usage
