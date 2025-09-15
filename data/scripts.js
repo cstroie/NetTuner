@@ -1372,12 +1372,11 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
   }
   console.log("Searching TheAudioDB for artist:", cleanArtistName);
 
-  // Use TheAudioDB API to search for artist through our proxy
+  // Use TheAudioDB API to search for artist through a CORS proxy
   const apiKey = "123"; // TheAudioDB free API key
-  const searchUrl = `https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`;
-  
-  // Use proxyFetch for the API request
-  proxyFetch(searchUrl)
+  const searchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`)}`;
+
+  fetch(searchUrl)
     .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1390,12 +1389,11 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
         data.artists.length > 0 &&
         data.artists[0].strArtistThumb
       ) {
-        // Use the thumbnail image URL through proxy
+        // Use the thumbnail image URL
         const imageUrl = data.artists[0].strArtistThumb;
-        const proxyImageUrl = `/api/proxy?url=${encodeURIComponent(imageUrl)}`;
         const coverArtElement = $("cover-art");
         if (coverArtElement) {
-          coverArtElement.src = proxyImageUrl;
+          coverArtElement.src = imageUrl;
           coverArtElement.style.display = "block";
         }
       } else {
