@@ -1338,16 +1338,18 @@ async function findFaviconUrl(websiteUrl) {
  */
 async function checkImageExists(url) {
   console.log("Checking image existence:", url);
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    // Add crossorigin attribute to handle CORS issues
-    img.crossOrigin = "anonymous";
-    // Set referrer policy to prevent issues with some servers
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
-  });
+  try {
+    // Use proxy to check if image exists
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl, { method: 'HEAD' });
+    const contentType = response.headers.get('Content-Type');
+    
+    // Check if response is successful and content type is an image
+    return response.ok && contentType && contentType.startsWith('image/');
+  } catch (error) {
+    console.log("Image check failed:", error);
+    return false;
+  }
 }
 
 /**
@@ -1370,11 +1372,12 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
   }
   console.log("Searching TheAudioDB for artist:", cleanArtistName);
 
-  // Use TheAudioDB API to search for artist through a CORS proxy
+  // Use TheAudioDB API to search for artist through our proxy
   const apiKey = "123"; // TheAudioDB free API key
-  const searchUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`)}`;
-
-  fetch(searchUrl)
+  const searchUrl = `https://theaudiodb.com/api/v1/json/${apiKey}/search.php?s=${encodeURIComponent(cleanArtistName)}`;
+  
+  // Use proxyFetch for the API request
+  proxyFetch(searchUrl)
     .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1387,11 +1390,12 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
         data.artists.length > 0 &&
         data.artists[0].strArtistThumb
       ) {
-        // Use the thumbnail image URL
+        // Use the thumbnail image URL through proxy
         const imageUrl = data.artists[0].strArtistThumb;
+        const proxyImageUrl = `/api/proxy?url=${encodeURIComponent(imageUrl)}`;
         const coverArtElement = $("cover-art");
         if (coverArtElement) {
-          coverArtElement.src = imageUrl;
+          coverArtElement.src = proxyImageUrl;
           coverArtElement.style.display = "block";
         }
       } else {
@@ -1412,14 +1416,16 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
  * @param {string} icyUrl - The ICY URL for favicon detection
  */
 function handleImageFallback(iconUrl, icyUrl) {
-  // First try the stream icon URL
+  // First try the stream icon URL through proxy
   if (iconUrl) {
-    // Check if icon URL is a valid image
+    // Check if icon URL is a valid image through proxy
     checkImageExists(iconUrl).then((exists) => {
       if (exists) {
         const coverArtElement = $("cover-art");
         if (coverArtElement) {
-          coverArtElement.src = iconUrl;
+          // Use proxy URL for the image
+          const proxyImageUrl = `/api/proxy?url=${encodeURIComponent(iconUrl)}`;
+          coverArtElement.src = proxyImageUrl;
           coverArtElement.style.display = "block";
         }
       } else {
@@ -1439,14 +1445,15 @@ function handleImageFallback(iconUrl, icyUrl) {
  */
 function tryFaviconFallback(icyUrl) {
   if (icyUrl) {
-    // Try to get favicon from the ICY URL
+    // Try to get favicon from the ICY URL through proxy
     findFaviconUrl(icyUrl).then((faviconUrl) => {
       if (faviconUrl) {
         console.log("Found favicon:", faviconUrl);
-        // Update the cover art image element
+        // Update the cover art image element through proxy
         const coverArtElement = $("cover-art");
         if (coverArtElement) {
-          coverArtElement.src = faviconUrl;
+          const proxyFaviconUrl = `/api/proxy?url=${encodeURIComponent(faviconUrl)}`;
+          coverArtElement.src = proxyFaviconUrl;
         }
       } else {
         // No favicon found, use default
@@ -2037,16 +2044,8 @@ async function importRemotePlaylist() {
   }
 
   try {
-    // Try direct fetch first
-    let response = await fetch(url);
-
-    // If direct fetch fails due to CORS, try with a proxy
-    if (!response.ok) {
-      console.log("Direct fetch failed, trying with CORS proxy");
-      const proxyUrl =
-        "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-      response = await fetch(proxyUrl);
-    }
+    // Use proxyFetch instead of direct fetch
+    let response = await proxyFetch(url);
 
     if (!response.ok) {
       throw new Error(
@@ -3462,4 +3461,44 @@ function escapeHtml(unsafe) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/**
+ * @brief Make a proxy request through the ESP32
+ * @param {string} url - Target URL to request
+ * @param {Object} options - Fetch options (method, headers, body, etc.)
+ * @returns {Promise<Response>} - Fetch response
+ */
+async function proxyFetch(url, options = {}) {
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+  
+  // Prepare the request options for the proxy
+  const proxyOptions = {
+    method: options.method || 'GET',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      ...options.headers
+    }
+  };
+  
+  // Add body for POST/PUT requests
+  if (options.body) {
+    proxyOptions.headers['Content-Type'] = options.headers?.['Content-Type'] || 'application/json';
+    proxyOptions.body = options.body;
+  }
+  
+  // For POST/PUT requests with body, we need to send the body in the request
+  if ((proxyOptions.method === 'POST' || proxyOptions.method === 'PUT') && proxyOptions.body) {
+    return fetch(proxyUrl, {
+      method: 'POST',
+      headers: proxyOptions.headers,
+      body: proxyOptions.body
+    });
+  } else {
+    // For GET/DELETE and other methods without body
+    return fetch(proxyUrl, {
+      method: proxyOptions.method,
+      headers: proxyOptions.headers
+    });
+  }
 }
