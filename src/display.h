@@ -45,22 +45,30 @@ extern char* displayNames[OLED_COUNT];
  */
 extern int displaySizes[OLED_COUNT][2];
 
+/**
+ * @brief Layout for logo display
+ * 
+ * Predefined layout for different display types and logo position
+ * Format: [display_type][line_number] where line_number 0-1
+ * Value of -1 indicates line is not used for that display type
+ */
+extern int logoLayout[OLED_COUNT][2];
 
 /**
- * @brief Y-coordinate arrays for update display
+ * @brief Layout for update display
  * 
  * Predefined Y-coordinates for different display types and lines
  * Format: [display_type][line_number] where line_number 0-3
  */
-extern int yUpdate[OLED_COUNT][4];
+extern int updateLayout[OLED_COUNT][4];
 
 /**
- * @brief Y-coordinate arrays for status display
+ * @brief Layout for status display
  * 
  * Predefined Y-coordinates for different display types and lines in status mode
  * Format: [display_type][line_number] where line_number 0-3
  */
-extern int yStatus[OLED_COUNT][4];
+extern int statusLayout[OLED_COUNT][4];
 
 /**
  * @brief Get the number of configured display types

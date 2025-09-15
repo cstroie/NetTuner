@@ -40,8 +40,8 @@ The ESP32-CAM typically uses:
 // Pin definitions for ESP32-CAM
 // Note: Some pins are reserved for camera interface
 #define DEFAULT_I2S_DOUT         15  ///< I2S Data Out pin
-#define DEFAULT_I2S_BCLK          4  ///< I2S Bit Clock pin
-#define DEFAULT_I2S_LRC           2  ///< I2S Left/Right Clock pin
+#define DEFAULT_I2S_BCLK          2  ///< I2S Bit Clock pin
+#define DEFAULT_I2S_LRC           4  ///< I2S Left/Right Clock pin
 #define DEFAULT_LED_PIN          -1  ///< ESP32 internal LED pin
 #define DEFAULT_ROTARY_CLK       -1  ///< Rotary encoder clock pin
 #define DEFAULT_ROTARY_DT        -1  ///< Rotary encoder data pin
@@ -53,7 +53,7 @@ The ESP32-CAM typically uses:
 #define DEFAULT_TOUCH_DEBOUNCE   50  ///< Touch debounce time in milliseconds
 #define DEFAULT_BOARD_BUTTON     -1  ///< ESP32 board button pin (with internal pull-up resistor)
 #define DEFAULT_DISPLAY_SDA       0  ///< OLED display SDA pin
-#define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin
+#define DEFAULT_DISPLAY_SCL      16  ///< OLED display SCL pin
 #define DEFAULT_DISPLAY_TYPE      0  ///< OLED display type (index)
 #define DEFAULT_DISPLAY_ADDR   0x3C  ///< OLED display I2C address
 #define DEFAULT_DISPLAY_TIMEOUT  30  ///< Display timeout in seconds

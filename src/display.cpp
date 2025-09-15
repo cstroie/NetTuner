@@ -43,26 +43,39 @@ int displaySizes[OLED_COUNT][2] = {
 };
 
 /**
- * @brief Y-coordinate arrays for update display
+ * @brief Layout for logo display
  * 
- * Predefined Y-coordinates for different display types and lines
+ * Predefined layout for different display types and logo position
+ * Format: [display_type][line_number] where line_number 0-1
+ * Value of -1 indicates line is not used for that display type
+ */
+int logoLayout[OLED_COUNT][2] = {
+    {40, -1},     // 128x64 
+    {28, -1},     // 128x32
+    {28, -1}      // 128x32 small font
+};
+
+/**
+ * @brief Layout for update display
+ * 
+ * Predefined layout for different display types and lines
  * Format: [display_type][line_number] where line_number 0-3
  * Value of -1 indicates line is not used for that display type
  */
-int yUpdate[OLED_COUNT][4] = {
+int updateLayout[OLED_COUNT][4] = {
     {12, 30, 45, 62},     // 128x64 
     {12, -1, 28, -1},     // 128x32
     {12, -1, 22, 31}      // 128x32 small font
 };
 
 /**
- * @brief Y-coordinate arrays for status display
+ * @brief Layout for status display
  * 
- * Predefined Y-coordinates for different display types and lines in status mode
+ * Predefined layout for different display types and lines in status mode
  * Format: [display_type][line_number] where line_number 0-3
  * Value of -1 indicates line is not used for that display type
  */
-int yStatus[OLED_COUNT][4] = {
+int statusLayout[OLED_COUNT][4] = {
     {12, 30, 45, 62},     // 128x64 
     {12, -1, 28, -1},     // 128x32
     {12, -1, 22, 31}      // 128x32 small font
@@ -152,7 +165,7 @@ void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    printAt("NetTuner", 0, 28, 'c');
+    printAt("NetTuner", 0, logoLayout[displayType][0], 'c');
     // Show the buffer
     displayRef.display();
 }
@@ -189,7 +202,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     
     if (isPlaying) {
         // Fixed '>' character to indicate playing state
-        printAt(">", 0, yUpdate[displayType][0], 'l');
+        printAt(">", 0, updateLayout[displayType][0], 'l');
         
         // Display stream title (first line) with scrolling for long titles
         String title = streamName;
@@ -233,44 +246,44 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
             String tempText = displayText + displayText;  // Double it to ensure enough content
-            printAt(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars), 16, yUpdate[displayType][0], 'l');
+            printAt(tempText.substring(titleScrollOffset, titleScrollOffset + maxDisplayChars), 16, updateLayout[displayType][0], 'l');
         } else {
             // Display title without scrolling for short titles
-            printAt(title, 16, yUpdate[displayType][0], 'l');
+            printAt(title, 16, updateLayout[displayType][0], 'l');
         }
         
-        if (yUpdate[displayType][1] > 0) {
+        if (updateLayout[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
             String stationName = String(streamName);
             if (stationName.length() > 16) {
-                printAt(stationName.substring(0, 16), 0, yUpdate[displayType][1], 'l');
+                printAt(stationName.substring(0, 16), 0, updateLayout[displayType][1], 'l');
             } else {
-                printAt(stationName, 0, yUpdate[displayType][1], 'l');
+                printAt(stationName, 0, updateLayout[displayType][1], 'l');
             }
         }
         
-        if (yUpdate[displayType][2] > 0) {
+        if (updateLayout[displayType][2] > 0) {
             // Display volume and bitrate on third line
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            printAt(volStr, 0, yUpdate[displayType][2], 'l');
+            printAt(volStr, 0, updateLayout[displayType][2], 'l');
             // Display bitrate on the same line if available
             if (bitrate > 0) {
                 char bitrateStr[20];
                 sprintf(bitrateStr, "%3d kbps", bitrate);
-                printAt(bitrateStr, 0, yUpdate[displayType][2], 'r');
+                printAt(bitrateStr, 0, updateLayout[displayType][2], 'r');
             }
         }
             
-        if (yUpdate[displayType][3] > 0) {
+        if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            printAt(ipString, 0, yUpdate[displayType][3], 'c');
+            printAt(ipString, 0, updateLayout[displayType][3], 'c');
         }
     } else {
         // Display when stopped
         int lineStream = 0;
-        if (yUpdate[displayType][1] > 0) {
-            printAt("NetTuner", 0, yUpdate[displayType][0], 'c');
+        if (updateLayout[displayType][1] > 0) {
+            printAt("NetTuner", 0, updateLayout[displayType][0], 'c');
             lineStream = 1;
         }
             
@@ -278,41 +291,41 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
             if (currentStream.length() > 16) {
-                printAt(currentStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
+                printAt(currentStream.substring(0, 16), 0, updateLayout[displayType][lineStream], 'l');
             } else {
-                printAt(currentStream, 0, yUpdate[displayType][lineStream], 'l');
+                printAt(currentStream, 0, updateLayout[displayType][lineStream], 'l');
             }
         } else {
             // Show the currently selected playlist item (passed in streamName parameter)
             if (strlen(streamName) > 0) {
                 String selectedStream = String(streamName);
                 if (selectedStream.length() > 16) {
-                    printAt(selectedStream.substring(0, 16), 0, yUpdate[displayType][lineStream], 'l');
+                    printAt(selectedStream.substring(0, 16), 0, updateLayout[displayType][lineStream], 'l');
                 } else {
-                    printAt(selectedStream, 0, yUpdate[displayType][lineStream], 'l');
+                    printAt(selectedStream, 0, updateLayout[displayType][lineStream], 'l');
                 }
             } else {
-                printAt("No stream", 0, yUpdate[displayType][lineStream], 'c');
+                printAt("No stream", 0, updateLayout[displayType][lineStream], 'c');
             }
         }
         
         // Display volume on third line (only for displays with sufficient height)
-        if (yUpdate[displayType][2] > 0) {
+        if (updateLayout[displayType][2] > 0) {
             // Display volume level
             char volStr[20];
             sprintf(volStr, "Vol %2d", volume);
-            printAt(volStr, 0, yUpdate[displayType][2], 'l');
+            printAt(volStr, 0, updateLayout[displayType][2], 'l');
             // Display WiFi RSSI when stopped (only if WiFi is connected)
             if (WiFi.status() == WL_CONNECTED) {
                 char rssiStr[20];
-                sprintf(rssiStr, "%ddBm", WiFi.RSSI());
-                printAt(rssiStr, 0, yUpdate[displayType][2], 'r');
+                sprintf(rssiStr, "%d dBm", WiFi.RSSI());
+                printAt(rssiStr, 0, updateLayout[displayType][2], 'r');
             }
         }
 
-        if (yUpdate[displayType][3] > 0) {
+        if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
-            printAt(ipString, 0, yUpdate[displayType][3], 'c');
+            printAt(ipString, 0, updateLayout[displayType][3], 'c');
         }
     }
     
@@ -336,27 +349,27 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     displayRef.setTextColor(SSD1306_WHITE);
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
-        printAt("NetTuner", 0, yStatus[displayType][0], 'c');
+        printAt("NetTuner", 0, statusLayout[displayType][0], 'c');
         // Display each line if it contains content
         if (line1.length() > 0) {
-            printAt(line1, 0, yStatus[displayType][1], 'l');
+            printAt(line1, 0, statusLayout[displayType][1], 'l');
         }
         if (line2.length() > 0) {
-            printAt(line2, 0, yStatus[displayType][2], 'l');
+            printAt(line2, 0, statusLayout[displayType][2], 'l');
         }
         if (line3.length() > 0) {
-            printAt(line3, 0, yStatus[displayType][3], 'l');
+            printAt(line3, 0, statusLayout[displayType][3], 'l');
         }
     } else {
         // Display first line
         if (line1.length() > 0) {
-            printAt(line1, 0, yStatus[displayType][0], 'l');
+            printAt(line1, 0, statusLayout[displayType][0], 'l');
         }
         // Displey the second or third line if they have contemt
         if (line2.length() > 0) {
-            printAt(line2, 0, yStatus[displayType][1], 'l');
+            printAt(line2, 0, statusLayout[displayType][1], 'l');
         } else if (line3.length() > 0) {
-            printAt(line3, 0, yStatus[displayType][1], 'l');
+            printAt(line3, 0, statusLayout[displayType][1], 'l');
         }
     }
     // Show the buffer
@@ -423,10 +436,10 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     // If we're playing, keep the display on
     if (isPlaying) {
         // Update activity time periodically during playback to prevent timeout
-        static unsigned long lastPlaybackActivityUpdate = 0;
-        if (currentTime - lastPlaybackActivityUpdate > 5000) { // Every 5 seconds
+        static unsigned long lastPlaybackActivitupdateLayout = 0;
+        if (currentTime - lastPlaybackActivitupdateLayout > 5000) { // Every 5 seconds
             lastActivityTime = currentTime;
-            lastPlaybackActivityUpdate = currentTime;
+            lastPlaybackActivitupdateLayout = currentTime;
         }
         if (!displayOn) {
             displayOn = true;

@@ -156,12 +156,18 @@ void audio_info(const char *info) {
       } else if (urlPart.startsWith("'") && urlPart.endsWith("'") && urlPart.length() >= 2) {
         urlPart = urlPart.substring(1, urlPart.length() - 1);
       }
-      // Store the stream icon URL
-      player.setStreamIconUrl(urlPart.c_str());
-      Serial.print("Stream Icon URL: ");
-      Serial.println(player.getStreamIconUrl());
-      // Notify clients of the new stream icon
-      sendStatusToClients();
+      // Check if the URL ends with common image extensions
+      if (urlPart.endsWith(".png") ||
+          urlPart.endsWith(".jpg") ||
+          urlPart.endsWith(".jpeg") ||
+          urlPart.endsWith(".ico")) {
+        // Store the cover image URL
+        player.setStreamIconUrl(urlPart.c_str());
+        Serial.print("Cover image URL: ");
+        Serial.println(player.getStreamIconUrl());
+        // Notify clients of the new cover image
+        sendStatusToClients();
+      }
     }
   }
 }
