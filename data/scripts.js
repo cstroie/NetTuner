@@ -1374,7 +1374,13 @@ function handleImageFallback(iconUrl) {
   // First try the stream icon URL through proxy
   if (iconUrl) {
     console.log("Trying stream icon URL:", iconUrl);
-    // Check if icon URL is a valid image through proxy
+    // Replace HTTPS with HTTP since the proxy crashes on SSL
+    let httpUrl = iconUrl;
+    if (iconUrl.startsWith('https://')) {
+      httpUrl = 'http://' + iconUrl.substring(8);
+    }
+    iconUrl = httpUrl;
+    // Check if icon URL is a valid image through proxy  
     checkImageExists(iconUrl).then((exists) => {
       if (exists) {
         const coverArtElement = $("cover-art");
