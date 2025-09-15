@@ -1379,23 +1379,12 @@ function handleImageFallback(iconUrl, icyUrl) {
           coverArtElement.style.display = "block";
         }
       } else {
-        // If icon URL is not a valid image, try favicon
-        tryFaviconFallback(icyUrl);
+        resetToDefaultCoverArt();
       }
     });
   } else {
-    // No icon URL, try favicon directly
-    tryFaviconFallback(icyUrl);
+    resetToDefaultCoverArt();
   }
-}
-
-/**
- * Try to get favicon as final fallback
- * @param {string} icyUrl - The ICY URL for favicon detection
- */
-function tryFaviconFallback(icyUrl) {
-  // No favicon found, use default
-  resetToDefaultCoverArt();
 }
 
 /**
