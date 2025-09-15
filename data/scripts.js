@@ -1283,10 +1283,17 @@ async function importAllConfiguration() {
  */
 async function checkImageExists(url) {
   console.log("Checking image existence:", url);
+  
+  // Replace HTTPS with HTTP since the proxy crashes on SSL
+  let proxyUrl = url;
+  if (url.startsWith('https://')) {
+    proxyUrl = 'http://' + url.substring(8);
+  }
+  
   try {
     // Use proxy to check if image exists
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl, { method: 'HEAD' });
+    const proxyRequestUrl = `/api/proxy?url=${encodeURIComponent(proxyUrl)}`;
+    const response = await fetch(proxyRequestUrl, { method: 'HEAD' });
     const contentType = response.headers.get('Content-Type');
     
     // Check if response is successful and content type is an image
