@@ -3412,7 +3412,13 @@ function escapeHtml(unsafe) {
  * @returns {Promise<Response>} - Fetch response
  */
 async function proxyFetch(url, options = {}) {
-  const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+  // Replace HTTPS with HTTP since the proxy crashes on SSL
+  let httpUrl = url;
+  if (url.startsWith('https://')) {
+    httpUrl = 'http://' + url.substring(8);
+  }
+  
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(httpUrl)}`;
   
   // Only support GET and POST methods
   const method = options.method || 'GET';
