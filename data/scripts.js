@@ -1310,7 +1310,7 @@ async function checkImageExists(url) {
  * @param {string} iconUrl - The stream icon URL (fallback)
  * @param {string} icyUrl - The ICY URL (fallback for favicon)
  */
-function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
+function fetchArtistImageFromTheAudioDB(artistName, iconUrl) {
   // Clean up the artist name for better search results
   const cleanArtistName = artistName
     .replace(/\(.*?\)/g, "") // Remove text in parentheses
@@ -1319,7 +1319,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
     .trim();
   if (!cleanArtistName) {
     // Try icon URL first, then favicon
-    handleImageFallback(iconUrl, icyUrl);
+    handleImageFallback(iconUrl);
     return;
   }
   console.log("Searching TheAudioDB for artist:", cleanArtistName);
@@ -1352,7 +1352,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
         window.hasArtistImage = true;
       } else {
         // If no artist found or no image available, try fallbacks
-        handleImageFallback(iconUrl, icyUrl);
+        handleImageFallback(iconUrl);
         // Mark that we don't have an artist image for this stream
         window.hasArtistImage = false;
       }
@@ -1360,7 +1360,7 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
     .catch((error) => {
       console.error("Error fetching artist from TheAudioDB:", error);
       // Try fallbacks on error
-      handleImageFallback(iconUrl, icyUrl);
+      handleImageFallback(iconUrl);
       // Mark that we don't have an artist image for this stream
       window.hasArtistImage = false;
     });
@@ -1369,9 +1369,8 @@ function fetchArtistImageFromTheAudioDB(artistName, iconUrl, icyUrl) {
 /**
  * Handle fallback images when TheAudioDB fails
  * @param {string} iconUrl - The stream icon URL
- * @param {string} icyUrl - The ICY URL for favicon detection
  */
-function handleImageFallback(iconUrl, icyUrl) {
+function handleImageFallback(iconUrl) {
   // First try the stream icon URL through proxy
   if (iconUrl) {
     console.log("Trying stream icon URL:", iconUrl);
@@ -1618,7 +1617,6 @@ function connectWebSocket() {
               fetchArtistImageFromTheAudioDB(
                 status.streamTitle,
                 status.streamIconURL,
-                status.streamIcyURL,
               );
             }
           }
@@ -1633,7 +1631,6 @@ function connectWebSocket() {
             fetchArtistImageFromTheAudioDB(
               status.streamTitle,
               status.streamIconURL,
-              status.streamIcyURL,
             );
           } else {
             // Reset to default CD image when no stream is playing
