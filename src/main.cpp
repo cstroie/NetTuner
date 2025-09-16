@@ -2292,7 +2292,7 @@ void setup() {
         type = "sketch";
       else // U_SPIFFS
         type = "filesystem";
-      SPIFFS.end()
+      SPIFFS.end();
       Serial.println("Start updating " + type);
     })
     .onEnd([]() {
