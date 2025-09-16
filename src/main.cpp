@@ -346,7 +346,11 @@ void sendJsonResponse(AsyncWebServerRequest *request, const String& status, cons
   doc["message"] = message;
   String json;
   serializeJson(doc, json);
-  request->send(code, "application/json", json);
+  
+  // Add Connection: keep-alive header to reuse connections
+  AsyncWebServerResponse *response = request->beginResponse(code, "application/json", json);
+  response->addHeader("Connection", "keep-alive");
+  request->send(response);
 }
 
 /**
@@ -1128,8 +1132,10 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
   html += "</fieldset></form></section></main>";
   html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
 
-  // Send the HTML response
-  request->send(200, "text/html", html);
+  // Send the HTML response with keep-alive
+  AsyncWebServerResponse *response = request->beginResponse(200, "text/html", html);
+  response->addHeader("Connection", "keep-alive");
+  request->send(response);
 }
 
 
