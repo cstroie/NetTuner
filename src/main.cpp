@@ -478,12 +478,14 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
   DynamicJsonDocument doc(2048);
   // Scan for available networks with async option to prevent blocking
   int n = WiFi.scanNetworks(true, false);  // async=true, show_hidden=false
+
   // Wait for scan to complete with periodic yields to prevent watchdog timeout
   const unsigned long scanTimeout = 5000;  // 5 second timeout
   unsigned long scanStart = millis();
   while (WiFi.scanComplete() == WIFI_SCAN_RUNNING) {
     yield();
     delay(10);  // Small delay to prevent busy waiting
+    
     // Check for timeout
     if (millis() - scanStart > scanTimeout) {
       Serial.println("WiFi scan timeout");
