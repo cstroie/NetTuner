@@ -1984,7 +1984,7 @@ void setupWebServer() {
   server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
-  server.serveStatic("/", SPIFFS, "/index.html");
+  server.serveStatic("/", SPIFFS, "/player.html");
   server.serveStatic("/playlist", SPIFFS, "/playlist.html");
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
   server.serveStatic("/config", SPIFFS, "/config.html");
