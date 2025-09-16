@@ -1606,10 +1606,15 @@ void sendStatusToClients() {
 
 /**
  * @brief Handle HTTP proxy requests
+ * @param request AsyncWebServerRequest pointer
+ * @param data Request body data
+ * @param len Length of request body data
+ * @param index Index of data chunk
+ * @param total Total size of request body
  * Acts as a transparent proxy to circumvent CORS restrictions
  * Forwards requests to target URLs and returns responses
  */
-void handleProxyRequest(AsyncWebServerRequest *request) {
+void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
   // Check if we have a URL parameter
   if (!request->hasParam("url")) {
     sendJsonResponse(request, "error", "Missing URL parameter", 400);
