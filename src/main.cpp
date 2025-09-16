@@ -1172,23 +1172,20 @@ void handlePostStreams(AsyncWebServerRequest *request, uint8_t *data, size_t len
  * @brief Handle player request
  * Controls stream playback (play/stop) or returns player status
  * This function handles HTTP requests to control playback or get player status.
- * For POST requests, it supports both JSON payload and form data with action parameter.
+ * For POST requests, it supports JSON payload with action parameter.
  * For GET requests, it returns player status and stream information.
  *
  * POST /api/player:
  *   JSON payload: {"action": "play", "url": "...", "name": "...", "index": 0}
  *   JSON payload: {"action": "play", "index": 0}
  *   JSON payload: {"action": "stop"}
- *   Form data: action=play&url=...&name=...&index=0
- *   Form data: action=play&index=0
- *   Form data: action=stop
  *
  * GET /api/player:
  *   Returns: {"status": "play|stop", "stream": {...}}
  *   When playing: stream object contains name, title, url, index, bitrate, elapsed
  *   When stopped: stream object is omitted
  */
-void handlePlayer(AsyncWebServerRequest *request) {
+void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
   // Handle GET request - return player status
   if (request->method() == HTTP_GET) {
     // Create JSON document with appropriate size
@@ -1222,49 +1219,26 @@ void handlePlayer(AsyncWebServerRequest *request) {
   // Handle POST request - control playback
   String action, url, name;
   int index = -1;
-  // Check if request has JSON payload
-  if (request->hasParam("plain", true)) {
-    // Handle JSON payload
-    const AsyncWebParameter* p = request->getParam("plain", true);
-    String json = p->value();
-    DynamicJsonDocument doc(512);
-    DeserializationError error = deserializeJson(doc, json);
-    // Check for JSON parsing errors
-    if (error) {
-      sendJsonResponse(request, "error", "Invalid JSON");
-      return;
-    }
-    // Extract parameters from JSON
-    if (doc.containsKey("action")) {
-      action = doc["action"].as<String>();
-    }
-    if (doc.containsKey("url")) {
-      url = doc["url"].as<String>();
-    }
-    if (doc.containsKey("name")) {
-      name = doc["name"].as<String>();
-    }
-    if (doc.containsKey("index")) {
-      index = doc["index"].as<int>();
-    }
-  }
-  // Check if request has form data
-  else if (request->hasParam("action", true)) {
-    // Handle form data
-    action = request->getParam("action", true)->value();
-    if (request->hasParam("url", true)) {
-      url = request->getParam("url", true)->value();
-    }
-    if (request->hasParam("name", true)) {
-      name = request->getParam("name", true)->value();
-    }
-    if (request->hasParam("index", true)) {
-      index = request->getParam("index", true)->value().toInt();
-    }
-  }
-  else {
-    sendJsonResponse(request, "error", "Missing action parameter");
+  // Parse the JSON data from the request body
+  DynamicJsonDocument doc(512);
+  DeserializationError error = deserializeJson(doc, (char *)data, len);
+  // Check for JSON parsing errors
+  if (error) {
+    sendJsonResponse(request, "error", "Invalid JSON");
     return;
+  }
+  // Extract parameters from JSON
+  if (doc.containsKey("action")) {
+    action = doc["action"].as<String>();
+  }
+  if (doc.containsKey("url")) {
+    url = doc["url"].as<String>();
+  }
+  if (doc.containsKey("name")) {
+    name = doc["name"].as<String>();
+  }
+  if (doc.containsKey("index")) {
+    index = doc["index"].as<int>();
   }
   // Check for required action parameter
   if (action.length() == 0) {
@@ -1934,11 +1908,12 @@ void setupWebServer() {
       handlePostStreams(request, data, len, index, total);
     });
   server.on("/api/player", HTTP_GET, [](AsyncWebServerRequest *request){
-    handlePlayer(request);
+    handlePlayer(request, nullptr, 0, 0, 0);
   });
-  server.on("/api/player", HTTP_POST, [](AsyncWebServerRequest *request){
-    handlePlayer(request);
-  });
+  server.on("/api/player", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handlePlayer(request, data, len, index, total);
+    });
   server.on("/api/mixer", HTTP_GET, [](AsyncWebServerRequest *request){
     handleMixer(request);
   });
