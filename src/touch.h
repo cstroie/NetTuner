@@ -28,7 +28,6 @@ private:
   bool lastState;
   volatile bool pressedFlag;
   unsigned long debounceTime;  // Configurable debounce time
-  static void IRAM_ATTR isrWrapper(void* arg);
 
 public:
   /**
