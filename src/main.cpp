@@ -1936,26 +1936,63 @@ bool initSPIFFS() {
  * Configures all HTTP routes and static file mappings for the web server
  */
 void setupWebServer() {
-  server.on("/api/streams", HTTP_GET, handleGetStreams);
-  server.on("/api/streams", HTTP_POST, handlePostStreams);
-  server.on("/api/player", HTTP_GET, handlePlayer);
-  server.on("/api/player", HTTP_POST, handlePlayer);
-  server.on("/api/mixer", HTTP_GET, handleMixer);
-  server.on("/api/mixer", HTTP_POST, handleMixer);
-  server.on("/api/config", HTTP_GET, handleGetConfig);
-  server.on("/api/config", HTTP_POST, handlePostConfig);
-  server.on("/api/config/export", HTTP_GET, handleExportConfig);
-  server.on("/api/config/import", HTTP_POST, handleImportConfig);
-  server.on("/api/wifi/scan", HTTP_GET, handleWiFiScan);
-  server.on("/api/wifi/save", HTTP_POST, handleWiFiSave);
-  server.on("/api/wifi/status", HTTP_GET, handleWiFiStatus);
-  server.on("/api/wifi/config", HTTP_GET, handleWiFiConfig);
-  server.on("/api/proxy", HTTP_GET, handleProxyRequest);
-  server.on("/api/proxy", HTTP_POST, handleProxyRequest);
-  server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
-  server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
-  server.on("/w", HTTP_GET, handleSimpleWebPage);
-  server.on("/w", HTTP_POST, handleSimpleWebPage);
+  server.on("/api/streams", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleGetStreams(request);
+  });
+  server.on("/api/streams", HTTP_POST, [](AsyncWebServerRequest *request){
+    handlePostStreams(request);
+  });
+  server.on("/api/player", HTTP_GET, [](AsyncWebServerRequest *request){
+    handlePlayer(request);
+  });
+  server.on("/api/player", HTTP_POST, [](AsyncWebServerRequest *request){
+    handlePlayer(request);
+  });
+  server.on("/api/mixer", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleMixer();
+  });
+  server.on("/api/mixer", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleMixer();
+  });
+  server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleGetConfig();
+  });
+  server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request){
+    handlePostConfig();
+  });
+  server.on("/api/config/export", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleExportConfig();
+  });
+  server.on("/api/config/import", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleImportConfig();
+  });
+  server.on("/api/wifi/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleWiFiScan();
+  });
+  server.on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleWiFiSave();
+  });
+  server.on("/api/wifi/status", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleWiFiStatus();
+  });
+  server.on("/api/wifi/config", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleWiFiConfig();
+  });
+  server.on("/api/proxy", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleProxyRequest();
+  });
+  server.on("/api/proxy", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleProxyRequest();
+  });
+  server.on("/api/proxy", HTTP_HEAD, [](AsyncWebServerRequest *request){
+    handleProxyRequest();
+  });
+  server.on("/w", HTTP_GET, [](AsyncWebServerRequest *request){
+    handleSimpleWebPage(request);
+  });
+  server.on("/w", HTTP_POST, [](AsyncWebServerRequest *request){
+    handleSimpleWebPage(request);
+  });
   server.serveStatic("/", SPIFFS, "/index.html");
   server.serveStatic("/playlist", SPIFFS, "/playlist.html");
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
