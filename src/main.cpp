@@ -759,17 +759,10 @@ void handleGetConfig(AsyncWebServerRequest *request) {
  * Updates the configuration with new JSON data and saves to SPIFFS
  * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
  */
-void handlePostConfig(AsyncWebServerRequest *request) {
-  // Check for JSON data
-  if (!request->hasParam("plain", true)) {
-    sendJsonResponse(request, "error", "Missing JSON data");
-    return;
-  }
-  // Parse the JSON data
-  const AsyncWebParameter* p = request->getParam("plain", true);
-  String jsonData = p->value();
+void handlePostConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  // Parse the JSON data from the request body
   DynamicJsonDocument doc(1024);
-  DeserializationError error = deserializeJson(doc, jsonData);
+  DeserializationError error = deserializeJson(doc, (char *)data, len);
   // Check for JSON parsing errors
   if (error) {
     sendJsonResponse(request, "error", "Invalid JSON");
@@ -1968,9 +1961,10 @@ void setupWebServer() {
   server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request){
     handleGetConfig(request);
   });
-  server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request){
-    handlePostConfig(request);
-  });
+  server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handlePostConfig(request, data, len, index, total);
+    });
   server.on("/api/config/export", HTTP_GET, [](AsyncWebServerRequest *request){
     handleExportConfig(request);
   });
