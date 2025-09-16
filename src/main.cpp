@@ -1994,9 +1994,7 @@ void setupWebServer() {
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
   server.serveStatic("/config", SPIFFS, "/config.html");
   server.serveStatic("/about", SPIFFS, "/about.html");
-  server.serveStatic("/styles.css", SPIFFS, "/styles.css");
-  server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
-  server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
+  server.serveStatic("/", SPIFFS, "/");
   // Handle root path - redirect to main web interface
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->redirect("/player");
