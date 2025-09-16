@@ -826,8 +826,10 @@ void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
     player.handleAudio();
-    // Very small delay to prevent busy waiting but allow frequent processing
-    delay(1);
+    // Add yield to prevent task watchdog timeout
+    yield();
+    // Small delay to prevent busy waiting and allow other tasks to run
+    delay(5);
   }
 }
 
@@ -2170,6 +2172,8 @@ void loop() {
   // Handle display timeout with configurable timeout value
   display->handleTimeout(player.isPlaying(), millis());
 
+  // Add yield to prevent task watchdog timeout
+  yield();
   // Small delay to prevent busy waiting and reduce network load
   delay(150);  // Increased from 100 to 150 to reduce CPU usage
 }
