@@ -1543,15 +1543,23 @@ function connectWebSocket() {
         const data = JSON.parse(event.data);
 
         // Handle status updates
-        const status = data;
-        console.log("Received status update:", status);
-
-        // Keep track of previous status to avoid unnecessary updates
+        // Merge with previous status to handle partial updates
         if (!window.previousStatus) {
           window.previousStatus = {};
         }
+        
+        // Merge incoming data with previous status
+        const status = { ...window.previousStatus, ...data };
+        window.previousStatus = status; // Update the cache
+        
+        console.log("Received status update:", status);
 
-        const prev = window.previousStatus;
+        // Keep track of previous status to avoid unnecessary updates
+        if (!window.lastDisplayedStatus) {
+          window.lastDisplayedStatus = {};
+        }
+
+        const prev = window.lastDisplayedStatus;
 
         // Update status element only if playing state changed
         if (status.playing !== prev.playing) {
