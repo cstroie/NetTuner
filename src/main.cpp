@@ -2292,13 +2292,11 @@ void setup() {
   player.loadPlaylist();
   // Validate loaded playlist
   player.getPlaylist()->validate();
-    // Load player state
+  // Load player state
   player.loadPlayerState();
   if (player.isPlaying()) {
     // Update activity time to prevent display from timing out immediately
     display->setActivityTime(millis()); 
-    // Also ensure display is on when starting in playing state
-    display->turnOn();
   }
   // Setup web server routes
   setupWebServer();

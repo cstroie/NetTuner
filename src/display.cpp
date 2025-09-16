@@ -351,7 +351,7 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
         printAt("NetTuner", 0, statusLayout[displayType][0], 'c');
-        // Display each line if it contains content
+        // Display each line if it has content
         if (line1.length() > 0) {
             printAt(line1, 0, statusLayout[displayType][1], 'l');
         }
@@ -366,11 +366,11 @@ void Display::showStatus(const String& line1, const String& line2, const String&
         if (line1.length() > 0) {
             printAt(line1, 0, statusLayout[displayType][0], 'l');
         }
-        // Displey the second or third line if they have contemt
+        // Display the second or third line if they have content
         if (line2.length() > 0) {
-            printAt(line2, 0, statusLayout[displayType][1], 'l');
+            printAt(line2, 0, statusLayout[displayType][2], 'l');
         } else if (line3.length() > 0) {
-            printAt(line3, 0, statusLayout[displayType][1], 'l');
+            printAt(line3, 0, statusLayout[displayType][2], 'l');
         }
     }
     // Show the buffer
@@ -470,9 +470,7 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
 void Display::setActivityTime(unsigned long time) {
     lastActivityTime = time;
     // Also ensure the display is on when there's activity
-    if (!display->isOn()) {
-        display->turnOn();
-    }
+    display->turnOn();
 }
 
 /**
