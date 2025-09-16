@@ -719,7 +719,7 @@ void saveConfig() {
  * Returns the current configuration as JSON
  * This function serves the current configuration in JSON format.
  */
-void handleGetConfig() {
+void handleGetConfig(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
@@ -747,7 +747,7 @@ void handleGetConfig() {
   String json;
   serializeJson(doc, json);
   // Return configuration as JSON
-  server.send(200, "application/json", json);
+  request->send(200, "application/json", json);
   // Yield to other tasks after processing
   yield();
 }
