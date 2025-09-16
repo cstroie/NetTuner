@@ -330,11 +330,12 @@ bool writeJsonFile(const char* filename, DynamicJsonDocument& doc) {
 /**
  * @brief Send JSON response with status and message
  * Helper function to send standardized JSON responses
+ * @param request AsyncWebServerRequest pointer
  * @param status Status string ("success" or "error")
  * @param message Human-readable message
  * @param code HTTP status code (default 200 for success, 400 for error)
  */
-void sendJsonResponse(const String& status, const String& message, int code = -1) {
+void sendJsonResponse(AsyncWebServerRequest *request, const String& status, const String& message, int code = -1) {
   // If code not specified, determine based on status
   if (code == -1) {
     code = (status == "success") ? 200 : 400;
@@ -345,7 +346,7 @@ void sendJsonResponse(const String& status, const String& message, int code = -1
   doc["message"] = message;
   String json;
   serializeJson(doc, json);
-  server.send(code, "application/json", json);
+  request->send(code, "application/json", json);
 }
 
 
