@@ -1093,22 +1093,16 @@ void handleSimpleWebPage() {
  * This function serves the current playlist in JSON format. If the playlist file
  * doesn't exist, it creates a default empty one.
  */
-void handleGetStreams() {
+void handleGetStreams(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // If playlist file doesn't exist, return a default empty one
   if (!SPIFFS.exists("/playlist.json")) {
-    server.send(200, "application/json", "[]");
+    request->send(200, "application/json", "[]");
     return;
   }
-  File file = SPIFFS.open("/playlist.json", "r");
-  if (!file) {
-    server.send(200, "application/json", "[]");
-    return;
-  }
-  // Stream the file contents
-  server.streamFile(file, "application/json");
-  file.close();
+  // Send the file contents
+  request->send(SPIFFS, "/playlist.json", "application/json");
   // Yield to other tasks after processing
   yield();
 }
