@@ -477,15 +477,13 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(2048);
   // Scan for available networks with async option to prevent blocking
-  int n = WiFi.scanNetworks(true, true);  // async=true, show_hidden=true
-  
+  int n = WiFi.scanNetworks(true, false);  // async=true, show_hidden=false
   // Wait for scan to complete with periodic yields to prevent watchdog timeout
   const unsigned long scanTimeout = 5000;  // 5 second timeout
   unsigned long scanStart = millis();
   while (WiFi.scanComplete() == WIFI_SCAN_RUNNING) {
     yield();
     delay(10);  // Small delay to prevent busy waiting
-    
     // Check for timeout
     if (millis() - scanStart > scanTimeout) {
       Serial.println("WiFi scan timeout");
@@ -2033,7 +2031,7 @@ void setupWebServer() {
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
   server.serveStatic("/config", SPIFFS, "/config.html");
   server.serveStatic("/about", SPIFFS, "/about.html");
-  server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html");
+  server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html").setHeader("Connection", "keep-alive");
   // Handle root path - redirect to main web interface
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->redirect("/player");
