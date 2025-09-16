@@ -96,18 +96,18 @@ void loadWiFiCredentials();
 void saveWiFiCredentials();
 
 // Web server handlers
-void handleSimpleWebPage();
-void handleGetStreams();
-void handlePostStreams();
-void handleGetConfig();
-void handlePostConfig();
-void handleExportConfig();
-void handleImportConfig();
-void handleWiFiScan();
-void handleWiFiSave();
-void handleWiFiStatus();
-void handleWiFiConfig();
-void handleProxyRequest();
+void handleSimpleWebPage(AsyncWebServerRequest *request);
+void handleGetStreams(AsyncWebServerRequest *request);
+void handlePostStreams(AsyncWebServerRequest *request);
+void handleGetConfig(AsyncWebServerRequest *request);
+void handlePostConfig(AsyncWebServerRequest *request);
+void handleExportConfig(AsyncWebServerRequest *request);
+void handleImportConfig(AsyncWebServerRequest *request);
+void handleWiFiScan(AsyncWebServerRequest *request);
+void handleWiFiSave(AsyncWebServerRequest *request);
+void handleWiFiStatus(AsyncWebServerRequest *request);
+void handleWiFiConfig(AsyncWebServerRequest *request);
+void handleProxyRequest(AsyncWebServerRequest *request);
 
 // WebSocket handlers
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
