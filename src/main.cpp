@@ -2004,7 +2004,7 @@ bool connectToWiFi() {
       if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
         display->turnOn();
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display->showStatus("WiFi connecting", "", String(ssid[i]));
+        display->showStatus("WiFi connecting", "", ssid[i]);
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
         const int maxAttempts = 15;
