@@ -26,8 +26,8 @@
 #include "touch.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
-#include "Spleen6x12.h" 
-#include "Spleen8x16.h" 
+#include "Spleen6x12.h"
+#include "Spleen8x16.h"
 #include "Spleen16x32.h"
 #include <ESPmDNS.h>
 #include <HTTPClient.h>
@@ -365,7 +365,7 @@ static volatile bool boardButtonPressed = false;
 void boardButtonISR() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  
+
   // Debounce the button press (ignore if less than 50ms since last press)
   if (interruptTime - lastInterruptTime > 50) {
     boardButtonPressed = true;  // Set flag to indicate button press detected
@@ -383,7 +383,7 @@ void handleBoardButton() {
   if (config.board_button < 0) {
     return;
   }
-  
+
   // Check if button was pressed (detected by interrupt)
   if (boardButtonPressed) {
     // Toggle play/stop
@@ -394,7 +394,7 @@ void handleBoardButton() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
@@ -494,7 +494,7 @@ void handleWiFiSave(AsyncWebServerRequest *request) {
   DeserializationError error = deserializeJson(doc, json);
   // Check for errors
   if (error) {
-    sendJsonResponse("error", "Invalid JSON");
+    sendJsonResponse(request, "error", "Invalid JSON");
     return;
   }
   // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
@@ -532,7 +532,7 @@ void handleWiFiSave(AsyncWebServerRequest *request) {
   }
   // Save updated credentials to SPIFFS
   saveWiFiCredentials();
-  sendJsonResponse("success", "WiFi configuration saved");
+  sendJsonResponse(request, "success", "WiFi configuration saved");
 }
 
 /**
@@ -762,7 +762,7 @@ void handleGetConfig(AsyncWebServerRequest *request) {
 void handlePostConfig(AsyncWebServerRequest *request) {
   // Check for JSON data
   if (!request->hasParam("plain", true)) {
-    sendJsonResponse("error", "Missing JSON data");
+    sendJsonResponse(request, "error", "Missing JSON data");
     return;
   }
   // Parse the JSON data
@@ -797,7 +797,7 @@ void handlePostConfig(AsyncWebServerRequest *request) {
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
-  sendJsonResponse("success", "Configuration updated successfully");
+  sendJsonResponse(request, "success", "Configuration updated successfully");
 }
 
 
@@ -852,16 +852,16 @@ void handleRotary() {
       }
     }
     // Update last position
-    lastRotaryPosition = currentPosition;  
+    lastRotaryPosition = currentPosition;
     // Update activity time on user interaction
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
     // Refresh display with new values
-    updateDisplay();                      
+    updateDisplay();
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
     // Update activity time
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
     if (player.isPlaying()) {
       // If playing, stop playback
       player.stopStream();
@@ -869,18 +869,18 @@ void handleRotary() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
       // Save state when user initiates playback
-      player.savePlayerState(); 
+      player.savePlayerState();
     }
     // Refresh display
     updateDisplay();
-    // Notify clients of status change 
-    sendStatusToClients();  
+    // Notify clients of status change
+    sendStatusToClients();
   }
 }
 
@@ -904,24 +904,24 @@ void handleTouch() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
       // Save state when user initiates playback
-      player.savePlayerState(); 
+      player.savePlayerState();
     }
     // Refresh display and notify clients of status change
     updateDisplay();
     sendStatusToClients();
   }
-  
+
   // Handle next/volume-up button
   if (touchNext && touchNext->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
     updateDisplay(); // Turn display back on and update
-    
+
     if (player.isPlaying()) {
       // If playing, increase volume by 1 (capped at 22)
       player.setVolume(min(22, player.getVolume() + 1));
@@ -933,7 +933,7 @@ void handleTouch() {
     updateDisplay();
     sendStatusToClients();
   }
-  
+
   // Handle previous/volume-down button
   if (touchPrev && touchPrev->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
@@ -1011,7 +1011,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
         if (request->hasParam("url", true)) {
           AsyncWebParameter* urlParam = request->getParam("url", true);
           String customUrl = urlParam->value();
-          if (customUrl.length() > 0 && 
+          if (customUrl.length() > 0 &&
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             // Stop current playback
             player.stopStream();
@@ -1030,7 +1030,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   html += "<section><h2>Status: ";
   html += player.isPlaying() ? "PLAY" : "STOP";
   html += "</h2>";
-  
+
   // Show current stream name
   if (player.isPlaying() && player.getStreamTitle()[0]) {
     html += "<p><b>Now playing:</b> ";
@@ -1048,7 +1048,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   html += "</fieldset></form>";
   html += "<form method='post'><fieldset role='group'>";
   html += "<select name='volume' id='volume'>";
-  
+
   // Add volume options (0-22)
   for (int i = 0; i <= 22; i++) {
     html += "<option value='" + String(i) + "'";
@@ -1060,12 +1060,12 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   html += "</select>";
   html += "<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>";
   html += "</fieldset></form></section><section><h2>Playlist</h2>";
-  
+
   // Show stream selection dropdown if we have a playlist
   if (player.getPlaylistCount() > 0) {
     html += "<form method='post'><fieldset role='group'>";
     html += "<select name='stream' id='stream'>";
-    
+
     // Populate the dropdown with available streams
     for (int i = 0; i < player.getPlaylistCount(); i++) {
       html += "<option value='" + String(i) + "'";
@@ -1080,7 +1080,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   } else {
     html += "<p>No streams in playlist.</p>";
   }
-  
+
   // Add instant play input for custom stream URL even when no playlist
   html += "<h2>Play instant stream</h2>";
   html += "<form method='post'><fieldset role='group'>";
@@ -1088,7 +1088,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   html += "<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>";
   html += "</fieldset></form></section></main>";
   html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
-  
+
   // Send the HTML response
   request->send(200, "text/html", html);
 }
@@ -1123,16 +1123,16 @@ void handleGetStreams(AsyncWebServerRequest *request) {
 void handlePostStreams(AsyncWebServerRequest *request) {
   // Get the JSON data from the request
   if (!request->hasParam("plain", true)) {
-    sendJsonResponse("error", "Missing JSON data");
+    sendJsonResponse(request, "error", "Missing JSON data");
     return;
   }
-  
+
   AsyncWebParameter* p = request->getParam("plain", true);
   String jsonData = p->value();
-  
+
   // Validate that we received data
   if (jsonData.length() == 0) {
-    sendJsonResponse("error", "Missing JSON data");
+    sendJsonResponse(request, "error", "Missing JSON data");
     return;
   }
   // Parse the JSON data
@@ -1142,19 +1142,19 @@ void handlePostStreams(AsyncWebServerRequest *request) {
   if (error) {
     Serial.print("JSON parsing error: ");
     Serial.println(error.c_str());
-    sendJsonResponse("error", "Invalid JSON format");
+    sendJsonResponse(request, "error", "Invalid JSON format");
     return;
   }
   // Ensure it's an array
   if (!doc.is<JsonArray>()) {
-    sendJsonResponse("error", "JSON root must be an array");
+    sendJsonResponse(request, "error", "JSON root must be an array");
     return;
   }
   // Get the array
   JsonArray array = doc.as<JsonArray>();
   // Validate array size
   if (array.size() > MAX_PLAYLIST_SIZE) {
-    sendJsonResponse("error", "Playlist exceeds maximum size");
+    sendJsonResponse(request, "error", "Playlist exceeds maximum size");
     return;
   }
   // Clear existing playlist
@@ -1163,7 +1163,7 @@ void handlePostStreams(AsyncWebServerRequest *request) {
   for (JsonObject item : array) {
     // Validate required fields
     if (!item.containsKey("name") || !item.containsKey("url")) {
-      sendJsonResponse("error", "Each item must have 'name' and 'url' fields");
+      sendJsonResponse(request, "error", "Each item must have 'name' and 'url' fields");
       return;
     }
     // Extract name and url
@@ -1171,12 +1171,12 @@ void handlePostStreams(AsyncWebServerRequest *request) {
     const char* url = item["url"];
     // Validate data
     if (!name || !url || strlen(name) == 0 || strlen(url) == 0) {
-      sendJsonResponse("error", "Name and URL cannot be empty");
+      sendJsonResponse(request, "error", "Name and URL cannot be empty");
       return;
     }
     // Validate URL format
     if (!VALIDATE_URL(url)) {
-      sendJsonResponse("error", "Invalid URL format");
+      sendJsonResponse(request, "error", "Invalid URL format");
       return;
     }
     // Add to playlist
@@ -1185,7 +1185,7 @@ void handlePostStreams(AsyncWebServerRequest *request) {
   // Save to SPIFFS
   player.savePlaylist();
   // Send success response
-  sendJsonResponse("success", "Playlist updated successfully");
+  sendJsonResponse(request, "success", "Playlist updated successfully");
 }
 
 /**
@@ -1194,7 +1194,7 @@ void handlePostStreams(AsyncWebServerRequest *request) {
  * This function handles HTTP requests to control playback or get player status.
  * For POST requests, it supports both JSON payload and form data with action parameter.
  * For GET requests, it returns player status and stream information.
- * 
+ *
  * POST /api/player:
  *   JSON payload: {"action": "play", "url": "...", "name": "...", "index": 0}
  *   JSON payload: {"action": "play", "index": 0}
@@ -1202,7 +1202,7 @@ void handlePostStreams(AsyncWebServerRequest *request) {
  *   Form data: action=play&url=...&name=...&index=0
  *   Form data: action=play&index=0
  *   Form data: action=stop
- * 
+ *
  * GET /api/player:
  *   Returns: {"status": "play|stop", "stream": {...}}
  *   When playing: stream object contains name, title, url, index, bitrate, elapsed
@@ -1251,7 +1251,7 @@ void handlePlayer(AsyncWebServerRequest *request) {
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
-      sendJsonResponse("error", "Invalid JSON");
+      sendJsonResponse(request, "error", "Invalid JSON");
       return;
     }
     // Extract parameters from JSON
@@ -1267,7 +1267,7 @@ void handlePlayer(AsyncWebServerRequest *request) {
     if (doc.containsKey("index")) {
       index = doc["index"].as<int>();
     }
-  } 
+  }
   // Check if request has form data
   else if (request->hasParam("action", true)) {
     // Handle form data
@@ -1281,14 +1281,14 @@ void handlePlayer(AsyncWebServerRequest *request) {
     if (request->hasParam("index", true)) {
       index = request->getParam("index", true)->value().toInt();
     }
-  } 
+  }
   else {
-    sendJsonResponse("error", "Missing action parameter");
+    sendJsonResponse(request, "error", "Missing action parameter");
     return;
   }
   // Check for required action parameter
   if (action.length() == 0) {
-    sendJsonResponse("error", "Missing required parameter: action");
+    sendJsonResponse(request, "error", "Missing required parameter: action");
     return;
   }
   if (action == "play") {
@@ -1296,14 +1296,14 @@ void handlePlayer(AsyncWebServerRequest *request) {
     if (url.length() == 0 && name.length() == 0 && index >= 0) {
       // Validate index
       if (index >= player.getPlaylistCount()) {
-        sendJsonResponse("error", "Invalid playlist index");
+        sendJsonResponse(request, "error", "Invalid playlist index");
         return;
       }
       // Extract stream data from playlist
       url = String(player.getPlaylistItem(index).url);
       name = String(player.getPlaylistItem(index).name);
       player.setPlaylistIndex(index);
-    } 
+    }
     // Handle case where URL is provided (with optional name)
     else if (url.length() > 0) {
       // If no name provided, check if we have a current stream name
@@ -1312,7 +1312,7 @@ void handlePlayer(AsyncWebServerRequest *request) {
       }
       // Validate URL format
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://");
+        sendJsonResponse(request, "error", "Invalid URL format. Must start with http:// or https://");
         return;
       }
       // Update currentSelection based on URL
@@ -1330,7 +1330,7 @@ void handlePlayer(AsyncWebServerRequest *request) {
     }
     // No valid play parameters
     else {
-      sendJsonResponse("error", "Missing required parameters for play action");
+      sendJsonResponse(request, "error", "Missing required parameters for play action");
       return;
     }
     // Stop any currently playing stream
@@ -1343,8 +1343,8 @@ void handlePlayer(AsyncWebServerRequest *request) {
     updateDisplay();
     sendStatusToClients();
     // Send success response
-    sendJsonResponse("success", "Stream started successfully");
-  } 
+    sendJsonResponse(request, "success", "Stream started successfully");
+  }
   else if (action == "stop") {
     // Stop any currently playing stream
     player.stopStream();
@@ -1352,10 +1352,10 @@ void handlePlayer(AsyncWebServerRequest *request) {
     updateDisplay();
     sendStatusToClients();
     // Send success response
-    sendJsonResponse("success", "Stream stopped successfully");
-  } 
+    sendJsonResponse(request, "success", "Stream stopped successfully");
+  }
   else {
-    sendJsonResponse("error", "Invalid action. Supported actions: play, stop");
+    sendJsonResponse(request, "error", "Invalid action. Supported actions: play, stop");
     return;
   }
 }
@@ -1363,13 +1363,13 @@ void handlePlayer(AsyncWebServerRequest *request) {
 /**
  * @brief Handle mixer request
  * Gets or sets the volume and tone levels
- * This function handles HTTP requests to get or set the volume and/or tone levels. 
+ * This function handles HTTP requests to get or set the volume and/or tone levels.
  * For GET requests, it returns the current mixer status as JSON.
  * For POST requests, it supports both JSON payload and form data, validates the input, and updates the settings.
- * 
+ *
  * GET /api/mixer:
  *   Returns: {"volume": 11, "bass": 0, "mid": 0, "treble": 0}
- * 
+ *
  * POST /api/mixer:
  *   JSON payload: {"volume": 10}
  *   JSON payload: {"bass": 4, "treble": -2}
@@ -1403,7 +1403,7 @@ void handleMixer(AsyncWebServerRequest *request) {
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
-      sendJsonResponse("error", "Invalid JSON");
+      sendJsonResponse(request, "error", "Invalid JSON");
       return;
     }
     hasData = true;
@@ -1411,7 +1411,7 @@ void handleMixer(AsyncWebServerRequest *request) {
   // Handle form data
   else {
     // Check if any form parameters are present
-    if (request->hasParam("volume", true) || request->hasParam("bass", true) || 
+    if (request->hasParam("volume", true) || request->hasParam("bass", true) ||
         request->hasParam("mid", true) || request->hasParam("treble", true)) {
       hasData = true;
       // Add form data to JSON document
@@ -1431,7 +1431,7 @@ void handleMixer(AsyncWebServerRequest *request) {
   }
   // Check if any data was provided
   if (!hasData) {
-    sendJsonResponse("error", "Missing data: volume, bass, mid, or treble");
+    sendJsonResponse(request, "error", "Missing data: volume, bass, mid, or treble");
     return;
   }
   bool toneUpdated = false;
@@ -1445,7 +1445,7 @@ void handleMixer(AsyncWebServerRequest *request) {
     }
     // Validate volume range
     if (newVolume < 0 || newVolume > 22) {
-      sendJsonResponse("error", "Volume must be between 0 and 22");
+      sendJsonResponse(request, "error", "Volume must be between 0 and 22");
       return;
     }
     player.setVolume(newVolume);
@@ -1459,7 +1459,7 @@ void handleMixer(AsyncWebServerRequest *request) {
       newBass = doc["bass"];
     }
     if (newBass < -6 || newBass > 6) {
-      sendJsonResponse("error", "Bass must be between -6 and 6");
+      sendJsonResponse(request, "error", "Bass must be between -6 and 6");
       return;
     }
     player.setBass(newBass);
@@ -1474,7 +1474,7 @@ void handleMixer(AsyncWebServerRequest *request) {
       newMid = doc["mid"];
     }
     if (newMid < -6 || newMid > 6) {
-      sendJsonResponse("error", "Midrange must be between -6 and 6");
+      sendJsonResponse(request, "error", "Midrange must be between -6 and 6");
       return;
     }
     player.setMid(newMid);
@@ -1489,7 +1489,7 @@ void handleMixer(AsyncWebServerRequest *request) {
       newTreble = doc["treble"];
     }
     if (newTreble < -6 || newTreble > 6) {
-      sendJsonResponse("error", "Treble must be between -6 and 6");
+      sendJsonResponse(request, "error", "Treble must be between -6 and 6");
       return;
     }
     player.setTreble(newTreble);
@@ -1503,7 +1503,7 @@ void handleMixer(AsyncWebServerRequest *request) {
   updateDisplay();
   sendStatusToClients();  // Notify clients of status change
   // Send success response
-  sendJsonResponse("success", "Mixer settings updated successfully");
+  sendJsonResponse(request, "success", "Mixer settings updated successfully");
 }
 
 
@@ -1536,12 +1536,12 @@ void handleExportConfig(AsyncWebServerRequest *request) {
           if (buf) {
             // Read file content
             if (file.readBytes(buf.get(), size) == size) {
-              buf[size] = '\0';              
+              buf[size] = '\0';
               // Add to main document with filename as key (without leading slash)
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 3) output += ",";
               // Yield to other tasks during long operations
-              yield(); 
+              yield();
             }
           }
         }
@@ -1566,12 +1566,12 @@ void handleExportConfig(AsyncWebServerRequest *request) {
 void handleImportConfig(AsyncWebServerRequest *request) {
   // Check if request method is POST
   if (request->method() != HTTP_POST) {
-    sendJsonResponse("error", "Method not allowed", 405);
+    sendJsonResponse(request, "error", "Method not allowed", 405);
     return;
   }
   // Check if we have data in the request body
   if (!request->hasParam("plain", true)) {
-    sendJsonResponse("error", "No data received");
+    sendJsonResponse(request, "error", "No data received");
     return;
   }
   // Get the JSON data from the request body
@@ -1579,7 +1579,7 @@ void handleImportConfig(AsyncWebServerRequest *request) {
   String jsonData = p->value();
   // Check if data is empty
   if (jsonData.length() == 0) {
-    sendJsonResponse("error", "No file uploaded");
+    sendJsonResponse(request, "error", "No file uploaded");
     return;
   }
   // Parse the JSON data
@@ -1587,7 +1587,7 @@ void handleImportConfig(AsyncWebServerRequest *request) {
   DeserializationError error = deserializeJson(doc, jsonData);
   if (error) {
     Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
-    sendJsonResponse("error", "Invalid JSON format");
+    sendJsonResponse(request, "error", "Invalid JSON format");
     return;
   }
   // Process each configuration section
@@ -1614,9 +1614,9 @@ void handleImportConfig(AsyncWebServerRequest *request) {
     }
   }
   if (success) {
-    sendJsonResponse("success", "Configuration imported successfully");
+    sendJsonResponse(request, "success", "Configuration imported successfully");
   } else {
-    sendJsonResponse("error", "Error importing configuration", 500);
+    sendJsonResponse(request, "error", "Error importing configuration", 500);
   }
 }
 
@@ -1630,7 +1630,7 @@ void handleImportConfig(AsyncWebServerRequest *request) {
 String generateStatusJSON(bool fullStatus) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-  
+
   if (fullStatus) {
     // Populate JSON document with all status values
     doc["playing"] = player.isPlaying();
@@ -1648,7 +1648,7 @@ String generateStatusJSON(bool fullStatus) {
     // Only include the bitrater
     doc["bitrate"] = player.getBitrate();
   }
-    
+
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -1692,47 +1692,47 @@ void sendStatusToClients() {
 void handleProxyRequest(AsyncWebServerRequest *request) {
   // Check if we have a URL parameter
   if (!request->hasParam("url")) {
-    sendJsonResponse("error", "Missing URL parameter", 400);
+    sendJsonResponse(request, "error", "Missing URL parameter", 400);
     return;
   }
-  
+
   AsyncWebParameter* urlParam = request->getParam("url");
   String targetUrl = urlParam->value();
-  
+
   // Validate URL format
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
-    sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://", 400);
+    sendJsonResponse(request, "error", "Invalid URL format. Must start with http:// or https://", 400);
     return;
   }
-  
+
   // Create HTTP client
   HTTPClient http;
-  
+
   // Set timeouts to prevent hanging
   http.setTimeout(5000);
-  
+
   // Configure the request based on the original method
   http.begin(targetUrl);
-  
+
   // Copy headers from the original request
   int headerCount = request->headers();
   for (int i = 0; i < headerCount; i++) {
     AsyncWebHeader* header = request->getHeader(i);
     String headerName = header->name();
     String headerValue = header->value();
-    
+
     // Skip headers that shouldn't be forwarded
-    if (headerName.equalsIgnoreCase("Host") || 
+    if (headerName.equalsIgnoreCase("Host") ||
         headerName.equalsIgnoreCase("Connection") ||
         headerName.equalsIgnoreCase("Content-Length")) {
       continue;
     }
-    
+
     http.addHeader(headerName, headerValue);
   }
-  
+
   int httpResponseCode;
-  
+
   // Handle different HTTP methods
   if (request->method() == HTTP_GET) {
     httpResponseCode = http.GET();
@@ -1749,40 +1749,40 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
     }
   } else {
     http.end();
-    sendJsonResponse("error", "Unsupported HTTP method", 405);
+    sendJsonResponse(request, "error", "Unsupported HTTP method", 405);
     return;
   }
-  
+
   if (httpResponseCode > 0) {
     // Get response headers and forward them
     // Use public methods to iterate through headers
     int headerCount = 0;
     String headerName, headerValue;
-    
+
     // Get all headers one by one until we've processed them all
     while (true) {
       headerName = http.headerName(headerCount);
       headerValue = http.header(headerCount);
-      
+
       // If we get empty strings, we've reached the end of headers
       if (headerName.length() == 0 && headerValue.length() == 0) {
         break;
       }
-      
+
       // Skip headers that might cause issues
       if (!headerName.equalsIgnoreCase("Connection") &&
           !headerName.equalsIgnoreCase("Transfer-Encoding")) {
         request->sendHeader(headerName, headerValue, false);
       }
-      
+
       headerCount++;
-      
+
       // Safety check to prevent infinite loop
       if (headerCount > 100) {
         break;
       }
     }
-    
+
     // For HEAD requests, only send headers without content
     if (request->method() == HTTP_HEAD) {
       // Get content type
@@ -1791,7 +1791,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
         // Try to determine content type from URL
         if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
           contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
                    targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
           contentType = "image/jpeg";
         } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
@@ -1800,20 +1800,20 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
           contentType = "application/octet-stream";
         }
       }
-      
+
       // Send response with proper content type and length (no content body for HEAD)
       request->send(httpResponseCode, contentType, "");
     } else {
       // For GET requests, stream the response directly to client
       WiFiClient * stream = http.getStreamPtr();
-      
+
       // Get content type
       String contentType = http.header("Content-Type");
       if (contentType.isEmpty()) {
         // Try to determine content type from URL
         if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
           contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
                    targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
           contentType = "image/jpeg";
         } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
@@ -1822,16 +1822,16 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
           contentType = "application/octet-stream";
         }
       }
-      
+
       // Send response with proper content type and length
       request->send(httpResponseCode, contentType, "");
     }
   } else {
     http.end();
-    sendJsonResponse("error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
+    sendJsonResponse(request, "error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
     return;
   }
-  
+
   http.end();
 }
 
@@ -1875,14 +1875,14 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 void updateDisplay() {
   // Check if display is initialized
   if (display == nullptr) return;
-  
+
   String ipString;
   if (WiFi.status() == WL_CONNECTED) {
     ipString = WiFi.localIP().toString();
   } else {
     ipString = "No IP";
   }
-  
+
   // When not playing, show the selected playlist item name instead of empty stream name
   const char* displayStreamName = player.getStreamName();
   if (!player.isPlaying() && strlen(displayStreamName) == 0) {
@@ -1891,7 +1891,7 @@ void updateDisplay() {
       displayStreamName = player.getPlaylistItem(player.getPlaylistIndex()).name;
     }
   }
-  
+
   // Update the display with current status
   display->update(player.isPlaying(), player.getStreamTitle(), displayStreamName, player.getVolume(), player.getBitrate(), ipString);
 }
@@ -1918,7 +1918,7 @@ bool initSPIFFS() {
     }
     Serial.println("SPIFFS formatted and mounted successfully");
   }
-  
+
   // Test SPIFFS write capability
   if (!SPIFFS.exists("/spiffs_test")) {
     Serial.println("Testing SPIFFS write capability...");
@@ -1936,7 +1936,7 @@ bool initSPIFFS() {
   } else {
     Serial.println("SPIFFS write test file already exists - SPIFFS is working");
   }
-  
+
   return true;
 }
 
@@ -1959,43 +1959,43 @@ void setupWebServer() {
     handlePlayer(request);
   });
   server.on("/api/mixer", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleMixer();
+    handleMixer(request);
   });
   server.on("/api/mixer", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleMixer();
+    handleMixer(request);
   });
   server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleGetConfig();
+    handleGetConfig(request);
   });
   server.on("/api/config", HTTP_POST, [](AsyncWebServerRequest *request){
-    handlePostConfig();
+    handlePostConfig(request);
   });
   server.on("/api/config/export", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleExportConfig();
+    handleExportConfig(request);
   });
   server.on("/api/config/import", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleImportConfig();
+    handleImportConfig(request);
   });
   server.on("/api/wifi/scan", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleWiFiScan();
+    handleWiFiScan(request);
   });
   server.on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleWiFiSave();
+    handleWiFiSave(request);
   });
   server.on("/api/wifi/status", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleWiFiStatus();
+    handleWiFiStatus(request);
   });
   server.on("/api/wifi/config", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleWiFiConfig();
+    handleWiFiConfig(request);
   });
   server.on("/api/proxy", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleProxyRequest();
+    handleProxyRequest(request);
   });
   server.on("/api/proxy", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleProxyRequest();
+    handleProxyRequest(request);
   });
   server.on("/api/proxy", HTTP_HEAD, [](AsyncWebServerRequest *request){
-    handleProxyRequest();
+    handleProxyRequest(request);
   });
   server.on("/w", HTTP_GET, [](AsyncWebServerRequest *request){
     handleSimpleWebPage(request);
@@ -2111,14 +2111,14 @@ void loop() {
   // webSocket.loop() is not needed with AsyncWebSocket
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
-  
+
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
     updateDisplay();
     lastDisplayUpdate = millis();
   }
-  
+
   // Check audio connection status with improved error recovery
   static unsigned long streamStoppedTime = 0;
   if (player.getAudioObject()) {
@@ -2162,7 +2162,7 @@ void loop() {
       }
     }
   }
-  
+
   // Periodic cleanup with error recovery - add network status check
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 60000) {  // Every 60 seconds instead of 30
@@ -2172,7 +2172,7 @@ void loop() {
       connectToWiFi();
     }
   }
-  
+
   // Handle display timeout with configurable timeout value
   display->handleTimeout(player.isPlaying(), millis());
 
@@ -2192,7 +2192,7 @@ void setup() {
   Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
-  
+
   // Initialize PSRAM if available
   #if defined(BOARD_HAS_PSRAM)
   if (psramInit()) {
@@ -2210,7 +2210,7 @@ void setup() {
   }
   // Load configuration
   loadConfig();
-  
+
   // Validate display type
   if (config.display_type < 0 || config.display_type >= getDisplayTypeCount()) {
     config.display_type = 0; // Default to first display type
@@ -2240,7 +2240,7 @@ void setup() {
   displayOLED = new Adafruit_SSD1306(displayWidth, displayHeight, &Wire, -1);
   display = new Display(*displayOLED, (enum display_t)config.display_type);
   display->begin();
-  
+
   // Initialize touch buttons
   if (config.touch_play >= 0) {
     touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
@@ -2258,7 +2258,7 @@ void setup() {
   // Always start AP mode as a control mechanism
   Serial.println("Starting Access Point mode...");
   display->showStatus("Starting AP Mode", "", "");
-  
+
   // Start WiFi access point mode with error handling
   if (WiFi.softAP("NetTuner-Setup")) {
     Serial.println("Access Point Started");
@@ -2280,7 +2280,7 @@ void setup() {
     Serial.println("Error setting up MDNS responder!");
   }
   #endif
-  
+
   // Setup audio output with error handling
   Audio* audio = player.setupAudioOutput();
   // Setup rotary encoder with error handling
@@ -2293,7 +2293,7 @@ void setup() {
   player.loadPlayerState();
   if (player.isPlaying()) {
     // Update activity time
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
   }
   // Setup web server routes
   setupWebServer();
