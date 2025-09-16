@@ -85,7 +85,8 @@ extern int wifiNetworkCount;
 
 // Forward declarations for global functions
 void updateDisplay();
-void sendStatusToClients(bool fullStatus = true);
+void sendStatusToClients(bool fullStatus);
+void sendStatusToClients();
 void handleRotary();
 void handleTouch();
 void audioTask(void *pvParameters);
@@ -121,7 +122,7 @@ void audio_icydescription(const char *info);
 void audio_id3data(const char *info);
 
 // Utility functions
-String generateStatusJSON(bool fullStatus = true);
+String generateStatusJSON(bool fullStatus);
 
 // JSON file helper functions
 bool readJsonFile(const char* filename, size_t maxFileSize, DynamicJsonDocument& doc);
