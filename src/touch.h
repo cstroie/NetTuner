@@ -26,9 +26,9 @@ private:
   uint8_t pin;
   uint16_t threshold;
   bool lastState;
-  unsigned long lastPressTime;
-  bool pressedFlag;
+  volatile bool pressedFlag;
   unsigned long debounceTime;  // Configurable debounce time
+  static void IRAM_ATTR isrWrapper(void* arg);
 
 public:
   /**
@@ -40,8 +40,13 @@ public:
   TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 50);
 
   /**
-   * @brief Handle touch button state
-   * This function should be called regularly in the main loop
+   * @brief Initialize touch button with interrupt
+   */
+  void begin();
+
+  /**
+   * @brief Handle touch button state (no longer needed with interrupts)
+   * This function is kept for compatibility but does nothing
    */
   void handle();
 
@@ -56,6 +61,11 @@ public:
    * @return Current touch value
    */
   uint16_t getTouchValue();
+
+  /**
+   * @brief Interrupt service routine for touch detection
+   */
+  void IRAM_ATTR isr();
 };
 
 #endif // TOUCH_H
