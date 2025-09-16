@@ -442,7 +442,7 @@ void handleWiFiConfig() {
  * This function scans for available WiFi networks and returns them along with
  * the list of already configured networks
  */
-void handleWiFiScan() {
+void handleWiFiScan(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
@@ -470,7 +470,7 @@ void handleWiFiScan() {
   String json;
   serializeJson(doc, json);
   // Send the JSON response
-  server.send(200, "application/json", json);
+  request->send(200, "application/json", json);
   // Yield to other tasks after processing
   yield();
 }
