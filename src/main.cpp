@@ -414,7 +414,7 @@ void handleBoardButton() {
  * Returns the current WiFi configuration as JSON
  * This function provides the list of configured WiFi networks in JSON format
  */
-void handleWiFiConfig() {
+void handleWiFiConfig(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
@@ -431,7 +431,7 @@ void handleWiFiConfig() {
   String json;
   serializeJson(array, json);
   // Send the JSON response
-  server.send(200, "application/json", json);
+  request->send(200, "application/json", json);
   // Yield to other tasks after processing
   yield();
 }
