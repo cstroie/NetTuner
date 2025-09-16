@@ -476,9 +476,36 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
   yield();
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(2048);
-  // Scan for available networks
-  int n = WiFi.scanNetworks();
+  // Scan for available networks with async option to prevent blocking
+  int n = WiFi.scanNetworks(true, true);  // async=true, show_hidden=true
+  
+  // Wait for scan to complete with periodic yields to prevent watchdog timeout
+  const unsigned long scanTimeout = 5000;  // 5 second timeout
+  unsigned long scanStart = millis();
+  while (WiFi.scanComplete() == WIFI_SCAN_RUNNING) {
+    yield();
+    delay(10);  // Small delay to prevent busy waiting
+    
+    // Check for timeout
+    if (millis() - scanStart > scanTimeout) {
+      Serial.println("WiFi scan timeout");
+      WiFi.scanDelete();  // Clean up scan results
+      sendJsonResponse(request, "error", "WiFi scan timeout");
+      return;
+    }
+  }
+  
+  // Get scan results
+  n = WiFi.scanComplete();
   yield();
+  
+  // Handle scan errors
+  if (n == WIFI_SCAN_FAILED) {
+    Serial.println("WiFi scan failed");
+    sendJsonResponse(request, "error", "WiFi scan failed");
+    return;
+  }
+  
   // Add available networks
   JsonArray networks = doc.createNestedArray("networks");
   for (int i = 0; i < n; ++i) {
@@ -488,6 +515,10 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
     // Yield to other tasks during long operations
     yield();
   }
+  
+  // Clean up scan results to free memory
+  WiFi.scanDelete();
+  
   // Add configured networks
   JsonArray configured = doc.createNestedArray("configured");
   for (int i = 0; i < wifiNetworkCount; i++) {
