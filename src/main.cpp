@@ -438,6 +438,40 @@ void handleWiFiSave() {
     sendJsonResponse("error", "Invalid JSON");
     return;
   }
+  
+  // Load existing credentials to preserve passwords when not provided
+  char existingSsid[MAX_WIFI_NETWORKS][64] = {""};
+  char existingPassword[MAX_WIFI_NETWORKS][64] = {""};
+  int existingNetworkCount = 0;
+  
+  // Parse existing JSON file
+  DynamicJsonDocument existingDoc(2048);
+  if (readJsonFile("/wifi.json", 2048, existingDoc) && existingDoc.is<JsonArray>()) {
+    JsonArray existingNetworks = existingDoc.as<JsonArray>();
+    for (JsonObject existingNetwork : existingNetworks) {
+      if (existingNetworkCount >= MAX_WIFI_NETWORKS) break;
+      if (existingNetwork.containsKey("ssid")) {
+        const char* ssidValue = existingNetwork["ssid"];
+        if (ssidValue) {
+          strncpy(existingSsid[existingNetworkCount], ssidValue, sizeof(existingSsid[existingNetworkCount]) - 1);
+          existingSsid[existingNetworkCount][sizeof(existingSsid[existingNetworkCount]) - 1] = '\0';
+        }
+        if (existingNetwork.containsKey("password")) {
+          const char* pwdValue = existingNetwork["password"];
+          if (pwdValue) {
+            strncpy(existingPassword[existingNetworkCount], pwdValue, sizeof(existingPassword[existingNetworkCount]) - 1);
+            existingPassword[existingNetworkCount][sizeof(existingPassword[existingNetworkCount]) - 1] = '\0';
+          } else {
+            existingPassword[existingNetworkCount][0] = '\0';
+          }
+        } else {
+          existingPassword[existingNetworkCount][0] = '\0';
+        }
+        existingNetworkCount++;
+      }
+    }
+  }
+  
   // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
   wifiNetworkCount = 0;
   if (doc.is<JsonArray>()) {
@@ -456,6 +490,7 @@ void handleWiFiSave() {
         }
         // Handle optional password
         if (network.containsKey("password")) {
+          // Use provided password
           const char* pwdValue = network["password"];
           if (pwdValue && strlen(pwdValue) < sizeof(password[wifiNetworkCount])) {
             strncpy(password[wifiNetworkCount], pwdValue, sizeof(password[wifiNetworkCount]) - 1);
@@ -464,7 +499,19 @@ void handleWiFiSave() {
             password[wifiNetworkCount][0] = '\0';
           }
         } else {
-          password[wifiNetworkCount][0] = '\0';
+          // Look for existing password for this SSID
+          bool found = false;
+          for (int i = 0; i < existingNetworkCount; i++) {
+            if (strcmp(existingSsid[i], ssidValue) == 0) {
+              strncpy(password[wifiNetworkCount], existingPassword[i], sizeof(password[wifiNetworkCount]) - 1);
+              password[wifiNetworkCount][sizeof(password[wifiNetworkCount]) - 1] = '\0';
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            password[wifiNetworkCount][0] = '\0';
+          }
         }
         // Increment network count
         wifiNetworkCount++;
