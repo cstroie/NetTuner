@@ -2215,15 +2215,12 @@ void setup() {
   // Initialize touch buttons
   if (config.touch_play >= 0) {
     touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
-    touchPlay->begin();
   }
   if (config.touch_next >= 0) {
     touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce);
-    touchNext->begin();
   }
   if (config.touch_prev >= 0) {
     touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce);
-    touchPrev->begin();
   }
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
