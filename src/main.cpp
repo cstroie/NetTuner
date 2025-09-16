@@ -956,16 +956,18 @@ void handleTouch() {
  * This function provides a simple interface with play/stop controls
  * and stream selection without CSS or JavaScript
  */
-void handleSimpleWebPage() {
-  if (server.method() == HTTP_POST) {
+void handleSimpleWebPage(AsyncWebServerRequest *request) {
+  if (request->method() == HTTP_POST) {
     // Handle form submission
-    if (server.hasArg("action")) {
-      String action = server.arg("action");
+    if (request->hasParam("action", true)) {
+      AsyncWebParameter* actionParam = request->getParam("action", true);
+      String action = actionParam->value();
       // Perform action based on form input
       if (action == "play") {
         // Play selected stream
-        if (server.hasArg("stream") && player.getPlaylistCount() > 0) {
-          int streamIndex = server.arg("stream").toInt();
+        if (request->hasParam("stream", true) && player.getPlaylistCount() > 0) {
+          AsyncWebParameter* streamParam = request->getParam("stream", true);
+          int streamIndex = streamParam->value().toInt();
           if (streamIndex >= 0 && streamIndex < player.getPlaylistCount()) {
             // Stop playback
             player.stopStream();
@@ -991,8 +993,9 @@ void handleSimpleWebPage() {
         player.stopStream();
       } else if (action == "volume") {
         // Set volume
-        if (server.hasArg("volume")) {
-          int newVolume = server.arg("volume").toInt();
+        if (request->hasParam("volume", true)) {
+          AsyncWebParameter* volumeParam = request->getParam("volume", true);
+          int newVolume = volumeParam->value().toInt();
           if (newVolume >= 0 && newVolume <= 22) {
             player.setVolume(newVolume);
             // Update display and notify clients
@@ -1002,8 +1005,9 @@ void handleSimpleWebPage() {
         }
       } else if (action == "instant") {
         // Play a stream URL
-        if (server.hasArg("url")) {
-          String customUrl = server.arg("url");
+        if (request->hasParam("url", true)) {
+          AsyncWebParameter* urlParam = request->getParam("url", true);
+          String customUrl = urlParam->value();
           if (customUrl.length() > 0 && 
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             // Stop current playback
@@ -1083,7 +1087,7 @@ void handleSimpleWebPage() {
   html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
   
   // Send the HTML response
-  server.send(200, "text/html", html);
+  request->send(200, "text/html", html);
 }
 
 
