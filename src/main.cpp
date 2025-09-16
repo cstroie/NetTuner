@@ -1503,7 +1503,7 @@ void handleMixer() {
  * This function reads all JSON files from SPIFFS and combines them into a single
  * JSON object where keys are filenames and values are file contents.
  */
-void handleExportConfig() {
+void handleExportConfig(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // List of configuration files to export
@@ -1542,7 +1542,7 @@ void handleExportConfig() {
   // Close the JSON object
   output += "}";
   // Send the combined JSON as response
-  server.send(200, "application/json", output);
+  request->send(200, "application/json", output);
   // Yield to other tasks after processing
   delay(1);
 }
@@ -1553,22 +1553,23 @@ void handleExportConfig() {
  * This function receives a JSON file containing all configurations and decomposes
  * it into individual config.json, wifi.json, playlist.json, and player.json files.
  */
-void handleImportConfig() {
+void handleImportConfig(AsyncWebServerRequest *request) {
   // Check if request method is POST
-  if (server.method() != HTTP_POST) {
-    sendJsonResponse("error", "Method not allowed", 405);
+  if (request->method() != HTTP_POST) {
+    sendJsonResponse(request, "error", "Method not allowed", 405);
     return;
   }
   // Check if we have data in the request body
-  if (!server.hasArg("plain")) {
-    sendJsonResponse("error", "No data received");
+  if (!request->hasParam("plain", true)) {
+    sendJsonResponse(request, "error", "No data received");
     return;
   }
   // Get the JSON data from the request body
-  String jsonData = server.arg("plain");
+  AsyncWebParameter* p = request->getParam("plain", true);
+  String jsonData = p->value();
   // Check if data is empty
   if (jsonData.length() == 0) {
-    sendJsonResponse("error", "No file uploaded");
+    sendJsonResponse(request, "error", "No file uploaded");
     return;
   }
   // Parse the JSON data
@@ -1576,7 +1577,7 @@ void handleImportConfig() {
   DeserializationError error = deserializeJson(doc, jsonData);
   if (error) {
     Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
-    sendJsonResponse("error", "Invalid JSON format");
+    sendJsonResponse(request, "error", "Invalid JSON format");
     return;
   }
   // Process each configuration section
@@ -1603,9 +1604,9 @@ void handleImportConfig() {
     }
   }
   if (success) {
-    sendJsonResponse("success", "Configuration imported successfully");
+    sendJsonResponse(request, "success", "Configuration imported successfully");
   } else {
-    sendJsonResponse("error", "Error importing configuration", 500);
+    sendJsonResponse(request, "error", "Error importing configuration", 500);
   }
 }
 
@@ -1678,18 +1679,19 @@ void sendStatusToClients() {
  * Acts as a transparent proxy to circumvent CORS restrictions
  * Forwards requests to target URLs and returns responses
  */
-void handleProxyRequest() {
+void handleProxyRequest(AsyncWebServerRequest *request) {
   // Check if we have a URL parameter
-  if (!server.hasArg("url")) {
-    sendJsonResponse("error", "Missing URL parameter", 400);
+  if (!request->hasParam("url")) {
+    sendJsonResponse(request, "error", "Missing URL parameter", 400);
     return;
   }
   
-  String targetUrl = server.arg("url");
+  AsyncWebParameter* urlParam = request->getParam("url");
+  String targetUrl = urlParam->value();
   
   // Validate URL format
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
-    sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://", 400);
+    sendJsonResponse(request, "error", "Invalid URL format. Must start with http:// or https://", 400);
     return;
   }
   
@@ -1703,10 +1705,11 @@ void handleProxyRequest() {
   http.begin(targetUrl);
   
   // Copy headers from the original request
-  int headerCount = server.headers();
+  int headerCount = request->headers();
   for (int i = 0; i < headerCount; i++) {
-    String headerName = server.headerName(i);
-    String headerValue = server.header(i);
+    AsyncWebHeader* header = request->getHeader(i);
+    String headerName = header->name();
+    String headerValue = header->value();
     
     // Skip headers that shouldn't be forwarded
     if (headerName.equalsIgnoreCase("Host") || 
@@ -1721,17 +1724,22 @@ void handleProxyRequest() {
   int httpResponseCode;
   
   // Handle different HTTP methods
-  if (server.method() == HTTP_GET) {
+  if (request->method() == HTTP_GET) {
     httpResponseCode = http.GET();
-  } else if (server.method() == HTTP_HEAD) {
+  } else if (request->method() == HTTP_HEAD) {
     httpResponseCode = http.GET(); // Use GET but we'll only send headers
-  } else if (server.method() == HTTP_POST) {
+  } else if (request->method() == HTTP_POST) {
     // Get request body if present
-    String requestBody = server.arg("plain");
-    httpResponseCode = http.POST(requestBody);
+    if (request->hasParam("plain", true)) {
+      AsyncWebParameter* bodyParam = request->getParam("plain", true);
+      String requestBody = bodyParam->value();
+      httpResponseCode = http.POST(requestBody);
+    } else {
+      httpResponseCode = http.POST("");
+    }
   } else {
     http.end();
-    sendJsonResponse("error", "Unsupported HTTP method", 405);
+    sendJsonResponse(request, "error", "Unsupported HTTP method", 405);
     return;
   }
   
@@ -1754,7 +1762,7 @@ void handleProxyRequest() {
       // Skip headers that might cause issues
       if (!headerName.equalsIgnoreCase("Connection") &&
           !headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        server.sendHeader(headerName, headerValue, false);
+        request->sendHeader(headerName, headerValue, false);
       }
       
       headerCount++;
@@ -1766,7 +1774,7 @@ void handleProxyRequest() {
     }
     
     // For HEAD requests, only send headers without content
-    if (server.method() == HTTP_HEAD) {
+    if (request->method() == HTTP_HEAD) {
       // Get content type
       String contentType = http.header("Content-Type");
       if (contentType.isEmpty()) {
@@ -1784,8 +1792,7 @@ void handleProxyRequest() {
       }
       
       // Send response with proper content type and length (no content body for HEAD)
-      server.setContentLength(http.getSize());
-      server.send(httpResponseCode, contentType, "");
+      request->send(httpResponseCode, contentType, "");
     } else {
       // For GET requests, stream the response directly to client
       WiFiClient * stream = http.getStreamPtr();
@@ -1807,28 +1814,11 @@ void handleProxyRequest() {
       }
       
       // Send response with proper content type and length
-      server.setContentLength(http.getSize());
-      server.send(httpResponseCode, contentType, "");
-      
-      // Stream the content
-      const size_t bufferSize = 1024;
-      uint8_t buffer[bufferSize];
-      size_t totalBytesRead = 0;
-      size_t contentLength = http.getSize();
-      
-      while (http.connected() && (contentLength == 0 || totalBytesRead < contentLength)) {
-        size_t bytesAvailable = stream->available();
-        if (bytesAvailable) {
-          size_t bytesRead = stream->readBytes(buffer, min(bytesAvailable, bufferSize));
-          server.client().write(buffer, bytesRead);
-          totalBytesRead += bytesRead;
-        }
-        delay(1); // Yield to other tasks
-      }
+      request->send(httpResponseCode, contentType, "");
     }
   } else {
     http.end();
-    sendJsonResponse("error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
+    sendJsonResponse(request, "error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
     return;
   }
   
@@ -2078,7 +2068,7 @@ void loop() {
   if (touchNext) touchNext->handle();  // Process touch next button
   if (touchPrev) touchPrev->handle();  // Process touch previous button
   handleTouch();           // Process touch button actions
-  server.handleClient();   // Process incoming web requests
+  // server.handleClient() is not needed with AsyncWebServer
   webSocket.loop();        // Process WebSocket events
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
