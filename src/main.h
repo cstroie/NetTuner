@@ -110,7 +110,7 @@ void handleWiFiConfig();
 void handleProxyRequest();
 
 // WebSocket handlers
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length);
+void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
 
 // Audio callbacks
 void audio_showstreamtitle(const char *info);
