@@ -1515,9 +1515,10 @@ function connectWebSocket() {
   isConnecting = true;
 
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  // WebSocket server runs on port 81, not the same port as HTTP server
+  // WebSocket server runs on the same port as HTTP server
   const host = window.location.hostname;
-  const wsUrl = `${protocol}//${host}:81/`;
+  const port = window.location.port ? `:${window.location.port}` : '';
+  const wsUrl = `${protocol}//${host}${port}/ws`;
 
   // Ensure proper cleanup of previous connection
   if (ws) {
