@@ -484,7 +484,7 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
  */
 void handleWiFiSave(AsyncWebServerRequest *request) {
   if (!request->hasParam("plain", true)) {
-    sendJsonResponse("error", "Missing JSON data");
+    sendJsonResponse(request, "error", "Missing JSON data");
     return;
   }
   // Parse JSON data
@@ -510,7 +510,7 @@ void handleWiFiSave(AsyncWebServerRequest *request) {
           strncpy(ssid[wifiNetworkCount], ssidValue, sizeof(ssid[wifiNetworkCount]) - 1);
           ssid[wifiNetworkCount][sizeof(ssid[wifiNetworkCount]) - 1] = '\0';
         } else {
-          sendJsonResponse("error", "Invalid SSID");
+          sendJsonResponse(request, "error", "Invalid SSID");
           return;
         }
         // Handle optional password
@@ -772,7 +772,7 @@ void handlePostConfig(AsyncWebServerRequest *request) {
   DeserializationError error = deserializeJson(doc, jsonData);
   // Check for JSON parsing errors
   if (error) {
-    sendJsonResponse("error", "Invalid JSON");
+    sendJsonResponse(request, "error", "Invalid JSON");
     return;
   }
   // Update configuration values
