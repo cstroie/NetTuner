@@ -2004,7 +2004,7 @@ void setupWebServer() {
   server.on("/w", HTTP_POST, [](AsyncWebServerRequest *request){
     handleSimpleWebPage(request);
   });
-  server.serveStatic("/", SPIFFS, "/index.html");
+  server.serveStatic("/", SPIFFS, "/player.html");
   server.serveStatic("/playlist", SPIFFS, "/playlist.html");
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
   server.serveStatic("/config", SPIFFS, "/config.html");
@@ -2013,8 +2013,8 @@ void setupWebServer() {
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
   
-  // Handle root path - serve index.html
-  server.serveStatic("/", SPIFFS, "/index.html");
+  // Handle root path - serve player.html
+  server.serveStatic("/", SPIFFS, "/player.html");
 }
 
 
