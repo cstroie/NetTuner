@@ -481,13 +481,14 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
  * This function receives WiFi credentials via HTTP POST and saves them to wifi.json
  * It supports both single network and multiple network configurations
  */
-void handleWiFiSave() {
-  if (!server.hasArg("plain")) {
+void handleWiFiSave(AsyncWebServerRequest *request) {
+  if (!request->hasParam("plain", true)) {
     sendJsonResponse("error", "Missing JSON data");
     return;
   }
   // Parse JSON data
-  String json = server.arg("plain");
+  AsyncWebParameter* p = request->getParam("plain", true);
+  String json = p->value();
   DynamicJsonDocument doc(2048);  // Increased size for array format
   DeserializationError error = deserializeJson(doc, json);
   // Check for errors
