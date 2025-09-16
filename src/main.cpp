@@ -1753,13 +1753,11 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
   if (request->method() == HTTP_GET) {
     httpResponseCode = http.GET();
   } else if (request->method() == HTTP_HEAD) {
-    httpResponseCode = http.GET(); // Use GET but we'll only send headers
+    httpResponseCode = http.sendRequest("HEAD");
   } else if (request->method() == HTTP_POST) {
     // Get request body if present
-    if (request->hasParam("plain", true)) {
-      const AsyncWebParameter* bodyParam = request->getParam("plain", true);
-      String requestBody = bodyParam->value();
-      httpResponseCode = http.POST(requestBody);
+    if (len > 0) {
+      httpResponseCode = http.POST((uint8_t*)data, len);
     } else {
       httpResponseCode = http.POST("");
     }
@@ -1770,77 +1768,63 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
   }
 
   if (httpResponseCode > 0) {
-    // Get response headers and forward them
-    // Use public methods to iterate through headers
-    int headerCount = 0;
-    String headerName, headerValue;
-
-    // Get all headers one by one until we've processed them all
-    while (true) {
-      headerName = http.headerName(headerCount);
-      headerValue = http.header(headerCount);
-
-      // If we get empty strings, we've reached the end of headers
-      if (headerName.length() == 0 && headerValue.length() == 0) {
-        break;
-      }
-
-      // Skip headers that might cause issues
-      if (!headerName.equalsIgnoreCase("Connection") &&
-          !headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        // Headers are automatically forwarded in ESPAsyncWebServer, no need to manually send them
-      }
-
-      headerCount++;
-
-      // Safety check to prevent infinite loop
-      if (headerCount > 100) {
-        break;
+    // Get content type
+    String contentType = http.header("Content-Type");
+    if (contentType.isEmpty()) {
+      // Try to determine content type from URL
+      if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
+        contentType = "image/png";
+      } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
+                 targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
+        contentType = "image/jpeg";
+      } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
+        contentType = "image/gif";
+      } else {
+        contentType = "application/octet-stream";
       }
     }
 
     // For HEAD requests, only send headers without content
     if (request->method() == HTTP_HEAD) {
-      // Get content type
-      String contentType = http.header("Content-Type");
-      if (contentType.isEmpty()) {
-        // Try to determine content type from URL
-        if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
-          contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
-                   targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
-          contentType = "image/jpeg";
-        } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
-          contentType = "image/gif";
-        } else {
-          contentType = "application/octet-stream";
-        }
-      }
-
       // Send response with proper content type and length (no content body for HEAD)
-      request->send(httpResponseCode, contentType, "");
-    } else {
-      // For GET requests, stream the response directly to client
-      WiFiClient * stream = http.getStreamPtr();
-
-      // Get content type
-      String contentType = http.header("Content-Type");
-      if (contentType.isEmpty()) {
-        // Try to determine content type from URL
-        if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
-          contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
-                   targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
-          contentType = "image/jpeg";
-        } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
-          contentType = "image/gif";
-        } else {
-          contentType = "application/octet-stream";
+      AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, contentType, "");
+      // Copy response headers
+      for (int i = 0; i < http.headers(); i++) {
+        String headerName = http.headerName(i);
+        String headerValue = http.header(i);
+        // Skip headers that might cause issues
+        if (!headerName.equalsIgnoreCase("Connection") &&
+            !headerName.equalsIgnoreCase("Transfer-Encoding")) {
+          response->addHeader(headerName, headerValue);
         }
       }
-
-      // Send response with proper content type and length
-      request->send(httpResponseCode, contentType, "");
+      response->addHeader("Connection", "keep-alive");
+      request->send(response);
+    } else {
+      // For GET/POST requests, stream the response directly to client
+      WiFiClient * stream = http.getStreamPtr();
+      
+      if (stream) {
+        // Create response to stream data
+        AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, contentType, "");
+        
+        // Copy response headers
+        for (int i = 0; i < http.headers(); i++) {
+          String headerName = http.headerName(i);
+          String headerValue = http.header(i);
+          // Skip headers that might cause issues
+          if (!headerName.equalsIgnoreCase("Connection") &&
+              !headerName.equalsIgnoreCase("Transfer-Encoding")) {
+            response->addHeader(headerName, headerValue);
+          }
+        }
+        response->addHeader("Connection", "keep-alive");
+        request->send(response);
+      } else {
+        http.end();
+        sendJsonResponse(request, "error", "Failed to get response stream", 500);
+        return;
+      }
     }
   } else {
     http.end();
