@@ -1373,9 +1373,9 @@ void handlePlayer(AsyncWebServerRequest *request) {
  *   Form data: volume=10
  *   Form data: bass=4&treble=-2
  */
-void handleMixer() {
+void handleMixer(AsyncWebServerRequest *request) {
   // Handle GET request - return current mixer status
-  if (server.method() == HTTP_GET) {
+  if (request->method() == HTTP_GET) {
     // Create JSON document with appropriate size
     DynamicJsonDocument doc(256);
     // Add mixer status
@@ -1387,15 +1387,16 @@ void handleMixer() {
     String json;
     serializeJson(doc, json);
     // Return status as JSON
-    server.send(200, "application/json", json);
+    request->send(200, "application/json", json);
     return;
   }
   // Handle POST request - update mixer settings
   DynamicJsonDocument doc(256);
   bool hasData = false;
   // Handle JSON payload
-  if (server.hasArg("plain")) {
-    String json = server.arg("plain");
+  if (request->hasParam("plain", true)) {
+    AsyncWebParameter* p = request->getParam("plain", true);
+    String json = p->value();
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
     if (error) {
@@ -1407,21 +1408,21 @@ void handleMixer() {
   // Handle form data
   else {
     // Check if any form parameters are present
-    if (server.hasArg("volume") || server.hasArg("bass") || 
-        server.hasArg("mid") || server.hasArg("treble")) {
+    if (request->hasParam("volume", true) || request->hasParam("bass", true) || 
+        request->hasParam("mid", true) || request->hasParam("treble", true)) {
       hasData = true;
       // Add form data to JSON document
-      if (server.hasArg("volume")) {
-        doc["volume"] = server.arg("volume");
+      if (request->hasParam("volume", true)) {
+        doc["volume"] = request->getParam("volume", true)->value();
       }
-      if (server.hasArg("bass")) {
-        doc["bass"] = server.arg("bass");
+      if (request->hasParam("bass", true)) {
+        doc["bass"] = request->getParam("bass", true)->value();
       }
-      if (server.hasArg("mid")) {
-        doc["mid"] = server.arg("mid");
+      if (request->hasParam("mid", true)) {
+        doc["mid"] = request->getParam("mid", true)->value();
       }
-      if (server.hasArg("treble")) {
-        doc["treble"] = server.arg("treble");
+      if (request->hasParam("treble", true)) {
+        doc["treble"] = request->getParam("treble", true)->value();
       }
     }
   }
