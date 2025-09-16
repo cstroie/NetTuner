@@ -2012,6 +2012,11 @@ void setupWebServer() {
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
+  
+  // Handle root path - redirect to main web interface
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->redirect("/w");
+  });
 }
 
 
