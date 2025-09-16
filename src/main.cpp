@@ -1967,7 +1967,8 @@ void setupWebServer() {
  * @return true if connected to a network, false otherwise
  */
 bool connectToWiFi() {
-  static bool firstConnection = true;  // Track if this is the first connection attempt
+  // Track if this is the first connection attempt
+  static bool firstConnection = true;  
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
@@ -2003,7 +2004,7 @@ bool connectToWiFi() {
       if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
         display->turnOn();
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display->showStatus("WiFi connecting", String(ssid[i]), "");
+        display->showStatus("WiFi connecting", "", String(ssid[i]));
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
         const int maxAttempts = 15;
@@ -2219,7 +2220,7 @@ void setup() {
     Serial.println("Access Point Started");
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP().toString());
-    display->showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
+    display->showStatus("AP Mode Active", "NetTuner-Setup", WiFi.softAPIP().toString());
   } else {
     Serial.println("Failed to start Access Point");
     display->showStatus("AP Start Failed", "", "");
