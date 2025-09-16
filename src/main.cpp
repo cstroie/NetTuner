@@ -482,16 +482,10 @@ void handleWiFiScan(AsyncWebServerRequest *request) {
  * This function receives WiFi credentials via HTTP POST and saves them to wifi.json
  * It supports both single network and multiple network configurations
  */
-void handleWiFiSave(AsyncWebServerRequest *request) {
-  if (!request->hasParam("plain", true)) {
-    sendJsonResponse(request, "error", "Missing JSON data");
-    return;
-  }
-  // Parse JSON data
-  const AsyncWebParameter* p = request->getParam("plain", true);
-  String json = p->value();
+void handleWiFiSave(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  // Parse JSON data from the request body
   DynamicJsonDocument doc(2048);  // Increased size for array format
-  DeserializationError error = deserializeJson(doc, json);
+  DeserializationError error = deserializeJson(doc, (char *)data, len);
   // Check for errors
   if (error) {
     sendJsonResponse(request, "error", "Invalid JSON");
@@ -1909,9 +1903,10 @@ void setupWebServer() {
   server.on("/api/wifi/scan", HTTP_GET, [](AsyncWebServerRequest *request){
     handleWiFiScan(request);
   });
-  server.on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleWiFiSave(request);
-  });
+  server.on("/api/wifi/save", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleWiFiSave(request, data, len, index, total);
+    });
   server.on("/api/wifi/status", HTTP_GET, [](AsyncWebServerRequest *request){
     handleWiFiStatus(request);
   });
