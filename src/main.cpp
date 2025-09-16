@@ -349,6 +349,30 @@ void sendJsonResponse(AsyncWebServerRequest *request, const String& status, cons
   request->send(code, "application/json", json);
 }
 
+/**
+ * @brief URL decode a string
+ * Decodes URL encoded characters (%XX) back to their original form
+ * @param str The URL encoded string
+ * @return The decoded string
+ */
+String urlDecode(String str) {
+  String decoded = "";
+  for (int i = 0; i < str.length(); i++) {
+    if (str[i] == '%' && i + 2 < str.length()) {
+      // Convert hex to char
+      char hex[3] = {str[i+1], str[i+2], '\0'};
+      char decodedChar = (char) strtol(hex, NULL, 16);
+      decoded += decodedChar;
+      i += 2; // Skip the next two characters
+    } else if (str[i] == '+') {
+      decoded += ' ';
+    } else {
+      decoded += str[i];
+    }
+  }
+  return decoded;
+}
+
 
 
 
@@ -946,67 +970,95 @@ void handleTouch() {
  * This function provides a simple interface with play/stop controls
  * and stream selection without CSS or JavaScript
  */
-void handleSimpleWebPage(AsyncWebServerRequest *request) {
+void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
   if (request->method() == HTTP_POST) {
-    // Handle form submission
-    if (request->hasParam("action", true)) {
-      const AsyncWebParameter* actionParam = request->getParam("action", true);
-      String action = actionParam->value();
-      // Perform action based on form input
-      if (action == "play") {
-        // Play selected stream
-        if (request->hasParam("stream", true) && player.getPlaylistCount() > 0) {
-          const AsyncWebParameter* streamParam = request->getParam("stream", true);
-          int streamIndex = streamParam->value().toInt();
-          if (streamIndex >= 0 && streamIndex < player.getPlaylistCount()) {
-            // Stop playback
-            player.stopStream();
-            // Play selected stream
-            player.setPlaylistIndex(streamIndex);
-            player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
-          }
-        } else if (strlen(player.getStreamUrl()) > 0) {
-          // Stop current playback
-          player.stopStream();
-          // Resume current stream
-          player.startStream();
-        } else if (player.isPlaylistIndexValid()) {
+    // Parse form data from the request body
+    String action, url, streamIndexStr, volumeStr;
+    
+    // Parse the form data manually from the body
+    String body = String((char*)data);
+    Serial.println("Form data: " + body);
+    
+    // Extract action parameter
+    int actionPos = body.indexOf("action=");
+    if (actionPos != -1) {
+      int actionEndPos = body.indexOf("&", actionPos);
+      if (actionEndPos == -1) actionEndPos = body.length();
+      action = urlDecode(body.substring(actionPos + 7, actionEndPos));
+    }
+    
+    // Extract stream parameter
+    int streamPos = body.indexOf("stream=");
+    if (streamPos != -1) {
+      int streamEndPos = body.indexOf("&", streamPos);
+      if (streamEndPos == -1) streamEndPos = body.length();
+      streamIndexStr = urlDecode(body.substring(streamPos + 7, streamEndPos));
+    }
+    
+    // Extract volume parameter
+    int volumePos = body.indexOf("volume=");
+    if (volumePos != -1) {
+      int volumeEndPos = body.indexOf("&", volumePos);
+      if (volumeEndPos == -1) volumeEndPos = body.length();
+      volumeStr = urlDecode(body.substring(volumePos + 7, volumeEndPos));
+    }
+    
+    // Extract url parameter
+    int urlPos = body.indexOf("url=");
+    if (urlPos != -1) {
+      int urlEndPos = body.indexOf("&", urlPos);
+      if (urlEndPos == -1) urlEndPos = body.length();
+      url = urlDecode(body.substring(urlPos + 4, urlEndPos));
+    }
+    
+    // Perform action based on form input
+    if (action == "play") {
+      // Play selected stream
+      if (streamIndexStr.length() > 0 && player.getPlaylistCount() > 0) {
+        int streamIndex = streamIndexStr.toInt();
+        if (streamIndex >= 0 && streamIndex < player.getPlaylistCount()) {
           // Stop playback
           player.stopStream();
-          // Play currently selected stream
+          // Play selected stream
+          player.setPlaylistIndex(streamIndex);
           player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
         }
-        // Save player state when user requests to play
-        player.savePlayerState();
-      } else if (action == "stop") {
+      } else if (strlen(player.getStreamUrl()) > 0) {
+        // Stop current playback
+        player.stopStream();
+        // Resume current stream
+        player.startStream();
+      } else if (player.isPlaylistIndexValid()) {
         // Stop playback
         player.stopStream();
-      } else if (action == "volume") {
-        // Set volume
-        if (request->hasParam("volume", true)) {
-          const AsyncWebParameter* volumeParam = request->getParam("volume", true);
-          int newVolume = volumeParam->value().toInt();
-          if (newVolume >= 0 && newVolume <= 22) {
-            player.setVolume(newVolume);
-            // Update display and notify clients
-            updateDisplay();
-            sendStatusToClients();
-          }
+        // Play currently selected stream
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
+      }
+      // Save player state when user requests to play
+      player.savePlayerState();
+    } else if (action == "stop") {
+      // Stop playback
+      player.stopStream();
+    } else if (action == "volume") {
+      // Set volume
+      if (volumeStr.length() > 0) {
+        int newVolume = volumeStr.toInt();
+        if (newVolume >= 0 && newVolume <= 22) {
+          player.setVolume(newVolume);
+          // Update display and notify clients
+          updateDisplay();
+          sendStatusToClients();
         }
-      } else if (action == "instant") {
-        // Play a stream URL
-        if (request->hasParam("url", true)) {
-          const AsyncWebParameter* urlParam = request->getParam("url", true);
-          String customUrl = urlParam->value();
-          if (customUrl.length() > 0 &&
-              (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
-            // Stop current playback
-            player.stopStream();
-            // Use a generic name for the stream
-            String streamName = "Stream";
-            player.startStream(customUrl.c_str(), streamName.c_str());
-          }
-        }
+      }
+    } else if (action == "instant") {
+      // Play a stream URL
+      if (url.length() > 0 &&
+          (url.startsWith("http://") || url.startsWith("https://"))) {
+        // Stop current playback
+        player.stopStream();
+        // Use a generic name for the stream
+        String streamName = "Stream";
+        player.startStream(url.c_str(), streamName.c_str());
       }
     }
   }
@@ -1931,11 +1983,12 @@ void setupWebServer() {
       handleProxyRequest(request, data, len, index, total);
     });
   server.on("/w", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleSimpleWebPage(request);
+    handleSimpleWebPage(request, nullptr, 0, 0, 0);
   });
-  server.on("/w", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleSimpleWebPage(request);
-  });
+  server.on("/w", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleSimpleWebPage(request, data, len, index, total);
+    });
   server.serveStatic("/player", SPIFFS, "/player.html");
   server.serveStatic("/playlist", SPIFFS, "/playlist.html");
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
