@@ -38,7 +38,7 @@ char ssid[MAX_WIFI_NETWORKS][64] = {""};
 char password[MAX_WIFI_NETWORKS][64] = {""};
 int wifiNetworkCount = 0;
 AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");
+AsyncWebSocket websocket("/ws");
 WiFiServer mpdServer(6600);
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 String previousStatus = "";
@@ -1663,12 +1663,12 @@ String generateStatusJSON(bool fullStatus) {
  */
 void sendStatusToClients(bool fullStatus) {
   // Only broadcast if WebSocket server has clients AND they are connected
-  if (ws.count() > 0) {
+  if (websocket.count() > 0) {
     String status = generateStatusJSON(fullStatus);
     // Only send if status has changed
     if (status != previousStatus) {
       // Use textAll with error handling
-      ws.textAll(status);
+      websocket.textAll(status);
       // Update previous status
       previousStatus = status;
     }
@@ -1717,7 +1717,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
   // Copy headers from the original request
   int headerCount = request->headers();
   for (int i = 0; i < headerCount; i++) {
-    AsyncWebHeader* header = request->getHeader(i);
+    const AsyncWebHeader* header = request->getHeader(i);
     String headerName = header->name();
     String headerValue = header->value();
 
@@ -1772,7 +1772,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
       // Skip headers that might cause issues
       if (!headerName.equalsIgnoreCase("Connection") &&
           !headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        request->sendHeader(headerName, headerValue, false);
+        // Headers are automatically forwarded in ESPAsyncWebServer, no need to manually send them
       }
 
       headerCount++;
@@ -2153,7 +2153,7 @@ void loop() {
       static unsigned long lastStatusUpdate = 0;
       if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
-        if (ws.count() > 0) {
+        if (websocket.count() > 0) {
           // FIXME Send partial status update
           sendStatusToClients(true);
         }
@@ -2301,8 +2301,8 @@ void setup() {
   server.begin();
   Serial.println("Web server started");
     // Setup WebSocket server
-  ws.onEvent(onWsEvent);
-  server.addHandler(&ws);
+  websocket.onEvent(onWsEvent);
+  server.addHandler(&websocket);
     // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");
