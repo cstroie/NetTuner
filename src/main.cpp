@@ -1913,15 +1913,18 @@ void setupWebServer() {
   server.on("/api/wifi/config", HTTP_GET, [](AsyncWebServerRequest *request){
     handleWiFiConfig(request);
   });
-  server.on("/api/proxy", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleProxyRequest(request);
-  });
-  server.on("/api/proxy", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleProxyRequest(request);
-  });
-  server.on("/api/proxy", HTTP_HEAD, [](AsyncWebServerRequest *request){
-    handleProxyRequest(request);
-  });
+  server.on("/api/proxy", HTTP_GET, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleProxyRequest(request, data, len, index, total);
+    });
+  server.on("/api/proxy", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleProxyRequest(request, data, len, index, total);
+    });
+  server.on("/api/proxy", HTTP_HEAD, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleProxyRequest(request, data, len, index, total);
+    });
   server.on("/w", HTTP_GET, [](AsyncWebServerRequest *request){
     handleSimpleWebPage(request);
   });
