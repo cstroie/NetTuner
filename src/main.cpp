@@ -1113,24 +1113,10 @@ void handleGetStreams(AsyncWebServerRequest *request) {
  * This function receives a new playlist via HTTP POST, validates it, and saves it to SPIFFS.
  * It supports both JSON array format and validates each stream entry.
  */
-void handlePostStreams(AsyncWebServerRequest *request) {
-  // Get the JSON data from the request
-  if (!request->hasParam("plain", true)) {
-    sendJsonResponse(request, "error", "Missing JSON data");
-    return;
-  }
-
-  const AsyncWebParameter* p = request->getParam("plain", true);
-  String jsonData = p->value();
-
-  // Validate that we received data
-  if (jsonData.length() == 0) {
-    sendJsonResponse(request, "error", "Missing JSON data");
-    return;
-  }
-  // Parse the JSON data
+void handlePostStreams(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
+  // Parse the JSON data from the request body
   DynamicJsonDocument doc(4096);
-  DeserializationError error = deserializeJson(doc, jsonData);
+  DeserializationError error = deserializeJson(doc, (char *)data, len);
   // Check for JSON parsing errors
   if (error) {
     Serial.print("JSON parsing error: ");
@@ -1943,9 +1929,10 @@ void setupWebServer() {
   server.on("/api/streams", HTTP_GET, [](AsyncWebServerRequest *request){
     handleGetStreams(request);
   });
-  server.on("/api/streams", HTTP_POST, [](AsyncWebServerRequest *request){
-    handlePostStreams(request);
-  });
+  server.on("/api/streams", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handlePostStreams(request, data, len, index, total);
+    });
   server.on("/api/player", HTTP_GET, [](AsyncWebServerRequest *request){
     handlePlayer(request);
   });
