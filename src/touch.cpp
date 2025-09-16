@@ -20,17 +20,38 @@
 
 TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned long debounceMs)
   : pin(touchPin), threshold(touchThreshold), lastState(false),
-    pressedFlag(false), debounceTime(debounceMs) {
-}
-
-void TouchButton::begin() {
-  // Configure touch pad
-  touchAttachInterrupt(pin, TouchButton::isr, this);
+    lastPressTime(0), pressedFlag(false), debounceTime(debounceMs) {
 }
 
 void TouchButton::handle() {
-  // With interrupt-based approach, this function is no longer needed
-  // Kept for API compatibility
+  // Read current touch value
+  uint16_t touchValue = touchRead(pin);
+
+  // Get current time
+  unsigned long currentTime = millis();
+
+  // Check if touch value is below threshold (touched)
+  bool currentState = (touchValue < threshold);
+
+  // Debounce the button press
+  if (currentState != lastState) {
+    lastPressTime = currentTime;
+  }
+
+  // If state has been stable for debounce time
+  if ((currentTime - lastPressTime) > debounceTime) {
+    // If button is pressed and we haven't handled this press yet
+    if (currentState && !pressedFlag) {
+      pressedFlag = true;  // Mark this press as detected
+    }
+    // If button is released, reset handled flag
+    else if (!currentState) {
+      pressedFlag = false;
+    }
+  }
+
+  // Save current state for next iteration
+  lastState = currentState;
 }
 
 bool TouchButton::wasPressed() {
@@ -43,13 +64,4 @@ bool TouchButton::wasPressed() {
 
 uint16_t TouchButton::getTouchValue() {
   return touchRead(pin);
-}
-
-void IRAM_ATTR TouchButton::isr(void* arg) {
-  // Cast the argument back to TouchButton instance
-  TouchButton* button = static_cast<TouchButton*>(arg);
-  if (button) {
-    // Set the flag for this specific button instance
-    button->pressedFlag = true;
-  }
 }

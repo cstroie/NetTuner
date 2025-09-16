@@ -2074,6 +2074,9 @@ bool connectToWiFi() {
  */
 void loop() {
   handleRotary();          // Process rotary encoder input
+  if (touchPlay) touchPlay->handle();  // Process touch play button
+  if (touchNext) touchNext->handle();  // Process touch next button
+  if (touchPrev) touchPrev->handle();  // Process touch previous button
   handleTouch();           // Process touch button actions
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
