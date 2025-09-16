@@ -1175,7 +1175,8 @@ void handlePostStreams(AsyncWebServerRequest *request) {
       return;
     }
     // Validate URL format
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    String urlStr = String(url);
+    if (!urlStr.startsWith("http://") && !urlStr.startsWith("https://")) {
       sendJsonResponse(request, "error", "Invalid URL format");
       return;
     }
