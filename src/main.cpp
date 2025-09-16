@@ -723,7 +723,7 @@ void handleGetConfig() {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
-  DynamicJsonDocument doc(512);
+  DynamicJsonDocument doc(1024);
   // Populate JSON document with configuration values
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
@@ -743,6 +743,16 @@ void handleGetConfig() {
   doc["touch_prev"] = config.touch_prev;
   doc["touch_threshold"] = config.touch_threshold;
   doc["touch_debounce"] = config.touch_debounce;
+  
+  // Add display types information
+  JsonArray displays = doc.createNestedArray("displays");
+  for (int i = 0; i < getDisplayTypeCount(); i++) {
+    const char* displayName = getDisplayTypeName(i);
+    if (displayName) {
+      displays.add(displayName);
+    }
+  }
+  
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);

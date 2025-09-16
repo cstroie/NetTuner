@@ -1043,6 +1043,21 @@ async function loadConfig() {
       if ($("touch-prev")) $("touch-prev").value = config.touch_prev !== undefined ? config.touch_prev : -1;
       if ($("touch-threshold")) $("touch-threshold").value = config.touch_threshold !== undefined ? config.touch_threshold : 40;
       if ($("touch-debounce")) $("touch-debounce").value = config.touch_debounce !== undefined ? config.touch_debounce : 50;
+      
+      // Populate display types dropdown with data from server
+      if (config.displays && Array.isArray(config.displays)) {
+        window.displayTypes = config.displays;
+        const displayTypeSelect = $("display-type");
+        if (displayTypeSelect) {
+          displayTypeSelect.innerHTML = "";
+          config.displays.forEach((displayName, index) => {
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = displayName;
+            displayTypeSelect.appendChild(option);
+          });
+        }
+      }
     }
   } catch (error) {
     console.error("Error loading hardware configuration:", error);
@@ -1129,17 +1144,12 @@ function populateDisplayTypeDropdown() {
   displayTypeSelect.innerHTML = "";
   
   // Add options for each display type
-  for (let i = 0; i < 3; i++) { // Assuming 3 display types
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = getDisplayTypeName(i);
-    displayTypeSelect.appendChild(option);
-  }
+  // This will be populated when loadConfig() fetches the display types from the server
 }
 
 // Get display type name by index (simplified version for frontend)
 function getDisplayTypeName(index) {
-  const displayTypes = [
+  const displayTypes = window.displayTypes || [
     "128x64 (4 lines)",
     "128x32 (2 lines)", 
     "128x32 (3 lines)"
