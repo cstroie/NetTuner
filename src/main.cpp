@@ -757,14 +757,15 @@ void handleGetConfig(AsyncWebServerRequest *request) {
  * Updates the configuration with new JSON data and saves to SPIFFS
  * This function receives a new configuration via HTTP POST, validates it, and saves it to SPIFFS.
  */
-void handlePostConfig() {
+void handlePostConfig(AsyncWebServerRequest *request) {
   // Check for JSON data
-  if (!server.hasArg("plain")) {
+  if (!request->hasParam("plain", true)) {
     sendJsonResponse("error", "Missing JSON data");
     return;
   }
   // Parse the JSON data
-  String jsonData = server.arg("plain");
+  AsyncWebParameter* p = request->getParam("plain", true);
+  String jsonData = p->value();
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, jsonData);
   // Check for JSON parsing errors
