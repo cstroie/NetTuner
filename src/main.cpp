@@ -1319,7 +1319,7 @@ void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
  * Gets or sets the volume and tone levels
  * This function handles HTTP requests to get or set the volume and/or tone levels.
  * For GET requests, it returns the current mixer status as JSON.
- * For POST requests, it supports both JSON payload and form data, validates the input, and updates the settings.
+ * For POST requests, it supports JSON payload, validates the input, and updates the settings.
  *
  * GET /api/mixer:
  *   Returns: {"volume": 11, "bass": 0, "mid": 0, "treble": 0}
@@ -1327,10 +1327,8 @@ void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
  * POST /api/mixer:
  *   JSON payload: {"volume": 10}
  *   JSON payload: {"bass": 4, "treble": -2}
- *   Form data: volume=10
- *   Form data: bass=4&treble=-2
  */
-void handleMixer(AsyncWebServerRequest *request) {
+void handleMixer(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
   // Handle GET request - return current mixer status
   if (request->method() == HTTP_GET) {
     // Create JSON document with appropriate size
@@ -1349,40 +1347,14 @@ void handleMixer(AsyncWebServerRequest *request) {
   }
   // Handle POST request - update mixer settings
   DynamicJsonDocument doc(256);
-  bool hasData = false;
-  // Handle JSON payload
-  if (request->hasParam("plain", true)) {
-    const AsyncWebParameter* p = request->getParam("plain", true);
-    String json = p->value();
-    DeserializationError error = deserializeJson(doc, json);
-    // Check for JSON parsing errors
-    if (error) {
-      sendJsonResponse(request, "error", "Invalid JSON");
-      return;
-    }
-    hasData = true;
+  // Parse the JSON data from the request body
+  DeserializationError error = deserializeJson(doc, (char *)data, len);
+  // Check for JSON parsing errors
+  if (error) {
+    sendJsonResponse(request, "error", "Invalid JSON");
+    return;
   }
-  // Handle form data
-  else {
-    // Check if any form parameters are present
-    if (request->hasParam("volume", true) || request->hasParam("bass", true) ||
-        request->hasParam("mid", true) || request->hasParam("treble", true)) {
-      hasData = true;
-      // Add form data to JSON document
-      if (request->hasParam("volume", true)) {
-        doc["volume"] = request->getParam("volume", true)->value();
-      }
-      if (request->hasParam("bass", true)) {
-        doc["bass"] = request->getParam("bass", true)->value();
-      }
-      if (request->hasParam("mid", true)) {
-        doc["mid"] = request->getParam("mid", true)->value();
-      }
-      if (request->hasParam("treble", true)) {
-        doc["treble"] = request->getParam("treble", true)->value();
-      }
-    }
-  }
+  bool hasData = doc.size() > 0;
   // Check if any data was provided
   if (!hasData) {
     sendJsonResponse(request, "error", "Missing data: volume, bass, mid, or treble");
@@ -1915,11 +1887,12 @@ void setupWebServer() {
       handlePlayer(request, data, len, index, total);
     });
   server.on("/api/mixer", HTTP_GET, [](AsyncWebServerRequest *request){
-    handleMixer(request);
+    handleMixer(request, nullptr, 0, 0, 0);
   });
-  server.on("/api/mixer", HTTP_POST, [](AsyncWebServerRequest *request){
-    handleMixer(request);
-  });
+  server.on("/api/mixer", HTTP_POST, [](AsyncWebServerRequest *request){}, NULL,
+    [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
+      handleMixer(request, data, len, index, total);
+    });
   server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *request){
     handleGetConfig(request);
   });
