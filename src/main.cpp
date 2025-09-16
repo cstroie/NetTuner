@@ -488,7 +488,7 @@ void handleWiFiSave(AsyncWebServerRequest *request) {
     return;
   }
   // Parse JSON data
-  AsyncWebParameter* p = request->getParam("plain", true);
+  const AsyncWebParameter* p = request->getParam("plain", true);
   String json = p->value();
   DynamicJsonDocument doc(2048);  // Increased size for array format
   DeserializationError error = deserializeJson(doc, json);
