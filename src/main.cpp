@@ -1264,7 +1264,7 @@ void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   }
   // Handle POST request - control playback
   String action, url, name;
-  int index = -1;
+  int playlistIndex = -1;
   // Parse the JSON data from the request body
   DynamicJsonDocument doc(512);
   DeserializationError error = deserializeJson(doc, (char *)data, len);
@@ -1284,7 +1284,7 @@ void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
     name = doc["name"].as<String>();
   }
   if (doc.containsKey("index")) {
-    index = doc["index"].as<int>();
+    playlistIndex = doc["index"].as<int>();
   }
   // Check for required action parameter
   if (action.length() == 0) {
@@ -1293,16 +1293,16 @@ void handlePlayer(AsyncWebServerRequest *request, uint8_t *data, size_t len, siz
   }
   if (action == "play") {
     // Handle case where only index is provided
-    if (url.length() == 0 && name.length() == 0 && index >= 0) {
+    if (url.length() == 0 && name.length() == 0 && playlistIndex >= 0) {
       // Validate index
-      if (index >= player.getPlaylistCount()) {
+      if (playlistIndex >= player.getPlaylistCount()) {
         sendJsonResponse(request, "error", "Invalid playlist index");
         return;
       }
       // Extract stream data from playlist
-      url = String(player.getPlaylistItem(index).url);
-      name = String(player.getPlaylistItem(index).name);
-      player.setPlaylistIndex(index);
+      url = String(player.getPlaylistItem(playlistIndex).url);
+      name = String(player.getPlaylistItem(playlistIndex).name);
+      player.setPlaylistIndex(playlistIndex);
     }
     // Handle case where URL is provided (with optional name)
     else if (url.length() > 0) {
