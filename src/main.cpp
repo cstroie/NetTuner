@@ -2026,11 +2026,11 @@ void setupWebServer() {
     [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total){
       handleSimpleWebPage(request, data, len, index, total);
     });
-  server.serveStatic("/player", SPIFFS, "/player.html");
-  server.serveStatic("/playlist", SPIFFS, "/playlist.html");
-  server.serveStatic("/wifi", SPIFFS, "/wifi.html");
-  server.serveStatic("/config", SPIFFS, "/config.html");
-  server.serveStatic("/about", SPIFFS, "/about.html");
+  server.serveStatic("/player", SPIFFS, "/player.html").setHeader("Connection", "keep-alive");
+  server.serveStatic("/playlist", SPIFFS, "/playlist.html").setHeader("Connection", "keep-alive");
+  server.serveStatic("/wifi", SPIFFS, "/wifi.html").setHeader("Connection", "keep-alive");
+  server.serveStatic("/config", SPIFFS, "/config.html").setHeader("Connection", "keep-alive");
+  server.serveStatic("/about", SPIFFS, "/about.html").setHeader("Connection", "keep-alive");
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html").setHeader("Connection", "keep-alive");
   // Handle root path - redirect to main web interface
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
