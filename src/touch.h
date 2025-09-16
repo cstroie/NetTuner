@@ -64,7 +64,7 @@ public:
   /**
    * @brief Interrupt service routine for touch detection
    */
-  void IRAM_ATTR isr();
+  static void IRAM_ATTR isr(void* arg);
 };
 
 #endif // TOUCH_H

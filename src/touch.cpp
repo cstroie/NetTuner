@@ -25,7 +25,7 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
 
 void TouchButton::begin() {
   // Configure touch pad
-  touchAttachInterrupt(pin, TouchButton::isr, threshold);
+  touchAttachInterrupt(pin, TouchButton::isr, this);
 }
 
 void TouchButton::handle() {
@@ -45,10 +45,11 @@ uint16_t TouchButton::getTouchValue() {
   return touchRead(pin);
 }
 
-void IRAM_ATTR TouchButton::isr() {
-  // Simple interrupt handler - just set the flag
-  // The actual state handling will be done in the main loop
-  // Note: This ISR is called for any touch interrupt, but we don't know which pin
-  // In practice, this works because we only check the flag in the main loop
-  // and the specific TouchButton instance will clear its own flag
+void IRAM_ATTR TouchButton::isr(void* arg) {
+  // Cast the argument back to TouchButton instance
+  TouchButton* button = static_cast<TouchButton*>(arg);
+  if (button) {
+    // Set the flag for this specific button instance
+    button->pressedFlag = true;
+  }
 }
