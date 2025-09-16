@@ -1503,7 +1503,7 @@ void handleMixer() {
  * This function reads all JSON files from SPIFFS and combines them into a single
  * JSON object where keys are filenames and values are file contents.
  */
-void handleExportConfig(AsyncWebServerRequest *request) {
+void handleExportConfig() {
   // Yield to other tasks before processing
   yield();
   // List of configuration files to export
@@ -1542,7 +1542,7 @@ void handleExportConfig(AsyncWebServerRequest *request) {
   // Close the JSON object
   output += "}";
   // Send the combined JSON as response
-  request->send(200, "application/json", output);
+  server.send(200, "application/json", output);
   // Yield to other tasks after processing
   delay(1);
 }
@@ -1553,23 +1553,22 @@ void handleExportConfig(AsyncWebServerRequest *request) {
  * This function receives a JSON file containing all configurations and decomposes
  * it into individual config.json, wifi.json, playlist.json, and player.json files.
  */
-void handleImportConfig(AsyncWebServerRequest *request) {
+void handleImportConfig() {
   // Check if request method is POST
-  if (request->method() != HTTP_POST) {
-    sendJsonResponse(request, "error", "Method not allowed", 405);
+  if (server.method() != HTTP_POST) {
+    sendJsonResponse("error", "Method not allowed", 405);
     return;
   }
   // Check if we have data in the request body
-  if (!request->hasParam("plain", true)) {
-    sendJsonResponse(request, "error", "No data received");
+  if (!server.hasArg("plain")) {
+    sendJsonResponse("error", "No data received");
     return;
   }
   // Get the JSON data from the request body
-  AsyncWebParameter* p = request->getParam("plain", true);
-  String jsonData = p->value();
+  String jsonData = server.arg("plain");
   // Check if data is empty
   if (jsonData.length() == 0) {
-    sendJsonResponse(request, "error", "No file uploaded");
+    sendJsonResponse("error", "No file uploaded");
     return;
   }
   // Parse the JSON data
@@ -1577,7 +1576,7 @@ void handleImportConfig(AsyncWebServerRequest *request) {
   DeserializationError error = deserializeJson(doc, jsonData);
   if (error) {
     Serial.printf("Failed to parse uploaded JSON: %s\n", error.c_str());
-    sendJsonResponse(request, "error", "Invalid JSON format");
+    sendJsonResponse("error", "Invalid JSON format");
     return;
   }
   // Process each configuration section
@@ -1604,9 +1603,9 @@ void handleImportConfig(AsyncWebServerRequest *request) {
     }
   }
   if (success) {
-    sendJsonResponse(request, "success", "Configuration imported successfully");
+    sendJsonResponse("success", "Configuration imported successfully");
   } else {
-    sendJsonResponse(request, "error", "Error importing configuration", 500);
+    sendJsonResponse("error", "Error importing configuration", 500);
   }
 }
 
@@ -1679,19 +1678,18 @@ void sendStatusToClients() {
  * Acts as a transparent proxy to circumvent CORS restrictions
  * Forwards requests to target URLs and returns responses
  */
-void handleProxyRequest(AsyncWebServerRequest *request) {
+void handleProxyRequest() {
   // Check if we have a URL parameter
-  if (!request->hasParam("url")) {
-    sendJsonResponse(request, "error", "Missing URL parameter", 400);
+  if (!server.hasArg("url")) {
+    sendJsonResponse("error", "Missing URL parameter", 400);
     return;
   }
   
-  AsyncWebParameter* urlParam = request->getParam("url");
-  String targetUrl = urlParam->value();
+  String targetUrl = server.arg("url");
   
   // Validate URL format
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
-    sendJsonResponse(request, "error", "Invalid URL format. Must start with http:// or https://", 400);
+    sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://", 400);
     return;
   }
   
@@ -1705,11 +1703,10 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
   http.begin(targetUrl);
   
   // Copy headers from the original request
-  int headerCount = request->headers();
+  int headerCount = server.headers();
   for (int i = 0; i < headerCount; i++) {
-    AsyncWebHeader* header = request->getHeader(i);
-    String headerName = header->name();
-    String headerValue = header->value();
+    String headerName = server.headerName(i);
+    String headerValue = server.header(i);
     
     // Skip headers that shouldn't be forwarded
     if (headerName.equalsIgnoreCase("Host") || 
@@ -1724,22 +1721,17 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
   int httpResponseCode;
   
   // Handle different HTTP methods
-  if (request->method() == HTTP_GET) {
+  if (server.method() == HTTP_GET) {
     httpResponseCode = http.GET();
-  } else if (request->method() == HTTP_HEAD) {
+  } else if (server.method() == HTTP_HEAD) {
     httpResponseCode = http.GET(); // Use GET but we'll only send headers
-  } else if (request->method() == HTTP_POST) {
+  } else if (server.method() == HTTP_POST) {
     // Get request body if present
-    if (request->hasParam("plain", true)) {
-      AsyncWebParameter* bodyParam = request->getParam("plain", true);
-      String requestBody = bodyParam->value();
-      httpResponseCode = http.POST(requestBody);
-    } else {
-      httpResponseCode = http.POST("");
-    }
+    String requestBody = server.arg("plain");
+    httpResponseCode = http.POST(requestBody);
   } else {
     http.end();
-    sendJsonResponse(request, "error", "Unsupported HTTP method", 405);
+    sendJsonResponse("error", "Unsupported HTTP method", 405);
     return;
   }
   
@@ -1762,7 +1754,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
       // Skip headers that might cause issues
       if (!headerName.equalsIgnoreCase("Connection") &&
           !headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        request->sendHeader(headerName, headerValue, false);
+        server.sendHeader(headerName, headerValue, false);
       }
       
       headerCount++;
@@ -1774,7 +1766,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
     }
     
     // For HEAD requests, only send headers without content
-    if (request->method() == HTTP_HEAD) {
+    if (server.method() == HTTP_HEAD) {
       // Get content type
       String contentType = http.header("Content-Type");
       if (contentType.isEmpty()) {
@@ -1792,7 +1784,8 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
       }
       
       // Send response with proper content type and length (no content body for HEAD)
-      request->send(httpResponseCode, contentType, "");
+      server.setContentLength(http.getSize());
+      server.send(httpResponseCode, contentType, "");
     } else {
       // For GET requests, stream the response directly to client
       WiFiClient * stream = http.getStreamPtr();
@@ -1814,11 +1807,12 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
       }
       
       // Send response with proper content type and length
-      request->send(httpResponseCode, contentType, "");
+      server.setContentLength(http.getSize());
+      server.send(httpResponseCode, contentType, "");
     }
   } else {
     http.end();
-    sendJsonResponse(request, "error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
+    sendJsonResponse("error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
     return;
   }
   
