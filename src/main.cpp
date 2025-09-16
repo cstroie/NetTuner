@@ -37,8 +37,8 @@
 char ssid[MAX_WIFI_NETWORKS][64] = {""};
 char password[MAX_WIFI_NETWORKS][64] = {""};
 int wifiNetworkCount = 0;
-WebServer server(80);
-WebSocketsServer webSocket(81);
+AsyncWebServer server(80);
+AsyncWebSocket ws("/ws");
 WiFiServer mpdServer(6600);
 const char* BUILD_TIME = __DATE__ "T" __TIME__"Z";
 String previousStatus = "";
@@ -1652,12 +1652,12 @@ String generateStatusJSON(bool fullStatus) {
  */
 void sendStatusToClients(bool fullStatus) {
   // Only broadcast if WebSocket server has clients AND they are connected
-  if (webSocket.connectedClients() > 0) {
+  if (ws.count() > 0) {
     String status = generateStatusJSON(fullStatus);
     // Only send if status has changed
     if (status != previousStatus) {
-      // Use broadcastTXT with error handling
-      webSocket.broadcastTXT(status);
+      // Use textAll with error handling
+      ws.textAll(status);
       // Update previous status
       previousStatus = status;
     }
@@ -1822,37 +1822,29 @@ void handleProxyRequest() {
 /**
  * @brief Handle WebSocket events
  * Processes WebSocket connection, disconnection, and message events
- * @param num Client number
+ * @param server WebSocket server instance
+ * @param client WebSocket client instance
  * @param type Event type (connected, disconnected, text message, etc.)
- * @param payload Message payload for text messages
- * @param length Length of the payload
+ * @param arg Event arguments
+ * @param data Message payload for text messages
+ * @param len Length of the payload
  */
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
-  switch(type) {
-    case WStype_CONNECTED:
-      Serial.printf("WebSocket client #%u connected from %d.%d.%d.%d\n", num,
-                    webSocket.remoteIP(num)[0], webSocket.remoteIP(num)[1],
-                    webSocket.remoteIP(num)[2], webSocket.remoteIP(num)[3]);
-      {
-        // Add a small delay before sending to ensure connection is established
-        delay(10);
-        String status = generateStatusJSON(true);
-        // Send status to newly connected client with error checking
-        if (webSocket.clientIsConnected(num)) {
-            webSocket.sendTXT(num, status);
-        }
+void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len){
+  if(type == WS_EVT_CONNECT){
+    Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+    // Send current status to newly connected client
+    String status = generateStatusJSON(true);
+    client->text(status);
+  } else if(type == WS_EVT_DISCONNECT){
+    Serial.printf("WebSocket client #%u disconnected\n", client->id());
+  } else if(type == WS_EVT_DATA){
+    AwsFrameInfo * info = (AwsFrameInfo*)arg;
+    if(info->final && info->index == 0 && info->len == len){
+      if(info->opcode == WS_TEXT){
+        data[len] = 0;
+        Serial.printf("WebSocket client #%u text: %s\n", client->id(), (char*)data);
       }
-      break;
-    case WStype_DISCONNECTED:
-      Serial.printf("WebSocket client #%u disconnected\n", num);
-      // Add a small delay to ensure proper cleanup
-      delay(10);
-      break;
-    case WStype_TEXT:
-      Serial.printf("WebSocket client #%u text: %s\n", num, payload);
-      break;
-    default:
-      break;
+    }
   }
 }
 
@@ -2063,7 +2055,7 @@ void loop() {
   if (touchPrev) touchPrev->handle();  // Process touch previous button
   handleTouch();           // Process touch button actions
   // server.handleClient() is not needed with AsyncWebServer
-  webSocket.loop();        // Process WebSocket events
+  // webSocket.loop() is not needed with AsyncWebSocket
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
   
@@ -2108,7 +2100,7 @@ void loop() {
       static unsigned long lastStatusUpdate = 0;
       if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
-        if (webSocket.connectedClients() > 0) {
+        if (ws.count() > 0) {
           // FIXME Send partial status update
           sendStatusToClients(true);
         }
@@ -2256,8 +2248,8 @@ void setup() {
   server.begin();
   Serial.println("Web server started");
     // Setup WebSocket server
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
+  ws.onEvent(onWsEvent);
+  server.addHandler(&ws);
     // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");

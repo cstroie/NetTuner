@@ -21,7 +21,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
 #include <SPIFFS.h>
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
@@ -29,15 +29,14 @@
 #include "Audio.h"
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
-#include <WebSocketsServer.h>
 #include <ESPmDNS.h>
 #include "rotary.h"
 
 
 // Forward declarations
 class Audio;
-class WebServer;
-class WebSocketsServer;
+class AsyncWebServer;
+class AsyncWebSocket;
 class WiFiServer;
 class Adafruit_SSD1306;
 class MPDInterface;
@@ -75,8 +74,8 @@ extern Config config;
 
 // Global variables
 extern const char* BUILD_TIME;
-extern WebServer server;
-extern WebSocketsServer webSocket;
+extern AsyncWebServer server;
+extern AsyncWebSocket ws;
 extern WiFiServer mpdServer;
 extern Display* display;
 extern TaskHandle_t audioTaskHandle;
