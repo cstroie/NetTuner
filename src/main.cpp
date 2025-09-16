@@ -1561,19 +1561,20 @@ void handleExportConfig(AsyncWebServerRequest *request) {
  * This function receives a JSON file containing all configurations and decomposes
  * it into individual config.json, wifi.json, playlist.json, and player.json files.
  */
-void handleImportConfig() {
+void handleImportConfig(AsyncWebServerRequest *request) {
   // Check if request method is POST
-  if (server.method() != HTTP_POST) {
+  if (request->method() != HTTP_POST) {
     sendJsonResponse("error", "Method not allowed", 405);
     return;
   }
   // Check if we have data in the request body
-  if (!server.hasArg("plain")) {
+  if (!request->hasParam("plain", true)) {
     sendJsonResponse("error", "No data received");
     return;
   }
   // Get the JSON data from the request body
-  String jsonData = server.arg("plain");
+  AsyncWebParameter* p = request->getParam("plain", true);
+  String jsonData = p->value();
   // Check if data is empty
   if (jsonData.length() == 0) {
     sendJsonResponse("error", "No file uploaded");
