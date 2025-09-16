@@ -2157,8 +2157,8 @@ void loop() {
       if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
         if (webSocket.connectedClients() > 0) {
-          // FIXME Send partial status update
-          sendStatusToClients(true);
+          // Send partial status update
+          sendStatusToClients(false);
         }
         // Update the timestamp
         lastStatusUpdate = millis();
