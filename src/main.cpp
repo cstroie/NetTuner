@@ -766,7 +766,7 @@ void handlePostConfig(AsyncWebServerRequest *request) {
     return;
   }
   // Parse the JSON data
-  AsyncWebParameter* p = request->getParam("plain", true);
+  const AsyncWebParameter* p = request->getParam("plain", true);
   String jsonData = p->value();
   DynamicJsonDocument doc(1024);
   DeserializationError error = deserializeJson(doc, jsonData);
@@ -963,13 +963,13 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
   if (request->method() == HTTP_POST) {
     // Handle form submission
     if (request->hasParam("action", true)) {
-      AsyncWebParameter* actionParam = request->getParam("action", true);
+      const AsyncWebParameter* actionParam = request->getParam("action", true);
       String action = actionParam->value();
       // Perform action based on form input
       if (action == "play") {
         // Play selected stream
         if (request->hasParam("stream", true) && player.getPlaylistCount() > 0) {
-          AsyncWebParameter* streamParam = request->getParam("stream", true);
+          const AsyncWebParameter* streamParam = request->getParam("stream", true);
           int streamIndex = streamParam->value().toInt();
           if (streamIndex >= 0 && streamIndex < player.getPlaylistCount()) {
             // Stop playback
@@ -997,7 +997,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
       } else if (action == "volume") {
         // Set volume
         if (request->hasParam("volume", true)) {
-          AsyncWebParameter* volumeParam = request->getParam("volume", true);
+          const AsyncWebParameter* volumeParam = request->getParam("volume", true);
           int newVolume = volumeParam->value().toInt();
           if (newVolume >= 0 && newVolume <= 22) {
             player.setVolume(newVolume);
@@ -1009,7 +1009,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request) {
       } else if (action == "instant") {
         // Play a stream URL
         if (request->hasParam("url", true)) {
-          AsyncWebParameter* urlParam = request->getParam("url", true);
+          const AsyncWebParameter* urlParam = request->getParam("url", true);
           String customUrl = urlParam->value();
           if (customUrl.length() > 0 &&
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
@@ -1127,7 +1127,7 @@ void handlePostStreams(AsyncWebServerRequest *request) {
     return;
   }
 
-  AsyncWebParameter* p = request->getParam("plain", true);
+  const AsyncWebParameter* p = request->getParam("plain", true);
   String jsonData = p->value();
 
   // Validate that we received data
@@ -1245,7 +1245,7 @@ void handlePlayer(AsyncWebServerRequest *request) {
   // Check if request has JSON payload
   if (request->hasParam("plain", true)) {
     // Handle JSON payload
-    AsyncWebParameter* p = request->getParam("plain", true);
+    const AsyncWebParameter* p = request->getParam("plain", true);
     String json = p->value();
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
@@ -1398,7 +1398,7 @@ void handleMixer(AsyncWebServerRequest *request) {
   bool hasData = false;
   // Handle JSON payload
   if (request->hasParam("plain", true)) {
-    AsyncWebParameter* p = request->getParam("plain", true);
+    const AsyncWebParameter* p = request->getParam("plain", true);
     String json = p->value();
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
@@ -1575,7 +1575,7 @@ void handleImportConfig(AsyncWebServerRequest *request) {
     return;
   }
   // Get the JSON data from the request body
-  AsyncWebParameter* p = request->getParam("plain", true);
+  const AsyncWebParameter* p = request->getParam("plain", true);
   String jsonData = p->value();
   // Check if data is empty
   if (jsonData.length() == 0) {
@@ -1696,7 +1696,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
     return;
   }
 
-  AsyncWebParameter* urlParam = request->getParam("url");
+  const AsyncWebParameter* urlParam = request->getParam("url");
   String targetUrl = urlParam->value();
 
   // Validate URL format
@@ -1741,7 +1741,7 @@ void handleProxyRequest(AsyncWebServerRequest *request) {
   } else if (request->method() == HTTP_POST) {
     // Get request body if present
     if (request->hasParam("plain", true)) {
-      AsyncWebParameter* bodyParam = request->getParam("plain", true);
+      const AsyncWebParameter* bodyParam = request->getParam("plain", true);
       String requestBody = bodyParam->value();
       httpResponseCode = http.POST(requestBody);
     } else {
