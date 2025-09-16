@@ -1511,7 +1511,7 @@ void handleMixer(AsyncWebServerRequest *request) {
  * This function reads all JSON files from SPIFFS and combines them into a single
  * JSON object where keys are filenames and values are file contents.
  */
-void handleExportConfig() {
+void handleExportConfig(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // List of configuration files to export
@@ -1550,7 +1550,7 @@ void handleExportConfig() {
   // Close the JSON object
   output += "}";
   // Send the combined JSON as response
-  server.send(200, "application/json", output);
+  request->send(200, "application/json", output);
   // Yield to other tasks after processing
   delay(1);
 }
