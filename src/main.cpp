@@ -1194,9 +1194,9 @@ void handlePostStreams() {
  *   When playing: stream object contains name, title, url, index, bitrate, elapsed
  *   When stopped: stream object is omitted
  */
-void handlePlayer() {
+void handlePlayer(AsyncWebServerRequest *request) {
   // Handle GET request - return player status
-  if (server.method() == HTTP_GET) {
+  if (request->method() == HTTP_GET) {
     // Create JSON document with appropriate size
     DynamicJsonDocument doc(512);
     // Add player status
@@ -1222,16 +1222,17 @@ void handlePlayer() {
     String json;
     serializeJson(doc, json);
     // Return status as JSON
-    server.send(200, "application/json", json);
+    request->send(200, "application/json", json);
     return;
   }
   // Handle POST request - control playback
   String action, url, name;
   int index = -1;
   // Check if request has JSON payload
-  if (server.hasArg("plain")) {
+  if (request->hasParam("plain", true)) {
     // Handle JSON payload
-    String json = server.arg("plain");
+    AsyncWebParameter* p = request->getParam("plain", true);
+    String json = p->value();
     DynamicJsonDocument doc(512);
     DeserializationError error = deserializeJson(doc, json);
     // Check for JSON parsing errors
@@ -1254,17 +1255,17 @@ void handlePlayer() {
     }
   } 
   // Check if request has form data
-  else if (server.hasArg("action")) {
+  else if (request->hasParam("action", true)) {
     // Handle form data
-    action = server.arg("action");
-    if (server.hasArg("url")) {
-      url = server.arg("url");
+    action = request->getParam("action", true)->value();
+    if (request->hasParam("url", true)) {
+      url = request->getParam("url", true)->value();
     }
-    if (server.hasArg("name")) {
-      name = server.arg("name");
+    if (request->hasParam("name", true)) {
+      name = request->getParam("name", true)->value();
     }
-    if (server.hasArg("index")) {
-      index = server.arg("index").toInt();
+    if (request->hasParam("index", true)) {
+      index = request->getParam("index", true)->value().toInt();
     }
   } 
   else {
