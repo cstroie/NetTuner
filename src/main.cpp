@@ -26,8 +26,8 @@
 #include "touch.h"
 
 // Spleen fonts https://www.onlinewebfonts.com/icon
-#include "Spleen6x12.h" 
-#include "Spleen8x16.h" 
+#include "Spleen6x12.h"
+#include "Spleen8x16.h"
 #include "Spleen16x32.h"
 #include <ESPmDNS.h>
 #include <HTTPClient.h>
@@ -364,7 +364,7 @@ static volatile bool boardButtonPressed = false;
 void boardButtonISR() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  
+
   // Debounce the button press (ignore if less than 50ms since last press)
   if (interruptTime - lastInterruptTime > 50) {
     boardButtonPressed = true;  // Set flag to indicate button press detected
@@ -382,7 +382,7 @@ void handleBoardButton() {
   if (config.board_button < 0) {
     return;
   }
-  
+
   // Check if button was pressed (detected by interrupt)
   if (boardButtonPressed) {
     // Toggle play/stop
@@ -393,7 +393,7 @@ void handleBoardButton() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
@@ -849,16 +849,16 @@ void handleRotary() {
       }
     }
     // Update last position
-    lastRotaryPosition = currentPosition;  
+    lastRotaryPosition = currentPosition;
     // Update activity time on user interaction
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
     // Refresh display with new values
-    updateDisplay();                      
+    updateDisplay();
   }
   // Process button press if detected
   if (rotaryEncoder.wasButtonPressed()) {
     // Update activity time
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
     if (player.isPlaying()) {
       // If playing, stop playback
       player.stopStream();
@@ -866,18 +866,18 @@ void handleRotary() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
       // Save state when user initiates playback
-      player.savePlayerState(); 
+      player.savePlayerState();
     }
     // Refresh display
     updateDisplay();
-    // Notify clients of status change 
-    sendStatusToClients();  
+    // Notify clients of status change
+    sendStatusToClients();
   }
 }
 
@@ -901,24 +901,24 @@ void handleTouch() {
       // If we have a current stream, resume it
       if (strlen(player.getStreamUrl()) > 0) {
         player.startStream();
-      } 
+      }
       // Otherwise, if we have playlist items, play the selected one
       else if (player.isPlaylistIndexValid()) {
         player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
       }
       // Save state when user initiates playback
-      player.savePlayerState(); 
+      player.savePlayerState();
     }
     // Refresh display and notify clients of status change
     updateDisplay();
     sendStatusToClients();
   }
-  
+
   // Handle next/volume-up button
   if (touchNext && touchNext->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
     updateDisplay(); // Turn display back on and update
-    
+
     if (player.isPlaying()) {
       // If playing, increase volume by 1 (capped at 22)
       player.setVolume(min(22, player.getVolume() + 1));
@@ -930,7 +930,7 @@ void handleTouch() {
     updateDisplay();
     sendStatusToClients();
   }
-  
+
   // Handle previous/volume-down button
   if (touchPrev && touchPrev->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
@@ -1004,7 +1004,7 @@ void handleSimpleWebPage() {
         // Play a stream URL
         if (server.hasArg("url")) {
           String customUrl = server.arg("url");
-          if (customUrl.length() > 0 && 
+          if (customUrl.length() > 0 &&
               (customUrl.startsWith("http://") || customUrl.startsWith("https://"))) {
             // Stop current playback
             player.stopStream();
@@ -1023,7 +1023,7 @@ void handleSimpleWebPage() {
   html += "<section><h2>Status: ";
   html += player.isPlaying() ? "PLAY" : "STOP";
   html += "</h2>";
-  
+
   // Show current stream name
   if (player.isPlaying() && player.getStreamTitle()[0]) {
     html += "<p><b>Now playing:</b> ";
@@ -1041,7 +1041,7 @@ void handleSimpleWebPage() {
   html += "</fieldset></form>";
   html += "<form method='post'><fieldset role='group'>";
   html += "<select name='volume' id='volume'>";
-  
+
   // Add volume options (0-22)
   for (int i = 0; i <= 22; i++) {
     html += "<option value='" + String(i) + "'";
@@ -1053,12 +1053,12 @@ void handleSimpleWebPage() {
   html += "</select>";
   html += "<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>";
   html += "</fieldset></form></section><section><h2>Playlist</h2>";
-  
+
   // Show stream selection dropdown if we have a playlist
   if (player.getPlaylistCount() > 0) {
     html += "<form method='post'><fieldset role='group'>";
     html += "<select name='stream' id='stream'>";
-    
+
     // Populate the dropdown with available streams
     for (int i = 0; i < player.getPlaylistCount(); i++) {
       html += "<option value='" + String(i) + "'";
@@ -1073,7 +1073,7 @@ void handleSimpleWebPage() {
   } else {
     html += "<p>No streams in playlist.</p>";
   }
-  
+
   // Add instant play input for custom stream URL even when no playlist
   html += "<h2>Play instant stream</h2>";
   html += "<form method='post'><fieldset role='group'>";
@@ -1081,7 +1081,7 @@ void handleSimpleWebPage() {
   html += "<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>";
   html += "</fieldset></form></section></main>";
   html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
-  
+
   // Send the HTML response
   server.send(200, "text/html", html);
 }
@@ -1186,7 +1186,7 @@ void handlePostStreams() {
  * This function handles HTTP requests to control playback or get player status.
  * For POST requests, it supports both JSON payload and form data with action parameter.
  * For GET requests, it returns player status and stream information.
- * 
+ *
  * POST /api/player:
  *   JSON payload: {"action": "play", "url": "...", "name": "...", "index": 0}
  *   JSON payload: {"action": "play", "index": 0}
@@ -1194,7 +1194,7 @@ void handlePostStreams() {
  *   Form data: action=play&url=...&name=...&index=0
  *   Form data: action=play&index=0
  *   Form data: action=stop
- * 
+ *
  * GET /api/player:
  *   Returns: {"status": "play|stop", "stream": {...}}
  *   When playing: stream object contains name, title, url, index, bitrate, elapsed
@@ -1258,7 +1258,7 @@ void handlePlayer() {
     if (doc.containsKey("index")) {
       index = doc["index"].as<int>();
     }
-  } 
+  }
   // Check if request has form data
   else if (server.hasArg("action")) {
     // Handle form data
@@ -1272,7 +1272,7 @@ void handlePlayer() {
     if (server.hasArg("index")) {
       index = server.arg("index").toInt();
     }
-  } 
+  }
   else {
     sendJsonResponse("error", "Missing action parameter");
     return;
@@ -1294,7 +1294,7 @@ void handlePlayer() {
       url = String(player.getPlaylistItem(index).url);
       name = String(player.getPlaylistItem(index).name);
       player.setPlaylistIndex(index);
-    } 
+    }
     // Handle case where URL is provided (with optional name)
     else if (url.length() > 0) {
       // If no name provided, check if we have a current stream name
@@ -1335,7 +1335,7 @@ void handlePlayer() {
     sendStatusToClients();
     // Send success response
     sendJsonResponse("success", "Stream started successfully");
-  } 
+  }
   else if (action == "stop") {
     // Stop any currently playing stream
     player.stopStream();
@@ -1344,7 +1344,7 @@ void handlePlayer() {
     sendStatusToClients();
     // Send success response
     sendJsonResponse("success", "Stream stopped successfully");
-  } 
+  }
   else {
     sendJsonResponse("error", "Invalid action. Supported actions: play, stop");
     return;
@@ -1354,13 +1354,13 @@ void handlePlayer() {
 /**
  * @brief Handle mixer request
  * Gets or sets the volume and tone levels
- * This function handles HTTP requests to get or set the volume and/or tone levels. 
+ * This function handles HTTP requests to get or set the volume and/or tone levels.
  * For GET requests, it returns the current mixer status as JSON.
  * For POST requests, it supports both JSON payload and form data, validates the input, and updates the settings.
- * 
+ *
  * GET /api/mixer:
  *   Returns: {"volume": 11, "bass": 0, "mid": 0, "treble": 0}
- * 
+ *
  * POST /api/mixer:
  *   JSON payload: {"volume": 10}
  *   JSON payload: {"bass": 4, "treble": -2}
@@ -1401,7 +1401,7 @@ void handleMixer() {
   // Handle form data
   else {
     // Check if any form parameters are present
-    if (server.hasArg("volume") || server.hasArg("bass") || 
+    if (server.hasArg("volume") || server.hasArg("bass") ||
         server.hasArg("mid") || server.hasArg("treble")) {
       hasData = true;
       // Add form data to JSON document
@@ -1526,12 +1526,12 @@ void handleExportConfig() {
           if (buf) {
             // Read file content
             if (file.readBytes(buf.get(), size) == size) {
-              buf[size] = '\0';              
+              buf[size] = '\0';
               // Add to main document with filename as key (without leading slash)
               output += "\n\"" + String(filename + 1) + "\":" + String(buf.get());
               if (i < 3) output += ",";
               // Yield to other tasks during long operations
-              yield(); 
+              yield();
             }
           }
         }
@@ -1619,7 +1619,7 @@ void handleImportConfig() {
 String generateStatusJSON(bool fullStatus) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-  
+
   if (fullStatus) {
     // Populate JSON document with all status values
     doc["playing"] = player.isPlaying();
@@ -1637,7 +1637,7 @@ String generateStatusJSON(bool fullStatus) {
     // Only include the bitrater
     doc["bitrate"] = player.getBitrate();
   }
-    
+
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -1684,42 +1684,42 @@ void handleProxyRequest() {
     sendJsonResponse("error", "Missing URL parameter", 400);
     return;
   }
-  
+
   String targetUrl = server.arg("url");
-  
+
   // Validate URL format
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     sendJsonResponse("error", "Invalid URL format. Must start with http:// or https://", 400);
     return;
   }
-  
+
   // Create HTTP client
   HTTPClient http;
-  
+
   // Set timeouts to prevent hanging
   http.setTimeout(5000);
-  
+
   // Configure the request based on the original method
   http.begin(targetUrl);
-  
+
   // Copy headers from the original request
   int headerCount = server.headers();
   for (int i = 0; i < headerCount; i++) {
     String headerName = server.headerName(i);
     String headerValue = server.header(i);
-    
+
     // Skip headers that shouldn't be forwarded
-    if (headerName.equalsIgnoreCase("Host") || 
+    if (headerName.equalsIgnoreCase("Host") ||
         headerName.equalsIgnoreCase("Connection") ||
         headerName.equalsIgnoreCase("Content-Length")) {
       continue;
     }
-    
+
     http.addHeader(headerName, headerValue);
   }
-  
+
   int httpResponseCode;
-  
+
   // Handle different HTTP methods
   if (server.method() == HTTP_GET) {
     httpResponseCode = http.GET();
@@ -1734,37 +1734,37 @@ void handleProxyRequest() {
     sendJsonResponse("error", "Unsupported HTTP method", 405);
     return;
   }
-  
+
   if (httpResponseCode > 0) {
     // Get response headers and forward them
     // Use public methods to iterate through headers
     int headerCount = 0;
     String headerName, headerValue;
-    
+
     // Get all headers one by one until we've processed them all
     while (true) {
       headerName = http.headerName(headerCount);
       headerValue = http.header(headerCount);
-      
+
       // If we get empty strings, we've reached the end of headers
       if (headerName.length() == 0 && headerValue.length() == 0) {
         break;
       }
-      
+
       // Skip headers that might cause issues
       if (!headerName.equalsIgnoreCase("Connection") &&
           !headerName.equalsIgnoreCase("Transfer-Encoding")) {
         server.sendHeader(headerName, headerValue, false);
       }
-      
+
       headerCount++;
-      
+
       // Safety check to prevent infinite loop
       if (headerCount > 100) {
         break;
       }
     }
-    
+
     // For HEAD requests, only send headers without content
     if (server.method() == HTTP_HEAD) {
       // Get content type
@@ -1773,7 +1773,7 @@ void handleProxyRequest() {
         // Try to determine content type from URL
         if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
           contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
                    targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
           contentType = "image/jpeg";
         } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
@@ -1782,21 +1782,21 @@ void handleProxyRequest() {
           contentType = "application/octet-stream";
         }
       }
-      
+
       // Send response with proper content type and length (no content body for HEAD)
       server.setContentLength(http.getSize());
       server.send(httpResponseCode, contentType, "");
     } else {
       // For GET requests, stream the response directly to client
       WiFiClient * stream = http.getStreamPtr();
-      
+
       // Get content type
       String contentType = http.header("Content-Type");
       if (contentType.isEmpty()) {
         // Try to determine content type from URL
         if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
           contentType = "image/png";
-        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") || 
+        } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
                    targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
           contentType = "image/jpeg";
         } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
@@ -1805,17 +1805,17 @@ void handleProxyRequest() {
           contentType = "application/octet-stream";
         }
       }
-      
+
       // Send response with proper content type and length
       server.setContentLength(http.getSize());
       server.send(httpResponseCode, contentType, "");
-      
+
       // Stream the content
       const size_t bufferSize = 1024;
       uint8_t buffer[bufferSize];
       size_t totalBytesRead = 0;
       size_t contentLength = http.getSize();
-      
+
       while (http.connected() && (contentLength == 0 || totalBytesRead < contentLength)) {
         size_t bytesAvailable = stream->available();
         if (bytesAvailable) {
@@ -1831,7 +1831,7 @@ void handleProxyRequest() {
     sendJsonResponse("error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
     return;
   }
-  
+
   http.end();
 }
 
@@ -1883,14 +1883,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void updateDisplay() {
   // Check if display is initialized
   if (display == nullptr) return;
-  
+
   String ipString;
   if (WiFi.status() == WL_CONNECTED) {
     ipString = WiFi.localIP().toString();
   } else {
     ipString = "No IP";
   }
-  
+
   // When not playing, show the selected playlist item name instead of empty stream name
   const char* displayStreamName = player.getStreamName();
   if (!player.isPlaying() && strlen(displayStreamName) == 0) {
@@ -1899,7 +1899,7 @@ void updateDisplay() {
       displayStreamName = player.getPlaylistItem(player.getPlaylistIndex()).name;
     }
   }
-  
+
   // Update the display with current status
   display->update(player.isPlaying(), player.getStreamTitle(), displayStreamName, player.getVolume(), player.getBitrate(), ipString);
 }
@@ -1926,7 +1926,7 @@ bool initSPIFFS() {
     }
     Serial.println("SPIFFS formatted and mounted successfully");
   }
-  
+
   // Test SPIFFS write capability
   if (!SPIFFS.exists("/spiffs_test")) {
     Serial.println("Testing SPIFFS write capability...");
@@ -1944,7 +1944,7 @@ bool initSPIFFS() {
   } else {
     Serial.println("SPIFFS write test file already exists - SPIFFS is working");
   }
-  
+
   return true;
 }
 
@@ -2013,12 +2013,12 @@ bool connectToWiFi() {
         for (int j = 0; j < n; j++) {
           if (strcmp(WiFi.SSID(j).c_str(), ssid[i]) == 0) {
             networkAvailable[i] = true;
-            Serial.printf("Network %s is available\n", ssid[i]);
+            Serial.printf("Network '%s' is available\n", ssid[i]);
             break;
           }
         }
         if (!networkAvailable[i]) {
-          Serial.printf("Network %s is not available\n", ssid[i]);
+          Serial.printf("Network '%s' is not available\n", ssid[i]);
         }
       }
     }
@@ -2030,9 +2030,9 @@ bool connectToWiFi() {
         display->showStatus("WiFi connecting", String(ssid[i]), "");
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
-        const int maxAttempts = 15; // Increased attempts per network
+        const int maxAttempts = 300; // Increased attempts per network
         while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
-          delay(500);
+          delay(100);
           Serial.print(".");
           wifiAttempts++;
         }
@@ -2082,14 +2082,14 @@ void loop() {
   webSocket.loop();        // Process WebSocket events
   mpdInterface.handleClient();       // Process MPD commands
   handleBoardButton();     // Process board button input
-  
+
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
     updateDisplay();
     lastDisplayUpdate = millis();
   }
-  
+
   // Check audio connection status with improved error recovery
   static unsigned long streamStoppedTime = 0;
   if (player.getAudioObject()) {
@@ -2133,7 +2133,7 @@ void loop() {
       }
     }
   }
-  
+
   // Periodic cleanup with error recovery - add network status check
   static unsigned long lastCleanup = 0;
   if (millis() - lastCleanup > 60000) {  // Every 60 seconds instead of 30
@@ -2143,9 +2143,14 @@ void loop() {
       connectToWiFi();
     }
   }
-  
+
   // Handle display timeout with configurable timeout value
   display->handleTimeout(player.isPlaying(), millis());
+
+  // Handle OTA updates if PSRAM is available
+  #if defined(BOARD_HAS_PSRAM)
+  ArduinoOTA.handle();
+  #endif
 
   // Small delay to prevent busy waiting and reduce network load
   delay(150);  // Increased from 100 to 150 to reduce CPU usage
@@ -2163,7 +2168,7 @@ void setup() {
   Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
-  
+
   // Initialize PSRAM if available
   #if defined(BOARD_HAS_PSRAM)
   if (psramInit()) {
@@ -2181,7 +2186,7 @@ void setup() {
   }
   // Load configuration
   loadConfig();
-  
+
   // Validate display type
   if (config.display_type < 0 || config.display_type >= getDisplayTypeCount()) {
     config.display_type = 0; // Default to first display type
@@ -2211,7 +2216,7 @@ void setup() {
   displayOLED = new Adafruit_SSD1306(displayWidth, displayHeight, &Wire, -1);
   display = new Display(*displayOLED, (enum display_t)config.display_type);
   display->begin();
-  
+
   // Initialize touch buttons
   if (config.touch_play >= 0) {
     touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
@@ -2229,7 +2234,7 @@ void setup() {
   // Always start AP mode as a control mechanism
   Serial.println("Starting Access Point mode...");
   display->showStatus("Starting AP Mode", "", "");
-  
+
   // Start WiFi access point mode with error handling
   if (WiFi.softAP("NetTuner-Setup")) {
     Serial.println("Access Point Started");
@@ -2251,7 +2256,7 @@ void setup() {
     Serial.println("Error setting up MDNS responder!");
   }
   #endif
-  
+
   // Setup audio output with error handling
   Audio* audio = player.setupAudioOutput();
   // Setup rotary encoder with error handling
@@ -2264,7 +2269,7 @@ void setup() {
   player.loadPlayerState();
   if (player.isPlaying()) {
     // Update activity time
-    display->setActivityTime(millis()); 
+    display->setActivityTime(millis());
   }
   // Setup web server routes
   setupWebServer();
@@ -2277,6 +2282,37 @@ void setup() {
     // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");
+  // Initialize OTA if PSRAM is available
+  #if defined(BOARD_HAS_PSRAM)
+  // Configure OTA
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+      SPIFFS.end()
+      Serial.println("Start updating " + type);
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+    });
+  ArduinoOTA.begin();
+  Serial.println("OTA Initialized");
+  #endif
+
     // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
   if (result != pdPASS) {

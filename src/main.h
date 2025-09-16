@@ -32,8 +32,6 @@
 #include <WebSocketsServer.h>
 #include <ESPmDNS.h>
 #include <ArduinoOTA.h>
-#include "rotary.h"
-#include "touch.h"
 
 
 // Forward declarations
