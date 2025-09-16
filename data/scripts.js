@@ -95,8 +95,6 @@ function initWiFiPage() {
 function initConfigPage() {
   // Load existing configuration when page loads
   loadConfig();
-  // Populate display type dropdown
-  populateDisplayTypeDropdown();
   // Set up form submit handler
   const configForm = $("config-form");
   if (configForm) {
@@ -1133,28 +1131,6 @@ async function saveConfig() {
     console.error("Error saving config:", error);
     showModal("Error saving configuration", error.message);
   }
-}
-
-// Populate display type dropdown with available options
-function populateDisplayTypeDropdown() {
-  const displayTypeSelect = $("display-type");
-  if (!displayTypeSelect) return;
-  
-  // Clear existing options
-  displayTypeSelect.innerHTML = "";
-  
-  // Add options for each display type
-  // This will be populated when loadConfig() fetches the display types from the server
-}
-
-// Get display type name by index (simplified version for frontend)
-function getDisplayTypeName(index) {
-  const displayTypes = window.displayTypes || [
-    "128x64 (4 lines)",
-    "128x32 (2 lines)", 
-    "128x32 (3 lines)"
-  ];
-  return displayTypes[index] || "Unknown";
 }
 
 // Configuration import/export functions
