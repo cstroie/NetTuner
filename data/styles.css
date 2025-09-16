@@ -177,6 +177,16 @@ fieldset input[type="number"]:focus {
     background-color: var(--pico-primary-background);
 }
 
+.network-entry.drag-over {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+}
+
+.playlist-item.drag-over {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+}
+
 .drag-handle {
     cursor: move;
     padding: 0 0.5rem;
