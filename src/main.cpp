@@ -539,7 +539,7 @@ void handleWiFiSave() {
  * This function provides information about the current WiFi connection including
  * connection status, SSID, IP address, and signal strength
  */
-void handleWiFiStatus() {
+void handleWiFiStatus(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
@@ -557,7 +557,7 @@ void handleWiFiStatus() {
   String json;
   serializeJson(doc, json);
   // Send the JSON response
-  server.send(200, "application/json", json);
+  request->send(200, "application/json", json);
   // Yield to other tasks after processing
   yield();
 }
