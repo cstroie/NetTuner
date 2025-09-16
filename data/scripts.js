@@ -1293,7 +1293,7 @@ async function checkImageExists(url) {
   try {
     // Use proxy to check if image exists
     const proxyRequestUrl = `/api/proxy?url=${encodeURIComponent(proxyUrl)}`;
-    const response = await fetch(proxyRequestUrl, { method: 'GET' });
+    const response = await fetch(proxyRequestUrl, { method: 'HEAD' });
     const contentType = response.headers.get('Content-Type');
     
     // Check if response is successful and content type is an image

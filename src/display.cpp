@@ -16,12 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <WiFi.h>
 #include "display.h"
+#include "main.h"
+// Spleen fonts https://www.onlinewebfonts.com/icon
 #include "Spleen6x12.h" 
 #include "Spleen8x16.h" 
 #include "Spleen16x32.h"
-#include <WiFi.h>
-#include "main.h"
 
 extern Config config;
 
