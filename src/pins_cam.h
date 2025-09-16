@@ -17,20 +17,20 @@
  */
 
 /*
-PSRAM pins on ESP32-CAM:                                                                                               
+PSRAM pins on ESP32-CAM:
 
- • IO6 - SPIQ (MISO)                                                                                                   
- • IO7 - SPID (MOSI)                                                                                                   
- • IO8 - SPIWP (Write Protect)                                                                                         
- • IO9 - SPIHD (Hold)                                                                                                  
- • IO16 - PSRAM Chip Select (CS)                                                                                       
- • IO17 - SPI Clock (CLK)                                                                                              
+ • IO6 - SPIQ (MISO)
+ • IO7 - SPID (MOSI)
+ • IO8 - SPIWP (Write Protect)
+ • IO9 - SPIHD (Hold)
+ • IO16 - PSRAM Chip Select (CS)
+ • IO17 - SPI Clock (CLK)
 
-The ESP32-CAM typically uses:                                                                                          
+The ESP32-CAM typically uses:
 
- • IO0, IO4, IO15, IO16 for camera interface                                                                           
- • IO2, IO12, IO13 for SD card (if used)                                                                               
- • IO17 for flash/PSRAM clock                                                                                          
+ • IO0, IO4, IO15, IO16 for camera interface
+ • IO2, IO12, IO13 for SD card (if used)
+ • IO17 for flash/PSRAM clock
 
 */
 
@@ -42,7 +42,7 @@ The ESP32-CAM typically uses:
 #define DEFAULT_I2S_DOUT         15  ///< I2S Data Out pin
 #define DEFAULT_I2S_BCLK          2  ///< I2S Bit Clock pin
 #define DEFAULT_I2S_LRC           4  ///< I2S Left/Right Clock pin
-#define DEFAULT_LED_PIN          -1  ///< ESP32 internal LED pin
+#define DEFAULT_LED_PIN          33  ///< ESP32 internal LED pin
 #define DEFAULT_ROTARY_CLK       -1  ///< Rotary encoder clock pin
 #define DEFAULT_ROTARY_DT        -1  ///< Rotary encoder data pin
 #define DEFAULT_ROTARY_SW        -1  ///< Rotary encoder switch pin
