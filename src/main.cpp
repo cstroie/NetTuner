@@ -1113,9 +1113,16 @@ void handleGetStreams(AsyncWebServerRequest *request) {
  * This function receives a new playlist via HTTP POST, validates it, and saves it to SPIFFS.
  * It supports both JSON array format and validates each stream entry.
  */
-void handlePostStreams() {
+void handlePostStreams(AsyncWebServerRequest *request) {
   // Get the JSON data from the request
-  String jsonData = server.arg("plain");
+  if (!request->hasParam("plain", true)) {
+    sendJsonResponse("error", "Missing JSON data");
+    return;
+  }
+  
+  AsyncWebParameter* p = request->getParam("plain", true);
+  String jsonData = p->value();
+  
   // Validate that we received data
   if (jsonData.length() == 0) {
     sendJsonResponse("error", "Missing JSON data");
