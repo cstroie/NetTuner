@@ -1994,7 +1994,7 @@ void setupWebServer() {
   server.serveStatic("/wifi", SPIFFS, "/wifi.html");
   server.serveStatic("/config", SPIFFS, "/config.html");
   server.serveStatic("/about", SPIFFS, "/about.html");
-  server.serveStatic("/", SPIFFS, "/");
+  server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html");
   // Handle root path - redirect to main web interface
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->redirect("/player");
