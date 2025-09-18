@@ -36,10 +36,10 @@ public:
    * @brief Construct a new Touch Button object
    * @param touchPin The touch pin number
    * @param touchThreshold The touch threshold value (default 40)
-   * @param debounceMs The debounce time in milliseconds (default 50)
+   * @param debounceMs The debounce time in milliseconds (default 100)
    * @param useInterrupt Whether to use interrupt mode (default false)
    */
-  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 50, bool useInterrupt = false);
+  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 100, bool useInterrupt = false);
 
   /**
    * @brief Handle touch button state
@@ -82,8 +82,5 @@ public:
    */
   static void IRAM_ATTR handleInterrupt();
 };
-
-// Global pointer for ISR access
-extern TouchButton* touchButtonInstance;
 
 #endif // TOUCH_H
