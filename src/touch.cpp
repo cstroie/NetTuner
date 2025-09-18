@@ -76,9 +76,17 @@ uint16_t TouchButton::getTouchValue() {
 }
 
 void IRAM_ATTR TouchButton::handleInterrupt() {
-  // In interrupt mode, simply set the flag on the global instance
+  // In interrupt mode, set the flag on the global instance with debounce
   // The main loop will need to check wasPressed() to handle the event
   if (touchButtonInstance) {
-    touchButtonInstance->pressedFlag = true;
+    // Simple debounce using micros() in ISR context
+    static volatile unsigned long lastInterruptTime = 0;
+    unsigned long currentInterruptTime = micros();
+    
+    // Debounce for 50ms (50000 microseconds)
+    if ((currentInterruptTime - lastInterruptTime) > 50000) {
+      touchButtonInstance->pressedFlag = true;
+      lastInterruptTime = currentInterruptTime;
+    }
   }
 }
