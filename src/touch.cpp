@@ -27,7 +27,7 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
   if (useInterrupt) {
     // Set this instance as the global instance for ISR access
     touchButtonInstance = this;
-    // Configure touch interrupt
+    // Configure touch interrupt to trigger when touch value goes below threshold
     touchAttachInterrupt(pin, handleInterrupt, threshold);
   }
 }
@@ -39,11 +39,14 @@ void TouchButton::handle() {
   unsigned long currentTime = millis();
   // Check if touch value is below threshold (touched)
   bool currentState = (touchValue < threshold);
-  // Debounce the button press
+  
+  // Reset debounce timer when state changes
   if (currentState != lastState) {
     lastPressTime = currentTime;
   }
-  // If state has been stable for debounce time
+  
+  // Process button state after debounce period has elapsed
+  // This ensures stable readings and prevents multiple detections
   if ((currentTime - lastPressTime) > debounceTime) {
     // If button is pressed and we haven't handled this press yet
     if (currentState && !pressedFlag) {
@@ -61,7 +64,7 @@ void TouchButton::handle() {
 bool TouchButton::wasPressed() {
   // Store current flag state
   bool result = pressedFlag;
-  // Clear flag to prevent reprocessing
+  // Clear flag to prevent reprocessing (one-shot detection)
   pressedFlag = false;
   // Return previous flag state
   return result;
@@ -74,10 +77,12 @@ uint16_t TouchButton::getTouchValue() {
 void IRAM_ATTR TouchButton::handleInterrupt() {
   unsigned long currentTime = millis();
   if (touchButtonInstance) {
-    // Debounce
+    // Implement debouncing in ISR to prevent multiple interrupt triggers
+    // Only set pressed flag if enough time has passed since last press
     if ((currentTime - touchButtonInstance->lastPressTime) > touchButtonInstance->debounceTime) {
       touchButtonInstance->pressedFlag = true;
     }
+    // Update last press time to current time for debouncing
     touchButtonInstance->lastPressTime = currentTime;
   }
 }

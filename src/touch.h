@@ -44,24 +44,41 @@ public:
   /**
    * @brief Handle touch button state
    * This function should be called regularly in the main loop
+   * 
+   * This method implements debouncing logic to prevent multiple detections
+   * from a single physical touch due to electrical noise or unstable readings.
+   * It tracks the state changes and only registers a press after the state
+   * has been stable for the configured debounce time.
    */
   void handle();
 
   /**
    * @brief Check if the button was pressed
    * @return true if button was pressed, false otherwise
+   * 
+   * This method implements a one-shot detection mechanism. Once a press is
+   * detected, it returns true only once until the button is released and
+   * pressed again. This prevents continuous detection while the button
+   * is held down.
    */
   bool wasPressed();
 
   /**
    * @brief Get the current touch value
    * @return Current touch value
+   * 
+   * This method reads the raw capacitance value from the touch pin.
+   * Lower values indicate stronger touch detection.
    */
   uint16_t getTouchValue();
 
   /**
    * @brief Interrupt service routine for touch button
    * This function should be called from the ISR
+   * 
+   * This ISR is triggered when the touch pin value goes below the configured
+   * threshold. It implements debouncing and sets the pressed flag for the
+   * main code to process.
    */
   static void IRAM_ATTR handleInterrupt();
 };
