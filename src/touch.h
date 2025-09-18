@@ -44,7 +44,6 @@ public:
   /**
    * @brief Handle touch button state
    * This function should be called regularly in the main loop
-   * Only needed when not using interrupt mode
    */
   void handle();
 
@@ -64,7 +63,7 @@ public:
    * @brief Interrupt service routine for touch button
    * This function should be called from the ISR
    */
-  void IRAM_ATTR handleInterrupt();
+  static void IRAM_ATTR handleInterrupt();
 };
 
 // Global pointer for ISR access

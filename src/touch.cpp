@@ -28,18 +28,11 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
     // Set this instance as the global instance for ISR access
     touchButtonInstance = this;
     // Configure touch interrupt
-    touchAttachInterrupt(pin, []() {
-      if (touchButtonInstance) {
-        touchButtonInstance->handleInterrupt();
-      }
-    }, threshold);
+    touchAttachInterrupt(pin, handleInterrupt, threshold);
   }
 }
 
 void TouchButton::handle() {
-  // Only process in polling mode
-  if (useInterrupt) return;
-
   // Read current touch value
   uint16_t touchValue = touchRead(pin);
 
@@ -83,7 +76,10 @@ uint16_t TouchButton::getTouchValue() {
 }
 
 void IRAM_ATTR TouchButton::handleInterrupt() {
-  // In interrupt mode, simply set the flag
-  // The main loop will need to check wasPressed() to handle the event
-  pressedFlag = true;
+  // In interrupt mode, we need to implement a simple debounce mechanism
+  // Since we can't use millis() in ISR, we'll just set the flag
+  // The main loop will need to properly debounce in handle()
+  if (!pressedFlag) {
+    pressedFlag = true;
+  }
 }
