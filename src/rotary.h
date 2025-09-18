@@ -27,6 +27,7 @@ class RotaryEncoder;
 // Function declarations
 void setupRotaryEncoder();
 void rotaryISR();
+void rotarySwISR();
 
 /**
  * @brief Rotary Encoder Handler Class

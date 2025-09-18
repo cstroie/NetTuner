@@ -31,6 +31,14 @@ void rotaryISR() {
 }
 
 /**
+ * @brief Interrupt service routine for rotary switch button
+ * Handles rotary switch button press events
+ */
+void rotarySwISR() {
+  rotaryEncoder.handleButtonPress();
+}
+
+/**
  * @brief Initialize rotary encoder hardware
  * Configures pins and attaches interrupt handlers for the rotary encoder
  * This function sets up the rotary encoder pins with internal pull-up resistors
@@ -39,14 +47,12 @@ void rotaryISR() {
 void setupRotaryEncoder() {
   // Configure rotary encoder pins with internal pull-up resistors
   pinMode(config.rotary_clk, INPUT_PULLUP);   // Enable internal pull-up resistor
-  pinMode(config.rotary_dt, INPUT_PULLUP);    // Enable internal pull-up resistor
-  pinMode(config.rotary_sw, INPUT_PULLUP);    // Enable internal pull-up resistor
+  pinMode(config.rotary_dt,  INPUT_PULLUP);   // Enable internal pull-up resistor
+  pinMode(config.rotary_sw,  INPUT_PULLUP);   // Enable internal pull-up resistor
   // Attach interrupt handler for rotary encoder rotation
   attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
   // Attach interrupt handler for rotary encoder button press
-  attachInterrupt(digitalPinToInterrupt(config.rotary_sw), []() {
-    rotaryEncoder.handleButtonPress();
-  }, FALLING);
+  attachInterrupt(digitalPinToInterrupt(config.rotary_sw), rotarySwISR, FALLING);
 }
 
 /**
@@ -65,15 +71,12 @@ void setupRotaryEncoder() {
  */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
-
   // Debounce rotary encoder (ignore if less than 10ms since last event)
   if (currentTime - lastRotaryTime < 10) {
     return;
   }
-  
   int CLK = digitalRead(config.rotary_clk);  // Read clock signal
   int DT = digitalRead(config.rotary_dt);    // Read data signal
-  
   // Only process when CLK transitions from LOW to HIGH (rising edge detection)
   if (CLK == HIGH && lastCLK == LOW) {
     // Determine rotation direction based on DT state at the time of CLK rising edge
@@ -104,7 +107,6 @@ void RotaryEncoder::handleRotation() {
 void RotaryEncoder::handleButtonPress() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-
   // Debounce the button press (ignore if less than 100ms since last press)
   // This prevents multiple detections from a single physical button press
   // due to mechanical switch bouncing

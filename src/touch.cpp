@@ -35,18 +35,14 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
 void TouchButton::handle() {
   // Read current touch value
   uint16_t touchValue = touchRead(pin);
-
   // Get current time
   unsigned long currentTime = millis();
-
   // Check if touch value is below threshold (touched)
   bool currentState = (touchValue < threshold);
-
   // Debounce the button press
   if (currentState != lastState) {
     lastPressTime = currentTime;
   }
-
   // If state has been stable for debounce time
   if ((currentTime - lastPressTime) > debounceTime) {
     // If button is pressed and we haven't handled this press yet
@@ -58,16 +54,16 @@ void TouchButton::handle() {
       pressedFlag = false;
     }
   }
-
   // Save current state for next iteration
   lastState = currentState;
 }
 
 bool TouchButton::wasPressed() {
-  bool result = pressedFlag;  // Check if press was detected
-  if (result) {
-    pressedFlag = false;  // Clear flag to prevent reprocessing
-  }
+  // Store current flag state
+  bool result = pressedFlag;
+  // Clear flag to prevent reprocessing
+  pressedFlag = false;
+  // Return previous flag state
   return result;
 }
 
@@ -76,17 +72,12 @@ uint16_t TouchButton::getTouchValue() {
 }
 
 void IRAM_ATTR TouchButton::handleInterrupt() {
-  // In interrupt mode, set the flag on the global instance with debounce
-  // The main loop will need to check wasPressed() to handle the event
+  unsigned long currentTime = millis();
   if (touchButtonInstance) {
-    // Simple debounce using micros() in ISR context
-    static volatile unsigned long lastInterruptTime = 0;
-    unsigned long currentInterruptTime = micros();
-    
-    // Debounce for 50ms (50000 microseconds)
-    if ((currentInterruptTime - lastInterruptTime) > 50000) {
+    // Debounce
+    if ((currentTime - touchButtonInstance->lastPressTime) > touchButtonInstance->debounceTime) {
       touchButtonInstance->pressedFlag = true;
-      lastInterruptTime = currentInterruptTime;
     }
+    touchButtonInstance->lastPressTime = currentTime;
   }
 }

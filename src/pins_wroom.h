@@ -31,7 +31,7 @@
 #define DEFAULT_TOUCH_NEXT       13  ///< Touch button next/volume-up pin
 #define DEFAULT_TOUCH_PREV       14  ///< Touch button previous/volume-down pin
 #define DEFAULT_TOUCH_THRESHOLD  40  ///< Touch threshold value
-#define DEFAULT_TOUCH_DEBOUNCE   50  ///< Touch debounce time in milliseconds
+#define DEFAULT_TOUCH_DEBOUNCE  100  ///< Touch debounce time in milliseconds
 #define DEFAULT_BOARD_BUTTON      0  ///< ESP32 board button pin (with internal pull-up resistor)
 #define DEFAULT_DISPLAY_SDA      21  ///< OLED display SDA pin
 #define DEFAULT_DISPLAY_SCL      22  ///< OLED display SCL pin

@@ -23,13 +23,13 @@
 
 class TouchButton {
 private:
-  uint8_t pin;
-  uint16_t threshold;
-  bool lastState;
-  unsigned long lastPressTime;
-  volatile bool pressedFlag;
-  unsigned long debounceTime;  // Configurable debounce time
-  bool useInterrupt;           // Flag to indicate if interrupt mode is used
+  uint8_t pin;                          // Touch pin number
+  uint16_t threshold;                   // Touch threshold value
+  bool lastState;                       // Last stable state
+  unsigned long lastPressTime;          // Last state change time for debouncing
+  volatile bool pressedFlag;            // Flag indicating button press detected
+  unsigned long debounceTime;           // Configurable debounce time
+  bool useInterrupt;                    // Flag to indicate if interrupt mode is used
 
 public:
   /**

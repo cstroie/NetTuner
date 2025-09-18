@@ -629,44 +629,6 @@ void saveWiFiCredentials() {
 
 
 /**
- * @brief Load configuration from SPIFFS
- * This function reads configuration from config.json in SPIFFS
- */
-void loadConfig() {
-  // Parse the JSON document
-  DynamicJsonDocument doc(1024);
-  if (!readJsonFile("/config.json", 1024, doc)) {
-    Serial.println("Config file not found, using defaults");
-    // Initialize config with default values
-    config.i2s_dout = DEFAULT_I2S_DOUT;
-    config.i2s_bclk = DEFAULT_I2S_BCLK;
-    config.i2s_lrc = DEFAULT_I2S_LRC;
-    config.led_pin = DEFAULT_LED_PIN;
-    config.rotary_clk = DEFAULT_ROTARY_CLK;
-    config.rotary_dt = DEFAULT_ROTARY_DT;
-    config.rotary_sw = DEFAULT_ROTARY_SW;
-    config.board_button = DEFAULT_BOARD_BUTTON;
-    config.display_sda = DEFAULT_DISPLAY_SDA;
-    config.display_scl = DEFAULT_DISPLAY_SCL;
-    config.display_type = 0;
-    config.display_address = DEFAULT_DISPLAY_ADDR;
-    config.display_timeout = 30;
-    config.touch_play = DEFAULT_TOUCH_PLAY;
-    config.touch_next = DEFAULT_TOUCH_NEXT;
-    config.touch_prev = DEFAULT_TOUCH_PREV;
-    config.touch_threshold = DEFAULT_TOUCH_THRESHOLD;
-    config.touch_debounce = DEFAULT_TOUCH_DEBOUNCE;
-    // Save the default configuration to file
-    saveConfig();
-  } else {
-    // Load configuration values, using defaults for missing values
-    extractConfigFromJson(doc);
-    // Print loaded configuration
-    Serial.println("Loaded configuration from SPIFFS");
-  }
-}
-
-/**
  * @brief Extract configuration values from JSON document
  * Helper function to extract configuration values from a JSON document
  * @param doc Reference to the JSON document to extract from
@@ -716,6 +678,45 @@ void populateConfigJson(DynamicJsonDocument& doc) {
   doc["touch_prev"] = config.touch_prev;
   doc["touch_threshold"] = config.touch_threshold;
   doc["touch_debounce"] = config.touch_debounce;
+}
+
+/**
+ * @brief Load configuration from SPIFFS
+ * This function reads configuration from config.json in SPIFFS
+ */
+void loadConfig() {
+  // Parse the JSON document
+  DynamicJsonDocument doc(1024);
+  // Initialize config with default values
+  config.i2s_dout = DEFAULT_I2S_DOUT;
+  config.i2s_bclk = DEFAULT_I2S_BCLK;
+  config.i2s_lrc = DEFAULT_I2S_LRC;
+  config.led_pin = DEFAULT_LED_PIN;
+  config.rotary_clk = DEFAULT_ROTARY_CLK;
+  config.rotary_dt = DEFAULT_ROTARY_DT;
+  config.rotary_sw = DEFAULT_ROTARY_SW;
+  config.board_button = DEFAULT_BOARD_BUTTON;
+  config.display_sda = DEFAULT_DISPLAY_SDA;
+  config.display_scl = DEFAULT_DISPLAY_SCL;
+  config.display_type = 0;
+  config.display_address = DEFAULT_DISPLAY_ADDR;
+  config.display_timeout = 30;
+  config.touch_play = DEFAULT_TOUCH_PLAY;
+  config.touch_next = DEFAULT_TOUCH_NEXT;
+  config.touch_prev = DEFAULT_TOUCH_PREV;
+  config.touch_threshold = DEFAULT_TOUCH_THRESHOLD;
+  config.touch_debounce = DEFAULT_TOUCH_DEBOUNCE;
+  // Read configuration from SPIFFS
+  if (!readJsonFile("/config.json", 1024, doc)) {
+    Serial.println("Config file not found, using defaults");
+    // Save the default configuration to file
+    saveConfig();
+  } else {
+    // Load configuration values, using defaults for missing values
+    extractConfigFromJson(doc);
+    // Print loaded configuration
+    Serial.println("Loaded configuration from SPIFFS");
+  }
 }
 
 /**
@@ -830,7 +831,8 @@ void boardButtonISR() {
  */
 void handleBoardButton() {
   // Only handle board button if it's configured (not negative)
-  if (config.board_button < 0) {
+  // and not the same as rotary switch
+  if (config.board_button < 0 && config.board_button != config.rotary_sw) {
     return;
   }
   // Check if button was pressed (detected by interrupt)
@@ -2100,16 +2102,13 @@ bool connectToWiFi() {
  * This is the main application loop that runs continuously after setup()
  */
 void loop() {
-  handleRotary();          // Process rotary encoder input
-  //if (touchPlay) touchPlay->handle();  // Process touch play button
-  //if (touchNext) touchNext->handle();  // Process touch next button
-  //if (touchPrev) touchPrev->handle();  // Process touch previous button
-  handleTouch();           // Process touch button actions
-  server.handleClient();   // Process incoming web requests
-  webSocket.loop();        // Process WebSocket events
-  mpdInterface.handleClient();       // Process MPD commands
-  handleBoardButton();     // Process board button input
-  
+  server.handleClient();         // Process incoming web requests
+  webSocket.loop();              // Process WebSocket events
+  mpdInterface.handleClient();   // Process MPD commands
+  handleBoardButton();           // Process board button input
+  handleRotary();                // Process rotary encoder input
+  handleTouch();                 // Process touch button actions
+
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
   if (millis() - lastDisplayUpdate > 500) {  // Update every 500ms for smooth scrolling
@@ -2218,8 +2217,8 @@ void setup() {
     pinMode(config.led_pin, OUTPUT);
     digitalWrite(config.led_pin, LOW);  // Turn off LED initially
   }
-  // Initialize board button with pull-up resistor if configured
-  if (config.board_button >= 0) {
+  // Initialize board button with pull-up resistor if configured and different from rotary switch
+  if (config.board_button >= 0 && config.board_button != config.rotary_sw) {
     pinMode(config.board_button, INPUT_PULLUP);
     // Attach interrupt handler for board button press
     attachInterrupt(digitalPinToInterrupt(config.board_button), boardButtonISR, FALLING);
@@ -2249,6 +2248,7 @@ void setup() {
   if (config.touch_prev >= 0) {
     touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce, true);
   }
+
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   // Connect to WiFi with error handling
