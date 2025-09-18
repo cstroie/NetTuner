@@ -73,7 +73,6 @@ void TouchButton::handle() {
   if (currentState != lastState) {
     lastPressTime = currentTime;
   }
-  
   // Process button state after debounce period has elapsed
   // This ensures stable readings and prevents multiple detections
   if ((currentTime - lastPressTime) > debounceTime) {
