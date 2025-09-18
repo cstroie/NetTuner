@@ -87,7 +87,6 @@ void TouchButton::handle() {
     unsigned long currentTime = millis();
     // Check if touch value is below threshold (touched)
     bool currentState = (touchValue < threshold);
-    
     // Reset debounce timer when state changes
     if (currentState != lastState) {
       lastPressTime = currentTime;
