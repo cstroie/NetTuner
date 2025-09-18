@@ -660,27 +660,36 @@ void loadConfig() {
     saveConfig();
   } else {
     // Load configuration values, using defaults for missing values
-    config.i2s_dout = doc.containsKey("i2s_dout") ? doc["i2s_dout"] : DEFAULT_I2S_DOUT;
-    config.i2s_bclk = doc.containsKey("i2s_bclk") ? doc["i2s_bclk"] : DEFAULT_I2S_BCLK;
-    config.i2s_lrc = doc.containsKey("i2s_lrc") ? doc["i2s_lrc"] : DEFAULT_I2S_LRC;
-    config.led_pin = doc.containsKey("led_pin") ? doc["led_pin"] : DEFAULT_LED_PIN;
-    config.rotary_clk = doc.containsKey("rotary_clk") ? doc["rotary_clk"] : DEFAULT_ROTARY_CLK;
-    config.rotary_dt = doc.containsKey("rotary_dt") ? doc["rotary_dt"] : DEFAULT_ROTARY_DT;
-    config.rotary_sw = doc.containsKey("rotary_sw") ? doc["rotary_sw"] : DEFAULT_ROTARY_SW;
-    config.board_button = doc.containsKey("board_button") ? doc["board_button"] : DEFAULT_BOARD_BUTTON;
-    config.display_sda = doc.containsKey("display_sda") ? doc["display_sda"] : DEFAULT_DISPLAY_SDA;
-    config.display_scl = doc.containsKey("display_scl") ? doc["display_scl"] : DEFAULT_DISPLAY_SCL;
-    config.display_type = doc.containsKey("display_type") ? doc["display_type"] : 0;
-    config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
-    config.display_timeout = doc.containsKey("display_timeout") ? doc["display_timeout"] : 30;
-    config.touch_play = doc.containsKey("touch_play") ? doc["touch_play"] : DEFAULT_TOUCH_PLAY;
-    config.touch_next = doc.containsKey("touch_next") ? doc["touch_next"] : DEFAULT_TOUCH_NEXT;
-    config.touch_prev = doc.containsKey("touch_prev") ? doc["touch_prev"] : DEFAULT_TOUCH_PREV;
-    config.touch_threshold = doc.containsKey("touch_threshold") ? doc["touch_threshold"] : DEFAULT_TOUCH_THRESHOLD;
-    config.touch_debounce = doc.containsKey("touch_debounce") ? doc["touch_debounce"] : DEFAULT_TOUCH_DEBOUNCE;
+    extractConfigFromJson(doc);
     // Print loaded configuration
     Serial.println("Loaded configuration from SPIFFS");
   }
+}
+
+/**
+ * @brief Extract configuration values from JSON document
+ * Helper function to extract configuration values from a JSON document
+ * @param doc Reference to the JSON document to extract from
+ */
+void extractConfigFromJson(DynamicJsonDocument& doc) {
+  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
+  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
+  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
+  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
+  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
+  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
+  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
+  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
+  if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
+  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
+  if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
+  if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
+  if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
+  if (doc.containsKey("touch_threshold")) config.touch_threshold = doc["touch_threshold"];
+  if (doc.containsKey("touch_debounce")) config.touch_debounce = doc["touch_debounce"];
 }
 
 /**
@@ -775,24 +784,7 @@ void handlePostConfig() {
     return;
   }
   // Update configuration values
-  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
-  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
-  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
-  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
-  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
-  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
-  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
-  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
-  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
-  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
-  if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
-  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
-  if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
-  if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
-  if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
-  if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
-  if (doc.containsKey("touch_threshold")) config.touch_threshold = doc["touch_threshold"];
-  if (doc.containsKey("touch_debounce")) config.touch_debounce = doc["touch_debounce"];
+  extractConfigFromJson(doc);
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
