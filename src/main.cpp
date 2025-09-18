@@ -674,12 +674,11 @@ void loadConfig() {
 }
 
 /**
- * @brief Save configuration to SPIFFS
- * This function saves the current configuration to config.json in SPIFFS
+ * @brief Populate a JSON document with current configuration
+ * Helper function to fill a JSON document with configuration values
+ * @param doc Reference to the JSON document to populate
  */
-void saveConfig() {
-  // Create a JSON document
-  DynamicJsonDocument doc(1024);
+void populateConfigJson(DynamicJsonDocument& doc) {
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
   doc["i2s_lrc"] = config.i2s_lrc;
@@ -698,6 +697,16 @@ void saveConfig() {
   doc["touch_prev"] = config.touch_prev;
   doc["touch_threshold"] = config.touch_threshold;
   doc["touch_debounce"] = config.touch_debounce;
+}
+
+/**
+ * @brief Save configuration to SPIFFS
+ * This function saves the current configuration to config.json in SPIFFS
+ */
+void saveConfig() {
+  // Create a JSON document
+  DynamicJsonDocument doc(1024);
+  populateConfigJson(doc);
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/config.json", doc)) {
     Serial.println("Saved configuration to SPIFFS");
@@ -717,24 +726,7 @@ void handleGetConfig() {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(1024);
   // Populate JSON document with configuration values
-  doc["i2s_dout"] = config.i2s_dout;
-  doc["i2s_bclk"] = config.i2s_bclk;
-  doc["i2s_lrc"] = config.i2s_lrc;
-  doc["led_pin"] = config.led_pin;
-  doc["rotary_clk"] = config.rotary_clk;
-  doc["rotary_dt"] = config.rotary_dt;
-  doc["rotary_sw"] = config.rotary_sw;
-  doc["board_button"] = config.board_button;
-  doc["display_sda"] = config.display_sda;
-  doc["display_scl"] = config.display_scl;
-  doc["display_type"] = config.display_type;
-  doc["display_address"] = config.display_address;
-  doc["display_timeout"] = config.display_timeout;
-  doc["touch_play"] = config.touch_play;
-  doc["touch_next"] = config.touch_next;
-  doc["touch_prev"] = config.touch_prev;
-  doc["touch_threshold"] = config.touch_threshold;
-  doc["touch_debounce"] = config.touch_debounce;
+  populateConfigJson(doc);
   // Add display types information
   JsonArray displays = doc.createNestedArray("displays");
   for (int i = 0; i < getDisplayTypeCount(); i++) {
