@@ -19,6 +19,30 @@
 #include "touch.h"
 #include "main.h"
 
+// Static array to hold pointers to TouchButton instances for ISR access
+static TouchButton* touchButtonInstances[TOUCH_PIN_COUNT] = {nullptr};
+static int instanceCount = 0;
+
+/**
+ * @brief Global interrupt handler that routes to the correct TouchButton instance
+ */
+void IRAM_ATTR handleTouchInterrupt() {
+  // Since ESP32 touch interrupts don't identify which pin triggered,
+  // we need to check all registered instances to see which one triggered
+  for (int i = 0; i < instanceCount; i++) {
+    if (touchButtonInstances[i] != nullptr) {
+      // Read the touch value for this pin
+      uint16_t touchValue = touchRead(touchButtonInstances[i]->pin);
+      // If the touch value is below the threshold, this is the button that triggered
+      if (touchValue < touchButtonInstances[i]->threshold) {
+        touchButtonInstances[i]->handleInterrupt();
+        // Break after handling one since typically only one button is touched at a time
+        break;
+      }
+    }
+  }
+}
+
 /**
  * @brief Construct a new Touch Button object
  * 
@@ -35,8 +59,13 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
   : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false), debounceTime(debounceMs), useInterrupt(useInterrupt) {
   if (useInterrupt) {
-    // Configure touch interrupt to trigger when touch value goes below threshold
-    touchAttachInterrupt(pin, TouchButton::handleTouchInterrupt, threshold);
+    // Register this instance in the global array
+    if (instanceCount < TOUCH_PIN_COUNT) {
+      touchButtonInstances[instanceCount] = this;
+      instanceCount++;
+      // Configure touch interrupt to trigger when touch value goes below threshold
+      touchAttachInterrupt(pin, handleTouchInterrupt, threshold);
+    }
   }
 }
 
@@ -133,11 +162,12 @@ uint16_t TouchButton::getTouchValue() {
  * instruction RAM for faster execution, which is critical for ISRs.
  */
 void IRAM_ATTR TouchButton::handleInterrupt() {
-  // Since we can't directly access the instance from a static method,
-  // we need to find the instance that corresponds to the pin that triggered the interrupt
-  // However, the ESP32 touch interrupt system doesn't provide a direct way to identify
-  // which pin triggered the interrupt. We'll use the polling approach instead.
-  
-  // For now, we'll just set a global flag that can be checked in the main loop
-  // This approach requires modifying the design to work properly
+  unsigned long currentTime = millis();
+  // Implement debouncing in ISR to prevent multiple interrupt triggers
+  // Only set pressed flag if enough time has passed since last press
+  if ((currentTime - lastPressTime) > debounceTime) {
+    pressedFlag = true;
+  }
+  // Update last press time to current time for debouncing
+  lastPressTime = currentTime;
 }
