@@ -651,6 +651,11 @@ void loadConfig() {
     config.display_type = 0;
     config.display_address = DEFAULT_DISPLAY_ADDR;
     config.display_timeout = 30;
+    config.touch_play = DEFAULT_TOUCH_PLAY;
+    config.touch_next = DEFAULT_TOUCH_NEXT;
+    config.touch_prev = DEFAULT_TOUCH_PREV;
+    config.touch_threshold = DEFAULT_TOUCH_THRESHOLD;
+    config.touch_debounce = DEFAULT_TOUCH_DEBOUNCE;
     // Save the default configuration to file
     saveConfig();
   } else {
@@ -668,6 +673,11 @@ void loadConfig() {
     config.display_type = doc.containsKey("display_type") ? doc["display_type"] : 0;
     config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
     config.display_timeout = doc.containsKey("display_timeout") ? doc["display_timeout"] : 30;
+    config.touch_play = doc.containsKey("touch_play") ? doc["touch_play"] : DEFAULT_TOUCH_PLAY;
+    config.touch_next = doc.containsKey("touch_next") ? doc["touch_next"] : DEFAULT_TOUCH_NEXT;
+    config.touch_prev = doc.containsKey("touch_prev") ? doc["touch_prev"] : DEFAULT_TOUCH_PREV;
+    config.touch_threshold = doc.containsKey("touch_threshold") ? doc["touch_threshold"] : DEFAULT_TOUCH_THRESHOLD;
+    config.touch_debounce = doc.containsKey("touch_debounce") ? doc["touch_debounce"] : DEFAULT_TOUCH_DEBOUNCE;
     // Print loaded configuration
     Serial.println("Loaded configuration from SPIFFS");
   }
