@@ -696,6 +696,8 @@ void saveConfig() {
   doc["touch_play"] = config.touch_play;
   doc["touch_next"] = config.touch_next;
   doc["touch_prev"] = config.touch_prev;
+  doc["touch_threshold"] = config.touch_threshold;
+  doc["touch_debounce"] = config.touch_debounce;
   // Save the JSON document to SPIFFS using helper function
   if (writeJsonFile("/config.json", doc)) {
     Serial.println("Saved configuration to SPIFFS");
@@ -820,7 +822,6 @@ void audioTask(void *pvParameters) {
 void boardButtonISR() {
   static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
-  
   // Debounce the button press (ignore if less than 50ms since last press)
   if (interruptTime - lastInterruptTime > 50) {
     boardButtonPressed = true;  // Set flag to indicate button press detected
@@ -2106,9 +2107,9 @@ bool connectToWiFi() {
  */
 void loop() {
   handleRotary();          // Process rotary encoder input
-  if (touchPlay) touchPlay->handle();  // Process touch play button
-  if (touchNext) touchNext->handle();  // Process touch next button
-  if (touchPrev) touchPrev->handle();  // Process touch previous button
+  //if (touchPlay) touchPlay->handle();  // Process touch play button
+  //if (touchNext) touchNext->handle();  // Process touch next button
+  //if (touchPrev) touchPrev->handle();  // Process touch previous button
   handleTouch();           // Process touch button actions
   server.handleClient();   // Process incoming web requests
   webSocket.loop();        // Process WebSocket events
@@ -2246,13 +2247,13 @@ void setup() {
   
   // Initialize touch buttons
   if (config.touch_play >= 0) {
-    touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
+    touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce, true);
   }
   if (config.touch_next >= 0) {
-    touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce);
+    touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce, true);
   }
   if (config.touch_prev >= 0) {
-    touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce);
+    touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce, true);
   }
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
