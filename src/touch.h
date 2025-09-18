@@ -27,8 +27,9 @@ private:
   uint16_t threshold;
   bool lastState;
   unsigned long lastPressTime;
-  bool pressedFlag;
+  volatile bool pressedFlag;
   unsigned long debounceTime;  // Configurable debounce time
+  bool useInterrupt;           // Flag to indicate if interrupt mode is used
 
 public:
   /**
@@ -36,12 +37,14 @@ public:
    * @param touchPin The touch pin number
    * @param touchThreshold The touch threshold value (default 40)
    * @param debounceMs The debounce time in milliseconds (default 50)
+   * @param useInterrupt Whether to use interrupt mode (default false)
    */
-  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 50);
+  TouchButton(uint8_t touchPin, uint16_t touchThreshold = 40, unsigned long debounceMs = 50, bool useInterrupt = false);
 
   /**
    * @brief Handle touch button state
    * This function should be called regularly in the main loop
+   * Only needed when not using interrupt mode
    */
   void handle();
 
@@ -56,6 +59,15 @@ public:
    * @return Current touch value
    */
   uint16_t getTouchValue();
+
+  /**
+   * @brief Interrupt service routine for touch button
+   * This function should be called from the ISR
+   */
+  void IRAM_ATTR handleInterrupt();
 };
+
+// Global pointer for ISR access
+extern TouchButton* touchButtonInstance;
 
 #endif // TOUCH_H
