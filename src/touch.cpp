@@ -21,6 +21,18 @@
 // Global pointer for ISR access
 TouchButton* touchButtonInstance = nullptr;
 
+/**
+ * @brief Construct a new Touch Button object
+ * 
+ * Initializes the touch button with the specified pin and parameters.
+ * If interrupt mode is enabled, configures the touch interrupt to trigger
+ * when the touch value goes below the threshold.
+ * 
+ * @param touchPin The touch pin number
+ * @param touchThreshold The touch threshold value (default 40)
+ * @param debounceMs The debounce time in milliseconds (default 100)
+ * @param useInterrupt Whether to use interrupt mode (default false)
+ */
 TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned long debounceMs, bool useInterrupt)
   : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false), debounceTime(debounceMs), useInterrupt(useInterrupt) {
@@ -32,6 +44,23 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
   }
 }
 
+/**
+ * @brief Handle touch button state
+ * 
+ * This function should be called regularly in the main loop to process
+ * the touch button state. It implements debouncing logic to prevent 
+ * multiple detections from a single physical touch due to electrical 
+ * noise or unstable readings. It tracks the state changes and only 
+ * registers a press after the state has been stable for the configured 
+ * debounce time.
+ * 
+ * The debouncing algorithm works by:
+ * 1. Reading the current touch value
+ * 2. Comparing it with the threshold to determine if the button is touched
+ * 3. Resetting the debounce timer whenever the state changes
+ * 4. Only processing the state after the debounce period has elapsed
+ * 5. Setting the pressed flag when a valid press is detected
+ */
 void TouchButton::handle() {
   // Read current touch value
   uint16_t touchValue = touchRead(pin);
@@ -61,6 +90,16 @@ void TouchButton::handle() {
   lastState = currentState;
 }
 
+/**
+ * @brief Check if the button was pressed
+ * 
+ * This method implements a one-shot detection mechanism. Once a press is
+ * detected, it returns true only once until the button is released and
+ * pressed again. This prevents continuous detection while the button
+ * is held down.
+ * 
+ * @return true if button was pressed, false otherwise
+ */
 bool TouchButton::wasPressed() {
   // Store current flag state
   bool result = pressedFlag;
@@ -70,10 +109,32 @@ bool TouchButton::wasPressed() {
   return result;
 }
 
+/**
+ * @brief Get the current touch value
+ * 
+ * This method reads the raw capacitance value from the touch pin.
+ * Lower values indicate stronger touch detection.
+ * 
+ * @return Current touch value
+ */
 uint16_t TouchButton::getTouchValue() {
   return touchRead(pin);
 }
 
+/**
+ * @brief Interrupt service routine for touch button
+ * 
+ * This ISR is triggered when the touch pin value goes below the configured
+ * threshold. It implements debouncing and sets the pressed flag for the
+ * main code to process.
+ * 
+ * The ISR implements debouncing by checking if enough time has passed
+ * since the last press before setting the pressed flag. This prevents
+ * multiple interrupt triggers from a single physical touch.
+ * 
+ * Note: This function is marked with IRAM_ATTR to ensure it runs from
+ * instruction RAM for faster execution, which is critical for ISRs.
+ */
 void IRAM_ATTR TouchButton::handleInterrupt() {
   unsigned long currentTime = millis();
   if (touchButtonInstance) {
