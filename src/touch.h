@@ -80,7 +80,7 @@ public:
    * threshold. It implements debouncing and sets the pressed flag for the
    * main code to process.
    */
-  static void IRAM_ATTR handleInterrupt();
+  void IRAM_ATTR handleInterrupt();
 };
 
 #endif // TOUCH_H
