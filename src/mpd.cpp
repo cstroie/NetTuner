@@ -1160,11 +1160,17 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     int volumeChangeMPD = map(abs(volumeChange), 0, 100, 0, 22);
     // If the volume change is less than 1 after mapping, use 1 to ensure a change
     if (volumeChangeMPD < 1) {
-      // Rewrite this to +1 or -1 based on original sign, AI!
+      // Use +1 or -1 based on original sign
       if (volumeChange > 0)
         volumeChangeMPD = 1;
       else if (volumeChange < 0)  
         volumeChangeMPD = -1;
+      else
+        volumeChangeMPD = 0;  // No change for zero input
+    } else {
+      // Apply the original sign to the mapped value
+      if (volumeChange < 0)
+        volumeChangeMPD = -volumeChangeMPD;
     }
     // Get current volume as percentage for MPD compatibility
     int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
