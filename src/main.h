@@ -71,7 +71,6 @@ extern Config config;
 // Constants
 #define MAX_WIFI_NETWORKS 5
 #define MAX_PLAYLIST_SIZE 20
-#define TOUCH_PIN_COUNT 3 // play, next, previous
 #define VALIDATE_URL(url) (url && (strncmp(url, "http://", 7) == 0 || strncmp(url, "https://", 8) == 0))
 
 // Global variables
