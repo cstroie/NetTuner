@@ -123,7 +123,11 @@ public:
   void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
-
+  
+  // Dirty flag management
+  void setDirty();
+  void resetDirty();
+  
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }
