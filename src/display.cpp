@@ -455,10 +455,10 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     // If we're playing, keep the display on
     if (isPlaying) {
         // Update activity time periodically during playback to prevent timeout
-        static unsigned long lastPlaybackActivitupdateLayout = 0;
-        if (currentTime - lastPlaybackActivitupdateLayout > 5000) { // Every 5 seconds
+        static unsigned long lastPlaybackActivityTime = 0;
+        if (currentTime - lastPlaybackActivityTime > 5000) { // Every 5 seconds
             lastActivityTime = currentTime;
-            lastPlaybackActivitupdateLayout = currentTime;
+            lastPlaybackActivityTime = currentTime;
         }
         if (!displayOn) {
             displayOn = true;
@@ -488,7 +488,7 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
 void Display::setActivityTime(unsigned long time) {
     lastActivityTime = time;
     // Also ensure the display is on when there's activity
-    display->turnOn();
+    this->turnOn();
 }
 
 /**
