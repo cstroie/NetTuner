@@ -1159,28 +1159,13 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     // Get volume change as value for MPD compatibility
     int volumeChangeMPD = map(abs(volumeChange), 0, 100, 0, 22);
     // If the volume change is less than 1 after mapping, use 1 to ensure a change
-    if (volumeChangeMPD < 1) {
-      // Use +1 or -1 based on original sign
-      if (volumeChange > 0)
-        volumeChangeMPD = 1;
-      else if (volumeChange < 0)  
-        volumeChangeMPD = -1;
-      else
-        volumeChangeMPD = 0;  // No change for zero input
-    } else {
-      // Apply the original sign to the mapped value
+    if (volumeChangeMPD < 1)
+      volumeChangeMPD = 1;
+    // Apply the original sign to the mapped value
       if (volumeChange < 0)
         volumeChangeMPD = -volumeChangeMPD;
-    }
-    // Get current volume as percentage for MPD compatibility
-    int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
-    // Apply change and clamp to 0-100 range
-    int newVolPercent = currentVolPercent + volumeChange;
-    if (newVolPercent < 0) newVolPercent = 0;
-    if (newVolPercent > 100) newVolPercent = 100;
-    // Convert back to 0-22 scale for ESP32-audioI2S and set
-    int newVolume = map(newVolPercent, 0, 100, 0, 22);
-    this->player.setVolume(newVolume);
+    // Apply the volume change
+    this->player.setVolume(this->player.getVolume() + volumeChangeMPD);
     updateDisplay();
     sendStatusToClients();  // Notify WebSocket clients of volume change
     mpdClient.print(mpdResponseOK());
@@ -1228,8 +1213,17 @@ void MPDInterface::handleSetVolCommand(const String& args) {
     int newVolume = parseValue(args);
     // Validate volume range (0-100 for MPD compatibility)
     if (newVolume >= 0 && newVolume <= 100) {
+      int mpdVol = map(this->player.getVolume(), 0, 22, 0, 100);
       // Convert from MPD's 0-100 scale to ESP32-audioI2S 0-22 scale
       int volume = map(newVolume, 0, 100, 0, 22);
+      // If the volume stays the same after mapping, ensure a change
+      if (volume == this->player.getVolume()) {
+        if (newVolume < mpdVol)
+          volume -= 1;
+        else if (newVolume > mpdVol)
+          volume += 1;
+      }
+      // Apply the new volume
       this->player.setVolume(volume);
       updateDisplay();
       sendStatusToClients();  // Notify WebSocket clients of volume change

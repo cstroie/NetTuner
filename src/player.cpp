@@ -53,12 +53,13 @@ void Player::setPlaylistIndex(int index) {
  * @param volume New volume level (0-22)
  */
 void Player::setVolume(int volume) {
-  playerState.volume = volume;
+  // Validate and set volume
+  playerState.volume = constrain(volume, 0, 22);
   // Mark state as dirty when volume changes
   setDirty();
   // Apply volume to audio output
   if (audio) {
-    audio->setVolume(volume);
+    audio->setVolume(playerState.volume);
   }
 }
 
