@@ -78,6 +78,10 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
       touchAttachInterrupt(pin, interruptHandlers[currentIndex], threshold);
       // Increment instance count for next instance
       instanceCount++;
+    } else {
+      // Warn if we've exceeded the maximum number of instances
+      Serial.printf("Warning: Maximum touch button instances (%d) exceeded. Button on pin %d will not use interrupts.\n", 
+                    TOUCH_PIN_COUNT, pin);
     }
   }
 }
