@@ -19,8 +19,6 @@
 #include "touch.h"
 #include "main.h"
 
-// Define the maximum number of touch pins
-#define TOUCH_PIN_COUNT 3
 
 // Static array to hold pointers to TouchButton instances for ISR access
 static TouchButton* touchButtonInstances[TOUCH_PIN_COUNT] = {nullptr};
@@ -74,10 +72,11 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
     // This prevents array overflow in touchButtonInstances
     // and ensures each instance has a unique interrupt handler
     if (instanceCount < TOUCH_PIN_COUNT) {
+      int currentIndex = instanceCount;
       // Register this instance in the global array
-      touchButtonInstances[instanceCount] = this;
+      touchButtonInstances[currentIndex] = this;
       // Configure touch interrupt to trigger when touch value goes below threshold
-      touchAttachInterrupt(pin, interruptHandlers[instanceCount], threshold);
+      touchAttachInterrupt(pin, interruptHandlers[currentIndex], threshold);
       // Increment instance count for next instance
       instanceCount++;
     }

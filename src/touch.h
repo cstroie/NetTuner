@@ -21,6 +21,9 @@
 
 #include <Arduino.h>
 
+// Define the maximum number of touch pins
+#define TOUCH_PIN_COUNT 3
+
 // Forward declaration of TouchButton class
 class TouchButton {
 private:
