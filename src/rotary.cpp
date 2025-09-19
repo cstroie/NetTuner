@@ -58,7 +58,7 @@ void setupRotaryEncoder() {
 /**
  * @brief Handle rotary encoder rotation
  * @details Processes rotation events by detecting CLK signal edges and 
- * determining rotation direction based on the DT signal state. Implements 5ms 
+ * determining rotation direction based on the DT signal state. Implements 10ms 
  * debouncing to prevent false readings from electrical noise.
  * 
  * The quadrature encoding works as follows:
@@ -75,7 +75,8 @@ void RotaryEncoder::handleRotation() {
   if (currentTime - lastRotaryTime < 10) {
     return;
   }
-  int DT = digitalRead(config.rotary_dt);    // Read data signal
+  // Read data signal
+  int DT = digitalRead(config.rotary_dt);
   // CLK is already LOW due to FALLING interrupt trigger
   // Determine rotation direction based on DT state at the time of CLK falling edge
   // In quadrature encoding, when CLK falls:
@@ -91,7 +92,7 @@ void RotaryEncoder::handleRotation() {
 
 /**
  * @brief Handle button press
- * @details Processes button press events with 50ms debouncing to prevent
+ * @details Processes button press events with 100ms debouncing to prevent
  * multiple detections from a single press. Sets an internal flag that can
  * be checked and cleared by wasButtonPressed().
  * 
@@ -106,9 +107,11 @@ void RotaryEncoder::handleButtonPress() {
   // This prevents multiple detections from a single physical button press
   // due to mechanical switch bouncing
   if (interruptTime - lastInterruptTime > 100) {
-    buttonPressedFlag = true;  // Set flag to indicate button press detected
+    // Set flag to indicate button press detected
+    buttonPressedFlag = true;
   }
-  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
+  // Update last interrupt time for debouncing
+  lastInterruptTime = interruptTime;
 }
 
 /**
@@ -144,6 +147,8 @@ void RotaryEncoder::setPosition(int pos) {
  */
 bool RotaryEncoder::wasButtonPressed() {
   bool result = buttonPressedFlag;  // Store current flag state
+  noInterrupts();
   buttonPressedFlag = false;        // Clear flag to prevent reprocessing
+  interrupts();
   return result;                    // Return previous flag state
 }
