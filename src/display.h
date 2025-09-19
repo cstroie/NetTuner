@@ -133,8 +133,32 @@ public:
      */
     void begin();
     
+    /**
+     * @brief Print text at specified position with alignment
+     * @param text The text to print
+     * @param x The x-coordinate for the text
+     * @param y The y-coordinate for the text
+     * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+     * 
+     * This function prints text at the specified position with the given alignment.
+     * It automatically selects the appropriate font based on available vertical space
+     * and handles text alignment (left, center, right). The function maintains a 
+     * lastY position to track vertical spacing and font selection.
+     */
     void printAt(const char* text, int x, int y, char align);
 
+    /**
+     * @brief Print text at specified position with alignment
+     * @param text The text to print (as a String)
+     * @param x The x-coordinate for the text
+     * @param y The y-coordinate for the text
+     * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+     * 
+     * This function prints text at the specified position with the given alignment.
+     * It automatically selects the appropriate font based on available vertical space
+     * and handles text alignment (left, center, right). The function maintains a 
+     * lastY position to track vertical spacing and font selection.
+     */
     void printAt(const String text, int x, int y, char align);
     
     /**
@@ -160,6 +184,12 @@ public:
      */
     void clear();
     
+    /**
+     * @brief Show the NetTuner logo on display
+     * 
+     * Displays the "NetTuner" logo centered on the screen using the predefined
+     * logo layout for the current display type.
+     */
     void showLogo();
     
     /**
