@@ -1584,7 +1584,6 @@ void MPDInterface::handleClient() {
         commandBuffer = "";
         return;
     }
-    
     // Handle new client connections
     if (mpdServer.hasClient()) {
         // Reject new connection if we already have one
@@ -1599,21 +1598,18 @@ void MPDInterface::handleClient() {
             }
             return;
         }
-        
         // Properly close existing client first
         if (mpdClient && mpdClient.connected()) {
             mpdClient.flush();
             delay(1);
             mpdClient.stop();
         }
-        
+        // Accept the new client connection
         mpdClient = mpdServer.available();
-        
         // Send MPD welcome message with error checking
         if (mpdClient && mpdClient.connected()) {
             mpdClient.print("OK MPD 0.23.0\n");
         }
-        
         // Reset all state variables
         inCommandList = false;
         commandListOK = false;
@@ -1621,7 +1617,6 @@ void MPDInterface::handleClient() {
         inIdleMode = false;
         commandBuffer = "";
     }
-    
     // Process client if connected
     if (mpdClient && mpdClient.connected()) {
         if (inIdleMode) {

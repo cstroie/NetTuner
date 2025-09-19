@@ -452,17 +452,16 @@ void Player::stopStream() {
 Audio* Player::setupAudioOutput() {
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
-  
   // Check if allocation succeeded
   if (audio == nullptr) {
     Serial.println("Error: Failed to allocate Audio object");
     return nullptr;
   }
-  
+  // Configure I2S pinout from settings
   audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
   #if defined(BOARD_HAS_PSRAM)
-  Serial.println("PSRAM found, using larger audio buffer");
+  Serial.println("PSRAM supported, using larger audio buffer");
   audio->setBufsize(8192, 2097152); // 8KB in RAM, 2MB in PSRAM
   #else
   Serial.println("PSRAM not supported on this board, using smaller audio buffer");

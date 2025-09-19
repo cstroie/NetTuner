@@ -108,7 +108,8 @@ private:
     Adafruit_SSD1306& displayRef;    ///< Reference to the SSD1306 display object
     bool displayOn;                  ///< Flag indicating if display is currently on
     unsigned long lastActivityTime;  ///< Timestamp of last user activity
-    enum display_t displayType;
+    enum display_t displayType;      ///< Type of display being used
+    int lastY;                       ///< Last Y position used for text printing
 
 public:
     /**
