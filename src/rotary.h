@@ -41,10 +41,10 @@ void rotarySwISR();
  */
 class RotaryEncoder {
 private:
-  volatile int position = 0;                 ///< Current rotary encoder position counter
-  volatile unsigned long lastRotaryTime = 0; ///< Last rotary event timestamp for debouncing
+  volatile int position = 0;                    ///< Current rotary encoder position counter
+  volatile unsigned long lastRotaryTime = 0;    ///< Last rotary event timestamp for debouncing
   volatile unsigned long lastInterruptTime = 0; ///< Last button interrupt timestamp for debouncing
-  bool buttonPressedFlag = false;            ///< Flag indicating button press detected
+  bool buttonPressedFlag = false;               ///< Flag indicating button press detected
 
 public:
   /**
@@ -69,7 +69,9 @@ public:
    * be checked and cleared by wasButtonPressed().
    * 
    * The button is connected with a pull-up resistor, so a press is detected
-   * when the signal transitions from HIGH to LOW (falling edge).
+   * when the signal transitions from HIGH to LOW (falling edge). However, this
+   * function is triggered by an interrupt on the falling edge, so we only need
+   * to implement debouncing based on time since last interrupt.
    */
   void handleButtonPress();
   
