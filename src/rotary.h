@@ -42,8 +42,8 @@ void rotarySwISR();
 class RotaryEncoder {
 private:
   volatile int position = 0;                 ///< Current rotary encoder position counter
-  int lastCLK = 0;                           ///< Last CLK signal state for edge detection
   volatile unsigned long lastRotaryTime = 0; ///< Last rotary event timestamp for debouncing
+  volatile unsigned long lastInterruptTime = 0; ///< Last button interrupt timestamp for debouncing
   bool buttonPressedFlag = false;            ///< Flag indicating button press detected
 
 public:

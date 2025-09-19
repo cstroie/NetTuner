@@ -50,7 +50,7 @@ void setupRotaryEncoder() {
   pinMode(config.rotary_dt,  INPUT_PULLUP);   // Enable internal pull-up resistor
   pinMode(config.rotary_sw,  INPUT_PULLUP);   // Enable internal pull-up resistor
   // Attach interrupt handler for rotary encoder rotation
-  attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(config.rotary_clk), rotaryISR, FALLING);
   // Attach interrupt handler for rotary encoder button press
   attachInterrupt(digitalPinToInterrupt(config.rotary_sw), rotarySwISR, FALLING);
 }
@@ -75,22 +75,18 @@ void RotaryEncoder::handleRotation() {
   if (currentTime - lastRotaryTime < 10) {
     return;
   }
-  int CLK = digitalRead(config.rotary_clk);  // Read clock signal
   int DT = digitalRead(config.rotary_dt);    // Read data signal
-  // Only process when CLK transitions from LOW to HIGH (rising edge detection)
-  if (CLK == HIGH && lastCLK == LOW) {
-    // Determine rotation direction based on DT state at the time of CLK rising edge
-    // In quadrature encoding, when CLK rises:
-    // - If DT is LOW, rotation is clockwise
-    // - If DT is HIGH, rotation is counter-clockwise
-    if (DT == LOW) {
-      position++;      // Clockwise rotation increments position
-    } else {
-      position--;      // Counter-clockwise rotation decrements position
-    }
-    lastRotaryTime = currentTime;  // Update last event time for debouncing
+  // CLK is already LOW due to FALLING interrupt trigger
+  // Determine rotation direction based on DT state at the time of CLK falling edge
+  // In quadrature encoding, when CLK falls:
+  // - If DT is HIGH, rotation is clockwise
+  // - If DT is LOW, rotation is counter-clockwise
+  if (DT == HIGH) {
+    position++;      // Clockwise rotation increments position
+  } else {
+    position--;      // Counter-clockwise rotation decrements position
   }
-  lastCLK = CLK;  // Store current CLK state for next iteration
+  lastRotaryTime = currentTime;  // Update last event time for debouncing
 }
 
 /**
@@ -105,7 +101,6 @@ void RotaryEncoder::handleRotation() {
  * to implement debouncing based on time since last interrupt.
  */
 void RotaryEncoder::handleButtonPress() {
-  static unsigned long lastInterruptTime = 0;
   unsigned long interruptTime = millis();
   // Debounce the button press (ignore if less than 100ms since last press)
   // This prevents multiple detections from a single physical button press
@@ -124,7 +119,11 @@ void RotaryEncoder::handleButtonPress() {
  * @return Current position value
  */
 int RotaryEncoder::getPosition() const volatile {
-  return position;
+  // Disable interrupts temporarily to ensure atomic read of multi-byte position
+  noInterrupts();
+  int pos = position;
+  interrupts();
+  return pos;
 }
 
 /**
