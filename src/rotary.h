@@ -51,20 +51,20 @@ public:
    * @brief Handle rotary encoder rotation
    * @details Processes rotation events by detecting CLK signal edges and 
    * determining rotation direction based on the DT signal state. Implements 
-   * 5ms debouncing to prevent false readings from electrical noise.
+   * 10ms debouncing to prevent false readings from electrical noise.
    * 
    * The quadrature encoding works as follows:
    * - When rotating clockwise: CLK leads DT
    * - When rotating counter-clockwise: DT leads CLK
    * 
-   * Only processes events when CLK transitions from LOW to HIGH to avoid 
+   * Only processes events when CLK transitions from HIGH to LOW to avoid 
    * double-counting.
    */
   void handleRotation();
   
   /**
    * @brief Handle button press
-   * @details Processes button press events with 50ms debouncing to prevent
+   * @details Processes button press events with 100ms debouncing to prevent
    * multiple detections from a single press. Sets an internal flag that can
    * be checked and cleared by wasButtonPressed().
    * 
