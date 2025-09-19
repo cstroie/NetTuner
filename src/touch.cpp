@@ -192,7 +192,8 @@ void IRAM_ATTR TouchButton::handleInterrupt() {
   unsigned long currentTime = millis();
   // Implement debouncing in ISR to prevent multiple interrupt triggers
   // Only set pressed flag if enough time has passed since last press
-  if ((currentTime - lastPressTime) > debounceTime) {
+  // and only if it's not already set (to match polling behavior)
+  if ((currentTime - lastPressTime) > debounceTime && !pressedFlag) {
     pressedFlag = true;
   }
   // Update last press time to current time for debouncing
