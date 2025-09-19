@@ -2873,7 +2873,7 @@ async function loadWiFiConfiguration() {
 
     // Also populate the form with configured networks
     // Clear existing fields except the first one
-    const networkFields = $("network-fields");
+    const networkFields = $("wifi-form");
     if (networkFields) {
       while (networkFields.children.length > 1) {
         networkFields.removeChild(networkFields.lastChild);
@@ -2959,7 +2959,7 @@ function addNetworkField() {
     return;
   }
 
-  const networkFields = $("network-fields");
+  const networkFields = $("wifi-form");
   const newEntry = document.createElement("div");
   newEntry.className = "network-entry";
   newEntry.role = "group";
@@ -3115,7 +3115,7 @@ function handleWiFiDrop(e) {
 
   if (dragSrcWiFiElement !== this) {
     // Get the network entries container
-    const networkFields = $("network-fields");
+    const networkFields = $("wifi-form");
     const entries = Array.from(
       networkFields.querySelectorAll(".network-entry"),
     );

@@ -2002,6 +2002,8 @@ void setupWebServer() {
   server.serveStatic("/styles.css", SPIFFS, "/styles.css");
   server.serveStatic("/scripts.js", SPIFFS, "/scripts.js");
   server.serveStatic("/pico.min.css", SPIFFS, "/pico.min.css");
+  server.serveStatic("/favicon.ico", SPIFFS, "/favicon.ico");
+  server.serveStatic("/logo.png", SPIFFS, "/logo.png");
 }
 
 

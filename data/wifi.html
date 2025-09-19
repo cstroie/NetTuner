@@ -59,27 +59,25 @@
           </p>
         </hgroup>
         <form id="wifi-form">
-          <fieldset id="network-fields">
-            <div role="group" class="network-entry" draggable="true">
-              <div class="drag-handle">⋮⋮</div>
-              <input
-                type="text"
-                id="ssid0"
-                name="ssid0"
-                placeholder="Enter SSID" />
-              <input
-                type="password"
-                id="password0"
-                name="password0"
-                placeholder="Enter password" />
-              <button
-                type="button"
-                class="remove-btn secondary"
-                onclick="removeNetworkField(this)">
-                Remove
-              </button>
-            </div>
-          </fieldset>
+          <div role="group" class="network-entry" draggable="true">
+            <div class="drag-handle">⋮⋮</div>
+            <input
+              type="text"
+              id="ssid0"
+              name="ssid0"
+              placeholder="Enter SSID" />
+            <input
+              type="password"
+              id="password0"
+              name="password0"
+              placeholder="Enter password" />
+            <button
+              type="button"
+              class="remove-btn secondary"
+              onclick="removeNetworkField(this)">
+              Remove
+            </button>
+          </div>
         </form>
         <footer>
           <div class="grid">
