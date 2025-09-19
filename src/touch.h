@@ -21,6 +21,9 @@
 
 #include <Arduino.h>
 
+// Define the maximum number of touch pins
+#define TOUCH_PIN_COUNT 3
+
 class TouchButton {
 private:
   bool lastState;                       // Last stable state
@@ -83,5 +86,10 @@ public:
   uint8_t pin;                          // Touch pin number
   uint16_t threshold;                   // Touch threshold value
 };
+
+// Individual interrupt handler functions
+void IRAM_ATTR handleTouchInterrupt0();
+void IRAM_ATTR handleTouchInterrupt1();
+void IRAM_ATTR handleTouchInterrupt2();
 
 #endif // TOUCH_H

@@ -21,27 +21,32 @@
 
 // Static array to hold pointers to TouchButton instances for ISR access
 static TouchButton* touchButtonInstances[TOUCH_PIN_COUNT] = {nullptr};
-static int instanceCount = 0;
 
-/**
- * @brief Global interrupt handler that routes to the correct TouchButton instance
- */
-void IRAM_ATTR handleTouchInterrupt() {
-  // Since ESP32 touch interrupts don't identify which pin triggered,
-  // we need to check all registered instances to see which one triggered
-  for (int i = 0; i < instanceCount; i++) {
-    if (touchButtonInstances[i] != nullptr) {
-      // Read the touch value for this pin
-      uint16_t touchValue = touchRead(touchButtonInstances[i]->pin);
-      // If the touch value is below the threshold, this is the button that triggered
-      if (touchValue < touchButtonInstances[i]->threshold) {
-        touchButtonInstances[i]->handleInterrupt();
-        // Break after handling one since typically only one button is touched at a time
-        break;
-      }
-    }
+// Individual interrupt handlers for each touch button
+void IRAM_ATTR handleTouchInterrupt0() {
+  if (touchButtonInstances[0] != nullptr) {
+    touchButtonInstances[0]->handleInterrupt();
   }
 }
+
+void IRAM_ATTR handleTouchInterrupt1() {
+  if (touchButtonInstances[1] != nullptr) {
+    touchButtonInstances[1]->handleInterrupt();
+  }
+}
+
+void IRAM_ATTR handleTouchInterrupt2() {
+  if (touchButtonInstances[2] != nullptr) {
+    touchButtonInstances[2]->handleInterrupt();
+  }
+}
+
+// Function pointer array for interrupt handlers
+static void (*interruptHandlers[TOUCH_PIN_COUNT])() = {
+  handleTouchInterrupt0,
+  handleTouchInterrupt1,
+  handleTouchInterrupt2
+};
 
 /**
  * @brief Construct a new Touch Button object
@@ -59,12 +64,19 @@ TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned lon
   : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false), debounceTime(debounceMs), useInterrupt(useInterrupt) {
   if (useInterrupt) {
-    // Register this instance in the global array
-    if (instanceCount < TOUCH_PIN_COUNT) {
-      touchButtonInstances[instanceCount] = this;
-      instanceCount++;
-      // Configure touch interrupt to trigger when touch value goes below threshold
-      touchAttachInterrupt(pin, handleTouchInterrupt, threshold);
+    // Find the index for this pin
+    int index = -1;
+    for (int i = 0; i < TOUCH_PIN_COUNT; i++) {
+      if (touchButtonInstances[i] == nullptr) {
+        touchButtonInstances[i] = this;
+        index = i;
+        break;
+      }
+    }
+    
+    if (index >= 0 && index < TOUCH_PIN_COUNT) {
+      // Configure touch interrupt with specific handler for this pin
+      touchAttachInterrupt(pin, interruptHandlers[index], threshold);
     }
   }
 }
