@@ -82,6 +82,8 @@ void Player::setStreamUrl(const char* url) {
   if (url) {
     strncpy(streamInfo.url, url, sizeof(streamInfo.url) - 1);
     streamInfo.url[sizeof(streamInfo.url) - 1] = '\0';
+  } else {
+    streamInfo.url[0] = '\0';
   }
 }
 
@@ -93,6 +95,8 @@ void Player::setStreamName(const char* name) {
   if (name) {
     strncpy(streamInfo.name, name, sizeof(streamInfo.name) - 1);
     streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
+  } else {
+    streamInfo.name[0] = '\0';
   }
 }
 
@@ -104,6 +108,8 @@ void Player::setStreamTitle(const char* title) {
   if (title) {
     strncpy(streamInfo.title, title, sizeof(streamInfo.title) - 1);
     streamInfo.title[sizeof(streamInfo.title) - 1] = '\0';
+  } else {
+    streamInfo.title[0] = '\0';
   }
 }
 
@@ -115,6 +121,8 @@ void Player::setStreamIcyUrl(const char* icyUrl) {
   if (icyUrl) {
     strncpy(streamInfo.icyUrl, icyUrl, sizeof(streamInfo.icyUrl) - 1);
     streamInfo.icyUrl[sizeof(streamInfo.icyUrl) - 1] = '\0';
+  } else {
+    streamInfo.icyUrl[0] = '\0';
   }
 }
 
@@ -126,6 +134,8 @@ void Player::setStreamIconUrl(const char* iconUrl) {
   if (iconUrl) {
     strncpy(streamInfo.iconUrl, iconUrl, sizeof(streamInfo.iconUrl) - 1);
     streamInfo.iconUrl[sizeof(streamInfo.iconUrl) - 1] = '\0';
+  } else {
+    streamInfo.iconUrl[0] = '\0';
   }
 }
 
