@@ -1571,41 +1571,6 @@ const size_t MPDInterface::commandCount = sizeof(commandRegistry) / sizeof(MPDCo
  * - Handles unexpected disconnections gracefully
  */
 void MPDInterface::handleClient() {
-    // Handle new client connections
-    if (mpdServer.hasClient()) {
-        if (!mpdClient || !mpdClient.connected()) {
-            // Properly close existing client first
-            if (mpdClient && mpdClient.connected()) {
-                mpdClient.flush();
-                delay(1);
-                mpdClient.stop();
-            }
-            mpdClient = mpdServer.available();
-            
-            // Send MPD welcome message with error checking
-            if (mpdClient && mpdClient.connected()) {
-                mpdClient.print("OK MPD 0.23.0\n");
-            }
-            
-            // Reset all state variables
-            inCommandList = false;
-            commandListOK = false;
-            commandListCount = 0;
-            inIdleMode = false;
-            commandBuffer = "";
-        } else {
-            // Reject new connection if we already have one
-            WiFiClient newClient = mpdServer.available();
-            if (newClient && newClient.connected()) {
-                newClient.print("OK MPD 0.23.0\n");
-                newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
-                newClient.flush();
-                delay(1);
-                newClient.stop();
-            }
-        }
-    }
-    
     // Check if client disconnected unexpectedly
     if (mpdClient && !mpdClient.connected()) {
         mpdClient.flush();
@@ -1618,6 +1583,43 @@ void MPDInterface::handleClient() {
         inIdleMode = false;
         commandBuffer = "";
         return;
+    }
+    
+    // Handle new client connections
+    if (mpdServer.hasClient()) {
+        // Reject new connection if we already have one
+        if (mpdClient && mpdClient.connected()) {
+            WiFiClient newClient = mpdServer.available();
+            if (newClient && newClient.connected()) {
+                newClient.print("OK MPD 0.23.0\n");
+                newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
+                newClient.flush();
+                delay(1);
+                newClient.stop();
+            }
+            return;
+        }
+        
+        // Properly close existing client first
+        if (mpdClient && mpdClient.connected()) {
+            mpdClient.flush();
+            delay(1);
+            mpdClient.stop();
+        }
+        
+        mpdClient = mpdServer.available();
+        
+        // Send MPD welcome message with error checking
+        if (mpdClient && mpdClient.connected()) {
+            mpdClient.print("OK MPD 0.23.0\n");
+        }
+        
+        // Reset all state variables
+        inCommandList = false;
+        commandListOK = false;
+        commandListCount = 0;
+        inIdleMode = false;
+        commandBuffer = "";
     }
     
     // Process client if connected
