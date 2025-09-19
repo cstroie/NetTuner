@@ -118,6 +118,7 @@ void Display::clear() {
     displayRef.display();
 }
 
+// Documentnt this, AI!
 void Display::printAt(const char* text, int x, int y, char align = 'l') {
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
@@ -156,6 +157,13 @@ void Display::printAt(const char* text, int x, int y, char align = 'l') {
     lastY = y;
 }
 
+/***
+ * @brief Print text at specified position with alignment
+ * @param text The text to print
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right) 
+ */
 void Display::printAt(const String text, int x, int y, char align = 'l') {
     printAt(text.c_str(), x, y, align);
 }
