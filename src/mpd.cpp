@@ -45,6 +45,14 @@ int parseValue(const String& valueStr) {
   if (cleanedStr.startsWith("\'") && cleanedStr.endsWith("\'") && cleanedStr.length() >= 2) {
     cleanedStr = cleanedStr.substring(1, cleanedStr.length() - 1);
   }
+  // Validate that string contains only digits (and optional minus sign)
+  for (int i = 0; i < cleanedStr.length(); i++) {
+    if ((i == 0 && cleanedStr[i] == '-') || isDigit(cleanedStr[i])) {
+      continue;
+    } else {
+      return 0; // Return 0 for invalid input
+    }
+  }
   // Convert to integer
   return cleanedStr.toInt();
 }
@@ -254,10 +262,23 @@ void MPDInterface::handleSearchCommand(const String& args) {
  * @param args Command arguments (tag type to list)
  */
 void MPDInterface::handleListCommand(const String& args) {
+  // Validate arguments length
+  if (args.length() > 20) { // Reasonable limit for tag type
+    mpdClient.print(mpdResponseError("list", "Tag type too long"));
+    return;
+  }
+  
   if (args.length() > 0) {
     String tagType = args;
     tagType.toLowerCase();
     tagType.trim();
+    
+    // Validate supported tag types
+    if (!tagType.startsWith("artist") && !tagType.startsWith("album") && !tagType.startsWith("title")) {
+      mpdClient.print(mpdResponseError("list", "Unsupported tag type"));
+      return;
+    }
+    
     if (tagType.startsWith("artist")) {
       // Return dummy artist
       mpdClient.print("Artist: WebRadio\n");
@@ -270,6 +291,9 @@ void MPDInterface::handleListCommand(const String& args) {
         mpdClient.print("Title: " + String(this->player.getPlaylistItem(i).name) + "\n");
       }
     }
+  } else {
+    mpdClient.print(mpdResponseError("list", "Missing tag type"));
+    return;
   }
   mpdClient.print(mpdResponseOK());
 }
@@ -1119,10 +1143,22 @@ void MPDInterface::handleNextCommand(const String& args) {
  * @param args Command arguments (relative volume change)
  */
 void MPDInterface::handleVolumeCommand(const String& args) {
+  // Validate arguments length
+  if (args.length() > 5) { // Reasonable limit for volume change value
+    mpdClient.print(mpdResponseError("volume", "Invalid argument length"));
+    return;
+  }
+  
   // Volume command - change volume by relative amount
   if (args.length() > 0) {
     // Parse volume change value (can be negative for decrease)
     int volumeChange = parseValue(args);
+    
+    // Validate volume change range (reasonable limits)
+    if (volumeChange < -100 || volumeChange > 100) {
+      mpdClient.print(mpdResponseError("volume", "Volume change out of range"));
+      return;
+    }
     
     // Get current volume as percentage for MPD compatibility
     int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
@@ -1171,6 +1207,12 @@ void MPDInterface::handleVolumeCommand(const String& args) {
  * @param args Command arguments (volume percentage 0-100)
  */
 void MPDInterface::handleSetVolCommand(const String& args) {
+  // Validate arguments length
+  if (args.length() > 3) { // Reasonable limit for volume value (0-100)
+    mpdClient.print(mpdResponseError("setvol", "Invalid argument length"));
+    return;
+  }
+  
   // Set volume command
   if (args.length() > 0) {
     // Parse volume value, handling quotes if present
@@ -1223,12 +1265,18 @@ void MPDInterface::handleSetVolCommand(const String& args) {
  * @param args Command arguments (optional playlist index/ID)
  */
 void MPDInterface::handlePlayCommand(const String& args) {
+  // Validate arguments length
+  if (args.length() > 10) { // Reasonable limit for playlist index
+    mpdClient.print(mpdResponseError("play", "Invalid argument length"));
+    return;
+  }
+  
   int playlistIndex = -1;
   if (args.length() > 0) {
     // Convert to 0-based index
     playlistIndex = parseValue(args);
     // Validate index if provided
-    if (playlistIndex < 0 || playlistIndex > this->player.getPlaylistCount()) {
+    if (playlistIndex < -1 || playlistIndex >= this->player.getPlaylistCount()) {
       mpdClient.print(mpdResponseError("play", "Invalid playlist index"));
       return;
     }
@@ -2002,10 +2050,23 @@ void MPDInterface::sendPlaylistInfo(int detailLevel) {
  * @param exactMatch Whether to perform exact matching (find) or partial matching (search)
  */
 void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
+  // Validate arguments length
+  if (args.length() > 200) { // Reasonable limit for search arguments
+    mpdClient.print(mpdResponseError("search/find", "Arguments too long"));
+    return;
+  }
+  
   // Extract search filter and term
   String searchFilter = args;
   searchFilter.trim();
   String searchTerm;
+  
+  // Validate that we have arguments
+  if (searchFilter.length() == 0) {
+    mpdClient.print(mpdResponseError("search/find", "Missing search arguments"));
+    return;
+  }
+  
   // Extract search filter (after the first space and before the next space)
   int firstSpace = searchFilter.indexOf(' ');
   if (firstSpace != -1) {
@@ -2016,6 +2077,26 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     searchFilter = searchFilter.substring(0, firstSpace);
     searchFilter.trim();
   }
+  
+  // Validate search filter and term
+  if (searchFilter.length() == 0) {
+    mpdClient.print(mpdResponseError("search/find", "Missing search filter"));
+    return;
+  }
+  
+  if (searchTerm.length() == 0) {
+    mpdClient.print(mpdResponseError("search/find", "Missing search term"));
+    return;
+  }
+  
+  // Validate search filter type
+  String lowerFilter = searchFilter;
+  lowerFilter.toLowerCase();
+  if (lowerFilter != "title" && lowerFilter != "artist" && lowerFilter != "album") {
+    mpdClient.print(mpdResponseError("search/find", "Unsupported search filter"));
+    return;
+  }
+  
   // Remove quotes if present
   if (searchFilter.startsWith("\"") && searchFilter.endsWith("\"") && searchFilter.length() >= 2) {
     searchFilter = searchFilter.substring(1, searchFilter.length() - 1);
@@ -2023,20 +2104,35 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
   if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
     searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
   }
+  
+  // Validate search term length
+  if (searchTerm.length() == 0) {
+    mpdClient.print(mpdResponseError("search/find", "Empty search term"));
+    return;
+  }
+  
   // Handle special cases for artist/album searches
-  if (searchFilter == "album" || searchFilter == "artist") {
+  if (lowerFilter == "album" || lowerFilter == "artist") {
     sendPlaylistInfo(1); // Send simple info for album search
     return;
   }
+  
   // Search in playlist names
   for (int i = 0; i < this->player.getPlaylistCount(); i++) {
     const StreamInfo& item = this->player.getPlaylistItem(i);
     String playlistName = String(item.name);
+    
+    // Validate playlist name
+    if (playlistName.length() == 0) {
+      continue;
+    }
+    
     // Convert both to lowercase for case-insensitive comparison
     String lowerName = playlistName;
     lowerName.toLowerCase();
     String lowerSearch = searchTerm;
     lowerSearch.toLowerCase();
+    
     bool match = false;
     if (exactMatch) {
       // Exact match for find command
@@ -2045,6 +2141,7 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
       // Partial match for search command
       match = (lowerName.indexOf(lowerSearch) != -1);
     }
+    
     // If a match is found, send the metadata
     if (match) {
       mpdClient.print("file: " + String(item.url) + "\n");
