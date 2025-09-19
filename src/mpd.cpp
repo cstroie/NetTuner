@@ -1156,6 +1156,16 @@ void MPDInterface::handleVolumeCommand(const String& args) {
       mpdClient.print(mpdResponseError("volume", "Volume change out of range"));
       return;
     }
+    // Get volume change as value for MPD compatibility
+    int volumeChangeMPD = map(abs(volumeChange), 0, 100, 0, 22);
+    // If the volume change is less than 1 after mapping, use 1 to ensure a change
+    if (volumeChangeMPD < 1) {
+      // Rewrite this to +1 or -1 based on original sign, AI!
+      if (volumeChange > 0)
+        volumeChangeMPD = 1;
+      else if (volumeChange < 0)  
+        volumeChangeMPD = -1;
+    }
     // Get current volume as percentage for MPD compatibility
     int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
     // Apply change and clamp to 0-100 range
@@ -1202,7 +1212,7 @@ void MPDInterface::handleVolumeCommand(const String& args) {
  */
 void MPDInterface::handleSetVolCommand(const String& args) {
   // Validate arguments length
-  if (args.length() > 3) { // Reasonable limit for volume value (0-100)
+  if (args.length() > 5) { // Reasonable limit for volume value (0-100)
     mpdClient.print(mpdResponseError("setvol", "Invalid argument length"));
     return;
   }
