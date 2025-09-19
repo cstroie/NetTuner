@@ -19,6 +19,8 @@
 #include "touch.h"
 #include "main.h"
 
+// File-scope static variable to track number of instances
+static int instanceCount = 0;
 
 // Static array to hold pointers to TouchButton instances for ISR access
 static TouchButton* touchButtonInstances[TOUCH_PIN_COUNT] = {nullptr};
@@ -61,9 +63,6 @@ static void (*interruptHandlers[TOUCH_PIN_COUNT])() = {
  * @param debounceMs The debounce time in milliseconds (default 100)
  * @param useInterrupt Whether to use interrupt mode (default false)
  */
-// File-scope static variable to track number of instances
-static int instanceCount = 0;
-
 TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned long debounceMs, bool useInterrupt)
   : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false), debounceTime(debounceMs), useInterrupt(useInterrupt) {
@@ -118,10 +117,11 @@ void TouchButton::handle() {
     if ((currentTime - lastPressTime) > debounceTime) {
       // If button is pressed and we haven't handled this press yet
       if (currentState && !pressedFlag) {
-        pressedFlag = true;  // Mark this press as detected
+        // Mark this press as detected
+        pressedFlag = true;
       }
-      // If button is released, reset handled flag
       else if (!currentState) {
+        // If button is released, reset handled flag
         pressedFlag = false;
       }
     }
