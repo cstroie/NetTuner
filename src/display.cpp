@@ -119,7 +119,6 @@ void Display::clear() {
 }
 
 void Display::printAt(const char* text, int x, int y, char align = 'l') {
-    static int lastY = displayRef.height();
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
     uint16_t w, h;
