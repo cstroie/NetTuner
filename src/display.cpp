@@ -219,7 +219,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         // Scroll title if too long for display (excluding the '>' character)
         // 16 chars fit on a 128px display with '>' and some margin
         // Calculate how many characters we can display (14 chars = 84 pixels)
-        int maxDisplayChars = 14;
+        int maxDisplayChars = SCROLL_TEXT_MAX_CHARS;
         if (title.length() > maxDisplayChars) {
             // Static variables for scrolling state management
             static unsigned long lastTitleScrollTime = 0;

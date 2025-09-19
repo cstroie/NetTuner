@@ -1841,7 +1841,7 @@ void MPDInterface::handleCommandList(const String& command) {
     mpdClient.print(mpdResponseOK());
   } else {
     // Buffer the command
-    if (commandListCount < 50) {
+    if (commandListCount < MAX_COMMAND_LIST_SIZE) {
       commandList[commandListCount] = command;
       commandListCount++;
     } else {

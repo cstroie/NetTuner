@@ -22,6 +22,11 @@
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 
+// Display layout constants
+#define MAX_DISPLAY_LINES 4
+#define SCROLL_TEXT_MAX_CHARS 14
+#define SCROLL_TEXT_PIXEL_WIDTH 84
+
 
 /**
  * @brief Display types supported by the system

@@ -21,6 +21,10 @@
 
 #include <Arduino.h>
 
+// Buffer size constants
+#define PLAYER_STATE_BUFFER_SIZE 512
+#define PLAYLIST_BUFFER_SIZE 4096
+
 // Forward declarations
 class Audio;
 class Playlist;

@@ -67,7 +67,8 @@ private:
   // MPD command list state variables for batch command processing
   bool inCommandList = false;        ///< Flag indicating if we're in command list mode
   bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
-  String commandList[50];            ///< Buffer for command list (max 50 commands for memory safety)
+  static const int MAX_COMMAND_LIST_SIZE = 50;  ///< Maximum number of commands in a command list
+  String commandList[MAX_COMMAND_LIST_SIZE];    ///< Buffer for command list
   int commandListCount = 0;          ///< Number of commands in the current command list
 
   // MPD idle state variables for efficient change notification
