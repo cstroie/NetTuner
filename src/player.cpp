@@ -414,7 +414,7 @@ void Player::startStream(const char* url, const char* name) {
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
       playerState.playing = false;
-      streamInfo.bitrate = 0;
+      clearStreamInfo();
     } else {
       playerState.playing = true;
       Serial.println("Successfully connected to audio stream");
