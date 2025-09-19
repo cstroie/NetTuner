@@ -543,3 +543,22 @@ int Player::updateBitrate() {
   }
   return streamInfo.bitrate;
 }
+/**
+ * @brief Set the dirty flag to indicate state has changed
+ * Uses critical section to protect against concurrent access
+ */
+void Player::setDirty() {
+  portENTER_CRITICAL(&spinlock);
+  playerState.dirty = true;
+  portEXIT_CRITICAL(&spinlock);
+}
+
+/**
+ * @brief Reset the dirty flag
+ * Uses critical section to protect against concurrent access
+ */
+void Player::resetDirty() {
+  portENTER_CRITICAL(&spinlock);
+  playerState.dirty = false;
+  portEXIT_CRITICAL(&spinlock);
+}

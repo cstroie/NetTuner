@@ -125,7 +125,16 @@ public:
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
   
   // Dirty flag management
+  /**
+   * @brief Set the dirty flag to indicate state has changed
+   * Uses critical section to protect against concurrent access
+   */
   void setDirty();
+  
+  /**
+   * @brief Reset the dirty flag
+   * Uses critical section to protect against concurrent access
+   */
   void resetDirty();
   
   // Stream info getters
