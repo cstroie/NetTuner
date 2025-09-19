@@ -103,8 +103,8 @@ Display::Display(Adafruit_SSD1306& display, enum display_t displayTypeEnum) :
  * This method must be called before any other display operations.
  */
 void Display::begin() {
-    displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    showLogo();
+  displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
+  showLogo();
 }
 
 /**
@@ -114,11 +114,22 @@ void Display::begin() {
  * This method immediately clears the screen regardless of display state.
  */
 void Display::clear() {
-    displayRef.clearDisplay();
-    displayRef.display();
+  displayRef.clearDisplay();
+  displayRef.display();
 }
 
-// Documentnt this, AI!
+/**
+ * @brief Print text at specified position with alignment
+ * @param text The text to print
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+ * 
+ * This function prints text at the specified position with the given alignment.
+ * It automatically selects the appropriate font based on available vertical space
+ * and handles text alignment (left, center, right). The function maintains a 
+ * lastY position to track vertical spacing and font selection.
+ */
 void Display::printAt(const char* text, int x, int y, char align = 'l') {
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
@@ -157,9 +168,9 @@ void Display::printAt(const char* text, int x, int y, char align = 'l') {
     lastY = y;
 }
 
-/***
+/**
  * @brief Print text at specified position with alignment
- * @param text The text to print
+ * @param text The text to print (as a String)
  * @param x The x-coordinate for the text
  * @param y The y-coordinate for the text
  * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right) 
