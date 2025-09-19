@@ -100,12 +100,6 @@ public:
   
   // Playlist validation helper function
   bool isPlaylistIndexValid() const;
-  bool isDirty() const { 
-    portENTER_CRITICAL(&spinlock);
-    bool dirty = playerState.dirty;
-    portEXIT_CRITICAL(&spinlock);
-    return dirty;
-  }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
