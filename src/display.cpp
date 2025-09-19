@@ -175,11 +175,29 @@ void Display::printAt(const char* text, int x, int y, char align = 'l') {
  * @param y The y-coordinate for the text
  * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right) 
  */
-void Display::printAt(const String text, int x, int y, char align = 'l') {
+/**
+ * @brief Print text at specified position with alignment
+ * @param text The text to print (as a String)
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+ * 
+ * This function prints text at the specified position with the given alignment.
+ * It automatically selects the appropriate font based on available vertical space
+ * and handles text alignment (left, center, right). The function maintains a 
+ * lastY position to track vertical spacing and font selection.
+ */
+void Display::printAt(const String text, int x, int y, char align) {
     printAt(text.c_str(), x, y, align);
 }
 
 
+/**
+ * @brief Show the NetTuner logo on display
+ * 
+ * Displays the "NetTuner" logo centered on the screen using the predefined
+ * logo layout for the current display type.
+ */
 void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
