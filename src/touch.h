@@ -30,7 +30,7 @@ private:
   bool lastState;                       // Last stable state
   uint8_t pin;                          // Touch pin number
   uint16_t threshold;                   // Touch threshold value
-  unsigned long lastPressTime;          // Last state change time for debouncing
+  volatile unsigned long lastPressTime; // Last state change time for debouncing
   volatile bool pressedFlag;            // Flag indicating button press detected
   unsigned long debounceTime;           // Configurable debounce time
   bool useInterrupt;                    // Flag to indicate if interrupt mode is used
