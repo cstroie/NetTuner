@@ -17,7 +17,7 @@
  */
 
 #include "mpd.h"
-#include "main.h"  // For global function declarations
+#include "main.h"
 #include "player.h"
 
 /**
