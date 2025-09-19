@@ -369,7 +369,7 @@ void Player::startStream(const char* url, const char* name) {
       url = streamInfo.url;
       // Use current name if available, otherwise use a default
       if (!name || strlen(name) == 0) {
-        name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name).c_str() : "Unknown Station";
+        name = (strlen(streamInfo.name) > 0) ? streamInfo.name : "Unknown Station";
       }
       // We are resuming playback
       resume = true;
