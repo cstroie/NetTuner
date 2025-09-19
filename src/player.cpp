@@ -28,7 +28,6 @@
 Player::Player() {
   audio = nullptr;
   playlist = new Playlist();
-  
   // Initialize player state with defaults
   clearPlayerState();
   // Initialize stream info
@@ -489,7 +488,6 @@ Audio* Player::setupAudioOutput() {
     delete audio;
     audio = nullptr;
   }
-  
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   // Check if allocation succeeded
