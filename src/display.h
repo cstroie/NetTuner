@@ -115,6 +115,7 @@ private:
     unsigned long lastActivityTime;  ///< Timestamp of last user activity
     enum display_t displayType;      ///< Type of display being used
     int lastY;                       ///< Last Y position used for text printing
+    bool dirty;                      ///< Flag indicating if display content has changed
 
 public:
     /**
@@ -254,6 +255,24 @@ public:
      * @return unsigned long Timestamp of last user activity
      */
     unsigned long getLastActivityTime() const;
+    
+    /**
+     * @brief Check if display content has changed
+     * 
+     * @return true if display content has changed and needs updating
+     * @return false if display content is up to date
+     */
+    bool isDirty() const { return dirty; }
+    
+    /**
+     * @brief Set the dirty flag to indicate content has changed
+     */
+    void setDirty() { dirty = true; }
+    
+    /**
+     * @brief Reset the dirty flag
+     */
+    void resetDirty() { dirty = false; }
 };
 
 #endif // DISPLAY_H

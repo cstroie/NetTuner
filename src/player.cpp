@@ -55,9 +55,8 @@ void Player::setPlaylistIndex(int index) {
 void Player::setVolume(int volume) {
   playerState.volume = volume;
   // Mark state as dirty when volume changes
-  portENTER_CRITICAL(&spinlock);
-  playerState.dirty = true;
-  portEXIT_CRITICAL(&spinlock);
+  setDirty();
+  // Apply volume to audio output
   if (audio) {
     audio->setVolume(volume);
   }
@@ -87,9 +86,7 @@ void Player::setTone(int bass, int mid, int treble) {
   playerState.mid = constrain(mid, -6, 6);
   playerState.treble = constrain(treble, -6, 6);
   // Mark state as dirty when tone changes
-  portENTER_CRITICAL(&spinlock);
-  playerState.dirty = true;
-  portEXIT_CRITICAL(&spinlock);
+  setDirty();
   // Apply tone settings to audio output
   setTone();
 }
@@ -231,9 +228,7 @@ void Player::savePlayerState() {
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
     // Use critical section to protect against concurrent access to dirty flag
-    portENTER_CRITICAL(&spinlock);
-    playerState.dirty = false;
-    portEXIT_CRITICAL(&spinlock);
+    resetDirty();
   } else {
     Serial.println("Failed to save player state to SPIFFS");
   }
@@ -545,20 +540,14 @@ int Player::updateBitrate() {
 }
 /**
  * @brief Set the dirty flag to indicate state has changed
- * Uses critical section to protect against concurrent access
  */
 void Player::setDirty() {
-  portENTER_CRITICAL(&spinlock);
   playerState.dirty = true;
-  portEXIT_CRITICAL(&spinlock);
 }
 
 /**
  * @brief Reset the dirty flag
- * Uses critical section to protect against concurrent access
  */
 void Player::resetDirty() {
-  portENTER_CRITICAL(&spinlock);
   playerState.dirty = false;
-  portEXIT_CRITICAL(&spinlock);
 }
