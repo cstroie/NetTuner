@@ -55,6 +55,10 @@ void Player::setPlaylistIndex(int index) {
  */
 void Player::setVolume(int volume) {
   playerState.volume = volume;
+  // Mark state as dirty when volume changes
+  portENTER_CRITICAL(&spinlock);
+  playerState.dirty = true;
+  portEXIT_CRITICAL(&spinlock);
   if (audio) {
     audio->setVolume(volume);
   }
@@ -83,6 +87,10 @@ void Player::setTone(int bass, int mid, int treble) {
   playerState.bass = constrain(bass, -6, 6);
   playerState.mid = constrain(mid, -6, 6);
   playerState.treble = constrain(treble, -6, 6);
+  // Mark state as dirty when tone changes
+  portENTER_CRITICAL(&spinlock);
+  playerState.dirty = true;
+  portEXIT_CRITICAL(&spinlock);
   // Apply tone settings to audio output
   setTone();
 }
@@ -476,6 +484,12 @@ void Player::stopStream() {
  * @return Pointer to the initialized Audio object, or nullptr if initialization failed
  */
 Audio* Player::setupAudioOutput() {
+  // Clean up existing audio object if it exists
+  if (audio != nullptr) {
+    delete audio;
+    audio = nullptr;
+  }
+  
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
   // Check if allocation succeeded
