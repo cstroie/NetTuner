@@ -24,7 +24,17 @@
 // Define the maximum number of touch pins
 #define TOUCH_PIN_COUNT 3
 
-// Document this, AI!
+/**
+ * @brief Touch button class for handling capacitive touch inputs
+ * @details This class provides functionality for reading and debouncing
+ * capacitive touch buttons on ESP32 touch pins. It supports both polling
+ * and interrupt-based operation modes.
+ * 
+ * The class implements debouncing to prevent multiple detections from
+ * a single physical touch due to electrical noise or unstable readings.
+ * It can operate in either polling mode (regular state checks) or
+ * interrupt mode (hardware interrupt triggered on touch detection).
+ */
 class TouchButton {
 private:
   bool lastState;                       // Last stable state
