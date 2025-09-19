@@ -36,6 +36,20 @@ Player::Player() {
 }
 
 /**
+ * @brief Set playlist index with validation
+ * @param index New playlist index
+ */
+void Player::setPlaylistIndex(int index) {
+  // Validate that the index is within the valid range of the playlist
+  if (index >= 0 && index < playlist->getCount()) {
+    playerState.playlistIndex = index;
+  } else {
+    // If index is out of bounds, set to 0 (first item) or -1 if playlist is empty
+    playerState.playlistIndex = (playlist->getCount() > 0) ? 0 : -1;
+  }
+}
+
+/**
  * @brief Set player volume
  * @param volume New volume level (0-22)
  */

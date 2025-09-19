@@ -112,7 +112,7 @@ public:
   void setBass(int bass) { playerState.bass = bass; }
   void setMid(int mid) { playerState.mid = mid; }
   void setTreble(int treble) { playerState.treble = treble; }
-  void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
+  void setPlaylistIndex(int index);
   void setBitrate(int newBitrate) { streamInfo.bitrate = newBitrate; }
   void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
