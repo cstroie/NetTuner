@@ -65,9 +65,8 @@ void setupRotaryEncoder() {
  * - When rotating clockwise: CLK leads DT
  * - When rotating counter-clockwise: DT leads CLK
  * 
- * Only processes events when CLK transitions from LOW to HIGH to avoid
- * double-counting. This implementation uses a state machine approach to track
- * the last CLK value and detect rising edges.
+ * Only processes events when CLK transitions from HIGH to LOW to avoid
+ * double-counting.
  */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
