@@ -24,7 +24,7 @@
 // Define the maximum number of touch pins
 #define TOUCH_PIN_COUNT 3
 
-// Forward declaration of TouchButton class
+// Document this, AI!
 class TouchButton {
 private:
   bool lastState;                       // Last stable state
