@@ -37,6 +37,11 @@ char* displayNames[OLED_COUNT] = {
     (char*)"128x32 (3 lines)"
 };
 
+/**
+ * @brief Array of display dimensions
+ * 
+ * Width and height for each display type, indexed by display_t values
+ */
 int displaySizes[OLED_COUNT][2] = {
     {128, 64}, 
     {128, 32}, 
@@ -191,7 +196,6 @@ void Display::printAt(const String text, int x, int y, char align) {
     printAt(text.c_str(), x, y, align);
 }
 
-
 /**
  * @brief Show the NetTuner logo on display
  * 
@@ -232,15 +236,13 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     if (!displayOn) {
         return;
     }
-    
     // Clear the display buffer for fresh content
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    
+    // Different layouts for playing vs stopped
     if (isPlaying) {
         // Fixed '>' character to indicate playing state
         printAt(">", 0, updateLayout[displayType][0], 'l');
-        
         // Display stream title (first line) with scrolling for long titles
         String title = streamName;
         if (displayType == OLED_128x64) {
@@ -252,7 +254,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 title = title + ": " + String(streamTitle);
             }
         }
-        
         // Scroll title if too long for display (excluding the '>' character)
         // 16 chars fit on a 128px display with '>' and some margin
         // Calculate how many characters we can display (14 chars = 84 pixels)
@@ -262,13 +263,11 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             static unsigned long lastTitleScrollTime = 0;
             static int titleScrollOffset = 0;
             static String titleScrollText = "";
-            
             // Reset scroll if text changed
             if (titleScrollText != title) {
                 titleScrollText = title;
                 titleScrollOffset = 0;
             }
-            
             // Scroll every 500ms for smooth animation
             if (millis() - lastTitleScrollTime > 500) {
                 titleScrollOffset++;
@@ -278,7 +277,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 }
                 lastTitleScrollTime = millis();
             }
-            
             // Display scrolled text
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
@@ -288,7 +286,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display title without scrolling for short titles
             printAt(title, 16, updateLayout[displayType][0], 'l');
         }
-        
+        // Display stream name on second line if available and display supports it
         if (updateLayout[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
             String stationName = String(streamName);
@@ -298,7 +296,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(stationName, 0, updateLayout[displayType][1], 'l');
             }
         }
-        
+        // Display volume and bitrate on third line if display supports it
         if (updateLayout[displayType][2] > 0) {
             // Display volume and bitrate on third line
             char volStr[20];
@@ -311,7 +309,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(bitrateStr, 0, updateLayout[displayType][2], 'r');
             }
         }
-            
+        // Display IP address on last line if display supports it
         if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
             printAt(ipString, 0, updateLayout[displayType][3], 'c');
@@ -323,7 +321,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             printAt("NetTuner", 0, updateLayout[displayType][0], 'c');
             lineStream = 1;
         }
-            
         // Display current stream name (second line) or selected playlist item if none selected
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
@@ -345,7 +342,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt("No stream", 0, updateLayout[displayType][lineStream], 'c');
             }
         }
-        
         // Display volume on third line (only for displays with sufficient height)
         if (updateLayout[displayType][2] > 0) {
             // Display volume level
@@ -359,13 +355,12 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(rssiStr, 0, updateLayout[displayType][2], 'r');
             }
         }
-
+        // Display IP address on last line if display supports it
         if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
             printAt(ipString, 0, updateLayout[displayType][3], 'c');
         }
     }
-    
     // Send buffer to display to make changes visible
     displayRef.display();
 }
@@ -464,12 +459,10 @@ bool Display::isOn() const {
 void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     extern Config config;
     const unsigned long DISPLAY_TIMEOUT = config.display_timeout * 1000; // Convert seconds to milliseconds
-    
     // Handle potential millis() overflow by resetting activity time
     if (currentTime < lastActivityTime) {
         lastActivityTime = currentTime; // Reset on overflow
     }
-    
     // If we're playing, keep the display on
     if (isPlaying) {
         // Update activity time periodically during playback to prevent timeout
@@ -484,7 +477,6 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
         }
         return;
     }
-    
     // If we're not playing, check for timeout
     if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
         if (displayOn) {

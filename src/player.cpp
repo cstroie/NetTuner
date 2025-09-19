@@ -69,7 +69,6 @@ void Player::setTone(int bass, int mid, int treble) {
   playerState.bass = constrain(bass, -6, 6);
   playerState.mid = constrain(mid, -6, 6);
   playerState.treble = constrain(treble, -6, 6);
-  
   // Apply tone settings to audio output
   setTone();
 }

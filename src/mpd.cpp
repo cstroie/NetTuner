@@ -267,18 +267,17 @@ void MPDInterface::handleListCommand(const String& args) {
     mpdClient.print(mpdResponseError("list", "Tag type too long"));
     return;
   }
-  
+  // Parse tag type
   if (args.length() > 0) {
     String tagType = args;
     tagType.toLowerCase();
     tagType.trim();
-    
     // Validate supported tag types
     if (!tagType.startsWith("artist") && !tagType.startsWith("album") && !tagType.startsWith("title")) {
       mpdClient.print(mpdResponseError("list", "Unsupported tag type"));
       return;
     }
-    
+    // Return values based on tag type
     if (tagType.startsWith("artist")) {
       // Return dummy artist
       mpdClient.print("Artist: WebRadio\n");
@@ -1148,26 +1147,21 @@ void MPDInterface::handleVolumeCommand(const String& args) {
     mpdClient.print(mpdResponseError("volume", "Invalid argument length"));
     return;
   }
-  
   // Volume command - change volume by relative amount
   if (args.length() > 0) {
     // Parse volume change value (can be negative for decrease)
     int volumeChange = parseValue(args);
-    
     // Validate volume change range (reasonable limits)
     if (volumeChange < -100 || volumeChange > 100) {
       mpdClient.print(mpdResponseError("volume", "Volume change out of range"));
       return;
     }
-    
     // Get current volume as percentage for MPD compatibility
     int currentVolPercent = map(this->player.getVolume(), 0, 22, 0, 100);
-
     // Apply change and clamp to 0-100 range
     int newVolPercent = currentVolPercent + volumeChange;
     if (newVolPercent < 0) newVolPercent = 0;
     if (newVolPercent > 100) newVolPercent = 100;
-    
     // Convert back to 0-22 scale for ESP32-audioI2S and set
     int newVolume = map(newVolPercent, 0, 100, 0, 22);
     this->player.setVolume(newVolume);
@@ -1212,7 +1206,6 @@ void MPDInterface::handleSetVolCommand(const String& args) {
     mpdClient.print(mpdResponseError("setvol", "Invalid argument length"));
     return;
   }
-  
   // Set volume command
   if (args.length() > 0) {
     // Parse volume value, handling quotes if present
@@ -1270,7 +1263,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
     mpdClient.print(mpdResponseError("play", "Invalid argument length"));
     return;
   }
-  
+  // Play command - optional playlist index
   int playlistIndex = -1;
   if (args.length() > 0) {
     // Convert to 0-based index
@@ -1290,7 +1283,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
   }
 }
 
- /**
+/**
  * @brief Handle the MPD kill command
  * @details This function processes the MPD "kill" command by restarting the
  * ESP32 device. This provides a way for MPD clients to trigger a system
@@ -1508,7 +1501,6 @@ void MPDInterface::handleDecodersCommand(const String& args) {
  */
 MPDInterface::MPDInterface(WiFiServer& serverRef, Player& playerRef)
     : mpdServer(serverRef), player(playerRef) {
-
   // Initialize supported commands list
   supportedCommands = {
     "add", "clear", "close", "currentsong", "delete", "disableoutput", 
@@ -1828,7 +1820,7 @@ void MPDInterface::handleAsyncCommands() {
             String command = commandBuffer;
             command.trim();
             commandBuffer = "";
-            
+            // Only process if command is not empty
             if (command.length() > 0) {
                 Serial.println("MPD Command: " + command);
                 // Handle command list mode
@@ -1956,7 +1948,6 @@ String MPDInterface::mpdResponseOK() {
 String MPDInterface::mpdResponseError(const String& command, const String& message) {
   // Determine appropriate error code based on message content
   int errorCode = 5; // Default to ACK_ERROR_NO_EXIST
-  
   // Map common error conditions to appropriate MPD error codes
   if (message.indexOf("argument") != -1 || message.indexOf("missing") != -1 || message.indexOf("range") != -1) {
     errorCode = 2; // ACK_ERROR_ARG
@@ -1965,7 +1956,7 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
   } else if (message.indexOf("unknown") != -1) {
     errorCode = 0; // ACK_ERROR_UNKNOWN
   }
-  
+  // Format the error response according to MPD specification
   return "ACK [" + String(errorCode) + "@0] {" + command + "} " + message + "\n";
 }
 
@@ -2055,18 +2046,15 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     mpdClient.print(mpdResponseError("search/find", "Arguments too long"));
     return;
   }
-  
   // Extract search filter and term
   String searchFilter = args;
   searchFilter.trim();
   String searchTerm;
-  
   // Validate that we have arguments
   if (searchFilter.length() == 0) {
     mpdClient.print(mpdResponseError("search/find", "Missing search arguments"));
     return;
   }
-  
   // Extract search filter (after the first space and before the next space)
   int firstSpace = searchFilter.indexOf(' ');
   if (firstSpace != -1) {
@@ -2077,18 +2065,16 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     searchFilter = searchFilter.substring(0, firstSpace);
     searchFilter.trim();
   }
-  
   // Validate search filter and term
   if (searchFilter.length() == 0) {
     mpdClient.print(mpdResponseError("search/find", "Missing search filter"));
     return;
   }
-  
+  // Check for search term
   if (searchTerm.length() == 0) {
     mpdClient.print(mpdResponseError("search/find", "Missing search term"));
     return;
   }
-  
   // Validate search filter type
   String lowerFilter = searchFilter;
   lowerFilter.toLowerCase();
@@ -2096,7 +2082,6 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
     mpdClient.print(mpdResponseError("search/find", "Unsupported search filter"));
     return;
   }
-  
   // Remove quotes if present
   if (searchFilter.startsWith("\"") && searchFilter.endsWith("\"") && searchFilter.length() >= 2) {
     searchFilter = searchFilter.substring(1, searchFilter.length() - 1);
@@ -2104,35 +2089,30 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
   if (searchTerm.startsWith("\"") && searchTerm.endsWith("\"") && searchTerm.length() >= 2) {
     searchTerm = searchTerm.substring(1, searchTerm.length() - 1);
   }
-  
   // Validate search term length
   if (searchTerm.length() == 0) {
     mpdClient.print(mpdResponseError("search/find", "Empty search term"));
     return;
   }
-  
   // Handle special cases for artist/album searches
   if (lowerFilter == "album" || lowerFilter == "artist") {
     sendPlaylistInfo(1); // Send simple info for album search
     return;
   }
-  
   // Search in playlist names
   for (int i = 0; i < this->player.getPlaylistCount(); i++) {
     const StreamInfo& item = this->player.getPlaylistItem(i);
     String playlistName = String(item.name);
-    
     // Validate playlist name
     if (playlistName.length() == 0) {
       continue;
     }
-    
     // Convert both to lowercase for case-insensitive comparison
     String lowerName = playlistName;
     lowerName.toLowerCase();
     String lowerSearch = searchTerm;
     lowerSearch.toLowerCase();
-    
+    // Determine if there's a match based on mode
     bool match = false;
     if (exactMatch) {
       // Exact match for find command
@@ -2141,7 +2121,6 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
       // Partial match for search command
       match = (lowerName.indexOf(lowerSearch) != -1);
     }
-    
     // If a match is found, send the metadata
     if (match) {
       mpdClient.print("file: " + String(item.url) + "\n");
