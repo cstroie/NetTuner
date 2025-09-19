@@ -66,6 +66,7 @@ private:
   StreamInfoData streamInfo;
   Playlist* playlist;
   Audio* audio;
+  portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
   
 public:
   // Constructor

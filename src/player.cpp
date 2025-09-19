@@ -223,7 +223,10 @@ void Player::savePlayerState() {
   doc["playlistIndex"] = playerState.playlistIndex;
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
+    // Use critical section to protect against concurrent access to dirty flag
+    portENTER_CRITICAL(&spinlock);
     playerState.dirty = false;
+    portEXIT_CRITICAL(&spinlock);
   } else {
     Serial.println("Failed to save player state to SPIFFS");
   }
