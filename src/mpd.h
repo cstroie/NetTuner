@@ -65,7 +65,7 @@ private:
   Player& player;                    ///< Reference to Player instance
 
   // MPD command list state variables for batch command processing
-  static const int MAX_COMMAND_LIST_SIZE = 50;  ///< Maximum number of commands in a command list
+  static const int MAX_COMMAND_LIST_SIZE = 20;  ///< Maximum number of commands in a command list
   String commandList[MAX_COMMAND_LIST_SIZE];    ///< Buffer for command list
   bool inCommandList = false;        ///< Flag indicating if we're in command list mode
   bool commandListOK = false;        ///< Flag indicating if we should send list_OK responses
