@@ -122,11 +122,17 @@ void TouchButton::handle() {
       // If button is pressed and we haven't handled this press yet
       if (currentState && !pressedFlag) {
         // Mark this press as detected
+        // Disable interrupts during this operation to prevent race condition
+        noInterrupts();
         pressedFlag = true;
+        interrupts();
       }
       else if (!currentState) {
         // If button is released, reset handled flag
+        // Disable interrupts during this operation to prevent race condition
+        noInterrupts();
         pressedFlag = false;
+        interrupts();
       }
     }
     // Save current state for next iteration
@@ -148,7 +154,10 @@ bool TouchButton::wasPressed() {
   // Store current flag state
   bool result = pressedFlag;
   // Clear flag to prevent reprocessing (one-shot detection)
+  // Disable interrupts during this operation to prevent race condition
+  noInterrupts();
   pressedFlag = false;
+  interrupts();
   // Return previous flag state
   return result;
 }
