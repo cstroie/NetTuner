@@ -63,12 +63,13 @@ static void (*interruptHandlers[TOUCH_PIN_COUNT])() = {
  * @param debounceMs The debounce time in milliseconds (default 100)
  * @param useInterrupt Whether to use interrupt mode (default false)
  */
+// File-scope static variable to track number of instances
+static int instanceCount = 0;
+
 TouchButton::TouchButton(uint8_t touchPin, uint16_t touchThreshold, unsigned long debounceMs, bool useInterrupt)
   : pin(touchPin), threshold(touchThreshold), lastState(false),
     lastPressTime(0), pressedFlag(false), debounceTime(debounceMs), useInterrupt(useInterrupt) {
   if (useInterrupt) {
-    // Static counter to track number of instances
-    static int instanceCount = 0;
     // Ensure we don't exceed the maximum number of touch pins
     // This prevents array overflow in touchButtonInstances
     // and ensures each instance has a unique interrupt handler
