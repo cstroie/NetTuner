@@ -855,8 +855,10 @@ void MPDInterface::handleCurrentSongCommand(const String& args) {
       // No stream title, use stream name as fallback
       mpdClient.print("Title: " + String(this->player.getStreamName()) + "\n");
     }
+    mpdClient.print("Album: WebRadio\n");
     mpdClient.print("Id: " + String(this->player.getPlaylistIndex()) + "\n");
     mpdClient.print("Pos: " + String(this->player.getPlaylistIndex()) + "\n");
+    mpdClient.print("Track: " + String(this->player.getPlaylistIndex() + 1) + "\n");
   }
   mpdClient.print(mpdResponseOK());
 }
