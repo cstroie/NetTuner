@@ -219,15 +219,17 @@ fieldset input[type="number"]:focus {
 }
 
 /**
- * @section Groovy Fast font
- * @description Styles for the Groovy Fast font from Google Fonts
- * These styles apply the Rubik Glitch Pop font to the CubeRadio title
+ * @section Oxanium font
+ * @description Styles for the Oxanium font from Google Fonts
+ * These styles apply the Oxanium font to the CubeRadio title
  * for a distinctive visual effect.
  */
-strong {
+.nav-text {
     font-family: 'Oxanium', sans-serif;
     font-weight: 400;
     font-style: normal;
+    font-size: 1.2em;
+    vertical-align: middle;
 }
 
 /**
@@ -236,14 +238,12 @@ strong {
  * These styles make "Cube" appear in white/black based on theme and 
  * "Radio" in the theme's primary color.
  */
-.cube {
+.nav-text .cube {
     color: var(--pico-color);
-    font-size: 1.8em;
 }
 
-.radio {
+.nav-text .radio {
     color: var(--pico-primary);
-    font-size: 1.8em;
 }
 
 
