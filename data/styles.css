@@ -230,6 +230,20 @@ strong {
     font-style: normal;
 }
 
+/**
+ * @section Title styling
+ * @description Styles for the CubeRadio title with theme-aware coloring
+ * These styles make "Cube" appear in white/black based on theme and 
+ * "Radio" in the theme's primary color.
+ */
+.cube {
+    color: var(--pico-color);
+}
+
+.radio {
+    color: var(--pico-primary);
+}
+
 
 /**
  * @section Theme toggle button
