@@ -238,10 +238,12 @@ strong {
  */
 .cube {
     color: var(--pico-color);
+    font-size: 1.8em;
 }
 
 .radio {
     color: var(--pico-primary);
+    font-size: 1.8em;
 }
 
 
