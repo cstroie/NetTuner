@@ -205,6 +205,19 @@ fieldset input[type="number"]:focus {
     margin-left: 0.5rem;
 }
 
+/**
+ * @section Navigation logo
+ * @description Styles for the logo in the navigation bar
+ * These styles define the size, alignment, and spacing of the logo
+ * in the navigation bar.
+ */
+.nav-logo {
+    height: 32px;
+    width: 32px;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
 
 /**
  * @section Theme toggle button
