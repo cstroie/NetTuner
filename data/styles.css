@@ -218,6 +218,18 @@ fieldset input[type="number"]:focus {
     margin-right: 8px;
 }
 
+/**
+ * @section Groovy Fast font
+ * @description Styles for the Groovy Fast font from Google Fonts
+ * These styles apply the Rubik Glitch Pop font to the CubeRadio title
+ * for a distinctive visual effect.
+ */
+strong {
+    font-family: 'Rubik Glitch Pop', cursive;
+    font-weight: 400;
+    font-style: normal;
+}
+
 
 /**
  * @section Theme toggle button
