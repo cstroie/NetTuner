@@ -1,5 +1,5 @@
 /*
- * NetTuner - Pin definitions for ESP32-CAM
+ * CubeRadio - Pin definitions for ESP32-CAM
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify

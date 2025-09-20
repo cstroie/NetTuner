@@ -1,5 +1,5 @@
 /*
- * NetTuner - Pin definitions for ESP32-WROOM
+ * CubeRadio - Pin definitions for ESP32-WROOM
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify

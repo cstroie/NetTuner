@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player with MPD protocol support
+ * CubeRadio - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify

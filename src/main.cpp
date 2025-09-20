@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player with MPD protocol support
+ * CubeRadio - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -1059,9 +1059,9 @@ void handleSimpleWebPage() {
     }
   }
   // Create a more memory-efficient HTML response
-  String html = "<!DOCTYPE html><html><head><title>NetTuner</title>";
+  String html = "<!DOCTYPE html><html><head><title>CubeRadio</title>";
   html += "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\">";
-  html += "</head><body><header><h1>NetTuner</h1></header><main>";
+  html += "</head><body><header><h1>CubeRadio</h1></header><main>";
   html += "<section><h2>Status: ";
   html += player.isPlaying() ? "PLAY" : "STOP";
   html += "</h2>";
@@ -1122,7 +1122,7 @@ void handleSimpleWebPage() {
   html += "<input type='url' name='url' id='url' placeholder='http://example.com/stream'>";
   html += "<button name='action' value='instant' type='submit'>Play&nbsp;stream</button>";
   html += "</fieldset></form></section></main>";
-  html += "<footer><p>NetTuner Simple Interface</p></footer></body></html>";
+  html += "<footer><p>CubeRadio Simple Interface</p></footer></body></html>";
   
   // Send the HTML response
   server.send(200, "text/html", html);
@@ -2017,7 +2017,7 @@ bool connectToWiFi() {
   static bool firstConnection = true;  
   bool connected = false;
   if (wifiNetworkCount > 0) {
-    WiFi.setHostname("NetTuner");
+    WiFi.setHostname("CubeRadio");
     // First, scan for available networks
     Serial.println("Scanning for available WiFi networks...");
     // Show appropriate status based on whether this is first connection or reconnection
@@ -2188,7 +2188,7 @@ void loop() {
 void setup() {
   Serial.begin(115200);
   // Print program name and build timestamp
-  Serial.println("NetTuner - An ESP32-based internet radio player with MPD protocol support");
+  Serial.println("CubeRadio - An ESP32-based internet radio player with MPD protocol support");
   Serial.print("Build timestamp: ");
   Serial.println(BUILD_TIME);
   
@@ -2260,11 +2260,11 @@ void setup() {
   display->showStatus("Starting AP Mode", "", "");
   
   // Start WiFi access point mode with error handling
-  if (WiFi.softAP("NetTuner-Setup")) {
+  if (WiFi.softAP("CubeRadio-Setup")) {
     Serial.println("Access Point Started");
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP().toString());
-    display->showStatus("AP Mode Active", "NetTuner-Setup", WiFi.softAPIP().toString());
+    display->showStatus("AP Mode Active", "CubeRadio-Setup", WiFi.softAPIP().toString());
   } else {
     Serial.println("Failed to start Access Point");
     display->showStatus("AP Start Failed", "", "");
@@ -2272,7 +2272,7 @@ void setup() {
 
   // Start mDNS responder
   #if defined(BOARD_HAS_PSRAM)
-  if (MDNS.begin("NetTuner")) {
+  if (MDNS.begin("CubeRadio")) {
     Serial.println("MDNS responder started");
     MDNS.addService("http", "tcp", 80);
     MDNS.addService("mpd", "tcp", 6600);

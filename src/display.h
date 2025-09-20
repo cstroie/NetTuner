@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player with MPD protocol support
+ * CubeRadio - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -104,7 +104,7 @@ bool getDisplaySize(int index, int* width, int* height);
 /**
  * @brief Display management class for OLED screen
  * 
- * This class encapsulates all display functionality for the NetTuner,
+ * This class encapsulates all display functionality for the CubeRadio,
  * including initialization, updating with playback information, status
  * display, and power management.
  */
@@ -130,7 +130,7 @@ public:
      * @brief Initialize the display
      * 
      * Configures and initializes the OLED display with default settings,
-     * including font, text color, and initial "NetTuner" splash screen.
+     * including font, text color, and initial "CubeRadio" splash screen.
      */
     void begin();
     
@@ -186,9 +186,9 @@ public:
     void clear();
     
     /**
-     * @brief Show the NetTuner logo on display
+     * @brief Show the CubeRadio logo on display
      * 
-     * Displays the "NetTuner" logo centered on the screen using the predefined
+     * Displays the "CubeRadio" logo centered on the screen using the predefined
      * logo layout for the current display type.
      */
     void showLogo();
@@ -196,7 +196,7 @@ public:
     /**
      * @brief Show status information on display
      * 
-     * Displays a standardized status screen with "NetTuner" title and
+     * Displays a standardized status screen with "CubeRadio" title and
      * up to three lines of additional information.
      * 
      * @param line1 First line of information (displayed at y=30)

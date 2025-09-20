@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player with MPD protocol support
+ * CubeRadio - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -70,7 +70,7 @@ int parseValue(const String& valueStr) {
  * 4. Sends an OK response to the MPD client
  * 
  * In MPD protocol terms, both "stop" and "pause" commands are handled by this
- * function for simplicity, as the NetTuner implementation treats them the same way.
+ * function for simplicity, as the CubeRadio implementation treats them the same way.
  * 
  * @param args Command arguments (not used for stop command)
  */
@@ -542,7 +542,7 @@ void MPDInterface::handleCommandsCommand(const String& args) {
 /**
  * @brief Handle the MPD outputs command
  * @details This function processes the MPD "outputs" command by returning
- * information about available audio outputs. Since the NetTuner uses
+ * information about available audio outputs. Since the CubeRadio uses
  * ESP32-audioI2S, only a single I2S output is available.
  * 
  * The function implements MPD protocol compatibility by:
@@ -1313,7 +1313,7 @@ void MPDInterface::handlePlayCommand(const String& args) {
  * - Calls ESP.restart() to reboot the device
  * 
  * This command provides MPD clients with a standard way to restart the
- * NetTuner device without requiring direct access to the web interface.
+ * CubeRadio device without requiring direct access to the web interface.
  * 
  * @param args Command arguments (not used for kill command)
  */
@@ -1481,7 +1481,7 @@ void MPDInterface::handleCommandListEndCommand(const String& args) {
  * - MIME types for the supported formats
  * 
  * This information allows MPD clients to understand what audio formats
- * the NetTuner can decode and play.
+ * the CubeRadio can decode and play.
  * 
  * Currently supported formats:
  * - MP3: Using the HelixMP3 decoder

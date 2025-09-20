@@ -1,5 +1,5 @@
 /**
- * @fileoverview Main JavaScript functions for the NetTuner web interface
+ * @fileoverview Main JavaScript functions for the CubeRadio web interface
  * @author Costin Stroie <costinstroie@eridu.eu.org>
  * @version 1.0
  */
@@ -1142,7 +1142,7 @@ async function exportAllConfiguration() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "nettuner-config-export.json";
+      a.download = "cuberadio-config-export.json";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -2409,7 +2409,7 @@ async function downloadJSON() {
       const a = document.createElement("a");
       a.href = url;
       a.download =
-        "NetTuner-" + new Date().toISOString().split("T")[0] + ".json";
+        "CubeRadio-" + new Date().toISOString().split("T")[0] + ".json";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -2455,7 +2455,7 @@ async function downloadM3U() {
       const a = document.createElement("a");
       a.href = url;
       a.download =
-        "NetTuner-" + new Date().toISOString().split("T")[0] + ".m3u";
+        "CubeRadio-" + new Date().toISOString().split("T")[0] + ".m3u";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -2501,7 +2501,7 @@ async function downloadPLS() {
       const a = document.createElement("a");
       a.href = url;
       a.download =
-        "NetTuner-" + new Date().toISOString().split("T")[0] + ".pls";
+        "CubeRadio-" + new Date().toISOString().split("T")[0] + ".pls";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

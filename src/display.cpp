@@ -1,5 +1,5 @@
 /*
- * NetTuner - An ESP32-based internet radio player with MPD protocol support
+ * CubeRadio - An ESP32-based internet radio player with MPD protocol support
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
@@ -104,7 +104,7 @@ Display::Display(Adafruit_SSD1306& display, enum display_t displayTypeEnum) :
  * @brief Initialize the display
  * 
  * Configures and initializes the OLED display with default settings,
- * including font, text color, and initial "NetTuner" splash screen.
+ * including font, text color, and initial "CubeRadio" splash screen.
  * This method must be called before any other display operations.
  */
 void Display::begin() {
@@ -197,16 +197,16 @@ void Display::printAt(const String text, int x, int y, char align) {
 }
 
 /**
- * @brief Show the NetTuner logo on display
+ * @brief Show the CubeRadio logo on display
  * 
- * Displays the "NetTuner" logo centered on the screen using the predefined
+ * Displays the "CubeRadio" logo centered on the screen using the predefined
  * logo layout for the current display type.
  */
 void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    printAt("NetTuner", 0, logoLayout[displayType][0], 'c');
+    printAt("CubeRadio", 0, logoLayout[displayType][0], 'c');
     // Show the buffer
     displayRef.display();
 }
@@ -318,7 +318,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         // Display when stopped
         int lineStream = 0;
         if (updateLayout[displayType][1] > 0) {
-            printAt("NetTuner", 0, updateLayout[displayType][0], 'c');
+            printAt("CubeRadio", 0, updateLayout[displayType][0], 'c');
             lineStream = 1;
         }
         // Display current stream name (second line) or selected playlist item if none selected
@@ -368,7 +368,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
 /**
  * @brief Show status information on display
  * 
- * Displays a standardized status screen with "NetTuner" title and
+ * Displays a standardized status screen with "CubeRadio" title and
  * up to three lines of additional information.
  * 
  * @param line1 First line of information (displayed at y=30)
@@ -381,7 +381,7 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     displayRef.setTextColor(SSD1306_WHITE);
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
-        printAt("NetTuner", 0, statusLayout[displayType][0], 'c');
+        printAt("CubeRadio", 0, statusLayout[displayType][0], 'c');
         // Display each line if it has content
         if (line1.length() > 0) {
             printAt(line1, 0, statusLayout[displayType][1], 'l');

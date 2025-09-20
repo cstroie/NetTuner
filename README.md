@@ -1,14 +1,14 @@
-# NetTuner
+# CubeRadio
 
 An ESP32-based internet radio player with web interface control
 
-![NetTuner](https://img.shields.io/badge/status-active-brightgreen)
+![CubeRadio](https://img.shields.io/badge/status-active-brightgreen)
 ![PlatformIO](https://img.shields.io/badge/platformio-latest-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 
 ## Overview
 
-NetTuner is an open-source internet radio player built on the ESP32 platform. It allows you to stream MP3 audio from HTTP URLs and control playback through a web interface or physical rotary encoder. The project features an OLED display for local status feedback and supports playlist management through a web API.
+CubeRadio is an open-source internet radio player built on the ESP32 platform. It allows you to stream MP3 audio from HTTP URLs and control playback through a web interface or physical rotary encoder. The project features an OLED display for local status feedback and supports playlist management through a web API.
 
 ## 🌟 Key Features
 
@@ -57,8 +57,8 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
 1. Install [PlatformIO](https://platformio.org/)
 2. Clone this repository:
    ```bash
-   git clone https://github.com/cstroie/NetTuner.git
-   cd NetTuner
+   git clone https://github.com/cstroie/CubeRadio.git
+   cd CubeRadio
    ```
 
 ### Building and Uploading
@@ -69,7 +69,7 @@ NetTuner is an open-source internet radio player built on the ESP32 platform. It
    pio run -t uploadfs
    ```
 
-2. After the device boots, connect to its WiFi access point (default: "NetTuner-Setup") or access the device's IP address on your network
+2. After the device boots, connect to its WiFi access point (default: "CubeRadio-Setup") or access the device's IP address on your network
 
 3. Configure your WiFi networks through the web interface
 

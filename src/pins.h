@@ -1,5 +1,5 @@
 /*
- * NetTuner - Pin definitions
+ * CubeRadio - Pin definitions
  * Copyright (C) 2025 Costin Stroie
  *
  * This program is free software: you can redistribute it and/or modify
