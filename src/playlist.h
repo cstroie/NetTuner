@@ -22,10 +22,14 @@
 #include <Arduino.h>
 #include "main.h"
 
+// Constants for StreamInfo field sizes
+#define STREAM_NAME_SIZE 96
+#define STREAM_URL_SIZE 128
+
 // Structure for playlist items
 struct StreamInfo {
-  char name[96];
-  char url[128];
+  char name[STREAM_NAME_SIZE];
+  char url[STREAM_URL_SIZE];
 };
 
 class Playlist {
