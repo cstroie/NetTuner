@@ -2307,6 +2307,44 @@ void setup() {
     // Start MPD server
   mpdServer.begin();
   Serial.println("MPD server started");
+  
+  // Setup ArduinoOTA
+  ArduinoOTA
+    .onStart([]() {
+      String type;
+      if (ArduinoOTA.getCommand() == U_FLASH)
+        type = "sketch";
+      else // U_SPIFFS
+        type = "filesystem";
+
+      // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+      Serial.println("Start updating " + type);
+      display->showStatus("OTA Update", "Starting...", type.c_str());
+    })
+    .onEnd([]() {
+      Serial.println("\nEnd");
+      display->showStatus("OTA Update", "Complete!", "Rebooting...");
+    })
+    .onProgress([](unsigned int progress, unsigned int total) {
+      int percentage = (progress / (total / 100));
+      Serial.printf("Progress: %u%%\r", percentage);
+      if (percentage % 10 == 0) { // Update display every 10%
+        display->showStatus("OTA Update", (String(percentage) + "%").c_str(), "");
+      }
+    })
+    .onError([](ota_error_t error) {
+      Serial.printf("Error[%u]: ", error);
+      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      
+      display->showStatus("OTA Update", "Failed", "Error");
+    });
+
+  ArduinoOTA.begin();
+  Serial.println("ArduinoOTA started");
     // Create audio task on core 0 with error checking
   BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 5, &audioTaskHandle, 0);
   if (result != pdPASS) {
