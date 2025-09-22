@@ -51,15 +51,9 @@ public:
   void clear();
   
   // Getters
-  int getCount() const { return count; }
-  int getCurrent() const { return current; }
-  const StreamInfo& getItem(int index) const { 
-    if (index < 0 || index >= count) {
-      static StreamInfo empty = {"", ""};
-      return empty;
-    }
-    return playlist[index]; 
-  }
+  int getCount() const;
+  int getCurrent() const;
+  const StreamInfo& getItem(int index) const;
 
   // Setters
   void setCurrent(int index) { current = index; }

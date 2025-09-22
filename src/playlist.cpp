@@ -204,6 +204,35 @@ void Playlist::clear() {
 }
 
 /**
+ * @brief Get playlist count
+ * @return Number of items in the playlist
+ */
+int Playlist::getCount() const {
+  return count;
+}
+
+/**
+ * @brief Get current playlist index
+ * @return Current selected playlist index
+ */
+int Playlist::getCurrent() const {
+  return current;
+}
+
+/**
+ * @brief Get playlist item at specific index
+ * @param index Playlist index
+ * @return Reference to StreamInfo at the specified index, or empty item if out of bounds
+ */
+const StreamInfo& Playlist::getItem(int index) const {
+  if (index < 0 || index >= count) {
+    static StreamInfo empty = {"", ""};
+    return empty;
+  }
+  return playlist[index];
+}
+
+/**
  * @brief Validate playlist integrity
  * Ensures playlist count and selection are within valid ranges
  */
