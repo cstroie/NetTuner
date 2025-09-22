@@ -315,7 +315,7 @@ int Player::getNextPlaylistItem() const {
 /**
  * @brief Get the previous playlist item index
  * @details Calculates the previous playlist index.
- * If the playlist is empty or index is at zero, returns 0. 
+ * If the playlist is empty or index is at zero or below, returns 0. 
  * Otherwise, returns the previous index in the playlist.
  * @return Previous playlist item index
  */
