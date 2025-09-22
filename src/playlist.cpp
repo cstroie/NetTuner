@@ -90,11 +90,16 @@ void Playlist::load() {
   // Check if any valid streams were loaded
   if (count == 0) {
     Serial.println("Error: No valid streams found in playlist");
+    // Don't create an empty playlist, just return with empty playlist
+    Serial.println("Continuing with empty playlist");
   } else {
     Serial.print("Loaded ");
     Serial.print(count);
     Serial.println(" streams from playlist");
   }
+  
+  // Validate playlist integrity after loading
+  validate();
 }
 
 /**
