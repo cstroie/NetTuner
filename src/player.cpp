@@ -294,8 +294,8 @@ void Player::clearPlaylist() {
  * @return int Number of items in the playlist
  * Delegates to the playlist object's getCount method
  */
-int Player::getPlaylistCount() const { 
-  return playlist->getCount(); 
+int Player::getPlaylistCount() const {
+  return playlist->getCount();
 }
 
 /**
@@ -315,7 +315,7 @@ int Player::getNextPlaylistItem() const {
 /**
  * @brief Get the previous playlist item index
  * @details Calculates the previous playlist index.
- * If the playlist is empty or index is at zero or below, returns 0. 
+ * If the playlist is empty or index is at zero or below, returns 0.
  * Otherwise, returns the previous index in the playlist.
  * @return Previous playlist item index
  */
@@ -364,8 +364,8 @@ const char* Player::getCurrentPlaylistItemURL() const {
  * @return const StreamInfo& Reference to the playlist item
  * Delegates to the playlist object's getItem method
  */
-const StreamInfo& Player::getPlaylistItem(int index) const { 
-  return playlist->getItem(index); 
+const StreamInfo& Player::getPlaylistItem(int index) const {
+  return playlist->getItem(index);
 }
 
 /**
@@ -533,7 +533,7 @@ int Player::updateBitrate() {
   if (audio) {
     int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
     if (newBitrate > 0 && newBitrate != streamInfo.bitrate) {
-      streamInfo.bitrate = newBitrate;
+      setBitrate(newBitrate);
       return newBitrate;
     }
   }
