@@ -58,9 +58,6 @@ TouchButton* touchPlay = nullptr;
 TouchButton* touchNext = nullptr;
 TouchButton* touchPrev = nullptr;
 
-// Flag to indicate board button press
-static volatile bool boardButtonPressed = false;
-
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, player);
 
@@ -389,57 +386,6 @@ extern Player player;
 // Flag to indicate board button press
 static volatile bool boardButtonPressed = false;
 
-/**
- * @brief Interrupt service routine for board button
- * Sets a flag when the board button is pressed
- */
-void boardButtonISR() {
-  static unsigned long lastInterruptTime = 0;
-  unsigned long interruptTime = millis();
-
-  // Debounce the button press (ignore if less than 50ms since last press)
-  if (interruptTime - lastInterruptTime > 50) {
-    boardButtonPressed = true;  // Set flag to indicate button press detected
-  }
-  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
-}
-
-/**
- * @brief Handle board button input
- * Processes the built-in button (GPIO 0) for play/stop toggle functionality
- * This function checks for button presses detected by the interrupt handler
- */
-void handleBoardButton() {
-  // Only handle board button if it's configured (not negative)
-  if (config.board_button < 0) {
-    return;
-  }
-
-  // Check if button was pressed (detected by interrupt)
-  if (boardButtonPressed) {
-    // Toggle play/stop
-    if (player.isPlaying()) {
-      // If currently playing, stop the stream
-      player.stopStream();
-    } else {
-      // If we have a current stream, resume it
-      if (strlen(player.getStreamUrl()) > 0) {
-        player.startStream();
-      }
-      // Otherwise, if we have playlist items, play the selected one
-      else if (player.isPlaylistIndexValid()) {
-        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
-      }
-      // Save player state after starting
-      player.savePlayerState();
-    }
-    // Update display and notify clients
-    updateDisplay();
-    sendStatusToClients();
-    // Clear the flag
-    boardButtonPressed = false;
-  }
-}
 
 /**
  * @brief Handle WiFi configuration API request
@@ -855,7 +801,7 @@ void saveConfig() {
  * Returns the current configuration as JSON
  * This function serves the current configuration in JSON format.
  */
-void handleGetConfig() {
+void handleGetConfig(AsyncWebServerRequest *request) {
   // Yield to other tasks before processing
   yield();
   // Create JSON document with appropriate size
@@ -921,56 +867,6 @@ void audioTask(void *pvParameters) {
 
 
 
-/**
- * @brief Interrupt service routine for board button
- * Sets a flag when the board button is pressed
- */
-void boardButtonISR() {
-  static unsigned long lastInterruptTime = 0;
-  unsigned long interruptTime = millis();
-  // Debounce the button press (ignore if less than 50ms since last press)
-  if (interruptTime - lastInterruptTime > 50) {
-    boardButtonPressed = true;  // Set flag to indicate button press detected
-  }
-  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
-}
-
-/**
- * @brief Handle board button input
- * Processes the built-in button (GPIO 0) for play/stop toggle functionality
- * This function checks for button presses detected by the interrupt handler
- */
-void handleBoardButton() {
-  // Only handle board button if it's configured (not negative)
-  // and not the same as rotary switch
-  if (config.board_button < 0 && config.board_button != config.rotary_sw) {
-    return;
-  }
-  // Check if button was pressed (detected by interrupt)
-  if (boardButtonPressed) {
-    // Toggle play/stop
-    if (player.isPlaying()) {
-      // If currently playing, stop the stream
-      player.stopStream();
-    } else {
-      // If we have a current stream, resume it
-      if (strlen(player.getStreamUrl()) > 0) {
-        player.startStream();
-      } 
-      // Otherwise, if we have playlist items, play the selected one
-      else if (player.isPlaylistIndexValid()) {
-        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
-      }
-      // Save player state after starting
-      player.savePlayerState();
-    }
-    // Update display and notify clients
-    updateDisplay();
-    sendStatusToClients();
-    // Clear the flag
-    boardButtonPressed = false;
-  }
-}
 
 /**
  * @brief Handle rotary encoder input
@@ -1852,34 +1748,10 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
   }
   // Check for HTTP errors
   if (httpResponseCode > 0) {
-    // Get response headers and forward them
-    // Use public methods to iterate through headers
-    int headerCount = 0;
-    String headerName, headerValue;
-    // Get all headers one by one until we've processed them all
-    while (true) {
-      headerName = http.headerName(headerCount);
-      headerValue = http.header(headerCount);
-      // If we get empty strings, we've reached the end of headers
-      if (headerName.length() == 0 && headerValue.length() == 0) {
-        break;
-      }
-      // Skip headers that might cause issues
-      if (!headerName.equalsIgnoreCase("Connection") &&
-          !headerName.equalsIgnoreCase("Transfer-Encoding")) {
-        server.sendHeader(headerName, headerValue, false);
-      }
-      // Increment header count
-      headerCount++;
-      // Safety check to prevent infinite loop
-      if (headerCount > 100) {
-        break;
-      }
-    }
     // For HEAD requests, only send headers without content
     if (request->method() == HTTP_HEAD) {
       // Send response with proper content type and length (no content body for HEAD)
-      AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, contentType, "");
+      AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, "application/octet-stream", "");
       // Copy response headers
       for (int i = 0; i < http.headers(); i++) {
         String headerName = http.headerName(i);
@@ -1897,7 +1769,7 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
       WiFiClient * stream = http.getStreamPtr();
       if (stream) {
         // Create response to stream data
-        AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, contentType, "");
+        AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, "application/octet-stream", "");
         
         // Copy response headers
         for (int i = 0; i < http.headers(); i++) {
@@ -2112,7 +1984,6 @@ void setupWebServer() {
   server.serveStatic("/config", SPIFFS, "/config.html");
   server.serveStatic("/about", SPIFFS, "/about.html");
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html");
-  });
 }
 
 
