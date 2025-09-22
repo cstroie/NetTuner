@@ -136,6 +136,11 @@ void Playlist::save() {
  */
 void Playlist::setItem(int index, const char* name, const char* url) {
   if (index >= 0 && index < MAX_PLAYLIST_SIZE && name && url) {
+    // Validate URL format before setting
+    if (strlen(url) == 0 || !VALIDATE_URL(url)) {
+      Serial.println("Warning: Skipping stream with invalid URL format in setItem");
+      return;
+    }
     SAFE_STRNCPY(playlist[index].name, name, STREAM_NAME_SIZE);
     SAFE_STRNCPY(playlist[index].url, url, STREAM_URL_SIZE);
     if (index >= count) {
@@ -151,6 +156,11 @@ void Playlist::setItem(int index, const char* name, const char* url) {
  */
 void Playlist::addItem(const char* name, const char* url) {
   if (count < MAX_PLAYLIST_SIZE && name && url) {
+    // Validate URL format before adding
+    if (strlen(url) == 0 || !VALIDATE_URL(url)) {
+      Serial.println("Warning: Skipping stream with invalid URL format in addItem");
+      return;
+    }
     SAFE_STRNCPY(playlist[count].name, name, STREAM_NAME_SIZE);
     SAFE_STRNCPY(playlist[count].url, url, STREAM_URL_SIZE);
     count++;
