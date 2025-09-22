@@ -2104,6 +2104,7 @@ bool connectToWiFi() {
  * This is the main application loop that runs continuously after setup()
  */
 void loop() {
+  ArduinoOTA.handle();           // Handle OTA updates
   server.handleClient();         // Process incoming web requests
   webSocket.loop();              // Process WebSocket events
   mpdInterface.handleClient();   // Process MPD commands
