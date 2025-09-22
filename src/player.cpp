@@ -313,17 +313,17 @@ int Player::getNextPlaylistItem() const {
 }
 
 /**
- * @brief Get the previous playlist item index with wraparound
- * @details Calculates the previous playlist index with wraparound behavior.
- * If the playlist is empty, returns 0. Otherwise, returns the previous index
- * in the playlist, wrapping to the last item when reaching the beginning.
+ * @brief Get the previous playlist item index
+ * @details Calculates the previous playlist index.
+ * If the playlist is empty or index is at zero, returns 0. 
+ * Otherwise, returns the previous index in the playlist.
  * @return Previous playlist item index
  */
 int Player::getPrevPlaylistItem() const {
-  if (playlist->getCount() <= 0) {
+  if (playlist->getCount() <= 0 || playerState.playlistIndex <= 0) {
     return 0;
   }
-  return (playerState.playlistIndex - 1 + playlist->getCount()) % playlist->getCount();
+  return playerState.playlistIndex - 1;
 }
 
 /**
