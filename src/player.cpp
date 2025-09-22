@@ -311,7 +311,8 @@ int Player::getPlaylistCount() const {
  */
 int Player::getNextPlaylistItem() const {
   if (playlist->getCount() <= 0) {
-    return 0;
+    // No items
+    return -1;
   }
   return (playerState.playlistIndex + 1) % playlist->getCount();
 }
@@ -324,7 +325,12 @@ int Player::getNextPlaylistItem() const {
  * @return Previous playlist item index
  */
 int Player::getPrevPlaylistItem() const {
-  if (playlist->getCount() <= 0 || playerState.playlistIndex <= 0) {
+  if (playlist->getCount() <= 0) {
+    // No items
+    return -1;
+  }
+  // Do not wrap over
+  if (playerState.playlistIndex <= 0) {
     return 0;
   }
   return playerState.playlistIndex - 1;
