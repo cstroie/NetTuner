@@ -71,7 +71,7 @@ void setupRotaryEncoder() {
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
   // Debounce rotary encoder (ignore if less than 10ms since last event)
-  if (currentTime - lastRotaryTime < 10) {
+  if (currentTime - lastRotaryTime < 100) {
     return;
   }
   // Read data signal

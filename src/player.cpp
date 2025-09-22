@@ -506,10 +506,10 @@ Audio* Player::setupAudioOutput() {
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
   #if defined(BOARD_HAS_PSRAM)
   Serial.println("PSRAM supported, using larger audio buffer");
-  audio->setBufsize(8192, 2097152); // 8KB in RAM, 2MB in PSRAM
+  audio->setBufsize(4096, 1048576); // 4KB in RAM, 1MB in PSRAM
   #else
   Serial.println("PSRAM not supported on this board, using smaller audio buffer");
-  audio->setBufsize(32768, 0); // 32KB in RAM only
+  audio->setBufsize(8192, 0); // 32KB in RAM only
   #endif
   return audio;
 }
@@ -532,6 +532,8 @@ void Player::handleAudio() {
   if (audio) {
     audio->loop();
   }
+  // Add yield to prevent blocking
+  yield();
 }
 
 /**

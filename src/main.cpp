@@ -803,8 +803,8 @@ void audioTask(void *pvParameters) {
   while (true) {
     // Process audio streaming with error handling
     player.handleAudio();
-    // Very small delay to prevent busy waiting but allow frequent processing
-    delay(1);
+    // Add a small yield to prevent interrupt blocking
+    vTaskDelay(1);  // Better than delay() for FreeRTOS tasks
   }
 }
 
@@ -2307,7 +2307,7 @@ void setup() {
   mpdServer.begin();
   Serial.println("MPD server started");
     // Create audio task on core 0 with error checking
-  BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 1, &audioTaskHandle, 0);
+  BaseType_t result = xTaskCreatePinnedToCore(audioTask, "AudioTask", 4096, NULL, 5, &audioTaskHandle, 0);
   if (result != pdPASS) {
     Serial.println("ERROR: Failed to create AudioTask");
   } else {
