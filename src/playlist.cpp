@@ -29,7 +29,7 @@ extern bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
 Playlist::Playlist() {
   count = 0;
   current = 0;
-  
+
   // Initialize playlist
   for (int i = 0; i < MAX_PLAYLIST_SIZE; i++) {
     playlist[i].name[0] = '\0';
@@ -97,7 +97,7 @@ void Playlist::load() {
     Serial.print(count);
     Serial.println(" streams from playlist");
   }
-  
+
   // Validate playlist integrity after loading
   validate();
 }
@@ -115,7 +115,7 @@ void Playlist::save() {
   // Add playlist entries
   for (int i = 0; i < count; i++) {
     // Validate URL format before saving
-    if (strlen(playlist[i].url) == 0 || 
+    if (strlen(playlist[i].url) == 0 ||
         !VALIDATE_URL(playlist[i].url)) {
       Serial.println("Warning: Skipping stream with invalid URL format during save");
       continue;
@@ -249,7 +249,6 @@ void Playlist::validate() {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
     count = 0;
   }
-  
   // Validate current selection
   if (current < 0 || current >= count) {
     current = 0;
