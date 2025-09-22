@@ -172,14 +172,6 @@ void Playlist::removeItem(int index) {
     playlist[count - 1].name[0] = '\0';
     playlist[count - 1].url[0] = '\0';
     count--;
-    
-    // Adjust current if necessary
-    if (current >= count) {
-      current = count - 1;
-    }
-    if (current < 0) {
-      current = 0;
-    }
   }
 }
 
