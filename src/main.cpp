@@ -52,11 +52,14 @@ RotaryEncoder rotaryEncoder;
 TaskHandle_t audioTaskHandle = NULL;
 
 Player player;
-
+ 
 // Touch buttons
 TouchButton* touchPlay = nullptr;
 TouchButton* touchNext = nullptr;
 TouchButton* touchPrev = nullptr;
+
+// Flag to indicate board button press
+static volatile bool boardButtonPressed = false;
 
 // MPD Interface instance
 MPDInterface mpdInterface(mpdServer, player);
@@ -550,6 +553,40 @@ void handleWiFiSave(AsyncWebServerRequest *request, uint8_t *data, size_t len, s
     sendJsonResponse(request, "error", "Invalid JSON");
     return;
   }
+  
+  // Load existing credentials to preserve passwords when not provided
+  char existingSsid[MAX_WIFI_NETWORKS][64] = {""};
+  char existingPassword[MAX_WIFI_NETWORKS][64] = {""};
+  int existingNetworkCount = 0;
+  
+  // Parse existing JSON file
+  DynamicJsonDocument existingDoc(2048);
+  if (readJsonFile("/wifi.json", 2048, existingDoc) && existingDoc.is<JsonArray>()) {
+    JsonArray existingNetworks = existingDoc.as<JsonArray>();
+    for (JsonObject existingNetwork : existingNetworks) {
+      if (existingNetworkCount >= MAX_WIFI_NETWORKS) break;
+      if (existingNetwork.containsKey("ssid")) {
+        const char* ssidValue = existingNetwork["ssid"];
+        if (ssidValue) {
+          strncpy(existingSsid[existingNetworkCount], ssidValue, sizeof(existingSsid[existingNetworkCount]) - 1);
+          existingSsid[existingNetworkCount][sizeof(existingSsid[existingNetworkCount]) - 1] = '\0';
+        }
+        if (existingNetwork.containsKey("password")) {
+          const char* pwdValue = existingNetwork["password"];
+          if (pwdValue) {
+            strncpy(existingPassword[existingNetworkCount], pwdValue, sizeof(existingPassword[existingNetworkCount]) - 1);
+            existingPassword[existingNetworkCount][sizeof(existingPassword[existingNetworkCount]) - 1] = '\0';
+          } else {
+            existingPassword[existingNetworkCount][0] = '\0';
+          }
+        } else {
+          existingPassword[existingNetworkCount][0] = '\0';
+        }
+        existingNetworkCount++;
+      }
+    }
+  }
+  
   // Handle the new JSON array format [{"ssid": "name", "password": "pass"}, ...]
   wifiNetworkCount = 0;
   if (doc.is<JsonArray>()) {
@@ -568,6 +605,7 @@ void handleWiFiSave(AsyncWebServerRequest *request, uint8_t *data, size_t len, s
         }
         // Handle optional password
         if (network.containsKey("password")) {
+          // Use provided password
           const char* pwdValue = network["password"];
           if (pwdValue && strlen(pwdValue) < sizeof(password[wifiNetworkCount])) {
             strncpy(password[wifiNetworkCount], pwdValue, sizeof(password[wifiNetworkCount]) - 1);
@@ -576,7 +614,19 @@ void handleWiFiSave(AsyncWebServerRequest *request, uint8_t *data, size_t len, s
             password[wifiNetworkCount][0] = '\0';
           }
         } else {
-          password[wifiNetworkCount][0] = '\0';
+          // Look for existing password for this SSID
+          bool found = false;
+          for (int i = 0; i < existingNetworkCount; i++) {
+            if (strcmp(existingSsid[i], ssidValue) == 0) {
+              strncpy(password[wifiNetworkCount], existingPassword[i], sizeof(password[wifiNetworkCount]) - 1);
+              password[wifiNetworkCount][sizeof(password[wifiNetworkCount]) - 1] = '\0';
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            password[wifiNetworkCount][0] = '\0';
+          }
         }
         // Increment network count
         wifiNetworkCount++;
@@ -694,92 +744,37 @@ void saveWiFiCredentials() {
 
 
 /**
- * @brief Load configuration from SPIFFS
- * This function reads configuration from config.json in SPIFFS
+ * @brief Extract configuration values from JSON document
+ * Helper function to extract configuration values from a JSON document
+ * @param doc Reference to the JSON document to extract from
  */
-void loadConfig() {
-  // Parse the JSON document
-  DynamicJsonDocument doc(1024);
-  if (!readJsonFile("/config.json", 1024, doc)) {
-    Serial.println("Config file not found, using defaults");
-    // Initialize config with default values
-    config.i2s_dout = DEFAULT_I2S_DOUT;
-    config.i2s_bclk = DEFAULT_I2S_BCLK;
-    config.i2s_lrc = DEFAULT_I2S_LRC;
-    config.led_pin = DEFAULT_LED_PIN;
-    config.rotary_clk = DEFAULT_ROTARY_CLK;
-    config.rotary_dt = DEFAULT_ROTARY_DT;
-    config.rotary_sw = DEFAULT_ROTARY_SW;
-    config.board_button = DEFAULT_BOARD_BUTTON;
-    config.display_sda = DEFAULT_DISPLAY_SDA;
-    config.display_scl = DEFAULT_DISPLAY_SCL;
-    config.display_type = 0;
-    config.display_address = DEFAULT_DISPLAY_ADDR;
-    config.display_timeout = 30;
-    // Save the default configuration to file
-    saveConfig();
-  } else {
-    // Load configuration values, using defaults for missing values
-    config.i2s_dout = doc.containsKey("i2s_dout") ? doc["i2s_dout"] : DEFAULT_I2S_DOUT;
-    config.i2s_bclk = doc.containsKey("i2s_bclk") ? doc["i2s_bclk"] : DEFAULT_I2S_BCLK;
-    config.i2s_lrc = doc.containsKey("i2s_lrc") ? doc["i2s_lrc"] : DEFAULT_I2S_LRC;
-    config.led_pin = doc.containsKey("led_pin") ? doc["led_pin"] : DEFAULT_LED_PIN;
-    config.rotary_clk = doc.containsKey("rotary_clk") ? doc["rotary_clk"] : DEFAULT_ROTARY_CLK;
-    config.rotary_dt = doc.containsKey("rotary_dt") ? doc["rotary_dt"] : DEFAULT_ROTARY_DT;
-    config.rotary_sw = doc.containsKey("rotary_sw") ? doc["rotary_sw"] : DEFAULT_ROTARY_SW;
-    config.board_button = doc.containsKey("board_button") ? doc["board_button"] : DEFAULT_BOARD_BUTTON;
-    config.display_sda = doc.containsKey("display_sda") ? doc["display_sda"] : DEFAULT_DISPLAY_SDA;
-    config.display_scl = doc.containsKey("display_scl") ? doc["display_scl"] : DEFAULT_DISPLAY_SCL;
-    config.display_type = doc.containsKey("display_type") ? doc["display_type"] : 0;
-    config.display_address = doc.containsKey("display_address") ? doc["display_address"] : DEFAULT_DISPLAY_ADDR;
-    config.display_timeout = doc.containsKey("display_timeout") ? doc["display_timeout"] : 30;
-    // Print loaded configuration
-    Serial.println("Loaded configuration from SPIFFS");
-  }
+void extractConfigFromJson(DynamicJsonDocument& doc) {
+  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
+  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
+  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
+  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
+  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
+  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
+  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
+  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
+  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
+  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
+  if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
+  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
+  if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
+  if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
+  if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
+  if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
+  if (doc.containsKey("touch_threshold")) config.touch_threshold = doc["touch_threshold"];
+  if (doc.containsKey("touch_debounce")) config.touch_debounce = doc["touch_debounce"];
 }
 
 /**
- * @brief Save configuration to SPIFFS
- * This function saves the current configuration to config.json in SPIFFS
+ * @brief Populate a JSON document with current configuration
+ * Helper function to fill a JSON document with configuration values
+ * @param doc Reference to the JSON document to populate
  */
-void saveConfig() {
-  // Create a JSON document
-  DynamicJsonDocument doc(1024);
-  doc["i2s_dout"] = config.i2s_dout;
-  doc["i2s_bclk"] = config.i2s_bclk;
-  doc["i2s_lrc"] = config.i2s_lrc;
-  doc["led_pin"] = config.led_pin;
-  doc["rotary_clk"] = config.rotary_clk;
-  doc["rotary_dt"] = config.rotary_dt;
-  doc["rotary_sw"] = config.rotary_sw;
-  doc["board_button"] = config.board_button;
-  doc["display_sda"] = config.display_sda;
-  doc["display_scl"] = config.display_scl;
-  doc["display_type"] = config.display_type;
-  doc["display_address"] = config.display_address;
-  doc["display_timeout"] = config.display_timeout;
-  doc["touch_play"] = config.touch_play;
-  doc["touch_next"] = config.touch_next;
-  doc["touch_prev"] = config.touch_prev;
-  // Save the JSON document to SPIFFS using helper function
-  if (writeJsonFile("/config.json", doc)) {
-    Serial.println("Saved configuration to SPIFFS");
-  } else {
-    Serial.println("Failed to save configuration to SPIFFS");
-  }
-}
-
-/**
- * @brief Handle GET request for configuration
- * Returns the current configuration as JSON
- * This function serves the current configuration in JSON format.
- */
-void handleGetConfig(AsyncWebServerRequest *request) {
-  // Yield to other tasks before processing
-  yield();
-  // Create JSON document with appropriate size
-  DynamicJsonDocument doc(512);
-  // Populate JSON document with configuration values
+void populateConfigJson(DynamicJsonDocument& doc) {
   doc["i2s_dout"] = config.i2s_dout;
   doc["i2s_bclk"] = config.i2s_bclk;
   doc["i2s_lrc"] = config.i2s_lrc;
@@ -798,6 +793,83 @@ void handleGetConfig(AsyncWebServerRequest *request) {
   doc["touch_prev"] = config.touch_prev;
   doc["touch_threshold"] = config.touch_threshold;
   doc["touch_debounce"] = config.touch_debounce;
+}
+
+/**
+ * @brief Load configuration from SPIFFS
+ * This function reads configuration from config.json in SPIFFS
+ */
+void loadConfig() {
+  // Parse the JSON document
+  DynamicJsonDocument doc(1024);
+  // Initialize config with default values
+  config.i2s_dout = DEFAULT_I2S_DOUT;
+  config.i2s_bclk = DEFAULT_I2S_BCLK;
+  config.i2s_lrc = DEFAULT_I2S_LRC;
+  config.led_pin = DEFAULT_LED_PIN;
+  config.rotary_clk = DEFAULT_ROTARY_CLK;
+  config.rotary_dt = DEFAULT_ROTARY_DT;
+  config.rotary_sw = DEFAULT_ROTARY_SW;
+  config.board_button = DEFAULT_BOARD_BUTTON;
+  config.display_sda = DEFAULT_DISPLAY_SDA;
+  config.display_scl = DEFAULT_DISPLAY_SCL;
+  config.display_type = 0;
+  config.display_address = DEFAULT_DISPLAY_ADDR;
+  config.display_timeout = 30;
+  config.touch_play = DEFAULT_TOUCH_PLAY;
+  config.touch_next = DEFAULT_TOUCH_NEXT;
+  config.touch_prev = DEFAULT_TOUCH_PREV;
+  config.touch_threshold = DEFAULT_TOUCH_THRESHOLD;
+  config.touch_debounce = DEFAULT_TOUCH_DEBOUNCE;
+  // Read configuration from SPIFFS
+  if (!readJsonFile("/config.json", 1024, doc)) {
+    Serial.println("Config file not found, using defaults");
+    // Save the default configuration to file
+    saveConfig();
+  } else {
+    // Load configuration values, using defaults for missing values
+    extractConfigFromJson(doc);
+    // Print loaded configuration
+    Serial.println("Loaded configuration from SPIFFS");
+  }
+}
+
+/**
+ * @brief Save configuration to SPIFFS
+ * This function saves the current configuration to config.json in SPIFFS
+ */
+void saveConfig() {
+  // Create a JSON document
+  DynamicJsonDocument doc(1024);
+  populateConfigJson(doc);
+  // Save the JSON document to SPIFFS using helper function
+  if (writeJsonFile("/config.json", doc)) {
+    Serial.println("Saved configuration to SPIFFS");
+  } else {
+    Serial.println("Failed to save configuration to SPIFFS");
+  }
+}
+
+/**
+ * @brief Handle GET request for configuration
+ * Returns the current configuration as JSON
+ * This function serves the current configuration in JSON format.
+ */
+void handleGetConfig() {
+  // Yield to other tasks before processing
+  yield();
+  // Create JSON document with appropriate size
+  DynamicJsonDocument doc(1024);
+  // Populate JSON document with configuration values
+  populateConfigJson(doc);
+  // Add display types information
+  JsonArray displays = doc.createNestedArray("displays");
+  for (int i = 0; i < getDisplayTypeCount(); i++) {
+    const char* displayName = getDisplayTypeName(i);
+    if (displayName) {
+      displays.add(displayName);
+    }
+  }
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -822,24 +894,7 @@ void handlePostConfig(AsyncWebServerRequest *request, uint8_t *data, size_t len,
     return;
   }
   // Update configuration values
-  if (doc.containsKey("i2s_dout")) config.i2s_dout = doc["i2s_dout"];
-  if (doc.containsKey("i2s_bclk")) config.i2s_bclk = doc["i2s_bclk"];
-  if (doc.containsKey("i2s_lrc")) config.i2s_lrc = doc["i2s_lrc"];
-  if (doc.containsKey("led_pin")) config.led_pin = doc["led_pin"];
-  if (doc.containsKey("rotary_clk")) config.rotary_clk = doc["rotary_clk"];
-  if (doc.containsKey("rotary_dt")) config.rotary_dt = doc["rotary_dt"];
-  if (doc.containsKey("rotary_sw")) config.rotary_sw = doc["rotary_sw"];
-  if (doc.containsKey("board_button")) config.board_button = doc["board_button"];
-  if (doc.containsKey("display_sda")) config.display_sda = doc["display_sda"];
-  if (doc.containsKey("display_scl")) config.display_scl = doc["display_scl"];
-  if (doc.containsKey("display_type")) config.display_type = doc["display_type"];
-  if (doc.containsKey("display_address")) config.display_address = doc["display_address"];
-  if (doc.containsKey("display_timeout")) config.display_timeout = doc["display_timeout"];
-  if (doc.containsKey("touch_play")) config.touch_play = doc["touch_play"];
-  if (doc.containsKey("touch_next")) config.touch_next = doc["touch_next"];
-  if (doc.containsKey("touch_prev")) config.touch_prev = doc["touch_prev"];
-  if (doc.containsKey("touch_threshold")) config.touch_threshold = doc["touch_threshold"];
-  if (doc.containsKey("touch_debounce")) config.touch_debounce = doc["touch_debounce"];
+  extractConfigFromJson(doc);
   // Save to SPIFFS
   saveConfig();
   // Return status as JSON
@@ -864,6 +919,58 @@ void audioTask(void *pvParameters) {
   }
 }
 
+
+
+/**
+ * @brief Interrupt service routine for board button
+ * Sets a flag when the board button is pressed
+ */
+void boardButtonISR() {
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+  // Debounce the button press (ignore if less than 50ms since last press)
+  if (interruptTime - lastInterruptTime > 50) {
+    boardButtonPressed = true;  // Set flag to indicate button press detected
+  }
+  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
+}
+
+/**
+ * @brief Handle board button input
+ * Processes the built-in button (GPIO 0) for play/stop toggle functionality
+ * This function checks for button presses detected by the interrupt handler
+ */
+void handleBoardButton() {
+  // Only handle board button if it's configured (not negative)
+  // and not the same as rotary switch
+  if (config.board_button < 0 && config.board_button != config.rotary_sw) {
+    return;
+  }
+  // Check if button was pressed (detected by interrupt)
+  if (boardButtonPressed) {
+    // Toggle play/stop
+    if (player.isPlaying()) {
+      // If currently playing, stop the stream
+      player.stopStream();
+    } else {
+      // If we have a current stream, resume it
+      if (strlen(player.getStreamUrl()) > 0) {
+        player.startStream();
+      } 
+      // Otherwise, if we have playlist items, play the selected one
+      else if (player.isPlaylistIndexValid()) {
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
+      }
+      // Save player state after starting
+      player.savePlayerState();
+    }
+    // Update display and notify clients
+    updateDisplay();
+    sendStatusToClients();
+    // Clear the flag
+    boardButtonPressed = false;
+  }
+}
 
 /**
  * @brief Handle rotary encoder input
@@ -932,7 +1039,6 @@ void handleRotary() {
   }
 }
 
-
 /**
  * @brief Handle touch button input
  * Processes the touch buttons for play/pause, next/volume-up, and previous/volume-down
@@ -943,7 +1049,6 @@ void handleTouch() {
   if (touchPlay && touchPlay->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
     updateDisplay(); // Turn display back on and update
-
     // Toggle play/stop
     if (player.isPlaying()) {
       // If playing, stop playback
@@ -964,12 +1069,10 @@ void handleTouch() {
     updateDisplay();
     sendStatusToClients();
   }
-
   // Handle next/volume-up button
   if (touchNext && touchNext->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
     updateDisplay(); // Turn display back on and update
-
     if (player.isPlaying()) {
       // If playing, increase volume by 1 (capped at 22)
       player.setVolume(min(22, player.getVolume() + 1));
@@ -981,12 +1084,10 @@ void handleTouch() {
     updateDisplay();
     sendStatusToClients();
   }
-
   // Handle previous/volume-down button
   if (touchPrev && touchPrev->wasPressed()) {
     display->setActivityTime(millis()); // Update activity time
     updateDisplay(); // Turn display back on and update
-
     if (player.isPlaying()) {
       // If playing, decrease volume by 1 (capped at 0)
       player.setVolume(max(0, player.getVolume() - 1));
@@ -995,7 +1096,8 @@ void handleTouch() {
       // If not playing, select previous item in playlist
       player.setPlaylistIndex(player.getPrevPlaylistItem());
     }
-    updateDisplay();  // Refresh display
+    // Refresh display
+    updateDisplay();  
   }
 }
 
@@ -1512,7 +1614,7 @@ void handleMixer(AsyncWebServerRequest *request, uint8_t *data, size_t len, size
   }
   // Update display and notify clients
   updateDisplay();
-  sendStatusToClients();  // Notify clients of status change
+  sendStatusToClients();
   // Send success response
   sendJsonResponse(request, "success", "Mixer settings updated successfully");
 }
@@ -1641,7 +1743,6 @@ void handleImportConfig(AsyncWebServerRequest *request) {
 String generateStatusJSON(bool fullStatus) {
   // Create JSON document with appropriate size
   DynamicJsonDocument doc(512);
-
   if (fullStatus) {
     // Populate JSON document with all status values
     doc["playing"] = player.isPlaying();
@@ -1656,10 +1757,9 @@ String generateStatusJSON(bool fullStatus) {
     doc["mid"] = player.getMid();
     doc["treble"] = player.getTreble();
   } else {
-    // Only include the bitrater
+    // Only include the bitrate in partial status
     doc["bitrate"] = player.getBitrate();
   }
-
   // Serialize JSON to string
   String json;
   serializeJson(doc, json);
@@ -1686,14 +1786,6 @@ void sendStatusToClients(bool fullStatus) {
   }
 }
 
-/**
- * @brief Send full status to all connected WebSocket clients
- * This is a convenience function that calls sendStatusToClients(true)
- * to send a complete status update to all connected clients.
- */
-void sendStatusToClients() {
-  sendStatusToClients(true);
-}
 
 /**
  * @brief Handle HTTP proxy requests
@@ -1711,44 +1803,36 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
     sendJsonResponse(request, "error", "Missing URL parameter", 400);
     return;
   }
-
   const AsyncWebParameter* urlParam = request->getParam("url");
   String targetUrl = urlParam->value();
-
   // Validate URL format
   if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) {
     sendJsonResponse(request, "error", "Invalid URL format. Must start with http:// or https://", 400);
     return;
   }
-
   // Create HTTP client
   HTTPClient http;
-
   // Set timeouts to prevent hanging
   http.setTimeout(5000);
-
   // Configure the request based on the original method
   http.begin(targetUrl);
-
   // Copy headers from the original request
   int headerCount = request->headers();
   for (int i = 0; i < headerCount; i++) {
     const AsyncWebHeader* header = request->getHeader(i);
     String headerName = header->name();
     String headerValue = header->value();
-
     // Skip headers that shouldn't be forwarded
     if (headerName.equalsIgnoreCase("Host") ||
         headerName.equalsIgnoreCase("Connection") ||
         headerName.equalsIgnoreCase("Content-Length")) {
       continue;
     }
-
+    // Forward all other headers
     http.addHeader(headerName, headerValue);
   }
-
+  // Variable to hold HTTP response code
   int httpResponseCode;
-
   // Handle different HTTP methods
   if (request->method() == HTTP_GET) {
     httpResponseCode = http.GET();
@@ -1766,24 +1850,32 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
     sendJsonResponse(request, "error", "Unsupported HTTP method", 405);
     return;
   }
-
+  // Check for HTTP errors
   if (httpResponseCode > 0) {
-    // Get content type
-    String contentType = http.header("Content-Type");
-    if (contentType.isEmpty()) {
-      // Try to determine content type from URL
-      if (targetUrl.endsWith(".png") || targetUrl.endsWith(".PNG")) {
-        contentType = "image/png";
-      } else if (targetUrl.endsWith(".jpg") || targetUrl.endsWith(".jpeg") ||
-                 targetUrl.endsWith(".JPG") || targetUrl.endsWith(".JPEG")) {
-        contentType = "image/jpeg";
-      } else if (targetUrl.endsWith(".gif") || targetUrl.endsWith(".GIF")) {
-        contentType = "image/gif";
-      } else {
-        contentType = "application/octet-stream";
+    // Get response headers and forward them
+    // Use public methods to iterate through headers
+    int headerCount = 0;
+    String headerName, headerValue;
+    // Get all headers one by one until we've processed them all
+    while (true) {
+      headerName = http.headerName(headerCount);
+      headerValue = http.header(headerCount);
+      // If we get empty strings, we've reached the end of headers
+      if (headerName.length() == 0 && headerValue.length() == 0) {
+        break;
+      }
+      // Skip headers that might cause issues
+      if (!headerName.equalsIgnoreCase("Connection") &&
+          !headerName.equalsIgnoreCase("Transfer-Encoding")) {
+        server.sendHeader(headerName, headerValue, false);
+      }
+      // Increment header count
+      headerCount++;
+      // Safety check to prevent infinite loop
+      if (headerCount > 100) {
+        break;
       }
     }
-
     // For HEAD requests, only send headers without content
     if (request->method() == HTTP_HEAD) {
       // Send response with proper content type and length (no content body for HEAD)
@@ -1803,7 +1895,6 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
     } else {
       // For GET/POST requests, stream the response directly to client
       WiFiClient * stream = http.getStreamPtr();
-      
       if (stream) {
         // Create response to stream data
         AsyncWebServerResponse *response = request->beginResponse(httpResponseCode, contentType, "");
@@ -1827,7 +1918,9 @@ void handleProxyRequest(AsyncWebServerRequest *request, uint8_t *data, size_t le
       }
     }
   } else {
+    // HTTP error occurred
     http.end();
+
     sendJsonResponse(request, "error", "Proxy request failed: " + String(http.errorToString(httpResponseCode)), 500);
     return;
   }
@@ -1875,14 +1968,13 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventT
 void updateDisplay() {
   // Check if display is initialized
   if (display == nullptr) return;
-
+  // Get current IP address or "No IP" if not connected
   String ipString;
   if (WiFi.status() == WL_CONNECTED) {
     ipString = WiFi.localIP().toString();
   } else {
     ipString = "No IP";
   }
-
   // When not playing, show the selected playlist item name instead of empty stream name
   const char* displayStreamName = player.getStreamName();
   if (!player.isPlaying() && strlen(displayStreamName) == 0) {
@@ -1891,7 +1983,6 @@ void updateDisplay() {
       displayStreamName = player.getPlaylistItem(player.getPlaylistIndex()).name;
     }
   }
-
   // Update the display with current status
   display->update(player.isPlaying(), player.getStreamTitle(), displayStreamName, player.getVolume(), player.getBitrate(), ipString);
 }
@@ -1917,10 +2008,12 @@ bool initSPIFFS() {
       return false;
     }
     Serial.println("SPIFFS formatted and mounted successfully");
+  } else {
+    Serial.println("SPIFFS mounted successfully");
   }
-
   // Test SPIFFS write capability
   if (!SPIFFS.exists("/spiffs_test")) {
+    // File does not exist, create it
     Serial.println("Testing SPIFFS write capability...");
     File testFile = SPIFFS.open("/spiffs_test", "w");
     if (!testFile) {
@@ -1934,9 +2027,10 @@ bool initSPIFFS() {
       testFile.close();
     }
   } else {
+    // File exists, SPIFFS is working
     Serial.println("SPIFFS write test file already exists - SPIFFS is working");
   }
-
+  // End the SPIFFS test
   return true;
 }
 
@@ -2028,7 +2122,8 @@ void setupWebServer() {
  * @return true if connected to a network, false otherwise
  */
 bool connectToWiFi() {
-  static bool firstConnection = true;  // Track if this is the first connection attempt
+  // Track if this is the first connection attempt
+  static bool firstConnection = true;  
   bool connected = false;
   if (wifiNetworkCount > 0) {
     WiFi.setHostname("NetTuner");
@@ -2064,10 +2159,10 @@ bool connectToWiFi() {
       if (strlen(ssid[i]) > 0 && networkAvailable[i]) {
         display->turnOn();
         Serial.printf("Attempting to connect to %s...\n", ssid[i]);
-        display->showStatus("WiFi connecting", String(ssid[i]), "");
+        display->showStatus("WiFi connecting", "", ssid[i]);
         WiFi.begin(ssid[i], password[i]);
         int wifiAttempts = 0;
-        const int maxAttempts = 15; // Increased attempts per network
+        const int maxAttempts = 15;
         while (WiFi.status() != WL_CONNECTED && wifiAttempts < maxAttempts) {
           delay(500);
           Serial.print(".");
@@ -2095,11 +2190,19 @@ bool connectToWiFi() {
     Serial.println("Connected to WiFi");
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP().toString());
-    display->showStatus(String(WiFi.SSID()), "", WiFi.localIP().toString());
-    firstConnection = false;  // Mark that first connection has been completed
+    display->turnOn();
+    display->showStatus("AP mode active", String(WiFi.SSID()), WiFi.localIP().toString());
+    // Mark that first connection has been completed
+    firstConnection = false;  
   } else {
-    Serial.println("Failed to connect to any configured WiFi network or no WiFi configured");
+    // If we reach here, no networks were connected
+    if (wifiNetworkCount > 0) {
+      Serial.println("Failed to connect to any configured WiFi network");
+    } else {
+      Serial.println("No WiFi networks configured");
+    }
   }
+  // Return connection status
   return connected;
 }
 
@@ -2110,15 +2213,10 @@ bool connectToWiFi() {
  * This is the main application loop that runs continuously after setup()
  */
 void loop() {
-  handleRotary();          // Process rotary encoder input
-  if (touchPlay) touchPlay->handle();  // Process touch play button
-  if (touchNext) touchNext->handle();  // Process touch next button
-  if (touchPrev) touchPrev->handle();  // Process touch previous button
-  handleTouch();           // Process touch button actions
-  // server.handleClient() is not needed with AsyncWebServer
-  // webSocket.loop() is not needed with AsyncWebSocket
-  mpdInterface.handleClient();       // Process MPD commands
-  handleBoardButton();     // Process board button input
+  mpdInterface.handleClient();   // Process MPD commands
+  handleBoardButton();           // Process board button input
+  handleRotary();                // Process rotary encoder input
+  handleTouch();                 // Process touch button actions
 
   // Periodically update display for scrolling text animation
   static unsigned long lastDisplayUpdate = 0;
@@ -2162,7 +2260,7 @@ void loop() {
       if (millis() - lastStatusUpdate > 3000) {  // Changed from 2000 to 3000
         // Only send if there are connected clients
         if (websocket.count() > 0) {
-          // FIXME Send partial status update
+          // Send partial status update
           sendStatusToClients(true);
         }
         // Update the timestamp
@@ -2230,8 +2328,8 @@ void setup() {
     pinMode(config.led_pin, OUTPUT);
     digitalWrite(config.led_pin, LOW);  // Turn off LED initially
   }
-  // Initialize board button with pull-up resistor if configured
-  if (config.board_button >= 0) {
+  // Initialize board button with pull-up resistor if configured and different from rotary switch
+  if (config.board_button >= 0 && config.board_button != config.rotary_sw) {
     pinMode(config.board_button, INPUT_PULLUP);
     // Attach interrupt handler for board button press
     attachInterrupt(digitalPinToInterrupt(config.board_button), boardButtonISR, FALLING);
@@ -2253,14 +2351,15 @@ void setup() {
 
   // Initialize touch buttons
   if (config.touch_play >= 0) {
-    touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce);
+    touchPlay = new TouchButton(config.touch_play, config.touch_threshold, config.touch_debounce, true);
   }
   if (config.touch_next >= 0) {
-    touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce);
+    touchNext = new TouchButton(config.touch_next, config.touch_threshold, config.touch_debounce, true);
   }
   if (config.touch_prev >= 0) {
-    touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce);
+    touchPrev = new TouchButton(config.touch_prev, config.touch_threshold, config.touch_debounce, true);
   }
+
   // Load WiFi credentials with error recovery
   loadWiFiCredentials();
   // Connect to WiFi with error handling
@@ -2274,7 +2373,7 @@ void setup() {
     Serial.println("Access Point Started");
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP().toString());
-    display->showStatus("AP Mode Active", "", WiFi.softAPIP().toString());
+    display->showStatus("AP Mode Active", "NetTuner-Setup", WiFi.softAPIP().toString());
   } else {
     Serial.println("Failed to start Access Point");
     display->showStatus("AP Start Failed", "", "");
@@ -2299,11 +2398,11 @@ void setup() {
   player.loadPlaylist();
   // Validate loaded playlist
   player.getPlaylist()->validate();
-    // Load player state
+  // Load player state
   player.loadPlayerState();
   if (player.isPlaying()) {
-    // Update activity time
-    display->setActivityTime(millis());
+    // Update activity time to prevent display from timing out immediately
+    display->setActivityTime(millis()); 
   }
   // Setup web server routes
   setupWebServer();

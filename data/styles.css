@@ -177,6 +177,16 @@ fieldset input[type="number"]:focus {
     background-color: var(--pico-primary-background);
 }
 
+.network-entry.drag-over {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+}
+
+.playlist-item.drag-over {
+    border-color: var(--pico-primary);
+    background-color: var(--pico-primary-background);
+}
+
 .drag-handle {
     cursor: move;
     padding: 0 0.5rem;
@@ -209,6 +219,53 @@ button#theme-toggle {
     font-size: 2em;
     line-height: 1;
     padding: 0;
+}
+
+/**
+ * @section Connection status section
+ * @description Enhanced styling for the connection status display
+ * These styles improve the visual presentation of the connection status
+ * information with better spacing, borders, and responsive design.
+ */
+.connection-status-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background-color: var(--pico-background-color);
+}
+
+.connection-status-section hgroup {
+    margin-bottom: 1rem;
+}
+
+.connection-status-content {
+    min-height: 3rem;
+    padding: 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    background-color: var(--pico-card-background-color);
+}
+
+.connection-status-content p {
+    margin: 0;
+    font-family: var(--pico-font-family-monospace);
+    font-size: 0.9rem;
+}
+
+.connection-status-content dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+}
+
+.connection-status-content dt {
+    font-weight: bold;
+}
+
+.connection-status-content dd {
+    margin-left: 0;
 }
 
 

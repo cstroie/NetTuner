@@ -37,6 +37,11 @@ char* displayNames[OLED_COUNT] = {
     (char*)"128x32 (3 lines)"
 };
 
+/**
+ * @brief Array of display dimensions
+ * 
+ * Width and height for each display type, indexed by display_t values
+ */
 int displaySizes[OLED_COUNT][2] = {
     {128, 64}, 
     {128, 32}, 
@@ -103,8 +108,8 @@ Display::Display(Adafruit_SSD1306& display, enum display_t displayTypeEnum) :
  * This method must be called before any other display operations.
  */
 void Display::begin() {
-    displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
-    showLogo();
+  displayRef.begin(SSD1306_SWITCHCAPVCC, config.display_address);
+  showLogo();
 }
 
 /**
@@ -114,12 +119,23 @@ void Display::begin() {
  * This method immediately clears the screen regardless of display state.
  */
 void Display::clear() {
-    displayRef.clearDisplay();
-    displayRef.display();
+  displayRef.clearDisplay();
+  displayRef.display();
 }
 
+/**
+ * @brief Print text at specified position with alignment
+ * @param text The text to print
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+ * 
+ * This function prints text at the specified position with the given alignment.
+ * It automatically selects the appropriate font based on available vertical space
+ * and handles text alignment (left, center, right). The function maintains a 
+ * lastY position to track vertical spacing and font selection.
+ */
 void Display::printAt(const char* text, int x, int y, char align = 'l') {
-    static int lastY = displayRef.height();
     // Text bounds variables for alignment calculations
     int16_t x1, y1;
     uint16_t w, h;
@@ -157,11 +173,35 @@ void Display::printAt(const char* text, int x, int y, char align = 'l') {
     lastY = y;
 }
 
-void Display::printAt(const String text, int x, int y, char align = 'l') {
+/**
+ * @brief Print text at specified position with alignment
+ * @param text The text to print (as a String)
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right) 
+ */
+/**
+ * @brief Print text at specified position with alignment
+ * @param text The text to print (as a String)
+ * @param x The x-coordinate for the text
+ * @param y The y-coordinate for the text
+ * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+ * 
+ * This function prints text at the specified position with the given alignment.
+ * It automatically selects the appropriate font based on available vertical space
+ * and handles text alignment (left, center, right). The function maintains a 
+ * lastY position to track vertical spacing and font selection.
+ */
+void Display::printAt(const String text, int x, int y, char align) {
     printAt(text.c_str(), x, y, align);
 }
 
-
+/**
+ * @brief Show the NetTuner logo on display
+ * 
+ * Displays the "NetTuner" logo centered on the screen using the predefined
+ * logo layout for the current display type.
+ */
 void Display::showLogo() {
     // Clear the buffer
     displayRef.clearDisplay();
@@ -196,15 +236,13 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
     if (!displayOn) {
         return;
     }
-    
     // Clear the display buffer for fresh content
     displayRef.clearDisplay();
     displayRef.setTextColor(SSD1306_WHITE);
-    
+    // Different layouts for playing vs stopped
     if (isPlaying) {
         // Fixed '>' character to indicate playing state
         printAt(">", 0, updateLayout[displayType][0], 'l');
-        
         // Display stream title (first line) with scrolling for long titles
         String title = streamName;
         if (displayType == OLED_128x64) {
@@ -216,23 +254,20 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 title = title + ": " + String(streamTitle);
             }
         }
-        
         // Scroll title if too long for display (excluding the '>' character)
         // 16 chars fit on a 128px display with '>' and some margin
         // Calculate how many characters we can display (14 chars = 84 pixels)
-        int maxDisplayChars = 14;
+        int maxDisplayChars = SCROLL_TEXT_MAX_CHARS;
         if (title.length() > maxDisplayChars) {
             // Static variables for scrolling state management
             static unsigned long lastTitleScrollTime = 0;
             static int titleScrollOffset = 0;
             static String titleScrollText = "";
-            
             // Reset scroll if text changed
             if (titleScrollText != title) {
                 titleScrollText = title;
                 titleScrollOffset = 0;
             }
-            
             // Scroll every 500ms for smooth animation
             if (millis() - lastTitleScrollTime > 500) {
                 titleScrollOffset++;
@@ -242,7 +277,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 }
                 lastTitleScrollTime = millis();
             }
-            
             // Display scrolled text
             String displayText = title + " ~~~ " + title;
             // Create a temporary string that's long enough to fill the display
@@ -252,7 +286,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             // Display title without scrolling for short titles
             printAt(title, 16, updateLayout[displayType][0], 'l');
         }
-        
+        // Display stream name on second line if available and display supports it
         if (updateLayout[displayType][1] > 0) {
             // Display stream name (second line) - truncated if too long
             String stationName = String(streamName);
@@ -262,7 +296,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(stationName, 0, updateLayout[displayType][1], 'l');
             }
         }
-        
+        // Display volume and bitrate on third line if display supports it
         if (updateLayout[displayType][2] > 0) {
             // Display volume and bitrate on third line
             char volStr[20];
@@ -275,7 +309,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(bitrateStr, 0, updateLayout[displayType][2], 'r');
             }
         }
-            
+        // Display IP address on last line if display supports it
         if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
             printAt(ipString, 0, updateLayout[displayType][3], 'c');
@@ -287,7 +321,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             printAt("NetTuner", 0, updateLayout[displayType][0], 'c');
             lineStream = 1;
         }
-            
         // Display current stream name (second line) or selected playlist item if none selected
         if (strlen(streamName) > 0) {
             String currentStream = String(streamName);
@@ -309,7 +342,6 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt("No stream", 0, updateLayout[displayType][lineStream], 'c');
             }
         }
-        
         // Display volume on third line (only for displays with sufficient height)
         if (updateLayout[displayType][2] > 0) {
             // Display volume level
@@ -323,13 +355,12 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
                 printAt(rssiStr, 0, updateLayout[displayType][2], 'r');
             }
         }
-
+        // Display IP address on last line if display supports it
         if (updateLayout[displayType][3] > 0) {
             // Display IP address on the last line, centered
             printAt(ipString, 0, updateLayout[displayType][3], 'c');
         }
     }
-    
     // Send buffer to display to make changes visible
     displayRef.display();
 }
@@ -351,7 +382,7 @@ void Display::showStatus(const String& line1, const String& line2, const String&
     // Different modes for different display sizes
     if (displayType == OLED_128x64) {
         printAt("NetTuner", 0, statusLayout[displayType][0], 'c');
-        // Display each line if it contains content
+        // Display each line if it has content
         if (line1.length() > 0) {
             printAt(line1, 0, statusLayout[displayType][1], 'l');
         }
@@ -366,11 +397,11 @@ void Display::showStatus(const String& line1, const String& line2, const String&
         if (line1.length() > 0) {
             printAt(line1, 0, statusLayout[displayType][0], 'l');
         }
-        // Displey the second or third line if they have contemt
+        // Display the second or third line if they have content
         if (line2.length() > 0) {
-            printAt(line2, 0, statusLayout[displayType][1], 'l');
+            printAt(line2, 0, statusLayout[displayType][2], 'l');
         } else if (line3.length() > 0) {
-            printAt(line3, 0, statusLayout[displayType][1], 'l');
+            printAt(line3, 0, statusLayout[displayType][2], 'l');
         }
     }
     // Show the buffer
@@ -428,19 +459,17 @@ bool Display::isOn() const {
 void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
     extern Config config;
     const unsigned long DISPLAY_TIMEOUT = config.display_timeout * 1000; // Convert seconds to milliseconds
-    
     // Handle potential millis() overflow by resetting activity time
     if (currentTime < lastActivityTime) {
         lastActivityTime = currentTime; // Reset on overflow
     }
-    
     // If we're playing, keep the display on
     if (isPlaying) {
         // Update activity time periodically during playback to prevent timeout
-        static unsigned long lastPlaybackActivitupdateLayout = 0;
-        if (currentTime - lastPlaybackActivitupdateLayout > 5000) { // Every 5 seconds
+        static unsigned long lastPlaybackActivityTime = 0;
+        if (currentTime - lastPlaybackActivityTime > 5000) { // Every 5 seconds
             lastActivityTime = currentTime;
-            lastPlaybackActivitupdateLayout = currentTime;
+            lastPlaybackActivityTime = currentTime;
         }
         if (!displayOn) {
             displayOn = true;
@@ -448,7 +477,6 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
         }
         return;
     }
-    
     // If we're not playing, check for timeout
     if (currentTime - lastActivityTime > DISPLAY_TIMEOUT) {
         if (displayOn) {
@@ -470,9 +498,7 @@ void Display::handleTimeout(bool isPlaying, unsigned long currentTime) {
 void Display::setActivityTime(unsigned long time) {
     lastActivityTime = time;
     // Also ensure the display is on when there's activity
-    if (!display->isOn()) {
-        display->turnOn();
-    }
+    this->turnOn();
 }
 
 /**

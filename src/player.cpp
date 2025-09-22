@@ -28,7 +28,6 @@
 Player::Player() {
   audio = nullptr;
   playlist = new Playlist();
-  
   // Initialize player state with defaults
   clearPlayerState();
   // Initialize stream info
@@ -36,13 +35,31 @@ Player::Player() {
 }
 
 /**
+ * @brief Set playlist index with validation
+ * @param index New playlist index
+ */
+void Player::setPlaylistIndex(int index) {
+  // Validate that the index is within the valid range of the playlist
+  if (index >= 0 && index < playlist->getCount()) {
+    playerState.playlistIndex = index;
+  } else {
+    // If index is out of bounds, set to 0 (first item) or -1 if playlist is empty
+    playerState.playlistIndex = (playlist->getCount() > 0) ? 0 : -1;
+  }
+}
+
+/**
  * @brief Set player volume
  * @param volume New volume level (0-22)
  */
 void Player::setVolume(int volume) {
-  playerState.volume = volume;
+  // Validate and set volume
+  playerState.volume = constrain(volume, 0, 22);
+  // Mark state as dirty when volume changes
+  setDirty();
+  // Apply volume to audio output
   if (audio) {
-    audio->setVolume(volume);
+    audio->setVolume(playerState.volume);
   }
 }
 
@@ -69,7 +86,8 @@ void Player::setTone(int bass, int mid, int treble) {
   playerState.bass = constrain(bass, -6, 6);
   playerState.mid = constrain(mid, -6, 6);
   playerState.treble = constrain(treble, -6, 6);
-  
+  // Mark state as dirty when tone changes
+  setDirty();
   // Apply tone settings to audio output
   setTone();
 }
@@ -82,6 +100,8 @@ void Player::setStreamUrl(const char* url) {
   if (url) {
     strncpy(streamInfo.url, url, sizeof(streamInfo.url) - 1);
     streamInfo.url[sizeof(streamInfo.url) - 1] = '\0';
+  } else {
+    streamInfo.url[0] = '\0';
   }
 }
 
@@ -93,6 +113,8 @@ void Player::setStreamName(const char* name) {
   if (name) {
     strncpy(streamInfo.name, name, sizeof(streamInfo.name) - 1);
     streamInfo.name[sizeof(streamInfo.name) - 1] = '\0';
+  } else {
+    streamInfo.name[0] = '\0';
   }
 }
 
@@ -104,6 +126,8 @@ void Player::setStreamTitle(const char* title) {
   if (title) {
     strncpy(streamInfo.title, title, sizeof(streamInfo.title) - 1);
     streamInfo.title[sizeof(streamInfo.title) - 1] = '\0';
+  } else {
+    streamInfo.title[0] = '\0';
   }
 }
 
@@ -115,6 +139,8 @@ void Player::setStreamIcyUrl(const char* icyUrl) {
   if (icyUrl) {
     strncpy(streamInfo.icyUrl, icyUrl, sizeof(streamInfo.icyUrl) - 1);
     streamInfo.icyUrl[sizeof(streamInfo.icyUrl) - 1] = '\0';
+  } else {
+    streamInfo.icyUrl[0] = '\0';
   }
 }
 
@@ -126,6 +152,8 @@ void Player::setStreamIconUrl(const char* iconUrl) {
   if (iconUrl) {
     strncpy(streamInfo.iconUrl, iconUrl, sizeof(streamInfo.iconUrl) - 1);
     streamInfo.iconUrl[sizeof(streamInfo.iconUrl) - 1] = '\0';
+  } else {
+    streamInfo.iconUrl[0] = '\0';
   }
 }
 
@@ -162,8 +190,8 @@ void Player::clearPlayerState() {
  * @brief Load player state from SPIFFS
  */
 void Player::loadPlayerState() {
-  DynamicJsonDocument doc(512);
-  if (readJsonFile("/player.json", 512, doc)) {
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
+  if (readJsonFile("/player.json", PLAYER_STATE_BUFFER_SIZE, doc)) {
     playerState.playing = doc["playing"] | false;
     playerState.volume = doc["volume"] | 8;
     playerState.bass = doc["bass"] | 0;
@@ -191,7 +219,7 @@ void Player::loadPlayerState() {
  * @brief Save player state to SPIFFS
  */
 void Player::savePlayerState() {
-  DynamicJsonDocument doc(512);
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
   doc["playing"] = playerState.playing;
   doc["volume"] = playerState.volume;
   doc["bass"] = playerState.bass;
@@ -200,7 +228,8 @@ void Player::savePlayerState() {
   doc["playlistIndex"] = playerState.playlistIndex;
   if (writeJsonFile("/player.json", doc)) {
     Serial.println("Saved player state to SPIFFS");
-    playerState.dirty = false;
+    // Use critical section to protect against concurrent access to dirty flag
+    resetDirty();
   } else {
     Serial.println("Failed to save player state to SPIFFS");
   }
@@ -360,7 +389,7 @@ void Player::startStream(const char* url, const char* name) {
       url = streamInfo.url;
       // Use current name if available, otherwise use a default
       if (!name || strlen(name) == 0) {
-        name = (strlen(streamInfo.name) > 0) ? String(streamInfo.name).c_str() : "Unknown Station";
+        name = (strlen(streamInfo.name) > 0) ? streamInfo.name : "Unknown Station";
       }
       // We are resuming playback
       resume = true;
@@ -405,7 +434,7 @@ void Player::startStream(const char* url, const char* name) {
     if (!audioConnected) {
       Serial.println("Error: Failed to connect to audio stream");
       playerState.playing = false;
-      streamInfo.bitrate = 0;
+      clearStreamInfo();
     } else {
       playerState.playing = true;
       Serial.println("Successfully connected to audio stream");
@@ -447,15 +476,26 @@ void Player::stopStream() {
  * Configures the selected audio output method
  * This function initializes the ESP32-audioI2S library with I2S pin configuration
  * and sets up the audio buffer with an increased size for better performance.
- * @return Pointer to the initialized Audio object
+ * @return Pointer to the initialized Audio object, or nullptr if initialization failed
  */
 Audio* Player::setupAudioOutput() {
+  // Clean up existing audio object if it exists
+  if (audio != nullptr) {
+    delete audio;
+    audio = nullptr;
+  }
   // Initialize ESP32-audioI2S
   audio = new Audio(false); // false = use I2S, true = use DAC
+  // Check if allocation succeeded
+  if (audio == nullptr) {
+    Serial.println("Error: Failed to allocate Audio object");
+    return nullptr;
+  }
+  // Configure I2S pinout from settings
   audio->setPinout(config.i2s_bclk, config.i2s_lrc, config.i2s_dout);
   audio->setVolume(playerState.volume); // Use 0-22 scale directly
   #if defined(BOARD_HAS_PSRAM)
-  Serial.println("PSRAM found, using larger audio buffer");
+  Serial.println("PSRAM supported, using larger audio buffer");
   audio->setBufsize(8192, 2097152); // 8KB in RAM, 2MB in PSRAM
   #else
   Serial.println("PSRAM not supported on this board, using smaller audio buffer");
@@ -498,4 +538,17 @@ int Player::updateBitrate() {
     }
   }
   return streamInfo.bitrate;
+}
+/**
+ * @brief Set the dirty flag to indicate state has changed
+ */
+void Player::setDirty() {
+  playerState.dirty = true;
+}
+
+/**
+ * @brief Reset the dirty flag
+ */
+void Player::resetDirty() {
+  playerState.dirty = false;
 }

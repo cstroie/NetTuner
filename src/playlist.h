@@ -20,9 +20,7 @@
 #define PLAYLIST_H
 
 #include <Arduino.h>
-
-// Define MAX_PLAYLIST_SIZE before using it
-#define MAX_PLAYLIST_SIZE 20
+#include "main.h"
 
 // Structure for playlist items
 struct StreamInfo {

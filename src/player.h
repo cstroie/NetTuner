@@ -21,6 +21,10 @@
 
 #include <Arduino.h>
 
+// Buffer size constants
+#define PLAYER_STATE_BUFFER_SIZE 512
+#define PLAYLIST_BUFFER_SIZE 4096
+
 // Forward declarations
 class Audio;
 class Playlist;
@@ -62,6 +66,7 @@ private:
   StreamInfoData streamInfo;
   Playlist* playlist;
   Audio* audio;
+  portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
   
 public:
   // Constructor
@@ -95,7 +100,6 @@ public:
   
   // Playlist validation helper function
   bool isPlaylistIndexValid() const;
-  bool isDirty() const { return playerState.dirty; }
   int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
@@ -108,12 +112,25 @@ public:
   void setBass(int bass) { playerState.bass = bass; }
   void setMid(int mid) { playerState.mid = mid; }
   void setTreble(int treble) { playerState.treble = treble; }
-  void setPlaylistIndex(int index) { playerState.playlistIndex = index; }
+  void setPlaylistIndex(int index);
   void setBitrate(int newBitrate) { streamInfo.bitrate = newBitrate; }
   void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
-
+  
+  // Dirty flag management
+  /**
+   * @brief Set the dirty flag to indicate state has changed
+   * Uses critical section to protect against concurrent access
+   */
+  void setDirty();
+  
+  /**
+   * @brief Reset the dirty flag
+   * Uses critical section to protect against concurrent access
+   */
+  void resetDirty();
+  
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }

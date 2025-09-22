@@ -65,7 +65,7 @@
 #endif
 
 #ifndef DEFAULT_TOUCH_DEBOUNCE
-#define DEFAULT_TOUCH_DEBOUNCE   50  ///< Touch debounce time in milliseconds
+#define DEFAULT_TOUCH_DEBOUNCE  100  ///< Touch debounce time in milliseconds
 #endif
 
 #ifndef DEFAULT_BOARD_BUTTON

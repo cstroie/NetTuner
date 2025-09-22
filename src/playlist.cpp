@@ -46,8 +46,8 @@ Playlist::Playlist() {
 void Playlist::load() {
   count = 0;  // Reset playlist count
   // Load playlist using helper function
-  DynamicJsonDocument doc(4096);
-  if (!readJsonFile("/playlist.json", 4096, doc)) {
+  DynamicJsonDocument doc(PLAYLIST_BUFFER_SIZE);
+  if (!readJsonFile("/playlist.json", PLAYLIST_BUFFER_SIZE, doc)) {
     Serial.println("Failed to load playlist, continuing with empty playlist");
     return;
   }
@@ -107,7 +107,7 @@ void Playlist::load() {
  */
 void Playlist::save() {
   // Create JSON array
-  DynamicJsonDocument doc(4096);
+  DynamicJsonDocument doc(PLAYLIST_BUFFER_SIZE);
   JsonArray array = doc.to<JsonArray>();
   // Add playlist entries
   for (int i = 0; i < count; i++) {

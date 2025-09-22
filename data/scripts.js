@@ -95,8 +95,6 @@ function initWiFiPage() {
 function initConfigPage() {
   // Load existing configuration when page loads
   loadConfig();
-  // Populate display type dropdown
-  populateDisplayTypeDropdown();
   // Set up form submit handler
   const configForm = $("config-form");
   if (configForm) {
@@ -1043,6 +1041,21 @@ async function loadConfig() {
       if ($("touch-prev")) $("touch-prev").value = config.touch_prev !== undefined ? config.touch_prev : -1;
       if ($("touch-threshold")) $("touch-threshold").value = config.touch_threshold !== undefined ? config.touch_threshold : 40;
       if ($("touch-debounce")) $("touch-debounce").value = config.touch_debounce !== undefined ? config.touch_debounce : 50;
+      
+      // Populate display types dropdown with data from server
+      if (config.displays && Array.isArray(config.displays)) {
+        window.displayTypes = config.displays;
+        const displayTypeSelect = $("display-type");
+        if (displayTypeSelect) {
+          displayTypeSelect.innerHTML = "";
+          config.displays.forEach((displayName, index) => {
+            const option = document.createElement("option");
+            option.value = index;
+            option.textContent = displayName;
+            displayTypeSelect.appendChild(option);
+          });
+        }
+      }
     }
   } catch (error) {
     console.error("Error loading hardware configuration:", error);
@@ -1118,33 +1131,6 @@ async function saveConfig() {
     console.error("Error saving config:", error);
     showModal("Error saving configuration", error.message);
   }
-}
-
-// Populate display type dropdown with available options
-function populateDisplayTypeDropdown() {
-  const displayTypeSelect = $("display-type");
-  if (!displayTypeSelect) return;
-  
-  // Clear existing options
-  displayTypeSelect.innerHTML = "";
-  
-  // Add options for each display type
-  for (let i = 0; i < 3; i++) { // Assuming 3 display types
-    const option = document.createElement("option");
-    option.value = i;
-    option.textContent = getDisplayTypeName(i);
-    displayTypeSelect.appendChild(option);
-  }
-}
-
-// Get display type name by index (simplified version for frontend)
-function getDisplayTypeName(index) {
-  const displayTypes = [
-    "128x64 (4 lines)",
-    "128x32 (2 lines)", 
-    "128x32 (3 lines)"
-  ];
-  return displayTypes[index] || "Unknown";
 }
 
 // Configuration import/export functions
@@ -1558,15 +1544,23 @@ function connectWebSocket() {
         const data = JSON.parse(event.data);
 
         // Handle status updates
-        const status = data;
-        console.log("Received status update:", status);
-
-        // Keep track of previous status to avoid unnecessary updates
+        // Merge with previous status to handle partial updates
         if (!window.previousStatus) {
           window.previousStatus = {};
         }
+        
+        // Merge incoming data with previous status
+        const status = { ...window.previousStatus, ...data };
+        window.previousStatus = status; // Update the cache
+        
+        console.log("Received status update:", status);
 
-        const prev = window.previousStatus;
+        // Keep track of previous status to avoid unnecessary updates
+        if (!window.lastDisplayedStatus) {
+          window.lastDisplayedStatus = {};
+        }
+
+        const prev = window.lastDisplayedStatus;
 
         // Update status element only if playing state changed
         if (status.playing !== prev.playing) {
@@ -2880,7 +2874,7 @@ async function loadWiFiConfiguration() {
 
     // Also populate the form with configured networks
     // Clear existing fields except the first one
-    const networkFields = $("network-fields");
+    const networkFields = $("wifi-form");
     if (networkFields) {
       while (networkFields.children.length > 1) {
         networkFields.removeChild(networkFields.lastChild);
@@ -2966,7 +2960,7 @@ function addNetworkField() {
     return;
   }
 
-  const networkFields = $("network-fields");
+  const networkFields = $("wifi-form");
   const newEntry = document.createElement("div");
   newEntry.className = "network-entry";
   newEntry.role = "group";
@@ -3122,7 +3116,7 @@ function handleWiFiDrop(e) {
 
   if (dragSrcWiFiElement !== this) {
     // Get the network entries container
-    const networkFields = $("network-fields");
+    const networkFields = $("wifi-form");
     const entries = Array.from(
       networkFields.querySelectorAll(".network-entry"),
     );

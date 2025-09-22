@@ -22,6 +22,11 @@
 #include <Arduino.h>
 #include <Adafruit_SSD1306.h>
 
+// Display layout constants
+#define MAX_DISPLAY_LINES 4
+#define SCROLL_TEXT_MAX_CHARS 14
+#define SCROLL_TEXT_PIXEL_WIDTH 84
+
 
 /**
  * @brief Display types supported by the system
@@ -108,7 +113,9 @@ private:
     Adafruit_SSD1306& displayRef;    ///< Reference to the SSD1306 display object
     bool displayOn;                  ///< Flag indicating if display is currently on
     unsigned long lastActivityTime;  ///< Timestamp of last user activity
-    enum display_t displayType;
+    enum display_t displayType;      ///< Type of display being used
+    int lastY;                       ///< Last Y position used for text printing
+    bool dirty;                      ///< Flag indicating if display content has changed
 
 public:
     /**
@@ -127,8 +134,32 @@ public:
      */
     void begin();
     
+    /**
+     * @brief Print text at specified position with alignment
+     * @param text The text to print
+     * @param x The x-coordinate for the text
+     * @param y The y-coordinate for the text
+     * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+     * 
+     * This function prints text at the specified position with the given alignment.
+     * It automatically selects the appropriate font based on available vertical space
+     * and handles text alignment (left, center, right). The function maintains a 
+     * lastY position to track vertical spacing and font selection.
+     */
     void printAt(const char* text, int x, int y, char align);
 
+    /**
+     * @brief Print text at specified position with alignment
+     * @param text The text to print (as a String)
+     * @param x The x-coordinate for the text
+     * @param y The y-coordinate for the text
+     * @param align The alignment of the text ('l' for left, 'c' for center, 'r' for right)
+     * 
+     * This function prints text at the specified position with the given alignment.
+     * It automatically selects the appropriate font based on available vertical space
+     * and handles text alignment (left, center, right). The function maintains a 
+     * lastY position to track vertical spacing and font selection.
+     */
     void printAt(const String text, int x, int y, char align);
     
     /**
@@ -154,6 +185,12 @@ public:
      */
     void clear();
     
+    /**
+     * @brief Show the NetTuner logo on display
+     * 
+     * Displays the "NetTuner" logo centered on the screen using the predefined
+     * logo layout for the current display type.
+     */
     void showLogo();
     
     /**
@@ -218,6 +255,24 @@ public:
      * @return unsigned long Timestamp of last user activity
      */
     unsigned long getLastActivityTime() const;
+    
+    /**
+     * @brief Check if display content has changed
+     * 
+     * @return true if display content has changed and needs updating
+     * @return false if display content is up to date
+     */
+    bool isDirty() const { return dirty; }
+    
+    /**
+     * @brief Set the dirty flag to indicate content has changed
+     */
+    void setDirty() { dirty = true; }
+    
+    /**
+     * @brief Reset the dirty flag
+     */
+    void resetDirty() { dirty = false; }
 };
 
 #endif // DISPLAY_H

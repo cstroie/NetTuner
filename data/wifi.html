@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="pico.min.css" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
   </head>
   <body class="container">
     <nav>
@@ -58,27 +59,25 @@
           </p>
         </hgroup>
         <form id="wifi-form">
-          <fieldset id="network-fields">
-            <div role="group" class="network-entry" draggable="true">
-              <div class="drag-handle">⋮⋮</div>
-              <input
-                type="text"
-                id="ssid0"
-                name="ssid0"
-                placeholder="Enter SSID" />
-              <input
-                type="password"
-                id="password0"
-                name="password0"
-                placeholder="Enter password" />
-              <button
-                type="button"
-                class="remove-btn secondary"
-                onclick="removeNetworkField(this)">
-                Remove
-              </button>
-            </div>
-          </fieldset>
+          <div role="group" class="network-entry" draggable="true">
+            <div class="drag-handle">⋮⋮</div>
+            <input
+              type="text"
+              id="ssid0"
+              name="ssid0"
+              placeholder="Enter SSID" />
+            <input
+              type="password"
+              id="password0"
+              name="password0"
+              placeholder="Enter password" />
+            <button
+              type="button"
+              class="remove-btn secondary"
+              onclick="removeNetworkField(this)">
+              Remove
+            </button>
+          </div>
         </form>
         <footer>
           <div class="grid">
@@ -90,12 +89,12 @@
         </footer>
       </article>
     </main>
-    <footer>
+    <footer class="connection-status-section">
       <hgroup>
         <h2>Connection status</h2>
         <p>Current network connection information</p>
       </hgroup>
-      <div id="connection-status">
+      <div id="connection-status" class="connection-status-content">
         <p aria-busy="true">Loading connection status...</p>
       </div>
     </footer>
