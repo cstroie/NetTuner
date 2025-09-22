@@ -29,7 +29,6 @@ extern bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
 Playlist::Playlist() {
   count = 0;
   current = 0;
-
   // Initialize playlist
   for (int i = 0; i < MAX_PLAYLIST_SIZE; i++) {
     playlist[i].name[0] = '\0';
@@ -97,7 +96,6 @@ void Playlist::load() {
     Serial.print(count);
     Serial.println(" streams from playlist");
   }
-
   // Validate playlist integrity after loading
   validate();
 }
