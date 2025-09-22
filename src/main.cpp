@@ -386,6 +386,57 @@ extern Player player;
 // Flag to indicate board button press
 static volatile bool boardButtonPressed = false;
 
+/**
+ * @brief Interrupt service routine for board button
+ * Sets a flag when the board button is pressed
+ */
+void boardButtonISR() {
+  static unsigned long lastInterruptTime = 0;
+  unsigned long interruptTime = millis();
+  // Debounce the button press (ignore if less than 50ms since last press)
+  if (interruptTime - lastInterruptTime > 50) {
+    boardButtonPressed = true;  // Set flag to indicate button press detected
+  }
+  lastInterruptTime = interruptTime;  // Update last interrupt time for debouncing
+}
+
+/**
+ * @brief Handle board button input
+ * Processes the built-in button (GPIO 0) for play/stop toggle functionality
+ * This function checks for button presses detected by the interrupt handler
+ */
+void handleBoardButton() {
+  // Only handle board button if it's configured (not negative)
+  // and not the same as rotary switch
+  if (config.board_button < 0 && config.board_button != config.rotary_sw) {
+    return;
+  }
+  // Check if button was pressed (detected by interrupt)
+  if (boardButtonPressed) {
+    // Toggle play/stop
+    if (player.isPlaying()) {
+      // If currently playing, stop the stream
+      player.stopStream();
+    } else {
+      // If we have a current stream, resume it
+      if (strlen(player.getStreamUrl()) > 0) {
+        player.startStream();
+      } 
+      // Otherwise, if we have playlist items, play the selected one
+      else if (player.isPlaylistIndexValid()) {
+        player.startStream(player.getCurrentPlaylistItemURL(), player.getCurrentPlaylistItemName());
+      }
+      // Save player state after starting
+      player.savePlayerState();
+    }
+    // Update display and notify clients
+    updateDisplay();
+    sendStatusToClients();
+    // Clear the flag
+    boardButtonPressed = false;
+  }
+}
+
 
 /**
  * @brief Handle WiFi configuration API request
