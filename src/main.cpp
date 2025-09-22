@@ -1011,11 +1011,11 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
   if (request->method() == HTTP_POST) {
     // Parse form data from the request body
     String action, url, streamIndexStr, volumeStr;
-    
+
     // Parse the form data manually from the body
     String body = String((char*)data);
     Serial.println("Form data: " + body);
-    
+
     // Extract action parameter
     int actionPos = body.indexOf("action=");
     if (actionPos != -1) {
@@ -1023,7 +1023,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
       if (actionEndPos == -1) actionEndPos = body.length();
       action = urlDecode(body.substring(actionPos + 7, actionEndPos));
     }
-    
+
     // Extract stream parameter
     int streamPos = body.indexOf("stream=");
     if (streamPos != -1) {
@@ -1031,7 +1031,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
       if (streamEndPos == -1) streamEndPos = body.length();
       streamIndexStr = urlDecode(body.substring(streamPos + 7, streamEndPos));
     }
-    
+
     // Extract volume parameter
     int volumePos = body.indexOf("volume=");
     if (volumePos != -1) {
@@ -1039,7 +1039,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
       if (volumeEndPos == -1) volumeEndPos = body.length();
       volumeStr = urlDecode(body.substring(volumePos + 7, volumeEndPos));
     }
-    
+
     // Extract url parameter
     int urlPos = body.indexOf("url=");
     if (urlPos != -1) {
@@ -1047,7 +1047,7 @@ void handleSimpleWebPage(AsyncWebServerRequest *request, uint8_t *data, size_t l
       if (urlEndPos == -1) urlEndPos = body.length();
       url = urlDecode(body.substring(urlPos + 4, urlEndPos));
     }
-    
+
     // Perform action based on form input
     if (action == "play") {
       // Play selected stream
@@ -2018,9 +2018,6 @@ void setupWebServer() {
   server.serveStatic("/config", SPIFFS, "/config.html");
   server.serveStatic("/about", SPIFFS, "/about.html");
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("player.html");
-  // Handle root path - redirect to main web interface
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->redirect("/player");
   });
 }
 
