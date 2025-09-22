@@ -1733,6 +1733,14 @@ void sendStatusToClients(bool fullStatus) {
   }
 }
 
+/**
+ * @brief Send full status to all connected WebSocket clients
+ * This is an overloaded version that sends full status by default
+ */
+void sendStatusToClients() {
+  sendStatusToClients(true);
+}
+
 
 /**
  * @brief Handle HTTP proxy requests
