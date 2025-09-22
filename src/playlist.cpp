@@ -233,6 +233,14 @@ const StreamInfo& Playlist::getItem(int index) const {
 }
 
 /**
+ * @brief Set current playlist index
+ * @param index New current index
+ */
+void Playlist::setCurrent(int index) {
+  current = index;
+}
+
+/**
  * @brief Validate playlist integrity
  * Ensures playlist count and selection are within valid ranges
  */

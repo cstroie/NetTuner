@@ -56,7 +56,7 @@ public:
   const StreamInfo& getItem(int index) const;
 
   // Setters
-  void setCurrent(int index) { current = index; }
+  void setCurrent(int index);
   
   // Utility methods
   void validate();
