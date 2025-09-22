@@ -76,10 +76,8 @@ void Playlist::load() {
         // Validate URL format
         if (VALIDATE_URL(url)) {
           // Add item to playlist
-          strncpy(playlist[count].name, name, STREAM_NAME_SIZE - 1);
-          playlist[count].name[STREAM_NAME_SIZE - 1] = '\0';
-          strncpy(playlist[count].url, url, STREAM_URL_SIZE - 1);
-          playlist[count].url[STREAM_URL_SIZE - 1] = '\0';
+          SAFE_STRNCPY(playlist[count].name, name, STREAM_NAME_SIZE);
+          SAFE_STRNCPY(playlist[count].url, url, STREAM_URL_SIZE);
           count++;
         } else {
           Serial.println("Warning: Skipping stream with invalid URL format");
@@ -138,10 +136,8 @@ void Playlist::save() {
  */
 void Playlist::setItem(int index, const char* name, const char* url) {
   if (index >= 0 && index < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[index].name, name, STREAM_NAME_SIZE - 1);
-    playlist[index].name[STREAM_NAME_SIZE - 1] = '\0';
-    strncpy(playlist[index].url, url, STREAM_URL_SIZE - 1);
-    playlist[index].url[STREAM_URL_SIZE - 1] = '\0';
+    SAFE_STRNCPY(playlist[index].name, name, STREAM_NAME_SIZE);
+    SAFE_STRNCPY(playlist[index].url, url, STREAM_URL_SIZE);
     if (index >= count) {
       count = index + 1;
     }
@@ -155,10 +151,8 @@ void Playlist::setItem(int index, const char* name, const char* url) {
  */
 void Playlist::addItem(const char* name, const char* url) {
   if (count < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[count].name, name, STREAM_NAME_SIZE - 1);
-    playlist[count].name[STREAM_NAME_SIZE - 1] = '\0';
-    strncpy(playlist[count].url, url, STREAM_URL_SIZE - 1);
-    playlist[count].url[STREAM_URL_SIZE - 1] = '\0';
+    SAFE_STRNCPY(playlist[count].name, name, STREAM_NAME_SIZE);
+    SAFE_STRNCPY(playlist[count].url, url, STREAM_URL_SIZE);
     count++;
   }
 }
@@ -171,10 +165,8 @@ void Playlist::removeItem(int index) {
   if (index >= 0 && index < count) {
     // Shift all items after the removed item
     for (int i = index; i < count - 1; i++) {
-      strncpy(playlist[i].name, playlist[i + 1].name, STREAM_NAME_SIZE - 1);
-      playlist[i].name[STREAM_NAME_SIZE - 1] = '\0';
-      strncpy(playlist[i].url, playlist[i + 1].url, STREAM_URL_SIZE - 1);
-      playlist[i].url[STREAM_URL_SIZE - 1] = '\0';
+      SAFE_STRNCPY(playlist[i].name, playlist[i + 1].name, STREAM_NAME_SIZE);
+      SAFE_STRNCPY(playlist[i].url, playlist[i + 1].url, STREAM_URL_SIZE);
     }
     // Clear the last item
     playlist[count - 1].name[0] = '\0';

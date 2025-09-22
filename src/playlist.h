@@ -26,6 +26,13 @@
 #define STREAM_NAME_SIZE 96
 #define STREAM_URL_SIZE 128
 
+// Helper macro for safe string copying with null termination
+#define SAFE_STRNCPY(dest, src, size) \
+  do { \
+    strncpy((dest), (src), (size) - 1); \
+    (dest)[(size) - 1] = '\0'; \
+  } while (0)
+
 // Structure for playlist items
 struct StreamInfo {
   char name[STREAM_NAME_SIZE];
