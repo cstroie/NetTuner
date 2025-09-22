@@ -203,7 +203,7 @@ void Playlist::clear() {
 }
 
 /**
- * @brief Get playlist count
+ * @brief Get the number of items in the playlist
  * @return Number of items in the playlist
  */
 int Playlist::getCount() const {
@@ -211,7 +211,7 @@ int Playlist::getCount() const {
 }
 
 /**
- * @brief Get current playlist index
+ * @brief Get the current playlist index
  * @return Current selected playlist index
  */
 int Playlist::getCurrent() const {
@@ -220,7 +220,7 @@ int Playlist::getCurrent() const {
 
 /**
  * @brief Get playlist item at specific index
- * @param index Playlist index
+ * @param index Playlist index (0-based)
  * @return Reference to StreamInfo at the specified index, or empty item if out of bounds
  */
 const StreamInfo& Playlist::getItem(int index) const {
@@ -232,8 +232,8 @@ const StreamInfo& Playlist::getItem(int index) const {
 }
 
 /**
- * @brief Set current playlist index
- * @param index New current index
+ * @brief Set the current playlist index
+ * @param index New current index (0-based)
  */
 void Playlist::setCurrent(int index) {
   current = index;
