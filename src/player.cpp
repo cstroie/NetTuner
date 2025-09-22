@@ -190,7 +190,7 @@ void Player::clearPlayerState() {
  * @brief Load player state from SPIFFS
  */
 void Player::loadPlayerState() {
-  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);  // Use predefined buffer size
   if (readJsonFile("/player.json", PLAYER_STATE_BUFFER_SIZE, doc)) {
     playerState.playing = doc["playing"] | false;
     playerState.volume = doc["volume"] | 8;
@@ -219,7 +219,7 @@ void Player::loadPlayerState() {
  * @brief Save player state to SPIFFS
  */
 void Player::savePlayerState() {
-  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);  // Use predefined buffer size
   doc["playing"] = playerState.playing;
   doc["volume"] = playerState.volume;
   doc["bass"] = playerState.bass;
@@ -240,7 +240,7 @@ void Player::savePlayerState() {
  * Delegates to the playlist object's load method
  */
 void Player::loadPlaylist() {
-  playlist->load();
+  playlist->load();  // Load using predefined buffer size PLAYLIST_BUFFER_SIZE
 }
 
 /**
@@ -248,7 +248,7 @@ void Player::loadPlaylist() {
  * Delegates to the playlist object's save method
  */
 void Player::savePlaylist() {
-  playlist->save();
+  playlist->save();  // Save using predefined buffer size PLAYLIST_BUFFER_SIZE
 }
 
 /**
