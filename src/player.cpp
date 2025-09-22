@@ -39,12 +39,16 @@ Player::Player() {
  * @param index New playlist index
  */
 void Player::setPlaylistIndex(int index) {
-  // Validate that the index is within the valid range of the playlist
-  if (index >= 0 && index < playlist->getCount()) {
+  // If playlist is empty, index must be -1
+  if (playlist->getCount() <= 0) {
+    playerState.playlistIndex = -1;
+  }
+  // If playlist has items, validate that the index is within the valid range
+  else if (index >= 0 && index < playlist->getCount()) {
     playerState.playlistIndex = index;
   } else {
-    // If index is out of bounds, set to 0 (first item) or -1 if playlist is empty
-    playerState.playlistIndex = (playlist->getCount() > 0) ? 0 : -1;
+    // If index is out of bounds, set to 0 (first item)
+    playerState.playlistIndex = 0;
   }
 }
 
