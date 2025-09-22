@@ -19,8 +19,8 @@
 #ifndef PLAYLIST_H
 #define PLAYLIST_H
 
-#include <Arduino.h>
 #include "main.h"
+#include <Arduino.h>
 
 // Constants for StreamInfo field sizes
 #define STREAM_NAME_SIZE 96
