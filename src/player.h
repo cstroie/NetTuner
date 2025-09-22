@@ -22,8 +22,8 @@
 #include <Arduino.h>
 
 // Buffer size constants
-#define PLAYER_STATE_BUFFER_SIZE 512
-#define PLAYLIST_BUFFER_SIZE 4096
+#define PLAYER_STATE_BUFFER_SIZE 512   // JSON buffer for player state (512 bytes = 2^9)
+#define PLAYLIST_BUFFER_SIZE 4096      // JSON buffer for playlist data (4KB = 2^12)
 
 // Forward declarations
 class Audio;
@@ -67,20 +67,20 @@ private:
   Playlist* playlist;
   Audio* audio;
   portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
-  
+
 public:
   // Constructor
   Player();
-  
+
   // Audio getter
   Audio* getAudioObject() const { return audio; }
   bool isRunning() const;
-  
+
   // Player state methods
   void clearPlayerState();
   void loadPlayerState();
   void savePlayerState();
-  
+
   // Getters
   bool isPlaying() const { return playerState.playing; }
   int getVolume() const { return playerState.volume; }
@@ -89,21 +89,21 @@ public:
   int getTreble() const { return playerState.treble; }
   int getPlaylistIndex() const { return playerState.playlistIndex; }
   int getPlaylistCount() const;
-  
+  int getBitrate() const { return streamInfo.bitrate; }
+
   // Playlist navigation helper functions
   int getNextPlaylistItem() const;
   int getPrevPlaylistItem() const;
-  
+
   // Current playlist item helper functions
   const char* getCurrentPlaylistItemName() const;
   const char* getCurrentPlaylistItemURL() const;
-  
+
   // Playlist validation helper function
   bool isPlaylistIndexValid() const;
-  int getBitrate() const { return streamInfo.bitrate; }
   unsigned long getPlayStartTime() const { return playerState.playStartTime; }
   unsigned long getTotalPlayTime() const { return playerState.totalPlayTime; }
-  
+
   // Setters
   void setPlaying(bool playing) { playerState.playing = playing; }
   void setVolume(int volume);
@@ -117,27 +117,18 @@ public:
   void setPlayStartTime(unsigned long time) { playerState.playStartTime = time; }
   void setTotalPlayTime(unsigned long time) { playerState.totalPlayTime = time; }
   void addPlayTime(unsigned long time) { playerState.totalPlayTime += time; }
-  
+
   // Dirty flag management
-  /**
-   * @brief Set the dirty flag to indicate state has changed
-   * Uses critical section to protect against concurrent access
-   */
   void setDirty();
-  
-  /**
-   * @brief Reset the dirty flag
-   * Uses critical section to protect against concurrent access
-   */
   void resetDirty();
-  
+
   // Stream info getters
   const char* getStreamUrl() const { return streamInfo.url; }
   const char* getStreamName() const { return streamInfo.name; }
   const char* getStreamTitle() const { return streamInfo.title; }
   const char* getStreamIcyUrl() const { return streamInfo.icyUrl; }
   const char* getStreamIconUrl() const { return streamInfo.iconUrl; }
-  
+
   // Stream info setters
   void setStreamUrl(const char* url);
   void setStreamName(const char* name);
@@ -145,7 +136,7 @@ public:
   void setStreamIcyUrl(const char* icyUrl);
   void setStreamIconUrl(const char* iconUrl);
   void clearStreamInfo();
-  
+
   // Playlist getters
   const struct StreamInfo& getPlaylistItem(int index) const;
   Playlist* getPlaylist() const { return playlist; }
@@ -157,11 +148,11 @@ public:
   void addPlaylistItem(const char* name, const char* url);
   void removePlaylistItem(int index);
   void clearPlaylist();
-  
+
   // Audio control methods
   void startStream(const char* url = nullptr, const char* name = nullptr);
   void stopStream();
-  
+
   // Audio setup method
   Audio* setupAudioOutput();
   // Audio handler

@@ -19,13 +19,24 @@
 #ifndef PLAYLIST_H
 #define PLAYLIST_H
 
-#include <Arduino.h>
 #include "main.h"
+#include <Arduino.h>
+
+// Constants for StreamInfo field sizes
+#define STREAM_NAME_SIZE 96
+#define STREAM_URL_SIZE 128
+
+// Helper macro for safe string copying with null termination
+#define SAFE_STRNCPY(dest, src, size) \
+  do { \
+    strncpy((dest), (src), (size) - 1); \
+    (dest)[(size) - 1] = '\0'; \
+  } while (0)
 
 // Structure for playlist items
 struct StreamInfo {
-  char name[96];
-  char url[128];
+  char name[STREAM_NAME_SIZE];
+  char url[STREAM_URL_SIZE];
 };
 
 class Playlist {
@@ -47,12 +58,12 @@ public:
   void clear();
   
   // Getters
-  int getCount() const { return count; }
-  int getCurrent() const { return current; }
-  const StreamInfo& getItem(int index) const { return playlist[index]; }
+  int getCount() const;
+  int getCurrent() const;
+  const StreamInfo& getItem(int index) const;
 
   // Setters
-  void setCurrent(int index) { current = index; }
+  void setCurrent(int index);
   
   // Utility methods
   void validate();

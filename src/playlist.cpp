@@ -29,7 +29,6 @@ extern bool writeJsonFile(const char* filename, DynamicJsonDocument& doc);
 Playlist::Playlist() {
   count = 0;
   current = 0;
-  
   // Initialize playlist
   for (int i = 0; i < MAX_PLAYLIST_SIZE; i++) {
     playlist[i].name[0] = '\0';
@@ -76,10 +75,8 @@ void Playlist::load() {
         // Validate URL format
         if (VALIDATE_URL(url)) {
           // Add item to playlist
-          strncpy(playlist[count].name, name, sizeof(playlist[count].name) - 1);
-          playlist[count].name[sizeof(playlist[count].name) - 1] = '\0';
-          strncpy(playlist[count].url, url, sizeof(playlist[count].url) - 1);
-          playlist[count].url[sizeof(playlist[count].url) - 1] = '\0';
+          SAFE_STRNCPY(playlist[count].name, name, STREAM_NAME_SIZE);
+          SAFE_STRNCPY(playlist[count].url, url, STREAM_URL_SIZE);
           count++;
         } else {
           Serial.println("Warning: Skipping stream with invalid URL format");
@@ -92,11 +89,15 @@ void Playlist::load() {
   // Check if any valid streams were loaded
   if (count == 0) {
     Serial.println("Error: No valid streams found in playlist");
+    // Don't create an empty playlist, just return with empty playlist
+    Serial.println("Continuing with empty playlist");
   } else {
     Serial.print("Loaded ");
     Serial.print(count);
     Serial.println(" streams from playlist");
   }
+  // Validate playlist integrity after loading
+  validate();
 }
 
 /**
@@ -106,13 +107,26 @@ void Playlist::load() {
  * It creates a backup before saving and restores from backup if saving fails.
  */
 void Playlist::save() {
-  // Create JSON array
-  DynamicJsonDocument doc(PLAYLIST_BUFFER_SIZE);
+  // Estimate required buffer size (rough estimation)
+  // Each entry needs approximately: {"name":"...","url":"..."},
+  // Plus some overhead for JSON structure
+  size_t estimatedSize = 1024; // Base size for JSON structure
+  for (int i = 0; i < count; i++) {
+    // Add estimated size for each entry (name + url + JSON overhead)
+    estimatedSize += strlen(playlist[i].name) + strlen(playlist[i].url) + 64;
+  }
+  // Ensure we don't exceed our maximum buffer size
+  if (estimatedSize > PLAYLIST_BUFFER_SIZE) {
+    Serial.println("Warning: Playlist too large, truncating to fit buffer");
+    estimatedSize = PLAYLIST_BUFFER_SIZE;
+  }
+  // Create JSON array with appropriate buffer size
+  DynamicJsonDocument doc(estimatedSize);
   JsonArray array = doc.to<JsonArray>();
   // Add playlist entries
   for (int i = 0; i < count; i++) {
     // Validate URL format before saving
-    if (strlen(playlist[i].url) == 0 || 
+    if (strlen(playlist[i].url) == 0 ||
         !VALIDATE_URL(playlist[i].url)) {
       Serial.println("Warning: Skipping stream with invalid URL format during save");
       continue;
@@ -138,10 +152,13 @@ void Playlist::save() {
  */
 void Playlist::setItem(int index, const char* name, const char* url) {
   if (index >= 0 && index < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[index].name, name, sizeof(playlist[index].name) - 1);
-    playlist[index].name[sizeof(playlist[index].name) - 1] = '\0';
-    strncpy(playlist[index].url, url, sizeof(playlist[index].url) - 1);
-    playlist[index].url[sizeof(playlist[index].url) - 1] = '\0';
+    // Validate URL format before setting
+    if (strlen(url) == 0 || !VALIDATE_URL(url)) {
+      Serial.println("Warning: Skipping stream with invalid URL format in setItem");
+      return;
+    }
+    SAFE_STRNCPY(playlist[index].name, name, STREAM_NAME_SIZE);
+    SAFE_STRNCPY(playlist[index].url, url, STREAM_URL_SIZE);
     if (index >= count) {
       count = index + 1;
     }
@@ -155,10 +172,13 @@ void Playlist::setItem(int index, const char* name, const char* url) {
  */
 void Playlist::addItem(const char* name, const char* url) {
   if (count < MAX_PLAYLIST_SIZE && name && url) {
-    strncpy(playlist[count].name, name, sizeof(playlist[count].name) - 1);
-    playlist[count].name[sizeof(playlist[count].name) - 1] = '\0';
-    strncpy(playlist[count].url, url, sizeof(playlist[count].url) - 1);
-    playlist[count].url[sizeof(playlist[count].url) - 1] = '\0';
+    // Validate URL format before adding
+    if (strlen(url) == 0 || !VALIDATE_URL(url)) {
+      Serial.println("Warning: Skipping stream with invalid URL format in addItem");
+      return;
+    }
+    SAFE_STRNCPY(playlist[count].name, name, STREAM_NAME_SIZE);
+    SAFE_STRNCPY(playlist[count].url, url, STREAM_URL_SIZE);
     count++;
   }
 }
@@ -171,23 +191,13 @@ void Playlist::removeItem(int index) {
   if (index >= 0 && index < count) {
     // Shift all items after the removed item
     for (int i = index; i < count - 1; i++) {
-      strncpy(playlist[i].name, playlist[i + 1].name, sizeof(playlist[i].name) - 1);
-      playlist[i].name[sizeof(playlist[i].name) - 1] = '\0';
-      strncpy(playlist[i].url, playlist[i + 1].url, sizeof(playlist[i].url) - 1);
-      playlist[i].url[sizeof(playlist[i].url) - 1] = '\0';
+      SAFE_STRNCPY(playlist[i].name, playlist[i + 1].name, STREAM_NAME_SIZE);
+      SAFE_STRNCPY(playlist[i].url, playlist[i + 1].url, STREAM_URL_SIZE);
     }
     // Clear the last item
     playlist[count - 1].name[0] = '\0';
     playlist[count - 1].url[0] = '\0';
     count--;
-    
-    // Adjust current if necessary
-    if (current >= count) {
-      current = count - 1;
-    }
-    if (current < 0) {
-      current = 0;
-    }
   }
 }
 
@@ -204,6 +214,43 @@ void Playlist::clear() {
 }
 
 /**
+ * @brief Get the number of items in the playlist
+ * @return Number of items in the playlist
+ */
+int Playlist::getCount() const {
+  return count;
+}
+
+/**
+ * @brief Get the current playlist index
+ * @return Current selected playlist index
+ */
+int Playlist::getCurrent() const {
+  return current;
+}
+
+/**
+ * @brief Get playlist item at specific index
+ * @param index Playlist index (0-based)
+ * @return Reference to StreamInfo at the specified index, or empty item if out of bounds
+ */
+const StreamInfo& Playlist::getItem(int index) const {
+  if (index < 0 || index >= count) {
+    static StreamInfo empty = {"", ""};
+    return empty;
+  }
+  return playlist[index];
+}
+
+/**
+ * @brief Set the current playlist index
+ * @param index New current index (0-based)
+ */
+void Playlist::setCurrent(int index) {
+  current = index;
+}
+
+/**
  * @brief Validate playlist integrity
  * Ensures playlist count and selection are within valid ranges
  */
@@ -213,7 +260,6 @@ void Playlist::validate() {
     Serial.println("Warning: Invalid playlist count detected, resetting to 0");
     count = 0;
   }
-  
   // Validate current selection
   if (current < 0 || current >= count) {
     current = 0;

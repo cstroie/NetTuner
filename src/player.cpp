@@ -39,12 +39,16 @@ Player::Player() {
  * @param index New playlist index
  */
 void Player::setPlaylistIndex(int index) {
-  // Validate that the index is within the valid range of the playlist
-  if (index >= 0 && index < playlist->getCount()) {
+  // If playlist is empty, index must be -1
+  if (playlist->getCount() <= 0) {
+    playerState.playlistIndex = -1;
+  }
+  // If playlist has items, validate that the index is within the valid range
+  else if (index >= 0 && index < playlist->getCount()) {
     playerState.playlistIndex = index;
   } else {
-    // If index is out of bounds, set to 0 (first item) or -1 if playlist is empty
-    playerState.playlistIndex = (playlist->getCount() > 0) ? 0 : -1;
+    // If index is out of bounds, set to 0 (first item)
+    playerState.playlistIndex = 0;
   }
 }
 
@@ -190,7 +194,7 @@ void Player::clearPlayerState() {
  * @brief Load player state from SPIFFS
  */
 void Player::loadPlayerState() {
-  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);  // Use predefined buffer size
   if (readJsonFile("/player.json", PLAYER_STATE_BUFFER_SIZE, doc)) {
     playerState.playing = doc["playing"] | false;
     playerState.volume = doc["volume"] | 8;
@@ -219,7 +223,7 @@ void Player::loadPlayerState() {
  * @brief Save player state to SPIFFS
  */
 void Player::savePlayerState() {
-  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);
+  DynamicJsonDocument doc(PLAYER_STATE_BUFFER_SIZE);  // Use predefined buffer size
   doc["playing"] = playerState.playing;
   doc["volume"] = playerState.volume;
   doc["bass"] = playerState.bass;
@@ -240,7 +244,7 @@ void Player::savePlayerState() {
  * Delegates to the playlist object's load method
  */
 void Player::loadPlaylist() {
-  playlist->load();
+  playlist->load();  // Load using predefined buffer size PLAYLIST_BUFFER_SIZE
 }
 
 /**
@@ -248,7 +252,7 @@ void Player::loadPlaylist() {
  * Delegates to the playlist object's save method
  */
 void Player::savePlaylist() {
-  playlist->save();
+  playlist->save();  // Save using predefined buffer size PLAYLIST_BUFFER_SIZE
 }
 
 /**
@@ -294,8 +298,8 @@ void Player::clearPlaylist() {
  * @return int Number of items in the playlist
  * Delegates to the playlist object's getCount method
  */
-int Player::getPlaylistCount() const { 
-  return playlist->getCount(); 
+int Player::getPlaylistCount() const {
+  return playlist->getCount();
 }
 
 /**
@@ -307,23 +311,29 @@ int Player::getPlaylistCount() const {
  */
 int Player::getNextPlaylistItem() const {
   if (playlist->getCount() <= 0) {
-    return 0;
+    // No items
+    return -1;
   }
   return (playerState.playlistIndex + 1) % playlist->getCount();
 }
 
 /**
- * @brief Get the previous playlist item index with wraparound
- * @details Calculates the previous playlist index with wraparound behavior.
- * If the playlist is empty, returns 0. Otherwise, returns the previous index
- * in the playlist, wrapping to the last item when reaching the beginning.
+ * @brief Get the previous playlist item index
+ * @details Calculates the previous playlist index.
+ * If the playlist is empty or index is at zero or below, returns 0.
+ * Otherwise, returns the previous index in the playlist.
  * @return Previous playlist item index
  */
 int Player::getPrevPlaylistItem() const {
   if (playlist->getCount() <= 0) {
+    // No items
+    return -1;
+  }
+  // Do not wrap over
+  if (playerState.playlistIndex <= 0) {
     return 0;
   }
-  return (playerState.playlistIndex - 1 + playlist->getCount()) % playlist->getCount();
+  return playerState.playlistIndex - 1;
 }
 
 /**
@@ -364,8 +374,8 @@ const char* Player::getCurrentPlaylistItemURL() const {
  * @return const StreamInfo& Reference to the playlist item
  * Delegates to the playlist object's getItem method
  */
-const StreamInfo& Player::getPlaylistItem(int index) const { 
-  return playlist->getItem(index); 
+const StreamInfo& Player::getPlaylistItem(int index) const {
+  return playlist->getItem(index);
 }
 
 /**
@@ -533,7 +543,7 @@ int Player::updateBitrate() {
   if (audio) {
     int newBitrate = audio->getBitRate() / 1000;  // Convert bps to kbps
     if (newBitrate > 0 && newBitrate != streamInfo.bitrate) {
-      streamInfo.bitrate = newBitrate;
+      setBitrate(newBitrate);
       return newBitrate;
     }
   }
