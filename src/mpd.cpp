@@ -1455,20 +1455,28 @@ void MPDInterface::handleCommandListOkBeginCommand(const String& args) {
  * or command_list_ok_begin). If called outside of command list mode, it sends
  * an error response indicating that the command is not valid in the current context.
  * 
- * In a proper implementation, this function would:
- * 1. Validate that we're in command list mode
- * 2. Execute all buffered commands
- * 3. Send appropriate responses (OK or list_OK) based on the command list type
- * 4. Reset command list state
- * 
- * However, in the current implementation, command list processing is handled
- * directly in the handleCommandList function, so this handler simply checks
- * for proper context and sends an error if called inappropriately.
+ * This function validates that we're in command list mode and then executes
+ * all buffered commands, sending appropriate responses (OK or list_OK) based 
+ * on the command list type, then resets command list state.
  * 
  * @param args Command arguments (not used for this command)
  */
 void MPDInterface::handleCommandListEndCommand(const String& args) {
-  mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
+  if (inCommandList) {
+    // Execute all buffered commands
+    for (int i = 0; i < commandListCount; i++) {
+      // Yield to allow other tasks to run
+      yield();
+      handleMPDCommand(commandList[i]);
+    }
+    // Reset command list state
+    inCommandList = false;
+    commandListOK = false;
+    commandListCount = 0;
+    mpdClient.print(mpdResponseOK());
+  } else {
+    mpdClient.print(mpdResponseError("command_list", "Not in command list mode"));
+  }
 }
 
 /**
