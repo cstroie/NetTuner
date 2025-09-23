@@ -58,7 +58,7 @@ void setupRotaryEncoder() {
 /**
  * @brief Handle rotary encoder rotation
  * @details Processes rotation events by detecting CLK signal edges and 
- * determining rotation direction based on the DT signal state. Implements 10ms 
+ * determining rotation direction based on the DT signal state. Implements 100ms 
  * debouncing to prevent false readings from electrical noise.
  * 
  * The quadrature encoding works as follows:
@@ -70,7 +70,7 @@ void setupRotaryEncoder() {
  */
 void RotaryEncoder::handleRotation() {
   unsigned long currentTime = millis();
-  // Debounce rotary encoder (ignore if less than 10ms since last event)
+  // Debounce rotary encoder (ignore if less than 100ms since last event)
   if (currentTime - lastRotaryTime < 100) {
     return;
   }

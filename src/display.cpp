@@ -270,7 +270,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
             }
             // Scroll every 500ms for smooth animation
             if (millis() - lastTitleScrollTime > 500) {
-                titleScrollOffset++;
+                titleScrollOffset = (titleScrollOffset + 1) % (title.length() + 4);
                 // Reset scroll when we've shown the entire text plus " ~~~ "
                 if (titleScrollOffset > (int)(title.length() + 4)) {  // +4 for " ~~~ "
                     titleScrollOffset = 0;

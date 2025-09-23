@@ -1991,7 +1991,6 @@ void setupWebServer() {
   server.on("/api/proxy", HTTP_GET, handleProxyRequest);
   server.on("/api/proxy", HTTP_POST, handleProxyRequest);
   server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
-  server.on("/api/proxy", HTTP_HEAD, handleProxyRequest);
   server.on("/w", HTTP_GET, handleSimpleWebPage);
   server.on("/w", HTTP_POST, handleSimpleWebPage);
   server.serveStatic("/", SPIFFS, "/player.html");
@@ -2078,11 +2077,6 @@ bool connectToWiFi() {
   }
   // If not connected to any network, AP mode is already active
   if (connected) {
-    Serial.println("Connected to WiFi");
-    Serial.print("IP Address: ");
-    Serial.println(WiFi.localIP().toString());
-    display->turnOn();
-    display->showStatus("AP mode active", String(WiFi.SSID()), WiFi.localIP().toString());
     // Mark that first connection has been completed
     firstConnection = false;  
   } else {
@@ -2261,11 +2255,11 @@ void setup() {
   display->showStatus("Starting AP Mode", "", "");
   
   // Start WiFi access point mode with error handling
-  if (WiFi.softAP("CubeRadio-Setup")) {
+  if (WiFi.softAP("CubeRadio")) {
     Serial.println("Access Point Started");
     Serial.print("AP IP Address: ");
     Serial.println(WiFi.softAPIP().toString());
-    display->showStatus("AP Mode Active", "CubeRadio-Setup", WiFi.softAPIP().toString());
+    display->showStatus("AP Mode Active", "CubeRadio", WiFi.softAPIP().toString());
   } else {
     Serial.println("Failed to start Access Point");
     display->showStatus("AP Start Failed", "", "");

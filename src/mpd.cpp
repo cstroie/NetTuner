@@ -16,6 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define MPD_VERSION "0.23.0"
+
 #include "mpd.h"
 #include "main.h"
 #include "player.h"
@@ -1642,7 +1644,7 @@ void MPDInterface::handleClient() {
         if (mpdClient && mpdClient.connected()) {
             WiFiClient newClient = mpdServer.available();
             if (newClient && newClient.connected()) {
-                newClient.print("OK MPD 0.23.0\n");
+                newClient.print("OK MPD " MPD_VERSION "\n");
                 newClient.print("ACK [0@0] {} Only one client allowed at a time\n");
                 newClient.flush();
                 delay(1);
@@ -1660,7 +1662,7 @@ void MPDInterface::handleClient() {
         mpdClient = mpdServer.available();
         // Send MPD welcome message with error checking
         if (mpdClient && mpdClient.connected()) {
-            mpdClient.print("OK MPD 0.23.0\n");
+            mpdClient.print("OK MPD " MPD_VERSION "\n");
         }
         // Reset all state variables
         inCommandList = false;
@@ -1999,7 +2001,7 @@ String MPDInterface::mpdResponseError(const String& command, const String& messa
  * 3=artist/album (file+title+artist+album+id+pos+lastmod)
  */
 void MPDInterface::sendPlaylistInfo(int detailLevel) {
-  for (int i = 0; i < this->player.getPlaylistCount(); i++) {
+  for (int i = 0; i < min(this->player.getPlaylistCount(), MAX_PLAYLIST_SIZE); i++) {
     const StreamInfo& item = this->player.getPlaylistItem(i);
     mpdClient.print("file: " + String(item.url) + "\n");
     mpdClient.print("Title: " + String(item.name) + "\n");
@@ -2146,7 +2148,7 @@ void MPDInterface::handleMPDSearchCommand(const String& args, bool exactMatch) {
 
 /**
  * @brief Handle MPD commands
- * @details Processes MPD protocol commands with support for MPD protocol version 0.23.0.
+ * @details Processes MPD protocol commands with support for MPD protocol version MPD_VERSION.
  * This function serves as the entry point for command processing, delegating to the
  * registry-based command execution system for efficient dispatch.
  * 

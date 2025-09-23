@@ -51,7 +51,7 @@ public:
    * @brief Handle rotary encoder rotation
    * @details Processes rotation events by detecting CLK signal edges and 
    * determining rotation direction based on the DT signal state. Implements 
-   * 10ms debouncing to prevent false readings from electrical noise.
+   * 100ms debouncing to prevent false readings from electrical noise.
    * 
    * The quadrature encoding works as follows:
    * - When rotating clockwise: CLK leads DT
