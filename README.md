@@ -21,7 +21,7 @@ CubeRadio is an open-source internet radio player built on the ESP32 platform. I
 - **WiFi Configuration**: Web-based WiFi setup with network scanning and multiple network support
 - **File Management**: Upload/download playlists in JSON, M3U, or PLS formats
 - **WebSocket Communication**: Real-time status updates between device and web interface
-- **MPD Protocol Support**: Control via MPD clients (port 6600)
+- **MPD Protocol Support**: Control via MPD clients (port 6600) with full command list support
 - **Favicon Support**: Automatic favicon detection and display for radio stations
 - **ICY Metadata**: Full ICY metadata support including stream URLs and descriptions
 - **Artist/Track Parsing**: Automatic parsing of artist and track information from stream titles
@@ -148,6 +148,11 @@ Once connected to WiFi, access the web interface by navigating to the ESP32's IP
 ## 📜 License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+## 📝 Changelog
+
+### v1.0.1
+- Fixed MPD command list handling to properly execute buffered commands instead of always returning an error
 
 ## 🤝 Contributing
 
