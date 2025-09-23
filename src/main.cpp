@@ -1058,7 +1058,36 @@ void handleSimpleWebPage() {
       }
     }
   }
-  // Create a more memory-efficient HTML response
+  
+  // Precompute volume options to avoid string fragmentation
+  char volumeOptions[1024];  // Buffer for volume options (sufficient for 23 options)
+  volumeOptions[0] = '\0';   // Initialize empty string
+  for (int i = 0; i <= 22; i++) {
+    char option[32];
+    if (i == player.getVolume()) {
+      snprintf(option, sizeof(option), "<option value='%d' selected>%d</option>", i, i);
+    } else {
+      snprintf(option, sizeof(option), "<option value='%d'>%d</option>", i, i);
+    }
+    strncat(volumeOptions, option, sizeof(volumeOptions) - strlen(volumeOptions) - 1);
+  }
+  
+  // Precompute playlist options to avoid string fragmentation
+  char playlistOptions[2048];  // Buffer for playlist options (adjust size as needed)
+  playlistOptions[0] = '\0';   // Initialize empty string
+  if (player.getPlaylistCount() > 0) {
+    for (int i = 0; i < player.getPlaylistCount(); i++) {
+      char option[128];
+      if (i == player.getPlaylistIndex()) {
+        snprintf(option, sizeof(option), "<option value='%d' selected>%s</option>", i, player.getPlaylistItem(i).name);
+      } else {
+        snprintf(option, sizeof(option), "<option value='%d'>%s</option>", i, player.getPlaylistItem(i).name);
+      }
+      strncat(playlistOptions, option, sizeof(playlistOptions) - strlen(playlistOptions) - 1);
+    }
+  }
+  
+  // Create HTML response using precomputed strings to minimize fragmentation
   String html = "<!DOCTYPE html><html><head><title>CubeRadio</title>";
   html += "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css\">";
   html += "</head><body><header><h1>CubeRadio</h1></header><main>";
@@ -1083,15 +1112,7 @@ void handleSimpleWebPage() {
   html += "</fieldset></form>";
   html += "<form method='post'><fieldset role='group'>";
   html += "<select name='volume' id='volume'>";
-  
-  // Add volume options (0-22)
-  for (int i = 0; i <= 22; i++) {
-    html += "<option value='" + String(i) + "'";
-    if (i == player.getVolume()) {
-      html += " selected";
-    }
-    html += ">" + String(i) + "</option>";
-  }
+  html += volumeOptions;  // Use precomputed volume options
   html += "</select>";
   html += "<button name='action' value='volume' type='submit'>Set&nbsp;volume</button>";
   html += "</fieldset></form></section><section><h2>Playlist</h2>";
@@ -1100,15 +1121,7 @@ void handleSimpleWebPage() {
   if (player.getPlaylistCount() > 0) {
     html += "<form method='post'><fieldset role='group'>";
     html += "<select name='stream' id='stream'>";
-    
-    // Populate the dropdown with available streams
-    for (int i = 0; i < player.getPlaylistCount(); i++) {
-      html += "<option value='" + String(i) + "'";
-      if (i == player.getPlaylistIndex()) {
-        html += " selected";
-      }
-      html += ">" + String(player.getPlaylistItem(i).name) + "</option>";
-    }
+    html += playlistOptions;  // Use precomputed playlist options
     html += "</select>";
     html += "<button name='action' value='play' type='submit'>Play&nbsp;selected</button>";
     html += "</fieldset></form>";
