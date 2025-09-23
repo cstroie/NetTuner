@@ -1063,7 +1063,7 @@ void handleSimpleWebPage() {
   char volumeOptions[1024];  // Buffer for volume options (sufficient for 23 options)
   volumeOptions[0] = '\0';   // Initialize empty string
   for (int i = 0; i <= 22; i++) {
-    char option[32];
+    char option[40];  // Buffer for individual option
     if (i == player.getVolume()) {
       snprintf(option, sizeof(option), "<option value='%d' selected>%d</option>", i, i);
     } else {
