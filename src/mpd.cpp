@@ -1568,6 +1568,7 @@ const MPDInterface::MPDCommand MPDInterface::commandRegistry[] = {
   {"currentsong", &MPDInterface::handleCurrentSongCommand, true},
   {"playlistinfo", &MPDInterface::handlePlaylistInfoCommand, false},
   {"playlistid", &MPDInterface::handlePlaylistIdCommand, false},
+  {"playid", &MPDInterface::handlePlayCommand, false},
   {"play", &MPDInterface::handlePlayCommand, false},
   {"lsinfo", &MPDInterface::handleLsInfoCommand, true},
   {"setvol", &MPDInterface::handleSetVolCommand, false},

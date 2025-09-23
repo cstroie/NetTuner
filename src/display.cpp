@@ -244,16 +244,7 @@ void Display::update(bool isPlaying, const char* streamTitle, const char* stream
         // Fixed '>' character to indicate playing state
         printAt(">", 0, updateLayout[displayType][0], 'l');
         // Display stream title (first line) with scrolling for long titles
-        String title = streamName;
-        if (displayType == OLED_128x64) {
-            if (String(streamTitle).length() > 0) {
-                title = String(streamTitle);
-            }
-        } else {
-            if (String(streamTitle).length() > 0) {
-                title = title + ": " + String(streamTitle);
-            }
-        }
+        String title = String(streamTitle);
         // Scroll title if too long for display (excluding the '>' character)
         // 16 chars fit on a 128px display with '>' and some margin
         // Calculate how many characters we can display (14 chars = 84 pixels)
